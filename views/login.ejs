@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Login - CaTech</title>
+
+    <!-- CSS GLOBAL -->
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body class="auth-body">
+    <div class="auth-card">
+      <div class="auth-logo">CaTech System</div>
+      <h1 class="auth-title">Bem-vindo</h1>
+      <div class="auth-subtitle">Faça login para acessar o painel</div>
+
+      <% if (typeof error !== "undefined" && error) { %>
+        <div class="auth-error"><%= error %></div>
+      <% } %>
+
+      <form method="post" action="/login" class="auth-form">
+        <div class="auth-field">
+          <label for="email">E-mail</label>
+          <input
+            id="email"
+            type="email"
+            name="email"
+            placeholder="seu@email.com"
+            required
+          />
+        </div>
+
+        <div class="auth-field">
+          <label for="password">Senha</label>
+          <input
+            id="password"
+            type="password"
+            name="password"
+            placeholder="********"
+            required
+          />
+        </div>
+
+        <button type="submit" class="auth-button">Entrar</button>
+      </form>
+
+      <div class="auth-footer">
+        Ainda não tem conta?
+        <a href="/register">Criar conta</a>
+      </div>
+    </div>
+  </body>
+</html>

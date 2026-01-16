@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Homologação de Títulos - CaTech</title>
+
+  <link rel="stylesheet" href="/css/theme.css" />
+  <link rel="stylesheet" href="/css/layout.css" />
+</head>
+<body>
+<div class="shell">
+  <%- include('../partials/sidebar', { user, currentPath }) %>
+
+  <main class="main">
+    <div class="header">
+      <div>
+        <div class="title-main">Homologação de Títulos</div>
+        <div class="title-sub">
+          Solicitação de homologação de títulos
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="/services" class="btn">← Voltar</a>
+      </div>
+    </div>
+
+<form
+  method="POST"
+  action="/services/title-homologation"
+  enctype="multipart/form-data"
+>
+
+        <!-- GATO -->
+        <div class="section">
+          <div class="section-title"><strong>Gato</strong></div>
+          <select name="catId" required>
+            <option value="">Selecione o gato...</option>
+            <% cats.forEach(c => { %>
+              <option value="<%= c.id %>"><%= c.name %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <!-- TÍTULO -->
+        <div class="section">
+          <div class="section-title"><strong>Título solicitado</strong></div>
+          <select id="titleSelect" name="requestedTitle" required>
+            <option value="">Selecione...</option>
+            <option value="KCH">Kitten Champion - KCH</option>
+            <option value="JCH">Junior Champion - JCH</option>
+            <option value="JW">Junior Winner - JW</option>
+            <option value="CH">Champion - CH</option>
+            <option value="PR">Premier - PR</option>
+            <option value="IC">International Champion - IC</option>
+            <option value="IP">International Premier - IP</option>
+            <option value="GIC">Grand International Champion - GIC</option>
+            <option value="GIP">Grand International Premier - GIP</option>
+            <option value="SC">Supreme Champion - SC</option>
+            <option value="SP">Supreme Premier - SP</option>
+            <option value="DSM">Distinguished Show Merit - DSM</option>
+            <option value="DVM">Distinguished Variety Merit - DVM</option>
+            <option value="DM">Distinguished Merit - DM</option>
+            <option value="NW">National Winner - NW</option>
+            <option value="AW">American Winner - AW</option>
+            <option value="WW">World Winner - WW</option>
+            <option value="SW">Scandinavian Winner - SW</option>
+            <option value="BW">Baltic Winner - BW</option>
+            <option value="MW">Mediterranean Winner - MW</option>
+            <option value="NSW">North Sea Winner - NSW</option>
+          </select>
+        </div>
+
+        <div
+  id="titleWarning"
+  style="margin-top: 6px; color: #b71c1c; font-size: 0.9rem; display: none;"
+>
+</div>
+
+
+        <!-- CERTIFICADOS -->
+        <div class="section">
+          <div class="section-title"><strong>Certificados</strong></div>
+          <div id="certificatesContainer"></div>
+        </div>
+
+        <input type="hidden" name="certificates" id="certificatesJson" />
+
+<!-- REGRAS PARA HOMOLOGAÇÃO DE TÍTULOS -->
+<div class="section">
+  <div class="section-title"><strong>Regras Para Homologação de Título</strong></div>
+
+  <ul class="rules-list">
+   <li>
+   <strong>É do criador solicitante a total <strong>responsabilidade</strong> das informações mencionadas neste pedido de Homologação de Título</strong>.
+   </li>
+   
+    <li>
+      Para homologar um título é <strong>obritatório anexar os certificados.</strong>
+    </li>
+
+    <li>
+      Será emitido um certificado com o nome do gato, acompanhado do título que foi homologado.
+    </li>
+
+        <li>
+      Para os títulos CH / PR / IC / IP / GIC / GIP / SC / SP o gato deve conter a mesma cor em todos os certificados.
+    </li>
+
+        <li>
+      Para o título de DVM o primeiro BIV e o último devem ter intervalo maior que 2 anos.
+    </li>
+
+            <li>
+      Para o título de DSM o primeiro BIS e o último devem ter intervalo maior que 2 anos (somente BIS como adulto)
+    </li>
+
+  </ul>
+</div>
+
+
+    <div class="footer">
+      <a href="/services" class="btn">Cancelar</a>
+      <button type="submit" class="btn btn-primary submit-btn">
+  <span class="submit-text">Salvar/Enviar</span>
+  <span class="spinner" style="display:none; margin-left:8px;"></span>
+</button>
+    </div>
+    </form>
+  </main>
+</div>
+
+<script src="/js/judges.js"></script>
+<script src="/js/title-homologation.js"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll("form").forEach((form) => {
+      form.addEventListener("submit", () => {
+        const submitBtn = form.querySelector("button[type='submit']");
+        if (!submitBtn) return;
+
+        const textEl = submitBtn.querySelector(".submit-text");
+        const spinnerEl = submitBtn.querySelector(".spinner");
+
+        // bloqueia botão
+        submitBtn.disabled = true;
+
+        // altera texto
+        if (textEl) {
+          textEl.dataset.original = textEl.textContent;
+          textEl.textContent = "Processando...";
+        }
+
+        // mostra spinner
+        if (spinnerEl) {
+          spinnerEl.style.display = "inline-block";
+        }
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

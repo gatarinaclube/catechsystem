@@ -1,0 +1,17 @@
+:root {
+  --bg-page: #fafafa;
+  --bg-card: #ffffff;
+  --border-soft: #e5e5e5;
+  --text-main: #333333;
+  --text-muted: #777777;
+
+  /* AQUI ALTERA O LARANJA DO SITE INTEIRO */
+  --accent: #f39c12;
+  --accent-hover: #e67e22;
+  --accent-soft: #ffe6c7;
+
+  --danger: #e53935;
+  --danger-hover: #c62828;
+}
+
+

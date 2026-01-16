@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Cadastro - CaTech</title>
+
+    <!-- CSS GLOBAL -->
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+
+  <body>
+    <div class="shell">
+      <!-- NÃO tem sidebar no login/cadastro -->
+      <main class="main" style="margin-left:0">
+
+        <!-- HEADER PADRÃO -->
+        <div class="header">
+          <div>
+            <div class="title-main">Criar conta</div>
+            <div class="title-sub">
+              Preencha seus dados para começar no CaTech
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTEÚDO -->
+        <div class="content">
+          <form method="post" action="/register">
+
+            <% if (typeof error !== "undefined" && error) { %>
+              <div class="alert alert-error"><%= error %></div>
+            <% } %>
+
+            <!-- DADOS PESSOAIS -->
+            <div class="section">
+              <div class="section-title">Dados pessoais</div>
+
+              <div class="grid-3">
+
+                <div class="field">
+                  <label class="field-label" for="name">Nome completo</label>
+                  <input id="name" type="text" name="name" required />
+                </div>
+
+                <div class="field">
+                  <label class="field-label" for="cpf">CPF</label>
+                  <input id="cpf" type="text" name="cpf" />
+                </div>
+
+                <div class="field">
+                  <label class="field-label" for="country">País</label>
+                  <input id="country" type="text" name="country" value="Brasil" />
+                </div>
+
+              </div>
+
+              <div class="grid-3">
+              <div class="field">
+                <label class="field-label" for="address">Endereço</label>
+                <input id="address" type="text" name="address" />
+              </div> 
+
+                <div class="field">
+                  <label class="field-label" for="city">Cidade</label>
+                  <input id="city" type="text" name="city" />
+                </div>
+
+                <div class="field">
+                  <label class="field-label" for="state">Estado</label>
+                  <input id="state" type="text" name="state" />
+                </div>
+              </div>
+
+              <div class="grid-3">
+                <div class="field">
+                  <label class="field-label" for="cep">CEP</label>
+                  <input id="cep" type="text" name="cep" />
+                </div>
+                
+                <div class="field">
+                  <label class="field-label" for="phones">Telefone(s)</label>
+                  <input id="phones" type="text" name="phones" />
+                </div>
+
+                <div class="field">
+                  <label class="field-label" for="email">E-mail</label>
+                  <input
+                    id="email"
+                    type="email"
+                    name="email"
+                    placeholder="seu@email.com"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- SEGURANÇA -->
+            <div class="section">
+              <div class="section-title">Segurança</div>
+
+              <div class="grid-2">
+                <div class="field">
+                  <label class="field-label" for="password">Senha</label>
+                  <input
+                    id="password"
+                    type="password"
+                    name="password"
+                    required
+                  />
+                </div>
+
+                <div class="field">
+                  <label class="field-label" for="confirmPassword">
+                    Confirmar senha
+                  </label>
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    name="confirmPassword"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- CLUBES / GATIL FIFe -->
+            <div class="section">
+              <div class="section-title">
+                Selecione o(s) clube(s) que você é associado
+              </div>
+
+              <!-- GATIL FIFe -->
+              <div class="field">
+                <label class="field-label">
+                  Possui Gatil Registrado na FIFe?
+                </label>
+
+<div style="display:flex; gap:24px; margin-top:6px;">
+  <label class="checkbox-label">
+    <input
+      type="radio"
+      name="hasFifeCattery"
+      value="YES"
+      onclick="toggleFifeCattery(true)"
+    />
+    Sim
+  </label>
+
+  <label class="checkbox-label">
+    <input
+      type="radio"
+      name="hasFifeCattery"
+      value="NO"
+      onclick="toggleFifeCattery(false)"
+    />
+    Não
+  </label>
+</div>
+
+              </div>
+
+              <!-- NOME DO GATIL -->
+              <div class="field" id="fifeCatteryBlock" style="display:none;">
+                <label class="field-label" for="fifeCatteryName">
+                  Qual o nome do seu gatil FIFe?
+                </label>
+                <input
+                  id="fifeCatteryName"
+                  type="text"
+                  name="fifeCatteryName"
+                  placeholder="Nome do gatil conforme registro FIFe"
+                />
+              </div>
+
+              <!-- CLUBES -->
+              <div class="grid-3" style="margin-top:16px;">
+                <% [
+                  "Gatarina",
+                  "AMACOON",
+                  "CBG",
+                  "Gato Grupo",
+                  "Rio Cat Clube",
+                  "AFA (Argentina)",
+                  "FFM (México)",
+                  "Clube FIFe Europeu",
+                  "Clube NÃO FIFe",
+                  "SEM Filiação"
+                ].forEach(function (club) { %>
+                  <label class="checkbox-label">
+                    <input type="checkbox" name="clubs" value="<%= club %>" />
+                    <%= club %>
+                  </label>
+                <% }) %>
+              </div>
+            </div>
+
+            <!-- AÇÕES -->
+            <div class="footer">
+              <a href="/login" class="btn">Já tenho conta</a>
+              <button type="submit" class="btn btn-primary">
+                Criar conta
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </main>
+    </div>
+
+    <!-- SCRIPT SIMPLES PARA EXIBIR O CAMPO DO GATIL -->
+    <script>
+      function toggleFifeCattery(show) {
+        const block = document.getElementById("fifeCatteryBlock");
+        const input = document.getElementById("fifeCatteryName");
+
+        if (show) {
+          block.style.display = "block";
+        } else {
+          block.style.display = "none";
+          input.value = "";
+        }
+      }
+    </script>
+  </body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

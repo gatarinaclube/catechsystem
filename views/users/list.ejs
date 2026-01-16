@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Usuários - CaTech</title>
+
+    <!-- CSS GLOBAL -->
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Usuários</h2>
+            <div class="welcome-sub">
+              Gerenciamento de usuários por status. Clique no nome para ver os detalhes.
+            </div>
+          </div>
+          <div class="actions">
+            <a href="/dashboard" class="btn">← Voltar ao início</a>
+          </div>
+        </div>
+
+        <div class="content-card">
+          <!-- NOVO CADASTRO -->
+          <section style="margin-bottom: 20px;">
+            <h3 class="section-title">Novo Cadastro</h3>
+            <% if (!newUsers || !newUsers.length) { %>
+              <div class="empty">Nenhum usuário pendente de aprovação.</div>
+            <% } else { %>
+              <ul class="list">
+                <% newUsers.forEach(function(u) { %>
+                  <li class="item">
+                    <div>
+                      <a class="item-link" href="/users/<%= u.id %>">
+                        <%= u.name || "(sem nome)" %>
+                      </a>
+                      <div class="item-sub">
+                        Email: <%= u.email || "-" %>
+                        <% if (u.createdAt) { %>
+                          • Cadastro: <%= new Date(u.createdAt).toLocaleString('pt-BR') %>
+                        <% } %>
+                      </div>
+                    </div>
+                    <div>
+                      <span class="badge-status badge-status--new">Novo cadastro</span>
+                    </div>
+                  </li>
+                <% }); %>
+              </ul>
+            <% } %>
+          </section>
+
+          <!-- ATIVOS -->
+          <section style="margin-bottom: 20px;">
+            <h3 class="section-title">Ativos</h3>
+            <% if (!activeUsers || !activeUsers.length) { %>
+              <div class="empty">Nenhum usuário ativo.</div>
+            <% } else { %>
+              <ul class="list">
+                <% activeUsers.forEach(function(u) { %>
+                  <li class="item">
+                    <div>
+                      <a class="item-link" href="/users/<%= u.id %>">
+                        <%= u.name || "(sem nome)" %>
+                      </a>
+                      <div class="item-sub">
+                        Email: <%= u.email || "-" %>
+                        <% if (u.role === "ADMIN") { %>
+                          • Perfil: Administrador
+                        <% } else { %>
+                          • Perfil: Usuário
+                        <% } %>
+                      </div>
+                    </div>
+                    <div>
+                      <span class="badge-status badge-status--active">Ativo</span>
+                    </div>
+                  </li>
+                <% }); %>
+              </ul>
+            <% } %>
+          </section>
+
+          <!-- INATIVOS -->
+          <section>
+            <h3 class="section-title">Inativos</h3>
+            <% if (!inactiveUsers || !inactiveUsers.length) { %>
+              <div class="empty">Nenhum usuário inativo.</div>
+            <% } else { %>
+              <ul class="list">
+                <% inactiveUsers.forEach(function(u) { %>
+                  <li class="item">
+                    <div>
+                      <a class="item-link" href="/users/<%= u.id %>">
+                        <%= u.name || "(sem nome)" %>
+                      </a>
+                      <div class="item-sub">
+                        Email: <%= u.email || "-" %>
+                      </div>
+                    </div>
+                    <div>
+                      <span class="badge-status badge-status--inactive">Restrição</span>
+                    </div>
+                  </li>
+                <% }); %>
+              </ul>
+            <% } %>
+          </section>
+
+          <div class="list-footer">
+            <div>
+              <span class="badge-role">Administrador</span>
+            </div>
+            <div>
+              Total de usuários:
+              <strong>
+                <%= (activeUsers.length + newUsers.length + inactiveUsers.length) %>
+              </strong>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Registro de Ninhada #<%= litter.id %> - Serviços FFB</title>
+
+    <!-- CSS GLOBAL -->
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body>
+  <div class="shell">
+    <%- include('../partials/sidebar', { user, currentPath }) %>
+
+    <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">
+              Registro de Ninhada #<%= litter.id %>
+            </h2>
+            <div class="welcome-sub">
+              Enviado por:
+              <% if (litter.owner) { %>
+                <strong><%= litter.owner.name %></strong>
+                (<%= litter.owner.email %>)
+              <% } else { %>
+                (usuário não encontrado)
+              <% } %>
+              <% if (litter.createdAt) { %>
+                – em
+                <%= litter.createdAt.toISOString().substring(0,10).split('-').reverse().join('/') %>
+              <% } %>
+            </div>
+          </div>
+          <div>
+            <a href="/ffb-services">← Voltar para Serviços FFB</a>
+          </div>
+        </div>
+
+        <div class="content-card">
+          <!-- Dados do macho -->
+          <div class="section">
+            <div class="section-title">Dados do macho</div>
+            <div class="grid-3">
+              <div class="field">
+                <div class="field-label">Nome</div>
+                <div class="field-value"><%= litter.maleName || "-" %></div>
+              </div>
+              <div class="field">
+                <div class="field-label">Raça</div>
+                <div class="field-value"><%= litter.maleBreed || "-" %></div>
+              </div>
+              <div class="field">
+                <div class="field-label">Cor / EMS</div>
+                <div class="field-value"><%= litter.maleEms || "-" %></div>
+              </div>
+            </div>
+            <div class="grid-3" style="margin-top:8px;">
+              <div class="field">
+                <div class="field-label">FFB LO (se houver)</div>
+                <div class="field-value"><%= litter.maleFfbLo || "-" %></div>
+              </div>
+              <div class="field">
+                <div class="field-label">Microchip</div>
+                <div class="field-value"><%= litter.maleMicrochip || "-" %></div>
+              </div>
+            </div>
+
+            <% if (litter.maleOwnerName || litter.maleOwnerEmail || litter.maleOwnerPhone) { %>
+              <div style="margin-top:10px;">
+                <div class="section-title" style="margin-bottom:6px;">
+                  Novo proprietário do macho
+                </div>
+                <div class="grid-2">
+                  <div class="field">
+                    <div class="field-label">Nome</div>
+                    <div class="field-value"><%= litter.maleOwnerName || "-" %></div>
+                  </div>
+                  <div class="field">
+                    <div class="field-label">E-mail</div>
+                    <div class="field-value"><%= litter.maleOwnerEmail || "-" %></div>
+                  </div>
+                </div>
+                <div class="grid-3" style="margin-top:8px;">
+                  <div class="field">
+                    <div class="field-label">Telefone</div>
+                    <div class="field-value"><%= litter.maleOwnerPhone || "-" %></div>
+                  </div>
+                  <div class="field">
+                    <div class="field-label">CEP</div>
+                    <div class="field-value"><%= litter.maleOwnerCep || "-" %></div>
+                  </div>
+                </div>
+                <div class="grid-2" style="margin-top:8px;">
+                  <div class="field">
+                    <div class="field-label">Endereço</div>
+                    <div class="field-value"><%= litter.maleOwnerAddress || "-" %></div>
+                  </div>
+                  <div class="field">
+                    <div class="field-label">Complemento</div>
+                    <div class="field-value"><%= litter.maleOwnerComplement || "-" %></div>
+                  </div>
+                </div>
+                <div class="grid-3" style="margin-top:8px;">
+                  <div class="field">
+                    <div class="field-label">Bairro</div>
+                    <div class="field-value"><%= litter.maleOwnerDistrict || "-" %></div>
+                  </div>
+                  <div class="field">
+                    <div class="field-label">Cidade</div>
+                    <div class="field-value"><%= litter.maleOwnerCity || "-" %></div>
+                  </div>
+                  <div class="field">
+                    <div class="field-label">Estado</div>
+                    <div class="field-value"><%= litter.maleOwnerState || "-" %></div>
+                  </div>
+                </div>
+              </div>
+            <% } %>
+          </div>
+
+          <!-- Dados da fêmea -->
+          <div class="section">
+            <div class="section-title">Dados da fêmea</div>
+            <div class="grid-3">
+              <div class="field">
+                <div class="field-label">Nome</div>
+                <div class="field-value"><%= litter.femaleName || "-" %></div>
+              </div>
+              <div class="field">
+                <div class="field-label">Raça</div>
+                <div class="field-value"><%= litter.femaleBreed || "-" %></div>
+              </div>
+              <div class="field">
+                <div class="field-label">Cor / EMS</div>
+                <div class="field-value"><%= litter.femaleEms || "-" %></div>
+              </div>
+            </div>
+            <div class="grid-3" style="margin-top:8px;">
+              <div class="field">
+                <div class="field-label">FFB LO (se houver)</div>
+                <div class="field-value"><%= litter.femaleFfbLo || "-" %></div>
+              </div>
+              <div class="field">
+                <div class="field-label">Microchip</div>
+                <div class="field-value"><%= litter.femaleMicrochip || "-" %></div>
+              </div>
+            </div>
+
+            <% if (litter.femaleOwnerName || litter.femaleOwnerEmail || litter.femaleOwnerPhone) { %>
+              <div style="margin-top:10px;">
+                <div class="section-title" style="margin-bottom:6px;">
+                  Novo proprietário da fêmea
+                </div>
+                <div class="grid-2">
+                  <div class="field">
+                    <div class="field-label">Nome</div>
+                    <div class="field-value"><%= litter.femaleOwnerName || "-" %></div>
+                  </div>
+                  <div class="field">
+                    <div class="field-label">E-mail</div>
+                    <div class="field-value"><%= litter.femaleOwnerEmail || "-" %></div>
+                  </div>
+                </div>
+                <div class="grid-3" style="margin-top:8px;">
+                  <div class="field">
+                    <div class="field-label">Telefone</div>
+                    <div class="field-value"><%= litter.femaleOwnerPhone || "-" %></div>
+                  </div>
+                  <div class="field">
+                    <div class="field-label">CEP</div>
+                    <div class="field-value"><%= litter.femaleOwnerCep || "-" %></div>
+                  </div>
+                </div>
+                <div class="grid-2" style="margin-top:8px;">
+                  <div class="field">
+                    <div class="field-label">Endereço</div>
+                    <div class="field-value"><%= litter.femaleOwnerAddress || "-" %></div>
+                  </div>
+                  <div class="field">
+                    <div class="field-label">Complemento</div>
+                    <div class="field-value"><%= litter.femaleOwnerComplement || "-" %></div>
+                  </div>
+                </div>
+                <div class="grid-3" style="margin-top:8px;">
+                  <div class="field">
+                    <div class="field-label">Bairro</div>
+                    <div class="field-value"><%= litter.femaleOwnerDistrict || "-" %></div>
+                  </div>
+                  <div class="field">
+                    <div class="field-label">Cidade</div>
+                    <div class="field-value"><%= litter.femaleOwnerCity || "-" %></div>
+                  </div>
+                  <div class="field">
+                    <div class="field-label">Estado</div>
+                    <div class="field-value"><%= litter.femaleOwnerState || "-" %></div>
+                  </div>
+                </div>
+              </div>
+            <% } %>
+          </div>
+
+          <!-- Dados da ninhada -->
+          <div class="section">
+            <div class="section-title">Dados da ninhada</div>
+            <div class="grid-3">
+              <div class="field">
+                <div class="field-label">País</div>
+                <div class="field-value"><%= litter.catteryCountry || "-" %></div>
+              </div>
+              <div class="field">
+                <div class="field-label">Raça</div>
+                <div class="field-value"><%= litter.litterBreed || "-" %></div>
+              </div>
+              <div class="field">
+                <div class="field-label">Data de nascimento</div>
+                <div class="field-value">
+                  <% if (litter.litterBirthDate) { %>
+                    <%= litter.litterBirthDate.toISOString().substring(0,10).split('-').reverse().join('/') %>
+                  <% } else { %>
+                    -
+                  <% } %>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid-2" style="margin-top:8px;">
+              <div class="field">
+                <div class="field-label">Nome do Gatil</div>
+                <div class="field-value"><%= litter.catteryName || "-" %></div>
+              </div>
+              <div class="field">
+                <div class="field-label">Número total de filhotes</div>
+                <div class="field-value"><%= litter.litterCount || "-" %></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filhotes -->
+          <div class="section">
+            <div class="section-title">Filhotes</div>
+
+            <% if (!litter.kittens || !litter.kittens.length) { %>
+              <p style="font-size:13px; color:var(--text-muted); margin:0;">
+                Nenhum filhote informado.
+              </p>
+            <% } else { %>
+              <div style="overflow-x:auto;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Nome completo</th>
+                      <th>EMS / Cor + Olhos</th>
+                      <th>Sexo</th>
+                      <th>Microchip</th>
+                      <th>Uso para reprodução</th>
+                      <th>Obs.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% litter.kittens.forEach(function(k) { %>
+                      <tr>
+                        <td data-label="#"> <%= k.index %> </td>
+                        <td data-label="Nome completo">
+                          <%= k.name || "-" %>
+                        </td>
+                        <td data-label="EMS / Cor + Olhos">
+                          <%= k.emsEyes || "-" %>
+                        </td>
+                        <td data-label="Sexo">
+                          <%= k.sex || "-" %>
+                        </td>
+                        <td data-label="Microchip">
+                          <%= k.microchip || "-" %>
+                        </td>
+                        <td data-label="Uso para reprodução">
+                          <% if (!k.breeding) { %>
+                            -
+                          <% } else if (k.breeding === "BREEDING") { %>
+                            Breeding
+                          <% } else if (k.breeding === "NOT_FOR_BREEDING") { %>
+                            Not for breeding
+                          <% } else { %>
+                            <%= k.breeding %>
+                          <% } %>
+                        </td>
+                        <td data-label="Obs.">
+                          <%= k.obs || "-" %>
+                        </td>
+                      </tr>
+                    <% }); %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+          </div>
+
+          <!-- Texto de responsabilidade -->
+          <div class="section">
+            <p
+              style="
+                margin: 0 0 10px 0;
+                font-weight: 700;
+                text-transform: uppercase;
+                color: #b91c1c;
+                font-size: 13px;
+              "
+            >
+              É dos criadores a total responsabilidade das informações
+              mencionadas neste pedido de Registro de Ninhada.
+            </p>
+
+            <ul style="margin:0; padding-left:18px; font-size:12px; color:var(--text-main);">
+              <li>Desde 2004 a FFB não emite mais RI (Registro Inicial).</li>
+              <li>Os pais da ninhada deverão ter Pedigree FFB (ou homologados) e em nome do atual proprietário.</li>
+              <li>O registro deverá ser solicitado até 4 meses de idade.</li>
+              <li>O nome dos filhotes não pode ultrapassar 30 dígitos, já incluindo o nome do Gatil e contando-se inclusive os espaços.</li>
+              <li>Todos os filhotes criados por um associado FIFe devem ser primeiro registrados na FIFe.</li>
+              <li>Segundo a FIFe só são permitidas de uma mesma fêmea, 3 ninhadas a cada 2 anos, sendo no máximo 2 ninhadas no intervalo de 12 meses.</li>
+            </ul>
+          </div>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

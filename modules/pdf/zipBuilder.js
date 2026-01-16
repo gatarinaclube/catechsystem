@@ -1,0 +1,1 @@
+buildZipFromPdf(pdfPath, res, extraFiles);

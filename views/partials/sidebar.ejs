@@ -1,0 +1,92 @@
+<aside class="sidebar">
+  <div>
+    <div class="logo">CaTech System</div>
+    <div class="logo-sub">Gatarina Clube</div>
+
+    <div class="user-box">
+<div class="user-name">
+  <%= user && user.name ? user.name.split(" ")[0] : "Usuário" %>
+</div>
+      <div class="user-role">
+        <%= (user && user.role === "ADMIN") ? "Administrador" : "Usuário" %>
+      </div>
+      <% if (user && user.clubs) { %>
+        <div style="margin-top:6px; font-size: 11px;">
+          Clubes: <%= user.clubs %>
+        </div>
+      <% } %>
+    </div>
+
+    <% if (user && user.role === "USER") { %>
+  <div style="margin-top:8px; font-size:12px;">
+    <a href="/meus-dados" style="color:inherit; text-decoration:none;">
+      Meu Cadastro
+    </a>
+  </div>
+<% } %>
+
+
+    <div class="menu-title">Menu</div>
+
+    <nav class="menu">
+      <!-- PÁGINA INICIAL -->
+      <a
+        href="/dashboard"
+        class="<%= (currentPath && currentPath.startsWith('/dashboard')) ? 'active' : '' %>"
+      >
+        <span class="menu-icon">🏠</span>
+        <span>Página inicial</span>
+      </a>
+
+      <!-- Meus / Todos os gatos -->
+      <a
+        href="/cats"
+        class="<%= (currentPath && currentPath.startsWith('/cats')) ? 'active' : '' %>"
+      >
+        <span class="menu-icon">🐾</span>
+        <span>
+          <%= (user && user.role === "ADMIN") ? "Todos os gatos" : "Meus gatos" %>
+        </span>
+      </a>
+
+      <!-- Serviços -->
+      <a
+        href="/services"
+        class="<%= (currentPath && currentPath.startsWith('/services')) ? 'active' : '' %>"
+      >
+        <span class="menu-icon">🧾</span>
+        <span>Serviços</span>
+      </a>
+
+      <!-- Serviços FFB (somente ADMIN) -->
+      <% if (user && user.role === "ADMIN") { %>
+        <a
+          href="/ffb-services"
+          class="<%= (currentPath && currentPath.startsWith('/ffb-services')) ? 'active' : '' %>"
+        >
+          <span class="menu-icon">🛠️</span>
+          <span>Serviços FFB</span>
+        </a>
+      <% } %>
+
+      <!-- Usuários (somente ADMIN) -->
+      <% if (user && user.role === "ADMIN") { %>
+        <a
+          href="/users"
+          class="<%= (currentPath && currentPath.startsWith('/users')) ? 'active' : '' %>"
+        >
+          <span class="menu-icon">👥</span>
+          <span>Usuários</span>
+        </a>
+      <% } %>
+
+    </nav>
+  </div>
+
+  <div class="menu-footer">
+    <div>Logado como <%= user && user.email ? user.email : "" %></div>
+    <div style="margin-top:6px;">
+      <a href="/logout">Sair</a>
+    </div>
+  </div>
+</aside>

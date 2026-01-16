@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Serviços - CaTech</title>
+
+<head>
+  <meta charset="utf-8" />
+  <title>Serviços - CaTech</title>
+
+  <!-- CSS GLOBAL -->
+  <link rel="stylesheet" href="/css/theme.css" />
+  <link rel="stylesheet" href="/css/layout.css" />
+</head>
+
+  </head>
+  <body>
+  <div class="shell">
+    <%- include('../partials/sidebar', { user, currentPath }) %>
+
+    <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Serviços</h2>
+            <div class="welcome-sub">
+              Acesse aqui os serviços disponíveis pela FFB dentro do CaTech.
+            </div>
+          </div>
+        </div>
+
+        <div class="content-card">
+          <div class="content-title">Serviços disponíveis</div>
+          <div class="content-sub">
+            Estes são os serviços atualmente integrados ao sistema.
+          </div>
+
+  <!-- SERVIÇO 1: REGISTRO DE NINHADA -->
+          <div class="quick-grid">
+            <div class="quick-card">
+              <div class="quick-label">Registro</div>
+              <div class="quick-value">Registro de Ninhada</div>
+              <div class="quick-link" style="margin-top:8px;">
+                <a href="/litters/new" class="btn btn-primary">
+                  Acessar Registro de Ninhada →
+                </a>
+              </div>
+            </div>
+<!-- NOVO SERVIÇO: PEDIDO DE TRANSFERÊNCIA -->
+<div class="quick-card">
+  <div class="quick-label">Transferência</div>
+  <div class="quick-value">Pedido de Transferência</div>
+  <div class="quick-link" style="margin-top:8px;">
+    <a href="/transfers/new" class="btn btn-primary">
+      Acessar Pedido de Transferência →
+    </a>
+  </div>
+</div>
+
+<!-- NOVO SERVIÇO: HOMOLOGAÇÃO DE TÍTULOS -->
+<div class="quick-card">
+  <div class="quick-label">Homologação</div>
+  <div class="quick-value">Homologação de Títulos</div>
+  <div class="quick-link" style="margin-top:8px;">
+    <a href="/services/title-homologation" class="btn btn-primary">
+      Solicitar Homologação de Títulos →
+    </a>
+  </div>
+</div>
+
+<!-- HOMOLOGAÇÃO DE PEDIGREE -->
+<div class="quick-card">
+  <div class="quick-label">Homologação</div>
+  <div class="quick-value">Homologação de Pedigree</div>
+  <div class="quick-link" style="margin-top:8px;">
+    <a href="/services/pedigree-homologation" class="btn btn-primary">
+      Solicitar Homologação de Pedigree →
+    </a>
+  </div>
+</div>
+
+<!-- REGISTRO DE GATIL -->
+<div class="quick-card">
+  <div class="quick-label">Registro</div>
+  <div class="quick-value">Registro de Gatil</div>
+  <div class="quick-link" style="margin-top:8px;">
+    <a href="/services/cattery-registration" class="btn btn-primary">
+      Solicitar Registro de Gatil →
+    </a>
+  </div>
+</div>
+
+<!-- OUTROS SERVIÇOS -->
+<div class="quick-card">
+  <div class="quick-label">Serviço</div>
+  <div class="quick-value">Segunda Via e Alterações</div>
+  <div class="quick-link" style="margin-top:8px;">
+    <a href="/services/segunda-via-alteracoes" class="btn btn-primary">
+      Solicitar Outros Serviços→
+    </a>
+  </div>
+</div>
+
+<hr
+  style="
+    margin: 16px 0;
+    border: 0;
+    border-top: 1px solid var(--border-soft);
+    grid-column: 1 / -1;
+  "
+/>
+
+<!-- ATESTADO DE SAÚDE PARA REPRODUÇÃO -->
+<div class="quick-card">
+  <div class="quick-label">Modelo para Download</div>
+  <div class="quick-value">Atestado de Saúde para Reprodução</div>
+  <div class="quick-link" style="margin-top:8px;">
+    <a href="/services/atestado-saude-reproducao" class="btn btn-primary">
+      Baixar modelo atestado →
+    </a>
+  </div>
+</div>
+
+<div class="quick-card">
+  <div class="quick-label">Modelo para Download</div>
+  <div class="quick-value">Autorização Registro de Ninhada</div>
+  <div class="quick-link" style="margin-top:8px;">
+<a href="/services/autorizacao-registro-ninhada" class="btn btn-primary">
+  Baixar modelo autorização→
+</a>
+</div>
+</div>
+
+<div class="quick-card">
+  <div class="quick-label">Modelo para Download</div>
+  <div class="quick-value">Autorização de Transferência de Propriedade</div>
+  <div class="quick-link" style="margin-top:8px;">
+    <a href="/services/autorizacao-transferencia-propriedade" class="btn btn-primary">
+      Baixar modelo autorização→
+    </a>
+  </div>
+</div>
+
+</div>
+        </div>
+
+<!-- BLOCO: ACOMPANHAMENTO DOS SERVIÇOS (LAYOUT ÚNICO) -->
+<div
+  style="
+    margin-top: 24px;
+    border-top: 1px solid var(--border-soft);
+    padding-top: 12px;
+    display: block;
+    width: 100%;
+  "
+>
+  <div class="content-title" style="margin-bottom: 6px;">
+    Acompanhamento dos Serviços
+  </div>
+
+  <div class="content-sub" style="margin-bottom: 10px;">
+    Veja o histórico e o andamento dos serviços que você já solicitou.
+  </div>
+
+  <a href="/my-services" class="btn btn-primary">
+    📋 Meus Serviços
+  </a>
+</div>

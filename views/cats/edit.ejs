@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Editar gato - <%= cat.name %> - CaTech</title>
+
+    <!-- CSS GLOBAL -->
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="header">
+          <div>
+            <div class="title-main">Editar gato</div>
+            <div class="title-sub">
+              <% if (isAdmin) { %>
+                Você está logado como <strong>Administrador</strong> e pode editar todos os campos deste gato.
+              <% } else { %>
+                Ajuste apenas os campos permitidos. As demais informações são somente leitura.
+              <% } %>
+            </div>
+          </div>
+          <div class="header-actions">
+            <a href="/cats" class="btn">← Voltar à lista</a>
+            <a href="/cats/<%= cat.id %>" class="btn">Ver detalhes</a>
+            <form
+              method="post"
+              action="/cats/<%= cat.id %>/delete"
+              onsubmit="return confirm('Tem certeza que deseja excluir este gato?');"
+              style="display:inline;"
+            >
+              <button type="submit" class="btn btn-danger">Excluir</button>
+            </form>
+          </div>
+        </div>
+
+        <form
+          method="post"
+          action="/cats/<%= cat.id %>"
+          enctype="multipart/form-data"
+        >
+          <% if (!isAdmin) { %>
+            <!-- HIDDEN: mantém os campos que o USUÁRIO comum não pode editar -->
+            <!-- Informações básicas -->
+            <input type="hidden" name="country" value="<%= cat.country || '' %>" />
+            <input
+              type="hidden"
+              name="microchip"
+              value="<%= cat.microchip || '' %>"
+            />
+            <input
+              type="hidden"
+              name="birthDate"
+              value="<%= cat.birthDate ? cat.birthDate.toISOString().slice(0,10) : '' %>"
+            />
+            <input
+              type="hidden"
+              name="sex"
+              value="<%= cat.gender || '' %>"
+            />
+            <input type="hidden" name="breed" value="<%= cat.breed || '' %>" />
+            <input
+              type="hidden"
+              name="colorEms"
+              value="<%= cat.emsCode || '' %>"
+            />
+
+            <!-- Registro -->
+            <input
+              type="hidden"
+              name="memberType"
+              value="<%= cat.fifeStatus || '' %>"
+            />
+            <input
+              type="hidden"
+              name="registerType"
+              value="<%= cat.pedigreeType || '' %>"
+            />
+            <input
+              type="hidden"
+              name="pedigreeNumber"
+              value="<%= cat.pedigreeNumber || '' %>"
+            />
+            <% if (cat.pedigreePending) { %>
+              <input type="hidden" name="registerPending" value="on" />
+            <% } %>
+
+            <!-- Criador -->
+            <input
+              type="hidden"
+              name="breederType"
+              value="<%= cat.breederType || '' %>"
+            />
+            <% if (cat.breederType === "OTHER") { %>
+              <input
+                type="hidden"
+                name="breederOtherName"
+                value="<%= cat.breederName || '' %>"
+              />
+            <% } %>
+
+            <!-- Pais (mantém exatamente como estão, sem edição para USER) -->
+            <% if (cat.fatherId) { %>
+              <input type="hidden" name="fatherSource" value="existing" />
+              <input
+                type="hidden"
+                name="fatherId"
+                value="<%= cat.fatherId %>"
+              />
+            <% } else { %>
+              <input type="hidden" name="fatherSource" value="manual" />
+              <input
+                type="hidden"
+                name="fatherNameManual"
+                value="<%= cat.fatherName || '' %>"
+              />
+              <input
+                type="hidden"
+                name="fatherColorEmsManual"
+                value="<%= cat.fatherEmsCode || '' %>"
+              />
+              <input
+                type="hidden"
+                name="fatherBreedManual"
+                value="<%= cat.fatherBreed || '' %>"
+              />
+            <% } %>
+
+            <% if (cat.motherId) { %>
+              <input type="hidden" name="motherSource" value="existing" />
+              <input
+                type="hidden"
+                name="motherId"
+                value="<%= cat.motherId %>"
+              />
+            <% } else { %>
+              <input type="hidden" name="motherSource" value="manual" />
+              <input
+                type="hidden"
+                name="motherNameManual"
+                value="<%= cat.motherName || '' %>"
+              />
+              <input
+                type="hidden"
+                name="motherColorEmsManual"
+                value="<%= cat.motherEmsCode || '' %>"
+              />
+              <input
+                type="hidden"
+                name="motherBreedManual"
+                value="<%= cat.motherBreed || '' %>"
+              />
+            <% } %>
+          <% } %>
+
+         
+            <!-- INFORMAÇÕES -->
+            <div class="section">
+              <div class="section-title">Informações</div>
+
+              <div class="grid-3">
+                
+                              <div class="field">
+  <label class="field-label" for="titleBeforeName">
+    Títulos antes do nome
+  </label>
+  <input
+    id="titleBeforeName"
+    type="text"
+    name="titleBeforeName"
+    value="<%= cat.titleBeforeName || '' %>"
+  />
+</div>
+
+<div class="field">
+  <label class="field-label" for="titleAfterName">
+    Títulos depois do nome
+  </label>
+  <input
+    id="titleAfterName"
+    type="text"
+    name="titleAfterName"
+    value="<%= cat.titleAfterName || '' %>"
+  />
+            </div>    
+              
+                <!-- País -->
+                <div class="field">
+                  <label class="field-label" for="country">País</label>
+                  <% if (isAdmin) { %>
+                    <select id="country" name="country">
+                      <option value="">Selecione...</option>
+                      <% [
+  "BR","AR","AT","BE","BG","BY","CA","CH","CL","CO","CY","CZ",
+  "DE","DK","EE","ES","FI","FR","GB","GR","HR","HU","ID","IL",
+  "IS","IT","KO","KR","LI","LT","LU","LV","MX","MY","NL","NO",
+  "PL","PT","RO","RS","RU","SE","SI","SK","TR","UA","US","UY"
+].forEach(function(code) { %>
+  <option value="<%= code %>" <%= (cat.country === code) ? "selected" : "" %>>
+    <%= code %>
+  </option>
+<% }); %>
+                    </select>
+                  <% } else { %>
+                    <div class="field-value"><%= cat.country || "-" %></div>
+                  <% } %>
+                </div>
+
+              </div>
+
+                 <hr style="margin: 16px 0; border:0; border-top:1px solid var(--border-soft);" />
+
+              <div class="grid-3" style="margin-top: 20px;">
+                <!-- Nome -->
+                <div class="field">
+                  <label class="field-label" for="name">Nome do gato</label>
+                  <input
+                    id="name"
+                    type="text"
+                    name="name"
+                    value="<%= cat.name %>"
+                    required
+                  />
+                </div>
+
+                <!-- Microchip -->
+                <div class="field">
+                  <label class="field-label" for="microchip">Microchip</label>
+                  <% if (isAdmin) { %>
+                    <input
+                      id="microchip"
+                      type="text"
+                      name="microchip"
+                      value="<%= cat.microchip || '' %>"
+                    />
+                  <% } else { %>
+                    <div class="field-value">
+                      <% if (cat.microchip) { %>
+                        <%= cat.microchip %>
+                      <% } else { %>
+                        -
+                      <% } %>
+                    </div>
+                  <% } %>
+                </div>
+
+
+                <!-- Data de nascimento -->
+                <div class="field">
+                  <label class="field-label" for="birthDate">Data de nascimento</label>
+                  <% if (isAdmin) { %>
+                    <input
+                      id="birthDate"
+                      type="date"
+                      name="birthDate"
+                      value="<%= cat.birthDate ? cat.birthDate.toISOString().slice(0,10) : '' %>"
+                    />
+                  <% } else { %>
+                    <div class="field-value" id="birthValue">
+                      <% if (cat.birthDate) { %>
+                        <%= cat.birthDate.toISOString().slice(0, 10) %>
+                      <% } else { %>
+                        -
+                      <% } %>
+                    </div>
+                  <% } %>
+                  <div id="ageDisplay" class="age-badge"></div>
+                </div>
+
+              </div>
+
+               <hr style="margin: 16px 0; border:0; border-top:1px solid var(--border-soft);" />
+
+              <div class="grid-3" style="margin-top: 20px;">
+
+
+                <!-- Sexo -->
+                <div class="field">
+                  <label class="field-label" for="sex">Sexo</label>
+                  <% if (isAdmin) { %>
+                    <select id="sex" name="sex">
+                      <option value="">Selecione...</option>
+                      <option
+                        value="M"
+                        <%= cat.gender === "M" ? "selected" : "" %>
+                      >
+                        Macho
+                      </option>
+                      <option
+                        value="F"
+                        <%= cat.gender === "F" ? "selected" : "" %>
+                      >
+                        Fêmea
+                      </option>
+                    </select>
+                  <% } else { %>
+                    <div class="field-value">
+                      <% if (cat.gender === "M") { %>
+                        Macho
+                      <% } else if (cat.gender === "F") { %>
+                        Fêmea
+                      <% } else { %>
+                        -
+                      <% } %>
+                    </div>
+                  <% } %>
+                </div>
+
+  <!-- Raça -->
+  <div class="field">
+    <label class="field-label" for="breed">Raça</label>
+    <% if (isAdmin) { %>
+      <select id="breed" name="breed">
+        <option value="">Selecione...</option>
+        <% [
+          "ABY","SOM","ACL","ACS","BAL","SIA","BEN","BLH","BSH","BML","BOM","BUR",
+          "CHA","CRX","DRX","DSP","EUR","EXO","PER","GRX","HCL","HCS","JBS","KBL",
+          "KBS","KOR","LPL","LPS","LYO","MAU","MCO","NEM","NFO","OCI","OLH","OSH",
+          "PEB","RAG","RUS","SBI","SIB","SNO","SOK","SPH","SRL","SRS","THA","TUA","TUV"
+        ].forEach(function(b) { %>
+          <option
+            value="<%= b %>"
+            <%= cat.breed === b ? "selected" : "" %>
+          >
+            <%= b %>
+          </option>
+        <% }); %>
+      </select>
+    <% } else { %>
+      <div class="field-value"><%= cat.breed || "-" %></div>
+    <% } %>
+  </div>
+
+  
+<!-- Cor / Código EMS -->
+ <div class="field">
+  <label class="field-label" for="colorEms">Cor / Código EMS</label>
+  <% if (isAdmin) { %>
+    <select id="colorEms" name="colorEms">
+      <option value="<%= cat.emsCode || '' %>">
+        <%= cat.emsCode || "Selecione a raça primeiro..." %>
+      </option>
+    </select>
+  <% } else { %>
+    <div class="field-value"><%= cat.emsCode || "-" %></div>
+  <% } %>
+</div>
+</div>
+
+                <hr style="margin: 16px 0; border:0; border-top:1px solid var(--border-soft);" />
+
+<div class="grid-3" style="margin-top: 20px;">
+                <!-- Castrado (sempre editável) -->
+                <div class="field">
+                  <label class="field-label">Castrado</label>
+                  <div class="inline">
+                    <label>
+                      <input
+                        type="radio"
+                        name="neutered"
+                        value="SIM"
+                        <%= cat.neutered === true ? "checked" : "" %>
+                      />
+                      Sim
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name="neutered"
+                        value="NAO"
+                        <%= cat.neutered === false || cat.neutered === null || typeof cat.neutered === "undefined" ? "checked" : "" %>
+                      />
+                      Não
+                    </label>
+                  </div>
+                </div>
+              </div>
+              </div>
+          
+
+
+
+            <!-- PAIS -->
+            <div class="section">
+              <div class="section-title">Pais</div>
+
+              <% if (isAdmin) { %>
+                <!-- Força uso manual neste formulário (mantém backend) -->
+                <input type="hidden" name="fatherSource" value="manual" />
+                <input type="hidden" name="motherSource" value="manual" />
+
+
+                <!-- PAI -->
+                <div class="grid-3">
+                  <div class="field">
+                    <label class="field-label" for="fatherNameManual">Pai - Nome</label>
+                    <input
+                      id="fatherNameManual"
+                      type="text"
+                      name="fatherNameManual"
+                      value="<%= cat.fatherName || '' %>"
+                      placeholder="Nome do pai"
+                    />
+                  </div>
+
+                  <div class="field">
+                    <label class="field-label" for="fatherBreedManual">Pai - Raça</label>
+<select id="fatherBreedManual" name="fatherBreedManual">
+  <option value="">Selecione...</option>
+  <% [
+    "ABY","SOM","ACL","ACS","BAL","SIA","BEN","BLH","BSH","BML","BOM","BUR",
+    "CHA","CRX","DRX","DSP","EUR","EXO","PER","GRX","HCL","HCS","JBS","KBL",
+    "KBS","KOR","LPL","LPS","LYO","MAU","MCO","NEM","NFO","OCI","OLH","OSH",
+    "PEB","RAG","RUS","SBI","SIB","SNO","SOK","SPH","SRL","SRS","THA","TUA","TUV"
+  ].forEach(function(b) { %>
+    <option value="<%= b %>" <%= cat.fatherBreed === b ? "selected" : "" %>>
+      <%= b %>
+    </option>
+  <% }); %>
+</select>
+
+</div>
+
+  <div class="field">
+    <label class="field-label" for="fatherColorEmsManual">
+      Pai - Cor / Código EMS
+    </label>
+    <select id="fatherColorEmsManual" name="fatherColorEmsManual">
+      <option value="<%= cat.fatherEmsCode || '' %>">
+        <%= cat.fatherEmsCode || 'Selecione a raça primeiro...' %>
+      </option>
+    </select>
+  </div>
+</div>
+
+ <hr style="margin: 16px 0; border:0; border-top:1px solid var(--border-soft);" />
+
+
+                <!-- MÃE -->
+                <div class="grid-3">
+                  <div class="field">
+                    <label class="field-label" for="motherNameManual">Mãe - Nome</label>
+                    <input
+                      id="motherNameManual"
+                      type="text"
+                      name="motherNameManual"
+                      value="<%= cat.motherName || '' %>"
+                      placeholder="Nome da mãe"
+                    />
+                  </div>
+
+                  <div class="field">
+                    <label class="field-label" for="motherBreedManual">Mãe - Raça</label>
+<select id="motherBreedManual" name="motherBreedManual">
+  <option value="">Selecione...</option>
+  <% [
+    "ABY","SOM","ACL","ACS","BAL","SIA","BEN","BLH","BSH","BML","BOM","BUR",
+    "CHA","CRX","DRX","DSP","EUR","EXO","PER","GRX","HCL","HCS","JBS","KBL",
+    "KBS","KOR","LPL","LPS","LYO","MAU","MCO","NEM","NFO","OCI","OLH","OSH",
+    "PEB","RAG","RUS","SBI","SIB","SNO","SOK","SPH","SRL","SRS","THA","TUA","TUV"
+  ].forEach(function(b) { %>
+    <option value="<%= b %>" <%= cat.motherBreed === b ? "selected" : "" %>>
+      <%= b %>
+    </option>
+  <% }); %>
+</select>
+                  </div>
+     
+                  <div class="field">
+                    <label class="field-label" for="motherColorEmsManual">
+                      Mãe - Cor / Código EMS
+                    </label>
+  <select id="motherColorEmsManual" name="motherColorEmsManual">
+  <option value="<%= cat.motherEmsCode || '' %>">
+    <%= cat.motherEmsCode || 'Selecione a raça primeiro...' %>
+  </option>
+</select>
+                  </div>
+                </div>
+                
+          
+
+              <% } else { %>
+                <!-- USER: somente visualização -->
+
+                <!-- PAI -->
+                <div class="grid-3">
+                  <div class="field">
+                    <label class="field-label">Pai - Nome</label>
+                    <div class="field-value"><%= cat.fatherName || "-" %></div>
+                  </div>
+
+                  <div class="field">
+                    <label class="field-label">Pai - Raça</label>
+                    <div class="field-value"><%= cat.fatherBreed || "-" %></div>
+                  </div>
+
+                  <div class="field">
+                    <label class="field-label">Pai - Cor / Código EMS</label>
+                    <div class="field-value"><%= cat.fatherEmsCode || "-" %></div>
+                  </div>
+                </div>
+
+                <hr style="margin: 16px 0; border:0; border-top:1px solid var(--border-soft);" />
+
+                <!-- MÃE -->
+                <div class="grid-3">
+                  <div class="field">
+                    <label class="field-label">Mãe - Nome</label>
+                    <div class="field-value"><%= cat.motherName || "-" %></div>
+                  </div>
+
+                  <div class="field">
+                    <label class="field-label">Mãe - Raça</label>
+                    <div class="field-value"><%= cat.motherBreed || "-" %></div>
+                  </div>
+
+                  <div class="field">
+                    <label class="field-label">Mãe - Cor / Código EMS</label>
+                    <div class="field-value"><%= cat.motherEmsCode || "-" %></div>
+                  </div>
+                </div>
+              <% } %>
+            </div>
+
+
+
+
+
+
+
+
+
+
+            <!-- REGISTRO (somente ADMIN) -->
+            <% if (isAdmin) { %>
+              <div class="section">
+                <div class="section-title">Registro</div>
+                <div class="grid-3">
+                  <div class="field">
+                    <label class="field-label" for="memberType">Membro</label>
+                    <select id="memberType" name="memberType">
+                      <option value="">Selecione...</option>
+                      <option
+                        value="Fife Brasil"
+                        <%= cat.fifeStatus === "Fife Brasil" ? "selected" : "" %>
+                      >
+                        Fife Brasil
+                      </option>
+                      <option
+                        value="Fife Não Brasil"
+                        <%= cat.fifeStatus === "Fife Não Brasil" ? "selected" : "" %>
+                      >
+                        Fife Não Brasil
+                      </option>
+                      <option
+                        value="Não Fife"
+                        <%= cat.fifeStatus === "Não Fife" ? "selected" : "" %>
+                      >
+                        Não Fife
+                      </option>
+                    </select>
+                  </div>
+
+                  <div class="field">
+                    <label class="field-label" for="registerType">Tipo de registro</label>
+                    <select id="registerType" name="registerType">
+                      <option value="">Selecione...</option>
+                      <option
+                        value="RX"
+                        <%= cat.pedigreeType === "RX" ? "selected" : "" %>
+                      >
+                        RX
+                      </option>
+                      <option
+                        value="LO"
+                        <%= cat.pedigreeType === "LO" ? "selected" : "" %>
+                      >
+                        LO
+                      </option>
+                    </select>
+                  </div>
+
+                  <div class="field">
+                    <label class="field-label" for="pedigreeNumber">Número do pedigree</label>
+                    <input
+                      id="pedigreeNumber"
+                      type="text"
+                      name="pedigreeNumber"
+                      value="<%= cat.pedigreeNumber || '' %>"
+                    />
+                  </div>
+                </div>
+
+                <div class="field" style="margin-top: 10px;">
+                  <label>
+                    <input type="hidden" name="registerPending" value="off" />
+                    <input
+                      type="checkbox"
+                      name="registerPending"
+                      <%= cat.pedigreePending ? "checked" : "" %>
+                    />
+                    Registro pendente
+                  </label>
+                </div>
+              </div>
+            <% } %>
+
+            <!-- CRIADOR / PROPRIETÁRIOS -->
+            <div class="section">
+              <div class="section-title">Criador / Proprietários</div>
+
+              <div class="grid-3">
+                <!-- Criador - tipo -->
+                <div class="field">
+                  <label class="field-label">Criador - tipo</label>
+                  <% if (isAdmin) { %>
+                    <div class="inline">
+                      <label>
+                        <input
+                          type="radio"
+                          name="breederType"
+                          value="Eu Mesmo"
+                          <%= !cat.breederType || cat.breederType === "Eu Mesmo" ? "checked" : "" %>
+                        />
+                        Eu mesmo
+                      </label>
+                      <label>
+                        <input
+                          type="radio"
+                          name="breederType"
+                          value="Outro"
+                          <%= cat.breederType === "Outro" ? "checked" : "" %>
+                        />
+                        Outro
+                      </label>
+                    </div>
+                  <% } else { %>
+                    <div class="field-value"><%= cat.breederType || "-" %></div>
+                  <% } %>
+                </div>
+
+                <!-- Criador - nome -->
+                <div class="field">
+                  <label class="field-label" for="breederOtherName">Criador - nome</label>
+                  <% if (isAdmin) { %>
+                    <input
+                      id="breederOtherName"
+                      type="text"
+                      name="breederOtherName"
+                      value="<%= cat.breederType === 'Outro' ? (cat.breederName || '') : '' %>"
+                      placeholder="Nome do criador (se outro)"
+                    />
+                    <small style="font-size:11px;color:var(--text-muted);">
+                      Preencha este campo apenas se o criador não for você.
+                    </small>
+                  <% } else { %>
+                    <div class="field-value"><%= cat.breederName || "-" %></div>
+                  <% } %>
+                </div>
+              
+
+              <div class="field" style="margin-top: 12px;">
+                <label class="field-label">Proprietários</label>
+                <div class="inline">
+                  <label>
+                    <input
+                      type="radio"
+                      name="ownershipType"
+                      value="OWNER"
+                      <%= cat.ownershipType === "CO-OWNERSHIP" ? "" : "checked" %>
+                    />
+                    Sou proprietário
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="ownershipType"
+                      value="CO-OWNERSHIP"
+                      <%= cat.ownershipType === "CO-OWNERSHIP" ? "checked" : "" %>
+                    />
+                    Co-propriedade
+                  </label>
+                </div>
+              </div>
+            </div>
+            </div>
+
+            <!-- DOCUMENTOS (sempre editáveis) -->
+            <div class="section">
+              <div class="section-title">Documentos</div>
+              <div class="grid-3">
+                <div class="field">
+                  <div class="field-label">Pedigree atual</div>
+                  <div class="field-value">
+                    <% if (cat.pedigreeFile) { %>
+                      <a
+                        class="file-link"
+                        href="<%= cat.pedigreeFile %>"
+                        target="_blank"
+                      >
+                        Ver arquivo
+                      </a>
+                    <% } else { %>
+                      -
+                    <% } %>
+                  </div>
+                  <label class="file-label" for="pedigreeFile">
+                    Novo arquivo (opcional)
+                  </label>
+                  <input
+                    id="pedigreeFile"
+                    class="file-input"
+                    type="file"
+                    name="pedigreeFile"
+                  />
+                </div>
+
+                <div class="field">
+                  <div class="field-label">Atestado de reprodução atual</div>
+                  <div class="field-value">
+                    <% if (cat.reproductionFile) { %>
+                      <a
+                        class="file-link"
+                        href="<%= cat.reproductionFile %>"
+                        target="_blank"
+                      >
+                        Ver arquivo
+                      </a>
+                    <% } else { %>
+                      -
+                    <% } %>
+                  </div>
+                  <label class="file-label" for="breedingCertificateFile">
+                    Novo arquivo (opcional)
+                  </label>
+                  <input
+                    id="breedingCertificateFile"
+                    class="file-input"
+                    type="file"
+                    name="breedingCertificateFile"
+                  />
+                </div>
+
+                <div class="field">
+                  <div class="field-label">Documentos extras atuais</div>
+                  <div class="field-value">
+                    <% if (cat.otherDocsFile) { %>
+                      <a
+                        class="file-link"
+                        href="<%= cat.otherDocsFile %>"
+                        target="_blank"
+                      >
+                        Ver arquivo
+                      </a>
+                    <% } else { %>
+                      -
+                    <% } %>
+                  </div>
+                  <label class="file-label" for="extraDocumentsFile">
+                    Novo arquivo (opcional)
+                  </label>
+                  <input
+                    id="extraDocumentsFile"
+                    class="file-input"
+                    type="file"
+                    name="extraDocumentsFile"
+                  />
+                </div>
+                 </div>
+
+           <hr style="margin: 16px 0; border:0; border-top:1px solid var(--border-soft);" />
+
+            <div class="grid-3">
+<div class="field">
+  <div class="field-label">Foto atual</div>
+  <div class="field-value">
+    <% if (cat.photo) { %>
+      <img src="<%= cat.photo %>" style="max-width:120px;border-radius:8px;" />
+    <% } else { %>
+      -
+    <% } %>
+  </div>
+
+  <label class="file-label" for="photo">Nova foto</label>
+  <input id="photo" type="file" name="photo" />
+</div>
+</div>
+
+
+
+              </div>
+            
+      
+
+          <div class="footer">
+            <div>ID interno: <%= cat.id %></div>
+            <div>
+              <button type="submit" class="btn btn-primary">
+                Salvar alterações
+              </button>
+            </div>
+          </div>
+        </form>
+      </main>
+    </div>
+
+    <script>
+      (function () {
+        const ageEl = document.getElementById("ageDisplay");
+        if (!ageEl) return;
+
+        let birthDate = null;
+
+        const birthInput = document.getElementById("birthDate");
+        const birthValue = document.getElementById("birthValue");
+
+        function parseBirth() {
+          if (birthInput) {
+            if (!birthInput.value) return null;
+            return new Date(birthInput.value);
+          }
+          if (birthValue) {
+            const text = birthValue.textContent.trim();
+            if (!text || text === "-") return null;
+            return new Date(text);
+          }
+          return null;
+        }
+
+        function updateAge() {
+          const d = parseBirth();
+          if (!d || isNaN(d.getTime())) {
+            ageEl.textContent = "";
+            return;
+          }
+          const now = new Date();
+          let years = now.getFullYear() - d.getFullYear();
+          let months = now.getMonth() - d.getMonth();
+          if (months < 0) {
+            years--;
+            months += 12;
+          }
+          let out = "";
+          if (years > 0) out += years + (years === 1 ? " ano" : " anos");
+          if (months >= 0) {
+            if (out) out += " e ";
+            out += months + (months === 1 ? " mês" : " meses");
+          }
+          ageEl.textContent = out ? "Idade: " + out : "";
+        }
+
+        if (birthInput) {
+          birthInput.addEventListener("change", updateAge);
+          birthInput.addEventListener("input", updateAge);
+        }
+
+        updateAge();
+      })();
+
+      
+    </script>
+    <script src="/js/ems-data.js"></script>
+
+<script>
+  function bindBreedToEms(breedId, emsId) {
+    const breed = document.getElementById(breedId);
+    const ems = document.getElementById(emsId);
+
+    if (!breed || !ems) return;
+
+    breed.addEventListener("change", () => {
+      const list = window.EMS_BY_BREED[breed.value] || [];
+      ems.innerHTML = "";
+
+      if (list.length === 0) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "Nenhum código disponível";
+        ems.appendChild(opt);
+        return;
+      }
+
+      list.forEach(code => {
+        const opt = document.createElement("option");
+        opt.value = code;
+        opt.textContent = code;
+        ems.appendChild(opt);
+      });
+    });
+  }
+
+  bindBreedToEms("breed", "colorEms");
+  bindBreedToEms("fatherBreedManual", "fatherColorEmsManual");
+  bindBreedToEms("motherBreedManual", "motherColorEmsManual");
+</script>
+  </body>
+</html>

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Meus gatos - CaTech</title>
+
+    <!-- CSS GLOBAL -->
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">
+              <%= (user && user.role === "ADMIN") ? "Todos os gatos" : "Meus gatos" %>
+            </h2>
+            <div class="welcome-sub">
+              Lista de gatos em ordem alfabética. Clique em um nome para ver os
+              detalhes.
+            </div>
+          </div>
+          <div class="actions">
+            <a href="/dashboard" class="btn">← Voltar ao início</a>
+            <a href="/cats/new" class="btn btn-primary">+ Novo gato</a>
+          </div>
+        </div>
+
+        <div class="content-card">
+          <!-- FILTRO POR USUÁRIO (APENAS PARA ADMIN) -->
+          <% if (user && user.role === "ADMIN") { %>
+            <form method="get" action="/cats" class="filter-bar" style="margin-bottom: 16px;">
+              <div class="field">
+                <label class="field-label" for="ownerId">
+                  Filtrar por usuário (dono)
+                </label>
+                <select
+                  id="ownerId"
+                  name="ownerId"
+                  onchange="this.form.submit()"
+                  style="max-width: 320px;"
+                >
+                  <option value="">Todos os usuários</option>
+                  <% if (owners && owners.length) { %>
+                    <% owners.forEach(function(o) { %>
+                      <option
+                        value="<%= o.id %>"
+                        <%= (String(selectedOwnerId || '') === String(o.id)) ? 'selected' : '' %>
+                      >
+                        <%= o.name %> (<%= o.email %>)
+                      </option>
+                    <% }); %>
+                  <% } %>
+                </select>
+                <small style="font-size:11px; color:var(--text-muted);">
+                  Selecione um usuário para ver apenas os gatos desse dono.
+                </small>
+              </div>
+            </form>
+          <% } %>
+
+          <%
+  const totalCats =
+    (catsEmAnalise?.length || 0) +
+    (catsAprovados?.length || 0) +
+    (catsNaoAprovados?.length || 0);
+%>
+
+<% if (totalCats === 0) { %>
+
+            <div class="empty">
+              <% if (user && user.role === "ADMIN") { %>
+                Nenhum gato encontrado para o filtro atual.
+              <% } else { %>
+                Você ainda não cadastrou nenhum gato.
+                <a href="/cats/new">
+                  Clique aqui para cadastrar o primeiro.
+                </a>
+              <% } %>
+            </div>
+          <% } else { %>
+
+            <h3 style="margin-top:16px;">Em análise</h3>
+
+<ul class="list">
+  <% catsEmAnalise.forEach(function(cat) { %>
+    <li class="item">
+      <div>
+        <a class="item-link status-novo" href="/cats/<%= cat.id %>">
+          <%
+            const fullNameParts = [
+              cat.titleBeforeName,
+              cat.country ? cat.country + "*" : null,
+              cat.name,
+              cat.titleAfterName
+            ].filter(Boolean);
+
+            const fullName = fullNameParts.join(" ");
+          %>
+
+          <%= fullName %>
+        </a>
+
+        <% if (cat.microchipFormatted) { %>
+          <div class="item-sub">
+            Microchip: <%= cat.microchipFormatted %>
+          </div>
+        <% } %>
+      </div>
+    </li>
+  <% }); %>
+</ul>
+
+<h3 style="margin-top:16px;">Aprovados</h3>
+
+<ul class="list">
+  <% catsAprovados.forEach(function(cat) { %>
+    <li class="item">
+      <div>
+        <a class="item-link status-aprovado" href="/cats/<%= cat.id %>">
+          <%
+            const fullNameParts = [
+              cat.titleBeforeName,
+              cat.country ? cat.country + "*" : null,
+              cat.name,
+              cat.titleAfterName
+            ].filter(Boolean);
+
+            const fullName = fullNameParts.join(" ");
+          %>
+
+          <%= fullName %>
+        </a>
+
+        <% if (cat.microchipFormatted) { %>
+          <div class="item-sub">
+            Microchip: <%= cat.microchipFormatted %>
+          </div>
+        <% } %>
+      </div>
+    </li>
+  <% }); %>
+</ul>
+
+<h3 style="margin-top:16px;">Não aprovados</h3>
+
+<ul class="list">
+  <% catsNaoAprovados.forEach(function(cat) { %>
+    <li class="item">
+      <div>
+        <a class="item-link status-reprovado" href="/cats/<%= cat.id %>">
+          <%
+            const fullNameParts = [
+              cat.titleBeforeName,
+              cat.country ? cat.country + "*" : null,
+              cat.name,
+              cat.titleAfterName
+            ].filter(Boolean);
+
+            const fullName = fullNameParts.join(" ");
+          %>
+
+          <%= fullName %>
+        </a>
+
+        <% if (cat.microchipFormatted) { %>
+          <div class="item-sub">
+            Microchip: <%= cat.microchipFormatted %>
+          </div>
+        <% } %>
+      </div>
+    </li>
+  <% }); %>
+</ul>
+
+
+          <% } %>
+
+          <div class="list-footer">
+            <div>
+              <% if (user && user.role === "ADMIN") { %>
+                <span class="badge-role">Administrador</span>
+              <% } else { %>
+                <span class="badge-role">Usuário</span>
+              <% } %>
+            </div>
+            <div>
+              Total de gatos:
+              <strong><%= totalCats %></strong>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

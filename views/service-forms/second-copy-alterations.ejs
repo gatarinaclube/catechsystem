@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Segunda Via e Alterações - CaTech</title>
+
+  <link rel="stylesheet" href="/css/theme.css" />
+  <link rel="stylesheet" href="/css/layout.css" />
+
+  <style>
+    .hidden { display: none !important; }
+    textarea, select, input[type="text"], input[type="file"] { width: 100%; }
+  </style>
+</head>
+
+<body>
+<div class="shell">
+  <%- include('../partials/sidebar', { user, currentPath }) %>
+
+  <main class="main">
+    <div class="header">
+      <div>
+        <div class="title-main">Segunda Via e Alterações</div>
+        <div class="title-sub">Solicitação de segunda via ou correções cadastrais</div>
+      </div>
+      <div class="header-actions">
+        <a href="/services" class="btn">← Voltar</a>
+      </div>
+    </div>
+
+    <!-- IMPORTANTE: action deve bater com sua rota POST -->
+    <form
+      method="post"
+      action="/services/segunda-via-alteracoes"
+      enctype="multipart/form-data"
+    >
+      <div class="content">
+
+        <!-- ================= SOLICITAÇÃO ================= -->
+        <div class="section">
+          <div class="section-title"><strong>Solicitação</strong></div>
+
+          <select id="requestType" name="requestType" required>
+            <option value="">Selecione...</option>
+            <option value="PEDIGREE_SECOND_COPY">Pedigree (Segunda Via)</option>
+            <option value="TITLE_DIPLOMA_SECOND_COPY">Diploma de Título (Segunda Via)</option>
+            <option value="OWNERSHIP_DOC_SECOND_COPY">Documento de Propriedade (Segunda Via)</option>
+            <option value="CATTERY_SECOND_COPY">Registro de Gatil (Segunda Via)</option>
+            <option value="CHANGE_TO_NOT_BREEDING">Mudança de For Breeding para Not For Breeding</option>
+            <option value="CHANGE_TO_BREEDING">Mudança de Not For Breeding para For Breeding</option>
+            <option value="CHANGE_COLOR">Mudança de Cor</option>
+            <option value="FIX_MICROCHIP">Corrigir Microchip</option>
+            <option value="FIX_SEX">Corrigir Sexo</option>
+            <option value="OTHER">Outros</option>
+          </select>
+        </div>
+
+
+                <!-- ================= GATO ================= -->
+        <div class="section hidden" id="catBlock">
+          <div class="section-title"><strong>Gato</strong></div>
+
+          <select id="catId" name="catId">
+            <option value="">Selecione o gato...</option>
+            <% (cats || []).forEach(function(cat) { %>
+              <option
+                value="<%= cat.id %>"
+                data-breed="<%= cat.breed || '' %>"
+                data-ems="<%= cat.colorEms || cat.emsCode || '' %>"
+              >
+                <%= cat.name %>
+              </option>
+            <% }) %>
+          </select>
+        </div>
+
+        <!-- ====== DIPLOMA DE TÍTULO ====== -->
+        <div id="boxTitleDiploma" class="section hidden">
+          <div class="section-title"><strong>Título Homologado</strong></div>
+          <div class="field" style="margin-top:14px;">
+            <label class="field-label">Motivo da alteração</label>
+            <textarea
+              name="details"
+              rows="4"
+              style="resize: vertical;"
+              placeholder="Informe qual título já homologado deseja a segunda via"
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- ====== CHANGE TO BREEDING ====== -->
+        <div id="boxChangeBreeding" class="section hidden">
+          <div class="section-title"><strong>Motivo da Alteração</strong></div>
+          <div class="field" style="margin-top:14px;">
+            <label class="field-label">Motivo da alteração</label>
+            <textarea
+              name="details"
+              rows="4"
+              style="resize: vertical;"
+              placeholder="Descreva o motivo da alteração"
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- ====== CHANGE COLOR ====== -->
+        <div id="colorChangeBox" class="section hidden">
+          <div class="section-title"><strong>Mudança de Cor / EMS</strong></div>
+
+          <div class="grid-2">
+            <div class="field">
+              <label class="field-label">Raça atual</label>
+              <input type="text" id="currentBreed" readonly />
+            </div>
+
+            <div class="field">
+              <label class="field-label">Cor / EMS atual</label>
+              <input type="text" id="currentEms" readonly />
+            </div>
+          </div>
+
+          <div class="field" style="margin-top:14px;">
+            <label class="field-label">Nova Cor / EMS</label>
+            <select name="newValue" id="newEmsSelect">
+              <option value="">Selecione...</option>
+            </select>
+          </div>
+
+          <div class="field" style="margin-top:14px;">
+            <label class="field-label">Comprovação da mudança de cor</label>
+            <input
+  type="file"
+  name="attachments"
+  multiple
+  accept=".pdf,.jpg,.jpeg,.png"
+/>
+          </div>
+        </div>
+
+        <!-- ====== FIX MICROCHIP ====== -->
+        <div id="boxFixMicrochip" class="section hidden">
+          <div class="section-title"><strong>Novo Microchip</strong></div>
+
+          <div class="field" style="margin-top:14px;">
+            <label class="field-label">Novo microchip</label>
+            <input type="text" name="newValue" placeholder="000000000000000" maxlength="15" />
+          </div>
+
+          <div class="field" style="margin-top:12px;">
+            <label class="field-label">Certificado Veterinário</label>
+            <input
+  type="file"
+  name="attachments"
+  multiple
+  accept=".pdf,.jpg,.jpeg,.png"
+/>
+            <small style="color:#b71c1c; font-size:0.85rem;">
+              O certificado veterinário deve constar nome completo do proprietário,
+              nome completo do gato, microchip errado e microchip correto,
+              data, carimbo, assinatura e endereço ou telefone do veterinário.
+            </small>
+          </div>
+        </div>
+
+        <!-- ====== FIX SEX ====== -->
+        <div id="boxFixSex" class="section hidden">
+          <div class="section-title"><strong>Motivo da Correção</strong></div>
+          <div class="field" style="margin-top:14px;">
+            <label class="field-label">Motivo da correção</label>
+            <textarea
+              name="details"
+              rows="4"
+              style="resize: vertical;"
+              placeholder="Descreva o motivo da correção"
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- ====== OTHER ====== -->
+        <div id="boxOther" class="section hidden">
+          <div class="section-title"><strong>Outros</strong></div>
+          <div class="field" style="margin-top:14px;">
+            <label class="field-label">Motivo da solicitação</label>
+            <textarea
+              name="details"
+              rows="4"
+              style="resize: vertical;"
+              placeholder="Descreva a solicitação"
+            ></textarea>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="footer">
+        <a href="/services" class="btn">Cancelar</a>
+        <button type="submit" class="btn btn-primary submit-btn">
+  <span class="submit-text">Salvar/Enviar</span>
+  <span class="spinner" style="display:none; margin-left:8px;"></span>
+</button>
+
+      </div>
+    </form>
+  </main>
+</div>
+
+<!-- 1) EMS primeiro (para window.EMS_BY_BREED existir) -->
+<script src="/js/ems-data.js"></script>
+
+<!-- 2) Controlador dos blocos + EMS -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const typeSelect = document.getElementById("requestType");
+    const catSelect = document.getElementById("catId");
+
+    const catBlock = document.getElementById("catBlock");
+
+// serviços que EXIGEM seleção do gato (devem abrir o quadro "GATO")
+const TYPES_REQUIRE_CAT = new Set([
+  "PEDIGREE_SECOND_COPY",
+  "TITLE_DIPLOMA_SECOND_COPY",
+  "OWNERSHIP_DOC_SECOND_COPY",
+  "CHANGE_TO_NOT_BREEDING",
+  "CHANGE_TO_BREEDING",
+  "CHANGE_COLOR",
+  "FIX_MICROCHIP",
+  "FIX_SEX",
+]);
+
+function toggleCatBlock() {
+  const mustShow = TYPES_REQUIRE_CAT.has(typeSelect.value);
+
+  if (catBlock) {
+    catBlock.classList.toggle("hidden", !mustShow);
+  }
+
+  // ✅ required só quando o bloco estiver visível
+  if (catSelect) {
+    catSelect.required = mustShow;
+
+    // opcional: se esconder, limpa seleção
+    if (!mustShow) catSelect.value = "";
+  }
+}
+
+    const boxes = {
+      TITLE_DIPLOMA_SECOND_COPY: document.getElementById("boxTitleDiploma"),
+      CHANGE_TO_BREEDING: document.getElementById("boxChangeBreeding"),
+      CHANGE_COLOR: document.getElementById("colorChangeBox"),
+      FIX_MICROCHIP: document.getElementById("boxFixMicrochip"),
+      FIX_SEX: document.getElementById("boxFixSex"),
+      OTHER: document.getElementById("boxOther"),
+    };
+
+    function hideAll() {
+      Object.values(boxes).forEach((b) => {
+        if (b) b.classList.add("hidden");
+      });
+    }
+
+    function showSelectedBox() {
+  hideAll();
+
+  // ✅ mostra/esconde o bloco "GATO" conforme o serviço
+  toggleCatBlock();
+
+  const box = boxes[typeSelect.value];
+  if (box) box.classList.remove("hidden");
+
+  if (typeSelect.value === "CHANGE_COLOR") syncColorBox();
+}
+
+    // ====== MUDANÇA DE COR: preencher raça/ems e opções ======
+    const breedInput = document.getElementById("currentBreed");
+    const emsInput = document.getElementById("currentEms");
+    const newEmsSelect = document.getElementById("newEmsSelect");
+
+    function fillEmsOptions(breed) {
+      if (!newEmsSelect) return;
+      newEmsSelect.innerHTML = '<option value="">Selecione...</option>';
+
+      const list = (window.EMS_BY_BREED && window.EMS_BY_BREED[breed]) ? window.EMS_BY_BREED[breed] : [];
+      if (!list.length) {
+        const o = document.createElement("option");
+        o.value = "";
+        o.textContent = "Nenhuma opção disponível";
+        newEmsSelect.appendChild(o);
+        return;
+      }
+
+      list.forEach((emsCode) => {
+        const o = document.createElement("option");
+        o.value = emsCode;
+        o.textContent = emsCode;
+        newEmsSelect.appendChild(o);
+      });
+    }
+
+    function syncColorBox() {
+      if (!catSelect || (catBlock && catBlock.classList.contains("hidden"))) return;
+      const opt = catSelect.options[catSelect.selectedIndex];
+      const breed = opt?.dataset?.breed || "";
+      const ems = opt?.dataset?.ems || "";
+
+      if (breedInput) breedInput.value = breed;
+      if (emsInput) emsInput.value = ems;
+
+      fillEmsOptions(breed);
+    }
+
+    // eventos
+    typeSelect.addEventListener("change", showSelectedBox);
+    catSelect.addEventListener("change", () => {
+      if (typeSelect.value === "CHANGE_COLOR") syncColorBox();
+    });
+
+    // estado inicial
+hideAll();
+toggleCatBlock();
+
+  });
+</script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll("form").forEach((form) => {
+      form.addEventListener("submit", () => {
+        const submitBtn = form.querySelector("button[type='submit']");
+        if (!submitBtn) return;
+
+        const textEl = submitBtn.querySelector(".submit-text");
+        const spinnerEl = submitBtn.querySelector(".spinner");
+
+        // bloqueia botão
+        submitBtn.disabled = true;
+
+        // altera texto
+        if (textEl) {
+          textEl.dataset.original = textEl.textContent;
+          textEl.textContent = "Processando...";
+        }
+
+        // mostra spinner
+        if (spinnerEl) {
+          spinnerEl.style.display = "inline-block";
+        }
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

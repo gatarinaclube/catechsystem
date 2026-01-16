@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Registro de Ninhada - CaTech</title>
+
+    <!-- CSS GLOBAL -->
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <!-- MENU PADRÃO -->
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <!-- CONTEÚDO PRINCIPAL -->
+      <main class="main">
+        <div class="header">
+          <div>
+            <div class="title-main">Registro de Ninhada</div>
+            <div class="title-sub">
+              Preencha os dados do macho, da fêmea, da ninhada e dos filhotes.
+            </div>
+          </div>
+          <div class="header-actions">
+            <a href="/dashboard" class="btn">← Voltar ao dashboard</a>
+          </div>
+        </div>
+
+        <form
+  method="post"
+  action="/litters"
+  enctype="multipart/form-data"
+>
+          <div class="content">
+
+
+            <!-- DADOS DA FÊMEA -->
+            <div class="section">
+              <div class="section-title"><strong>Dados da fêmea</strong></div>
+
+              <div class="grid-2">
+                <div class="field">
+                  <label class="field-label" for="femaleCatId">
+                    Selecionar fêmea (minhas gatas cadastradas)
+                  </label>
+                  <select id="femaleCatId" name="femaleCatId">
+                    <option value="">Selecione uma fêmea...</option>
+                    <% if (femaleCats && femaleCats.length) { %>
+                      <% femaleCats.forEach(function (c) { %>
+                        <option
+                          value="<%= c.id %>"
+                          data-name="<%= c.name || '' %>"
+                          data-breed="<%= c.breed || '' %>"
+                          data-ems="<%= c.emsCode || '' %>"
+                          data-microchip="<%= c.microchip || '' %>"
+                        >
+                          <%= c.name %>
+                          <% if (c.pedigreeNumber) { %> - <%= c.pedigreeNumber %><% } %>
+                        </option>
+                      <% }); %>
+                    <% } %>
+                  </select>
+                                    <small style="font-size:11px; color:var(--text-muted);">
+                    Ao selecionar, os dados principais serão usados apenas para registro interno.
+                  </small>
+                </div>
+              </div>
+              </div>
+
+              <!-- Campos escondidos para salvar dados da fêmea -->
+              <input type="hidden" id="femaleName" name="femaleName" />
+              <input type="hidden" id="femaleBreed" name="femaleBreed" />
+              <input type="hidden" id="femaleEms" name="femaleEms" />
+              <input type="hidden" id="femaleMicrochip" name="femaleMicrochip" />
+
+                        <!-- DADOS DO MACHO -->
+            <div class="section">
+              <div class="section-title"><strong>Dados do Macho</strong></div>
+
+              <div class="grid-2">
+                <div class="field">
+                  <label class="field-label" for="maleCatId">
+                    Selecionar macho (meus gatos cadastrados)
+                  </label>
+                  <select id="maleCatId" name="maleCatId">
+                    <option value="">Selecione um macho...</option>
+                    <% if (maleCats && maleCats.length) { %>
+                      <% maleCats.forEach(function (c) { %>
+                        <option
+                          value="<%= c.id %>"
+                          data-name="<%= c.name || '' %>"
+                          data-breed="<%= c.breed || '' %>"
+                          data-ems="<%= c.emsCode || '' %>"
+                          data-microchip="<%= c.microchip || '' %>"
+                        >
+                          <%= c.name %>
+                          <% if (c.pedigreeNumber) { %> - <%= c.pedigreeNumber %><% } %>
+                        </option>
+                      <% }); %>
+                    <% } %>
+                  </select>
+                  <small style="font-size:11px; color:var(--text-muted);">
+                    Ao selecionar, os dados principais serão usados apenas para registro interno.
+                  </small>
+                </div>
+              </div>
+
+              <!-- Campos escondidos para salvar dados do macho -->
+              <input type="hidden" id="maleName" name="maleName" />
+              <input type="hidden" id="maleBreed" name="maleBreed" />
+              <input type="hidden" id="maleEms" name="maleEms" />
+              <input type="hidden" id="maleMicrochip" name="maleMicrochip" />
+
+              <!-- proprietário do macho -->
+<div class="field" style="margin-top:14px;">
+  <label class="field-label"><strong>Propriedade do macho</strong></label>
+  <div class="inline">
+    <label>
+      <input
+        type="radio"
+        name="maleOwnership"
+        value="OWNER"
+        checked
+      />
+      Sou proprietário
+    </label>
+
+    <label>
+      <input
+        type="radio"
+        name="maleOwnership"
+        value="NOT_OWNER"
+      />
+      Não sou proprietário
+    </label>
+  </div>
+</div>
+
+<div id="maleNotOwnerBlock" style="margin-top:12px; display:none;">
+
+  <div class="section-title" style="margin-top:14px;">
+    <strong>Informações do Proprietário</strong>
+  </div>
+
+  <div class="grid-3">
+    <div class="field">
+      <label>Nome</label>
+      <input type="text" name="externalOwnerName" />
+    </div>
+
+    <div class="field">
+      <label>Email</label>
+      <input type="email" name="externalOwnerEmail" />
+    </div>
+
+    <div class="field">
+      <label>Gatil</label>
+      <input type="text" name="externalOwnerCattery" />
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-top:10px;">
+    <div class="field">
+      <label>CPF</label>
+      <input type="text" name="externalOwnerCpf" />
+    </div>
+
+    <div class="field">
+      <label>Telefone</label>
+      <input type="text" name="externalOwnerPhone" />
+    </div>
+  </div>
+
+  <div class="field" style="margin-top:14px;">
+    <label class="file-label">
+      Autorização de reprodução
+    </label>
+    <input
+      type="file"
+        name="externalOwnerAuthorization"
+        id="externalOwnerAuthorization"
+    />
+    <small style="font-size:11px; color:red;">
+      Obrigatório a inclusão de autorização de reprodução assinada pelo atual proprietário,
+      conforme modelo disponível no menu "Serviços".
+    </small>
+  </div>
+
+</div>
+
+            </div>
+
+            <!-- DADOS DA NINHADA -->
+            <div class="section">
+              <div class="section-title"><strong>Dados da ninhada</strong></div>
+
+              <div class="grid-3">
+                <div class="field">
+                  <label class="field-label" for="catteryCountry">País</label>
+                  <select id="catteryCountry" name="catteryCountry">
+                    <option value="">Selecione...</option>
+                    <% [
+                      "BR","AR","AT","BE","BG","BY","CA","CH","CL","CO","CY","CZ",
+                      "DE","DK","EE","ES","FI","FR","GB","GR","HR","HU","ID","IL",
+                      "IS","IT","KO","KR","LI","LT","LU","LV","MX","MY","NL","NO",
+                      "PL","PT","RO","RS","RU","SE","SI","SK","TR","UA","US","UY"
+                    ].forEach(function (code) { %>
+                      <option value="<%= code %>"><%= code %>*</option>
+                    <% }); %>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label class="field-label" for="litterBirthDate">
+                    Data de nascimento
+                  </label>
+                  <input
+                    id="litterBirthDate"
+                    type="date"
+                    name="litterBirthDate"
+                  />
+                </div>
+              </div>
+
+              <div class="grid-3" style="margin-top:10px;">
+                <div class="field">
+                  <label class="field-label" for="catteryName">Nome do Gatil</label>
+                  <input
+                    id="catteryName"
+                    type="text"
+                    name="catteryName"
+                    maxlength="15"
+                  />
+                  <small style="font-size:11px; color:var(--text-muted);">
+                    Máximo de 15 caracteres, incluindo espaços.
+                  </small>
+                </div>
+
+                <div class="field">
+                  <label class="field-label" for="litterCount">
+                    Número total de filhotes
+                  </label>
+                  <input
+                    id="litterCount"
+                    type="number"
+                    name="litterCount"
+                    value="1"
+                    inputmode="numeric"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- DADOS DOS FILHOTES -->
+            <div class="section">
+              <div class="section-title"><strong>Dados dos filhotes</strong></div>
+          <div class="kittens-wrapper">
+            <% for (let i = 1; i <= 9; i++) { %>
+              <div class="kitten-block" data-index="<%= i %>">
+                <div class="kitten-header">Filhote <%= i %></div>
+
+                <div class="kitten-row" data-index="<%= i %>">
+                  <!-- Nome (gatil + sufixo, até 30 caracteres no total) -->
+                  <div class="field">
+                    <label class="field-label" for="kitten<%= i %>_nameSuffix">
+                      Nome do filhote
+                    </label>
+                    <div class="kitten-name-wrapper">
+                      <span class="cattery-prefix" data-index="<%= i %>"></span>
+                      <input
+                        id="kitten<%= i %>_nameSuffix"
+                        type="text"
+                        class="kitten-name-suffix"
+                        data-index="<%= i %>"
+                        name="kitten<%= i %>_nameSuffix"
+                        placeholder="Nome"
+                      />
+                    </div>
+
+                    <!-- Nome completo (gatil + sufixo) enviado no form -->
+                    <input
+                      type="hidden"
+                      class="kitten-name-full"
+                      data-index="<%= i %>"
+                      name="kitten<%= i %>_fullName"
+                    />
+                  </div>
+
+                  <!-- Raça -->
+                  <div class="field">
+                    <label class="field-label" for="kitten<%= i %>_breed">Raça</label>
+                    <select
+                      id="kitten<%= i %>_breed"
+                      name="kitten<%= i %>_breed"
+                      data-kitten-breed="<%= i %>"
+                    >
+                      <option value="">Selecione...</option>
+                      <option value="ABY">ABY</option>
+                      <option value="ACL">ACL</option>
+                      <option value="ACS">ACS</option>
+                      <option value="BAL">BAL</option>
+                      <option value="BEN">BEN</option>
+                      <option value="BLH">BLH</option>
+                      <option value="BML">BML</option>
+                      <option value="BOM">BOM</option>
+                      <option value="BSH">BSH</option>
+                      <option value="BUR">BUR</option>
+                      <option value="CHA">CHA</option>
+                      <option value="CRX">CRX</option>
+                      <option value="DRX">DRX</option>
+                      <option value="DSP">DSP</option>
+                      <option value="EUR">EUR</option>
+                      <option value="EXO">EXO</option>
+                      <option value="GRX">GRX</option>
+                      <option value="HCL">HCL</option>
+                      <option value="HCS">HCS</option>
+                      <option value="JBS">JBS</option>
+                      <option value="KBL">KBL</option>
+                      <option value="KBS">KBS</option>
+                      <option value="KOR">KOR</option>
+                      <option value="LPL">LPL</option>
+                      <option value="LPS">LPS</option>
+                      <option value="LYO">LYO</option>
+                      <option value="MAU">MAU</option>
+                      <option value="MCO">MCO</option>
+                      <option value="NEM">NEM</option>
+                      <option value="NFO">NFO</option>
+                      <option value="OCI">OCI</option>
+                      <option value="OLH">OLH</option>
+                      <option value="OSH">OSH</option>
+                      <option value="PEB">PEB</option>
+                      <option value="PER">PER</option>
+                      <option value="RAG">RAG</option>
+                      <option value="RUS">RUS</option>
+                      <option value="SBI">SBI</option>
+                      <option value="SIA">SIA</option>
+                      <option value="SIB">SIB</option>
+                      <option value="SIN">SIN</option>
+                      <option value="SNO">SNO</option>
+                      <option value="SOK">SOK</option>
+                      <option value="SOM">SOM</option>
+                      <option value="SPH">SPH</option>
+                      <option value="SRL">SRL</option>
+                      <option value="SRS">SRS</option>
+                      <option value="THA">THA</option>
+                      <option value="TUA">TUA</option>
+                      <option value="TUV">TUV</option>
+                    </select>
+                  </div>
+
+                  <!-- EMS / Cor + Olhos -->
+                  <div class="field">
+                    <label class="field-label" for="kitten<%= i %>_ems">
+                      EMS / Cor + Olhos
+                    </label>
+                    <select
+                      id="kitten<%= i %>_ems"
+                      name="kitten<%= i %>_ems"
+                      data-kitten-ems="<%= i %>"
+                    >
+                      <option value="">Selecione uma raça primeiro...</option>
+                    </select>
+                  </div>
+
+                  <!-- Sexo -->
+                  <div class="field">
+                    <label class="field-label" for="kitten<%= i %>_sex">Sexo</label>
+                    <select id="kitten<%= i %>_sex" name="kitten<%= i %>_sex">
+                      <option value="">Selecione...</option>
+                      <option value="M">Macho</option>
+                      <option value="F">Fêmea</option>
+                    </select>
+                  </div>
+
+<!-- Microchip -->
+<div class="field">
+  <label class="field-label" for="kitten<%= i %>_microchip">
+    Microchip (15 dígitos)
+  </label>
+  <input
+    id="kitten<%= i %>_microchip"
+    type="text"
+    name="kitten<%= i %>_microchip"
+    class="kitten-microchip"
+    placeholder="000.000.000.000.000"
+  />
+</div>
+
+<!-- Uso para reprodução (checkbox único) -->
+<div class="field field-checkbox">
+  <label class="checkbox-label">
+    <input
+      type="checkbox"
+      name="kitten<%= i %>_breeding"
+      value="Breeding"
+    />
+    Uso para Reprodução
+  </label>
+</div>
+
+                </div>
+              </div>
+            <% } %>
+          </div>
+
+          <!-- Observações gerais de todos os filhotes -->
+          <div class="field" style="margin-top: 14px;">
+            <label class="field-label" for="kittensGeneralObs">
+              Observações gerais dos filhotes
+            </label>
+            <textarea
+              id="kittensGeneralObs"
+              name="kittensGeneralObs"
+              rows="3"
+              placeholder="Anote apenas observações importantes sobre a ninhada"
+            ></textarea>
+          </div>
+        </div>
+
+<!-- REGRAS PARA REGISTRO DE NINHADA -->
+<div class="section">
+  <div class="section-title"><strong>Regras para Registro de Ninhada</strong></div>
+
+  <ul class="rules-list">
+    <li>
+      <strong>É do criador solicitante a total responsabilidade das informações mencionadas neste pedido de Registro de Ninhada.</strong>
+    </li>
+
+    <li>
+      Para registro de ninhada, o <strong>Pai</strong> e a <strong>Mãe</strong> devem estar
+      cadastrados no sistema em <strong>"Meus Gatos"</strong>, com o
+      <strong>Pedigree</strong> e <strong>Atestado de Saúde</strong> ou
+      <strong>Certificado</strong> anexados.
+    </li>
+
+    <li>
+      O <strong>Atestado de Saúde</strong> ou <strong>Certificado de Competição</strong>
+      do Pai e da Mãe deve ter data após <strong>10 meses de idade</strong> e pelo menos
+      <strong>75 dias antes</strong> da data de nascimento dos filhotes.
+    </li>
+
+    <li>
+      Desde 2004, a FFB não emite mais
+      <strong>RI (Registro Inicial)</strong>.
+    </li>
+
+    <li>
+      Os pais da ninhada deverão possuir <strong>Pedigree FFB</strong>
+      (ou homologado), a fêmea deve estar em nome do <strong>solicitante</strong>,
+      ou com <strong>transferência de propriedade solicitada</strong>,
+      quando o macho for de outro proprietário, deverá ser anexado autorização de reprodução. 
+
+    </li>
+
+    <li>
+      O registro da ninhada deverá ser solicitado até os
+      <strong>4 meses de idade</strong>. Caso este prazo seja ultrapassado,
+      será cobrado o <strong>dobro do valor</strong> de cada pedigree, com
+      tolerância até os <strong>10 meses de idade</strong>. Após este prazo,
+      <strong>não serão mais emitidos pedigrees</strong>.
+    </li>
+
+    <li>
+      O nome dos filhotes não pode ultrapassar
+      <strong>30 caracteres</strong>, já incluindo o nome do
+      <strong>Gatil</strong> e contando-se inclusive os espaços.
+    </li>
+
+    <li>
+      Todos os filhotes criados por um <strong>associado FIFe</strong> devem ser
+      <strong>primeiramente registrados na FIFe</strong>.
+    </li>
+
+    <li>
+      São permitidas na <strong>FIFe</strong> apenas
+      <strong>3 ninhadas a cada 2 anos</strong> de uma mesma fêmea, com limitação
+      máxima de <strong>2 ninhadas no intervalo de 12 meses</strong>.
+    </li>
+  </ul>
+</div>
+
+        <div class="footer">
+          <a href="/dashboard" class="btn">Cancelar</a>
+          <button type="submit" class="btn btn-primary submit-btn">
+  <span class="submit-text">Salvar/Enviar</span>
+  <span class="spinner" style="display:none; margin-left:8px;"></span>
+</button>
+        </div>
+      </form>
+    </main>
+  </div>      
+
+
+    <!-- ARQUIVO DE CÓDIGOS EMS -->
+    <script src="/js/ems-data.js"></script>
+
+    <!-- ============================ -->
+    <!--  SCRIPTS PRINCIPAIS DA PÁGINA -->
+    <!-- ============================ -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // ---------- Função de formatação de microchip ----------
+        function formatMicrochip(raw) {
+          if (!raw) return "";
+          const digits = raw.replace(/\D/g, "").slice(0, 15);
+          if (!digits) return "";
+          return digits.replace(
+            /(\d{3})(\d{3})(\d{3})(\d{3})(\d{3})/,
+            function (_, a, b, c, d, e) {
+              const parts = [];
+              if (a) parts.push(a);
+              if (b) parts.push(b);
+              if (c) parts.push(c);
+              if (d) parts.push(d);
+              if (e) parts.push(e);
+              return parts.join(".");
+            }
+          );
+        }
+
+        // ---------- Preencher dados do macho ----------
+        const maleSelect = document.getElementById("maleCatId");
+        if (maleSelect) {
+          maleSelect.addEventListener("change", () => {
+            const opt = maleSelect.options[maleSelect.selectedIndex];
+            if (!opt || !opt.dataset) return;
+
+            document.getElementById("maleName").value = opt.dataset.name || "";
+            document.getElementById("maleBreed").value = opt.dataset.breed || "";
+            document.getElementById("maleEms").value = opt.dataset.ems || "";
+            document.getElementById("maleMicrochip").value =
+              formatMicrochip(opt.dataset.microchip || "");
+          });
+        }
+
+        // ---------- Preencher dados da fêmea ----------
+        const femaleSelect = document.getElementById("femaleCatId");
+        if (femaleSelect) {
+          femaleSelect.addEventListener("change", () => {
+            const opt = femaleSelect.options[femaleSelect.selectedIndex];
+            if (!opt || !opt.dataset) return;
+
+            document.getElementById("femaleName").value = opt.dataset.name || "";
+            document.getElementById("femaleBreed").value = opt.dataset.breed || "";
+            document.getElementById("femaleEms").value = opt.dataset.ems || "";
+            document.getElementById("femaleMicrochip").value =
+              formatMicrochip(opt.dataset.microchip || "");
+          });
+        }
+
+        // ---------- Toggle propriedade do macho ----------
+const maleOwnershipRadios = document.getElementsByName("maleOwnership");
+const maleNotOwnerBlock = document.getElementById("maleNotOwnerBlock");
+
+function refreshMaleOwnership() {
+  let isNotOwner = false;
+
+  maleOwnershipRadios.forEach(radio => {
+    if (radio.checked && radio.value === "NOT_OWNER") {
+      isNotOwner = true;
+    }
+  });
+  // Apenas mostra ou esconde o bloco de proprietário externo
+  if (maleNotOwnerBlock) {
+    maleNotOwnerBlock.style.display = isNotOwner ? "block" : "none";
+  }
+}
+
+maleOwnershipRadios.forEach(radio => {
+  radio.addEventListener("change", refreshMaleOwnership);
+});
+
+// Garantir estado correto ao carregar a página
+refreshMaleOwnership();
+
+
+        // ---------- Microchip dos filhotes ----------
+        document.querySelectorAll(".kitten-microchip").forEach((input) => {
+          input.addEventListener("input", () => {
+            input.value = formatMicrochip(input.value);
+          });
+        });
+
+        // ---------- Controle de quantidade de filhotes ----------
+        const litterCountInput = document.getElementById("litterCount");
+        const kittenBlocks = document.querySelectorAll(".kitten-block");
+
+        function updateKittenRows() {
+          let n = parseInt(litterCountInput.value, 10);
+          if (isNaN(n) || n < 1) n = 1;
+          if (n > 9) n = 9;
+
+          kittenBlocks.forEach((block) => {
+            const idx = parseInt(block.dataset.index, 10);
+            block.style.display = idx <= n ? "" : "none";
+          });
+        }
+
+        if (litterCountInput) {
+          litterCountInput.addEventListener("input", updateKittenRows);
+          litterCountInput.addEventListener("change", updateKittenRows);
+          updateKittenRows();
+        }
+
+        // ---------- Nome do gatil + nome do filhote ----------
+        const catteryInput = document.getElementById("catteryName");
+        const suffixInputs = document.querySelectorAll(".kitten-name-suffix");
+        const prefixSpans = document.querySelectorAll(".cattery-prefix");
+
+        function updateSuffixMaxLength() {
+          const gatil = (catteryInput && catteryInput.value) || "";
+          const prefixLen = gatil ? gatil.length + 1 : 0;
+          const maxSuffix = Math.max(0, 30 - prefixLen);
+
+          suffixInputs.forEach((inp) => {
+            inp.maxLength = maxSuffix;
+          });
+        }
+
+        function updateKittenNames() {
+          const gatil = (catteryInput && catteryInput.value) || "";
+          const prefixText = gatil ? gatil + " " : "";
+
+          const fullInputs = document.querySelectorAll(".kitten-name-full");
+
+          prefixSpans.forEach((span) => (span.textContent = prefixText));
+
+          suffixInputs.forEach((suffixInput) => {
+            const idx = suffixInput.dataset.index;
+            const fullInput = document.querySelector(
+              `.kitten-name-full[data-index="${idx}"]`
+            );
+            if (!fullInput) return;
+            fullInput.value = (prefixText + suffixInput.value).slice(0, 30);
+          });
+        }
+
+        if (catteryInput) {
+          catteryInput.addEventListener("input", () => {
+            updateSuffixMaxLength();
+            updateKittenNames();
+          });
+        }
+
+        suffixInputs.forEach((inp) => {
+          inp.addEventListener("input", updateKittenNames);
+        });
+
+        updateSuffixMaxLength();
+        updateKittenNames();
+      });
+    </script>
+
+    <!-- ============================ -->
+    <!--   EMS — RELAÇÃO RAÇA/CÓDIGO  -->
+    <!-- ============================ -->
+    <script>
+  function updateEMSOptions(breedSelect, emsSelect) {
+    const breed = breedSelect.value;
+    const list = window.EMS_BY_BREED[breed] || [];
+
+    // 🔥 guarda valor atual antes de recriar
+    const previousValue = emsSelect.value;
+
+    emsSelect.innerHTML = "";
+
+    // placeholder
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Selecione...";
+    emsSelect.appendChild(placeholder);
+
+    list.forEach((ems) => {
+      const opt = document.createElement("option");
+      opt.value = ems;
+      opt.textContent = ems;
+      emsSelect.appendChild(opt);
+    });
+
+    // 🔥 restaura valor se ainda existir
+    if (previousValue && list.includes(previousValue)) {
+      emsSelect.value = previousValue;
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll("[data-kitten-breed]").forEach((breedSelect) => {
+      const idx = breedSelect.dataset.kittenBreed;
+      const emsSelect = document.querySelector(
+        `[data-kitten-ems="${idx}"]`
+      );
+
+      breedSelect.addEventListener("change", () => {
+        updateEMSOptions(breedSelect, emsSelect);
+      });
+    });
+  });
+</script>
+
+<script>
+  const ownershipRadios = document.querySelectorAll(
+    'input[name="maleOwnership"]'
+  );
+  const authInput = document.getElementById("externalOwnerAuthorization");
+
+  function updateAuthorizationRequirement() {
+    const selected = document.querySelector(
+      'input[name="maleOwnership"]:checked'
+    )?.value;
+
+    if (selected === "NOT_OWNER") {
+      authInput.required = true;
+    } else {
+      authInput.required = false;
+      authInput.value = ""; // limpa arquivo se trocar para OWNER
+    }
+  }
+
+  ownershipRadios.forEach(radio => {
+    radio.addEventListener("change", updateAuthorizationRequirement);
+  });
+
+  // garante estado correto ao carregar a página
+  updateAuthorizationRequirement();
+</script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll("form").forEach((form) => {
+      form.addEventListener("submit", () => {
+        const submitBtn = form.querySelector("button[type='submit']");
+        if (!submitBtn) return;
+
+        const textEl = submitBtn.querySelector(".submit-text");
+        const spinnerEl = submitBtn.querySelector(".spinner");
+
+        // bloqueia botão
+        submitBtn.disabled = true;
+
+        // altera texto
+        if (textEl) {
+          textEl.dataset.original = textEl.textContent;
+          textEl.textContent = "Processando...";
+        }
+
+        // mostra spinner
+        if (spinnerEl) {
+          spinnerEl.style.display = "inline-block";
+        }
+      });
+    });
+  });
+</script>
+
+  </body>
+</html>

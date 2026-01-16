@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title><%= cat.name %> - Detalhes do gato - CaTech</title>
+
+    <!-- CSS GLOBAL -->
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  
+      </head>
+  <body>
+  <div class="shell">
+    <%- include('../partials/sidebar', { user, currentPath }) %>
+
+    <main class="main">
+        <div class="header">
+          <div>
+            <div class="title-main"><%= cat.name %></div>
+            <div class="title-sub">
+              Visualização completa do cadastro do gato.
+            </div>
+          </div>
+
+  <!-- SOMENTE ADMIN -->
+  <% if (isAdmin) { %>
+
+    <form
+      method="post"
+      action="/cats/<%= cat.id %>/status"
+      class="cat-status-buttons"
+      style="display:inline-flex; gap:6px; margin-left:8px;"
+    >
+      <button
+        type="submit"
+        name="status"
+        value="NOVO"
+        class="btn <%= cat.status === 'NOVO' ? 'btn-warning' : '' %>"
+      >
+        Em análise
+      </button>
+
+      <button
+        type="submit"
+        name="status"
+        value="APROVADO"
+        class="btn <%= cat.status === 'APROVADO' ? 'btn-success' : '' %>"
+      >
+        Aprovado
+      </button>
+
+      <button
+        type="submit"
+        name="status"
+        value="NAO_APROVADO"
+        class="btn <%= cat.status === 'NAO_APROVADO' ? 'btn-danger' : '' %>"
+      >
+        Não aprovado
+      </button>
+    </form>
+  <% } %>
+
+
+<div class="header-actions">
+  <!-- SEMPRE VISÍVEL (USER e ADMIN) -->
+  <a href="/cats" class="btn">← Voltar à lista</a>
+
+  <a href="/cats/<%= cat.id %>/edit" class="btn btn-primary">
+    Editar
+  </a>
+
+
+
+    <form
+      method="post"
+      action="/cats/<%= cat.id %>/delete"
+      onsubmit="return confirm('Tem certeza que deseja excluir este gato?');"
+      style="display:inline;"
+    >
+      <button type="submit" class="btn btn-danger">Excluir</button>
+    </form>
+
+</div>
+        </div>
+
+     
+
+        <!-- INFORMAÇÕES -->
+        <div class="section">
+          <div class="section-title">Informações</div>
+         
+          <div class="grid-3">
+
+<div class="field">
+  <div class="field-label">Títulos antes do nome</div>
+  <div class="field-value"><%= cat.titleBeforeName || "-" %></div>
+</div>
+
+<div class="field">
+  <div class="field-label">Títulos depois do nome</div>
+  <div class="field-value"><%= cat.titleAfterName || "-" %></div>
+</div>
+
+            <div class="field">
+              <div class="field-label">País</div>
+              <div class="field-value"><%= cat.country || "-" %></div>
+            </div>
+            </div>
+
+   <hr style="margin: 16px 0; border:0; border-top:1px solid var(--border-soft);" />         
+
+
+<div class="grid-3" style="margin-top: 20px;">
+
+
+            <div class="field">
+              <div class="field-label">Nome do gato</div>
+              <div class="field-value"><%= cat.name %></div>
+            </div>
+
+            <div class="field">
+              <div class="field-label">Microchip</div>
+              <div class="field-value">
+                <%= microchipFormatted || "-" %>
+              </div>
+            </div>
+
+            <div class="field">
+              <div class="field-label">Data de nascimento</div>
+              <div class="field-value" id="birthValue">
+                <% if (cat.birthDate) { %>
+                  <%= cat.birthDate.toISOString().slice(0, 10) %>
+                <% } else { %>
+                  -
+                <% } %>
+              </div>
+              <div id="ageDisplay" class="age-badge"></div>
+            </div>
+
+          </div>
+
+<hr style="margin: 16px 0; border:0; border-top:1px solid var(--border-soft);" />
+
+          <div class="grid-3" style="margin-top: 20px;">
+
+
+            <div class="field">
+              <div class="field-label">Sexo</div>
+              <div class="field-value">
+                <% if (cat.gender === "M") { %>
+                  Macho
+                <% } else if (cat.gender === "F") { %>
+                  Fêmea
+                <% } else { %>
+                  -
+                <% } %>
+              </div>
+            </div>
+
+            <div class="field">
+              <div class="field-label">Raça</div>
+              <div class="field-value"><%= cat.breed || "-" %></div>
+            </div>
+
+            <div class="field">
+              <div class="field-label">Cor / Código EMS</div>
+              <div class="field-value"><%= cat.emsCode || "-" %></div>
+            </div>
+
+            </div>
+
+            <hr style="margin: 16px 0; border:0; border-top:1px solid var(--border-soft);" />
+
+             <div class="grid-3" style="margin-top: 20px;">
+
+            <div class="field">
+              <div class="field-label">Castrado</div>
+              <div class="field-value">
+                <% if (cat.neutered === true) { %>
+                  Sim
+                <% } else if (cat.neutered === false) { %>
+                  Não
+                <% } else { %>
+                  -
+                <% } %>
+              </div>
+            </div>
+            </div>
+        
+
+          </div>
+     
+
+        <!-- REGISTRO -->
+        <div class="section">
+          <div class="section-title">Registro</div>
+          <div class="grid-3">
+            <div class="field">
+              <div class="field-label">Membro</div>
+              <div class="field-value"><%= cat.fifeStatus || "-" %></div>
+            </div>
+            <div class="field">
+              <div class="field-label">Tipo de registro</div>
+              <div class="field-value"><%= cat.pedigreeType || "-" %></div>
+            </div>
+            <div class="field">
+              <div class="field-label">Número do pedigree</div>
+              <div class="field-value"><%= cat.pedigreeNumber || "-" %></div>
+            </div>
+          </div>
+
+          
+
+          <div class="field" style="margin-top: 20px;">
+            <div class="field-label">Registro pendente</div>
+            <div class="field-value">
+              <% if (cat.pedigreePending === true) { %>
+                Sim
+              <% } else if (cat.pedigreePending === false) { %>
+                Não
+              <% } else { %>
+                -
+              <% } %>
+            </div>
+          </div>
+        </div>
+
+<!-- CRIADOR / PROPRIETÁRIO -->
+<div class="section">
+  <div class="section-title">Criador / Proprietário</div>
+
+  <%
+    let breederName = "-";
+
+    if (cat.breederType === "Eu Mesmo") {
+      breederName = user && user.name ? user.name : "-";
+    } else if (cat.breederType === "Outro") {
+      breederName = cat.breederName || "-";
+    }
+  %>
+
+  <div class="grid-3">
+    <div class="field">
+      <div class="field-label">Criador</div>
+      <div class="field-value"><%= breederName %></div>
+</div>
+
+    <div class="field">
+      <div class="field-label">Proprietários</div>
+<div class="field-value">
+  <% if (cat.ownershipType === "OWNER") { %>
+    <%= user && user.name ? user.name : "Proprietário não identificado" %>
+  <% } else if (cat.ownershipType === "CO-OWNERSHIP") { %>
+    Co-propriedade
+  <% } else { %>
+          -
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- PAIS -->
+<div class="section">
+  <div class="section-title">Pais</div>
+
+  <div class="grid-3">
+    <div class="field">
+      <div class="field-label">Pai - nome</div>
+      <div class="field-value"><%= cat.fatherName || "-" %></div>
+    </div>
+    <div class="field">
+      <div class="field-label">Pai - raça</div>
+      <div class="field-value"><%= cat.fatherBreed || "-" %></div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Pai - EMS</div>
+      <div class="field-value"><%= cat.fatherEmsCode || "-" %></div>
+    </div>
+ </div>
+
+  <hr
+    style="
+      border: none;
+      border-top: 1px dashed rgba(148, 163, 184, 0.4);
+      margin: 12px 0;
+    "
+  />
+
+  <div class="grid-3">
+    <div class="field">
+      <div class="field-label">Mãe - nome</div>
+      <div class="field-value"><%= cat.motherName || "-" %></div>
+    </div>
+    <div class="field">
+      <div class="field-label">Mãe - raça</div>
+      <div class="field-value"><%= cat.motherBreed || "-" %></div>
+    </div>
+  
+    <div class="field">
+      <div class="field-label">Mãe - EMS</div>
+      <div class="field-value"><%= cat.motherEmsCode || "-" %></div>
+    </div>
+    </div>
+  </div>
+
+        <!-- DOCUMENTOS -->
+        <div class="section">
+          <div class="section-title">Documentos</div>
+          <div class="grid-3">
+            <div class="field">
+              <div class="field-label">Pedigree</div>
+              <div class="field-value">
+                <% if (cat.pedigreeFile) { %>
+                  <a class="file-link" href="<%= cat.pedigreeFile %>" target="_blank">
+                    Ver arquivo
+                  </a>
+                <% } else { %>
+                  -
+                <% } %>
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-label">Atestado de reprodução</div>
+              <div class="field-value">
+                <% if (cat.reproductionFile) { %>
+                  <a class="file-link" href="<%= cat.reproductionFile %>" target="_blank">
+                    Ver arquivo
+                  </a>
+                <% } else { %>
+                  -
+                <% } %>
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-label">Documentos extras</div>
+              <div class="field-value">
+                <% if (cat.otherDocsFile) { %>
+                  <a class="file-link" href="<%= cat.otherDocsFile %>" target="_blank">
+                    Ver arquivo
+                  </a>
+                <% } else { %>
+                  -
+                <% } %>
+              </div>
+            </div>
+            </div>
+
+             <hr style="margin: 16px 0; border:0; border-top:1px solid var(--border-soft);" />
+
+              <div class="grid-3">
+<div class="field">
+  <div class="field-label">Foto do gato</div>
+  <div class="field-value">
+    <% if (cat.photo) { %>
+      <img src="<%= cat.photo %>" style="max-width:120px;border-radius:8px;" />
+    <% } else { %>
+      -
+    <% } %>
+  </div>
+</div>
+</div>
+          </div>
+        </div>
+      </div>
+
+

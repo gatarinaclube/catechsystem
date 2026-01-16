@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Meus Serviços - CaTech</title>
+
+    <!-- CSS GLOBAL -->
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="header">
+          <div>
+            <div class="title-main">Meus Serviços</div>
+            <div class="title-sub">
+              Acompanhe aqui o histórico e o andamento dos serviços solicitados.
+            </div>
+          </div>
+          <div class="header-actions">
+            <a href="/services" class="btn">← Voltar para Serviços</a>
+          </div>
+        </div>
+
+        <div class="content">
+          <div class="section">
+            <div class="section-title">Serviços solicitados</div>
+
+            <% if (!services || services.length === 0) { %>
+              <p class="empty">
+                Você ainda não possui serviços cadastrados.<br />
+                <a href="/services">Clique aqui</a> para solicitar seu primeiro serviço.
+              </p>
+            <% } else { 
+                 const mapStatus = {
+                   ENVIADO_GATARINA: "Enviado para Gatarina",
+                   ENVIADO_FFB: "Enviado para FFB",
+                   RECEBIDO_FFB: "Recebido da FFB",
+                   COM_PENDENCIA: "Com Pendência",
+                   ENVIADO_ASSOCIADO: "Enviado para Associado",
+                 };
+            %>
+              <ul class="list">
+                <% services.forEach(function (s) { 
+                     const lastStatus = (s.statuses && s.statuses[0]) || null;
+                     const statusLabel = lastStatus
+                       ? (mapStatus[lastStatus.status] || lastStatus.status)
+                       : s.status;
+                %>
+                <li class="item">
+                  <div>
+                    <div class="item-title">
+                      Serviço #<%= s.id %> - <%= s.type %>
+                    </div>
+                    <div class="item-sub">
+                      Solicitado em
+                      <%= new Date(s.createdAt).toLocaleString('pt-BR') %><br />
+                      <%= s.description || "Sem descrição detalhada" %>
+                    </div>
+                  </div>
+
+                  <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
+<span class="status-badge status-<%= lastStatus ? lastStatus.status : 'EMPTY' %>">
+  <%= statusLabel %>
+</span>
+
+
+                    <div style="font-size:12px;">
+                      <a href="/my-services/<%= s.id %>">Detalhes</a>
+                      ·
+                      <a href="/my-services/<%= s.id %>/pdf" target="_blank">
+                        PDF
+                      </a>
+                    </div>
+                  </div>
+                </li>
+                <% }) %>
+              </ul>
+
+              <div class="list-footer">
+                <span>Total de serviços: <strong><%= services.length %></strong></span>
+                <span>
+                  Precisa solicitar um novo serviço?
+                  <a href="/services">Acesse a página de Serviços</a>.
+                </span>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

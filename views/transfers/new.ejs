@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Transferência de Propriedade - CaTech</title>
+
+    <!-- CSS GLOBAL -->
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+
+  <body>
+    <div class="shell">
+      <!-- MENU PADRÃO -->
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <!-- CONTEÚDO PRINCIPAL -->
+      <main class="main">
+        <div class="header">
+          <div>
+            <div class="title-main">Transferência de Propriedade</div>
+            <div class="title-sub">
+              Preencha as informações da transferência de propriedade do gato.
+            </div>
+          </div>
+
+          <div class="header-actions">
+            <a href="/services" class="btn">← Voltar aos serviços</a>
+          </div>
+        </div>
+
+        <!-- FORMULÁRIO -->
+        <form method="post" action="/transfers/new" enctype="multipart/form-data">
+          <div class="content">
+
+            <!-- SEÇÃO: DADOS DO GATO -->
+            <div class="section">
+              <div class="section-title"><strong>Dados do gato</strong></div>
+
+              <div class="grid-2">
+                <div class="field">
+                  <label class="field-label" for="catId">Selecione o gato</label>
+                  <select id="catId" name="catId" required>
+                    <option value="">Selecione um gato...</option>
+
+                    <% if (cats && cats.length) { %>
+                      <% cats.forEach(function(c){ %>
+                        <option 
+                          value="<%= c.id %>"
+                          data-name="<%= c.name || '' %>"
+                          data-microchip="<%= c.microchip || '' %>"
+                          data-breed="<%= c.breed || '' %>"
+                        >
+                          <%= c.name %>
+                          <% if (c.pedigreeNumber) { %> - <%= c.pedigreeNumber %> <% } %>
+                        </option>
+                      <% }); %>
+                    <% } %>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label class="field-label">Uso para reprodução</label>
+                  <select name="breedingStatus" required>
+                    <option value="">Selecione...</option>
+                    <option value="BREEDING">Breeding</option>
+                    <option value="NOT_FOR_BREEDING">Not for Breeding</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+<!-- SEÇÃO: PROPRIETÁRIOS -->
+<div class="section">
+  <div class="section-title"><strong>Proprietários</strong></div>
+
+  <!-- LINHA 1 -->
+  <div class="grid-3">
+
+    <!-- ANTIGO PROPRIETÁRIO (SELETOR) -->
+    <div class="field">
+      <label class="field-label">Antigo proprietário</label>
+      <select
+        id="oldOwnerType"
+        name="oldOwnerType"
+        onchange="toggleOwnerType()"
+        required
+      >
+        <option value="ME">Eu mesmo</option>
+        <option value="OTHER">Outro</option>
+      </select>
+    </div>
+
+    <!-- NOVO PROPRIETÁRIO -->
+    <div class="field">
+      <label class="field-label">Novo proprietário</label>
+      <input
+        id="newOwnerName"
+        type="text"
+        name="newOwnerName"
+        placeholder="Nome do novo proprietário"
+        required
+      />
+    </div>
+
+    <!-- TIPO DE MEMBRO (SÓ EU MESMO) -->
+    <div class="field" id="memberBlock">
+      <label class="field-label">Tipo de membro</label>
+      <select
+        id="memberType"
+        name="memberType"
+        onchange="toggleExtra()"
+      >
+        <option value="">Selecione...</option>
+        <option value="FIFE">Membro FIFe (FFB)</option>
+        <option value="NAO_FIFE">Membro Não FIFe (FFB)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- LINHA 2 — NOME DO ANTIGO PROPRIETÁRIO (SÓ QUANDO OUTRO) -->
+  <div class="grid-1" id="oldOwnerNameBlock" style="margin-top:12px; display:none;">
+    <div class="field">
+      <label class="field-label">Nome do antigo proprietário</label>
+      <input
+        type="text"
+        name="oldOwnerName"
+        placeholder="Nome do antigo proprietário"
+      />
+    </div>
+  </div>
+
+  <!-- UPLOAD DOCUMENTO (SÓ QUANDO OUTRO) -->
+<div
+  class="grid-1"
+  id="authorizationFileBlock"
+  style="margin-top:12px; display:none;"
+>
+  <div class="field">
+    <label class="field-label">
+      Documento do antigo proprietário
+    </label>
+    <input
+      type="file"
+      name="authorizationFile"
+      accept=".pdf,.jpg,.jpeg,.png"
+    />
+    <div class="field-hint" style="color:#b71c1c;">
+  Envie autorização ou documento comprobatório do antigo proprietário
+  (Exemplo para download na página Serviços).
+</div>
+  </div>
+</div>
+
+
+              <!-- CAMPOS EXTRAS PARA NÃO FIFE -->
+              <div id="extraFields" style="display:none; margin-top:14px;">
+
+                <div class="grid-2">
+                  <div class="field">
+                    <label class="field-label">Endereço</label>
+                    <input type="text" name="address" />
+                  </div>
+
+                  <div class="field">
+                    <label class="field-label">Bairro</label>
+                    <input type="text" name="district" />
+                  </div>
+                </div>
+
+                <div class="grid-3" style="margin-top:10px;">
+                  <div class="field">
+                    <label class="field-label">Cidade</label>
+                    <input type="text" name="city" />
+                  </div>
+
+                  <div class="field">
+                    <label class="field-label">Estado</label>
+                    <input type="text" name="state" />
+                  </div>
+
+                  <div class="field">
+                    <label class="field-label">CEP</label>
+                    <input type="text" name="cep" />
+                  </div>
+                </div>
+
+                <div class="grid-2" style="margin-top:10px;">
+                  <div class="field">
+                    <label class="field-label">E-mail</label>
+                    <input type="email" name="email" />
+                  </div>
+
+                  <div class="field">
+                    <label class="field-label">Telefone</label>
+                    <input type="text" name="phone" />
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- RODAPÉ DO FORMULÁRIO -->
+          <div class="footer">
+            <a href="/services" class="btn">Cancelar</a>
+           
+            <button type="submit" class="btn btn-primary submit-btn">
+  <span class="submit-text">Salvar/Enviar</span>
+  <span class="spinner" style="display:none; margin-left:8px;"></span>
+</button>
+
+          </div>
+        </form>
+      </main>
+    </div>
+
+    <!-- SCRIPT DO TOGGLE -->
+<script>
+function toggleExtra() {
+  const memberTypeEl = document.getElementById("memberType");
+  const oldOwnerTypeEl = document.getElementById("oldOwnerType");
+  const extraFields = document.getElementById("extraFields");
+
+  if (!memberTypeEl || !oldOwnerTypeEl || !extraFields) return;
+
+  const memberType = memberTypeEl.value;
+  const oldOwnerType = oldOwnerTypeEl.value;
+
+  if (oldOwnerType === "ME" && memberType === "NAO_FIFE") {
+    extraFields.style.display = "block";
+  } else {
+    extraFields.style.display = "none";
+  }
+}
+
+
+function toggleOwnerType() {
+  const oldOwnerTypeEl = document.getElementById("oldOwnerType");
+if (!oldOwnerTypeEl) return;
+const type = oldOwnerTypeEl.value;
+
+
+  const newOwner = document.getElementById("newOwnerName");
+  const memberBlock = document.getElementById("memberBlock");
+  const oldOwnerNameBlock = document.getElementById("oldOwnerNameBlock");
+  const authorizationFileBlock = document.getElementById("authorizationFileBlock");
+  const extraFields = document.getElementById("extraFields");
+
+  if (!type) return;
+
+  if (type === "ME") {
+    // 🔹 EU MESMO
+    newOwner.value = "";
+    newOwner.readOnly = false;
+
+    memberBlock.style.display = "block";
+    oldOwnerNameBlock.style.display = "none";
+    authorizationFileBlock.style.display = "none";
+    extraFields.style.display = "none";
+
+  } else {
+    // 🔹 OUTRO
+    newOwner.value = "<%= user.name %>";
+    newOwner.readOnly = true;
+
+    memberBlock.style.display = "none";
+    oldOwnerNameBlock.style.display = "block";
+    const authInput = document.querySelector(
+  'input[name="authorizationFile"]'
+);
+
+if (type === "OTHER") {
+  authorizationFileBlock.style.display = "block";
+  authInput.required = true;
+} else {
+  authorizationFileBlock.style.display = "none";
+  authInput.required = false;
+  authInput.value = "";
+}
+
+    console.log("MOSTRANDO UPLOAD");
+    extraFields.style.display = "none";
+  }
+}
+
+  // ✅ ESTA LINHA TEM QUE EXISTIR ASSIM
+  document.addEventListener("DOMContentLoaded", () => {
+  toggleOwnerType();
+});
+</script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll("form").forEach((form) => {
+      form.addEventListener("submit", () => {
+        const submitBtn = form.querySelector("button[type='submit']");
+        if (!submitBtn) return;
+
+        const textEl = submitBtn.querySelector(".submit-text");
+        const spinnerEl = submitBtn.querySelector(".spinner");
+
+        // bloqueia botão
+        submitBtn.disabled = true;
+
+        // altera texto
+        if (textEl) {
+          textEl.dataset.original = textEl.textContent;
+          textEl.textContent = "Processando...";
+        }
+
+        // mostra spinner
+        if (spinnerEl) {
+          spinnerEl.style.display = "inline-block";
+        }
+      });
+    });
+  });
+</script>
+
+
+  </body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Atualizar Atestado de Saúde - CaTech</title>
+
+  <link rel="stylesheet" href="/css/theme.css" />
+  <link rel="stylesheet" href="/css/layout.css" />
+</head>
+<body>
+<div class="shell">
+  <%- include('../partials/sidebar', { user, currentPath }) %>
+
+  <main class="main">
+    <div class="header">
+      <div>
+        <div class="title-main">Atestado de Saúde para Reprodução</div>
+        <div class="title-sub">
+          Atualização do arquivo disponibilizado aos usuários
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="/services" class="btn">← Voltar</a>
+      </div>
+    </div>
+
+    <form
+      method="post"
+      action="/admin/atestado-saude-reproducao"
+      enctype="multipart/form-data"
+    >
+      <div class="section">
+        <div class="section-title">Novo arquivo (PDF)</div>
+
+        <div class="field">
+          <input type="file" name="file" accept=".pdf" required />
+          <small style="font-size:11px; color:var(--text-muted);">
+            Este arquivo será o mesmo baixado pelos usuários
+          </small>
+        </div>
+      </div>
+
+      <div class="footer">
+        <button type="submit" class="btn btn-primary">
+          Atualizar arquivo
+        </button>
+      </div>
+    </form>
+  </main>
+</div>
+</body>
+</html>

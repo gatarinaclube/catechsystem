@@ -1,0 +1,312 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ApprovalStatus {
+  INDEFERIDO
+  DEFERIDO
+  RESTRICOES
+}
+
+enum ServiceStatusType {
+  ENVIADO_GATARINA
+  COM_PENDENCIA
+  ENVIADO_FFB
+  RECEBIDO_FFB
+  ENVIADO_ASSOCIADO
+}
+
+model User {
+  id       Int     @id @default(autoincrement())
+  name     String
+  address  String?
+  city     String?
+  cep      String?
+  state    String?
+  country  String?
+  phones   String?
+  email    String  @unique
+  cpf      String?
+  password String
+  role     String  @default("USER")
+  clubs    String?
+
+  // 🔹 GATIL FIFe
+  hasFifeCattery  String?   // "YES" | "NO"
+  fifeCatteryName String?
+
+  // Status de aprovação
+  approvalStatus ApprovalStatus @default(INDEFERIDO)
+  adminNotes     String?
+
+  createdAt DateTime @default(now())
+
+  cats            Cat[]
+  litters         Litter[]
+  serviceRequests ServiceRequest[]
+}
+
+model Cat {
+  id Int @id @default(autoincrement())
+
+  // Dono (User)
+  owner   User? @relation(fields: [ownerId], references: [id])
+  ownerId Int?
+
+  // Informações básicas
+  country   String? // BR, AR, DE...
+  name      String
+  microchip String?   @unique // só dígitos; formata na view
+  birthDate DateTime?
+  gender    String? // "M" ou "F"
+  neutered  Boolean? // castrado
+  breed     String?
+  emsCode   String? // Cor / Código EMS
+  titleBeforeName String?  // Títulos antes do nome
+  titleAfterName  String?  // Títulos depois do nome
+
+  // Registro
+  fifeStatus      String? // Fife Brasil / Fife Não Brasil / Não Fife
+  pedigreeType    String? // RX / LO
+  pedigreeNumber  String?
+  pedigreePending Boolean? @default(false)
+
+  // Criador / Proprietário
+  breederType   String? // ME / OTHER
+  breederName   String?
+  ownershipType String? // OWNER / CO-OWNERSHIP
+
+  // Pais (relacionais - auto-relacionamento)
+  fatherId         Int?
+  father           Cat?  @relation("CatToFather", fields: [fatherId], references: [id])
+  childrenAsFather Cat[] @relation("CatToFather")
+
+  motherId         Int?
+  mother           Cat?  @relation("CatToMother", fields: [motherId], references: [id])
+  childrenAsMother Cat[] @relation("CatToMother")
+
+  // Pais (texto, quando não cadastrados)
+  fatherName    String?
+  fatherEmsCode String?
+  fatherBreed   String?
+  motherName    String?
+  motherEmsCode String?
+  motherBreed   String?
+
+  // Documentos
+  photo            String?
+  pedigreeFile     String?
+  reproductionFile String?
+  otherDocsFile    String?
+
+  createdAt        DateTime          @default(now())
+  transferRequests TransferRequest[]
+  secondCopyRequests SecondCopyRequest[]
+
+  status    CatStatus @default(NOVO)
+}
+
+model Litter {
+  id Int @id @default(autoincrement())
+
+  // Dono do registro (quem está logado)
+  owner   User? @relation(fields: [ownerId], references: [id])
+  ownerId Int?
+
+  // Dados do macho
+  maleName      String?
+  maleFfbLo     String? // (BR) FFB
+  maleBreed     String?
+  maleEms       String?
+  maleMicrochip String?
+
+  maleOwnership String? // OWNER | NOT_OWNER
+
+  externalOwnerName          String?
+  externalOwnerEmail         String?
+  externalOwnerCpf           String?
+  externalOwnerPhone         String?
+  externalOwnerCattery       String?
+
+  externalOwnerAuthorization String?
+
+  // Dados da fêmea
+  femaleName      String?
+  femaleFfbLo     String?
+  femaleBreed     String?
+  femaleEms       String?
+  femaleMicrochip String?
+
+
+  // Dados da ninhada
+  catteryName String?
+  catteryCountry  String?
+  litterBreed     String?
+  litterCount     Int?
+  litterBirthDate DateTime?
+
+  // Recebimento / assinaturas (não usados no form, mas mantidos)
+  receivedDate  DateTime?
+  sireSignature String?
+  damSignature  String?
+
+  // Relação com filhotes
+  kittens LitterKitten[]
+
+  // Relação com serviços (ex.: Registro de Ninhada)
+  serviceRequests ServiceRequest[]
+
+  createdAt DateTime @default(now())
+}
+
+model LitterKitten {
+  id Int @id @default(autoincrement())
+
+  litter   Litter @relation(fields: [litterId], references: [id])
+  litterId Int
+
+  index     Int // 1 a 9 (número da linha)
+  name      String?
+  breed     String?
+  emsEyes   String?
+  sex       String? // M / F
+  microchip String?
+  breeding  String? // BREEDING / NOT_FOR_BREEDING
+  obs       String?
+
+  createdAt DateTime @default(now())
+}
+
+model ServiceRequest {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  // ligação com a ninhada
+  litterId Int?
+  litter   Litter? @relation(fields: [litterId], references: [id])
+
+  type        String
+  description String?
+  status      String   @default("PENDENTE")
+  createdAt   DateTime @default(now())
+  malote Int?
+
+  statuses        ServiceStatus[]
+  transferRequest TransferRequest?
+  titleHomologation TitleHomologation?
+  pedigreeHomologation PedigreeHomologation?
+  catteryRegistration CatteryRegistration?
+  secondCopyRequest SecondCopyRequest?
+
+}
+
+model ServiceStatus {
+  id        Int            @id @default(autoincrement())
+  serviceId Int
+  service   ServiceRequest @relation(fields: [serviceId], references: [id])
+
+  status    ServiceStatusType
+  createdAt DateTime          @default(now())
+}
+
+model TransferRequest {
+  id Int @id @default(autoincrement())
+
+  catId Int
+  cat   Cat @relation(fields: [catId], references: [id])
+
+  oldOwnerName String
+
+  newOwnerName   String
+  breedingStatus String
+  
+  memberType String?
+  
+  authorizationFile String?
+  address  String?
+  district String?
+  city     String?
+  state    String?
+  cep      String?
+  email    String?
+  phone    String?
+
+  serviceRequestId Int            @unique
+  serviceRequest   ServiceRequest @relation(fields: [serviceRequestId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model TitleHomologation {
+  id               Int      @id @default(autoincrement())
+  serviceRequestId Int      @unique
+
+  catId            Int
+  requestedTitle   String
+
+  certificatesJson String
+
+  createdAt        DateTime @default(now())
+
+  serviceRequest   ServiceRequest @relation(fields: [serviceRequestId], references: [id])
+}
+
+model PedigreeHomologation {
+  id               Int      @id @default(autoincrement())
+  serviceRequestId Int      @unique
+
+  catId            Int
+  homologationType String
+
+  createdAt        DateTime @default(now())
+
+  serviceRequest   ServiceRequest @relation(fields: [serviceRequestId], references: [id])
+}
+
+model CatteryRegistration {
+  id               Int      @id @default(autoincrement())
+  serviceRequestId Int      @unique
+
+  nameOption1      String
+  nameOption2      String?
+  nameOption3      String?
+
+  numberOfCats     Int
+  breedsJson       String   // JSON com as raças escolhidas
+
+  createdAt        DateTime @default(now())
+
+  serviceRequest   ServiceRequest @relation(fields: [serviceRequestId], references: [id])
+}
+
+model SecondCopyRequest {
+  id               Int      @id @default(autoincrement())
+  serviceRequestId Int      @unique
+
+  catId            Int
+  cat              Cat      @relation(fields: [catId], references: [id])
+
+  requestType      String
+  details          String?
+  newValue         String?
+  attachmentsJson  String?
+
+  createdAt        DateTime @default(now())
+
+  serviceRequest   ServiceRequest @relation(fields: [serviceRequestId], references: [id])
+}
+
+
+
+enum CatStatus {
+  NOVO
+  APROVADO
+  NAO_APROVADO
+}
+

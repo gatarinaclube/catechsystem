@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Detalhes do usuário - CaTech</title>
+
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">
+              <%= userDetail.name || "Usuário sem nome" %>
+            </h2>
+            <div class="welcome-sub">
+              Detalhes do usuário e controle de aprovação.
+            </div>
+          </div>
+          <div class="actions">
+            <a href="/users" class="btn">← Voltar à lista</a>
+          </div>
+        </div>
+
+        <div class="content-card">
+          <!-- FORMULÁRIO COMPLETO -->
+          <form method="post" action="/users/<%= userDetail.id %>">
+            <!-- INFORMAÇÕES BÁSICAS / CADASTRAIS -->
+            <section style="margin-bottom:16px;">
+              <h3 class="section-title">Informações do usuário</h3>
+
+
+              <div class="grid-3">
+
+                <div class="field">
+                  <label class="field-label" for="name">Nome</label>
+                  <input
+                    id="name"
+                    type="text"
+                    name="name"
+                    value="<%= userDetail.name || "" %>"
+                  />
+                </div>
+
+                <div class="field">
+                  <label class="field-label" for="cpf">CPF</label>
+                  <input
+                    id="cpf"
+                    type="text"
+                    name="cpf"
+                    value="<%= userDetail.cpf || "" %>"
+                  />
+                </div>
+                <div class="field">
+                  <label class="field-label" for="country">País</label>
+                  <input
+                    id="country"
+                    type="text"
+                    name="country"
+                    value="<%= userDetail.country || "" %>"
+                  />
+                </div>
+              </div>
+
+
+              <div class="grid-3">
+
+                <div class="field">
+                  <label class="field-label" for="address">Endereço</label>
+                  <input
+                    id="address"
+                    type="text"
+                    name="address"
+                    value="<%= userDetail.address || "" %>"
+                  />
+                  </div>
+
+                <div class="field">
+                  <label class="field-label" for="city">Cidade</label>
+                  <input
+                    id="city"
+                    type="text"
+                    name="city"
+                    value="<%= userDetail.city || "" %>"
+                  />
+                </div>
+
+                <div class="field">
+                  <label class="field-label" for="state">Estado</label>
+                  <input
+                    id="state"
+                    type="text"
+                    name="state"
+                    value="<%= userDetail.state || "" %>"
+                  />
+               </div>
+              </div>
+
+              <div class="grid-3">
+
+                <div class="field">
+                  <label class="field-label" for="cep">CEP</label>
+                  <input
+                    id="cep"
+                    type="text"
+                    name="cep"
+                    value="<%= userDetail.cep || "" %>"
+                  />
+                </div>
+
+                                <div class="field">
+                  <label class="field-label" for="phones">Telefone(s)</label>
+                  <input
+                    id="phones"
+                    type="text"
+                    name="phones"
+                    value="<%= userDetail.phones || "" %>"
+                  />
+                </div>
+
+                <div class="field">
+                  <label class="field-label" for="email">E-mail</label>
+                  <input
+                    id="email"
+                    type="email"
+                    name="email"
+                    value="<%= userDetail.email || "" %>"
+                  />
+                </div>
+              </div>
+
+              </div>
+
+<!-- GATIL FIFe -->
+<div class="grid-3" style="margin-top:10px;">
+  <div class="field">
+    <label class="field-label">
+      Possui Gatil Registrado na FIFe?
+    </label>
+
+    <div style="display:flex; gap:24px; margin-top:6px;">
+      <label class="checkbox-label">
+        <input
+          type="radio"
+          name="hasFifeCattery"
+          value="YES"
+          <%= userDetail.hasFifeCattery === "YES" ? "checked" : "" %>
+          onclick="toggleFifeCatteryEdit(true)"
+        />
+        Sim
+      </label>
+
+      <label class="checkbox-label">
+        <input
+          type="radio"
+          name="hasFifeCattery"
+          value="NO"
+          <%= userDetail.hasFifeCattery === "NO" ? "checked" : "" %>
+          onclick="toggleFifeCatteryEdit(false)"
+        />
+        Não
+      </label>
+    </div>
+  </div>
+
+<div
+  class="field"
+  id="fifeCatteryEditBlock"
+  <%= userDetail.hasFifeCattery === 'YES' ? '' : 'hidden' %>
+>
+
+    <label class="field-label" for="fifeCatteryName">
+      Qual o nome do seu gatil FIFe?
+    </label>
+    <input
+      id="fifeCatteryName"
+      type="text"
+      name="fifeCatteryName"
+      value="<%= userDetail.fifeCatteryName || '' %>"
+      placeholder="Nome do gatil conforme registro FIFe"
+    />
+  </div>
+</div>
+
+
+              <div class="grid-3" style="margin-top:10px;">
+                <div class="field">
+                  <label class="field-label" for="clubs">Clubes</label>
+                  <input
+                    id="clubs"
+                    type="text"
+                    name="clubs"
+                    value="<%= userDetail.clubs || "" %>"
+                  />
+                  <small style="font-size:11px; color:var(--text-muted);">
+                    Ex.: Gatarina, CBG, AMACOON...
+                  </small>
+                </div>
+
+                <div class="field">
+                  <label class="field-label" for="role">Perfil</label>
+                  <select id="role" name="role">
+                    <option
+                      value="USER"
+                      <%= userDetail.role !== "ADMIN" ? "selected" : "" %>
+                    >
+                      Usuário
+                    </option>
+                    <option
+                      value="ADMIN"
+                      <%= userDetail.role === "ADMIN" ? "selected" : "" %>
+                    >
+                      Administrador
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              <% if (userDetail.createdAt) { %>
+                <p style="margin-top:10px; font-size:12px; color:var(--text-muted);">
+                  <strong>Data de cadastro:</strong>
+                  <%= new Date(userDetail.createdAt).toLocaleString('pt-BR') %>
+                </p>
+              <% } %>
+            </section>
+
+            <!-- CONTROLE DE APROVAÇÃO -->
+            <section style="margin-bottom:16px;">
+              <h3 class="section-title">Situação do cadastro</h3>
+
+
+                <div class="grid-3" style="margin-top:10px;">
+              <div class="field">
+                <label class="field-label" for="approvalStatus">
+                  Status de aprovação
+                </label>
+                <select id="approvalStatus" name="approvalStatus">
+                  <option
+                    value="INDEFERIDO"
+                    <%= (userDetail.approvalStatus === "INDEFERIDO" || !userDetail.approvalStatus) ? "selected" : "" %>
+                  >
+                    Indeferido (Novo cadastro)
+                  </option>
+                  <option
+                    value="DEFERIDO"
+                    <%= userDetail.approvalStatus === "DEFERIDO" ? "selected" : "" %>
+                  >
+                    Deferido (Ativo)
+                  </option>
+                  <option
+                    value="RESTRICOES"
+                    <%= userDetail.approvalStatus === "RESTRICOES" ? "selected" : "" %>
+                  >
+                    Restrições (Inativo)
+                  </option>
+                </select>
+                <small style="font-size:11px; color:var(--text-muted);">
+                  • Indeferido: fica na lista "Novo Cadastro" e não pode fazer login.<br/>
+                  • Deferido: vai para "Ativos" e pode fazer login normalmente.<br/>
+                  • Restrições: vai para "Inativos" e não pode fazer login.
+                </small>
+              </div>
+              </div>
+
+              <div class="field" style="margin-top:12px;">
+                <label class="field-label" for="adminNotes">
+                  Observações internas
+                </label>
+                <textarea
+                  id="adminNotes"
+                  name="adminNotes"
+                  rows="4"
+                  style="width:100%;"
+                ><%= userDetail.adminNotes || "" %></textarea>
+                <small style="font-size:11px; color:var(--text-muted);">
+                  Use este campo para registrar motivos de deferimento, indeferimento ou restrições.
+                </small>
+              </div>
+            </section>
+
+            <div class="footer" style="margin-top:16px;">
+              <button type="submit" class="btn btn-primary">
+                Salvar alterações
+              </button>
+            </div>
+          </form>
+
+          <!-- HISTÓRICO (LOGS) -->
+          <section style="margin-top:20px;">
+            <h3 class="section-title">Histórico de ações</h3>
+            <% if (!logs || !logs.length) { %>
+              <div class="empty">
+                Ainda não há registros de histórico para este usuário.
+              </div>
+            <% } else { %>
+              <ul class="list">
+                <% logs.forEach(function(log) { %>
+                  <li class="item">
+                    <div>
+                      <div class="item-sub">
+                        <strong><%= new Date(log.createdAt).toLocaleString('pt-BR') %></strong>
+                      </div>
+                      <div><%= log.description %></div>
+                    </div>
+                  </li>
+                <% }); %>
+              </ul>
+            <% } %>
+          </section>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

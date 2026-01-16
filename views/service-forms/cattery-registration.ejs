@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Registro de Gatil - CaTech</title>
+
+  <link rel="stylesheet" href="/css/theme.css" />
+  <link rel="stylesheet" href="/css/layout.css" />
+</head>
+<body>
+<div class="shell">
+  <%- include('../partials/sidebar', { user, currentPath }) %>
+
+  <main class="main">
+    <div class="header">
+      <div>
+        <div class="title-main">Registro de Gatil</div>
+        <div class="title-sub">
+          Indique os nomes desejados e as raças a serem criadas
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="/services" class="btn">← Voltar</a>
+      </div>
+    </div>
+
+    <form method="post" action="/services/cattery-registration">
+      <div class="content">
+<!-- NOMES DO GATIL -->
+<div class="section">
+  <div class="section-title">
+    <strong>Nome do Gatil</strong> (ordem de preferência)
+  </div>
+
+  <div class="grid-3">
+    <% [1,2,3].forEach(function(n){ %>
+      <div class="field">
+        <label class="field-label">Opção <%= n %></label>
+        <input
+          type="text"
+          name="nameOption<%= n %>"
+          maxlength="15"
+          <%= n === 1 ? "required" : "" %>
+        />
+      </div>
+    <% }) %>
+  </div>
+</div>
+
+        <!-- NÚMERO DE GATOS -->
+        <div class="section">
+          <div class="section-title"><strong>Quantas raças pretende criar?</strong></div>
+          <input
+            type="number"
+            id="numberOfCats"
+            name="numberOfCats"
+            min="1"
+            max="10"
+            required
+          />
+        </div>
+
+        <!-- RAÇAS -->
+        <div class="section">
+          <div class="section-title"><strong>Raças</strong></div>
+          <div id="breedsContainer"></div>
+        </div>
+
+      </div>
+
+<!-- OBSERVAÇÃO-->
+<div class="section">
+  <div class="section-title"><strong>Importante:</strong></div>
+
+  <ul class="rules-list">
+    
+    
+  <li>
+      <strong>É do criador solicitante a total <strong>responsabilidade</strong> das informações mencionadas ao solicitar o Registro de Gatil</strong>.
+    </li>
+    
+    <li>
+    Os nomes escolhidos não devem exceder quinze letras, contando-se os espaços entre palavras.
+    </li>
+
+  </ul>
+</div>
+
+      <div class="footer">
+        <a href="/services" class="btn">Cancelar</a>
+        <button type="submit" class="btn btn-primary submit-btn">
+  <span class="submit-text">Salvar/Enviar</span>
+  <span class="spinner" style="display:none; margin-left:8px;"></span>
+</button>
+
+      </div>
+    </form>
+  </main>
+</div>
+
+<script>
+  const breeds = [
+    "Abyssinian","American Curl Longhair","Not recognised longhair",
+    "Not recognised shorthair","American Curl Shorthair","Balinese","Bengal",
+    "British Longhair","Burmilla","British Shorthair","Burmese","Chartreux",
+    "Cornish Rex","Cymric","Devon Rex","Don Sphynx","European","Exotic",
+    "German Rex","Japanese Bobtail","Kurilean Bobtail Longhair",
+    "Kurilean Bobtail Shorthair","Korat","La Perm Longhair","La Perm Shorthair",
+    "Manx","Egyptian Mau","Maine Coon","Neva Masquerade",
+    "Norwegian Forest Cat","Ocicat","Oriental Longhair",
+    "Oriental Shorthair","Peterbald","Persian","Ragdoll","Russian Blue",
+    "Sacred Birman","Siamese","Siberian","Singapura","Snowshoe","Sokoke",
+    "Somali","Sphynx","Seychellois Longhair","Seychellois Shorthair","Thai",
+    "Turkish Angora","Turkish Van","HC Short Hair","HC Long Hair",
+    "Selkirk Rex Longhair","Selkirk Rex Shorthair","Bombay","Lykoi"
+  ];
+
+  const numberInput = document.getElementById("numberOfCats");
+  const container = document.getElementById("breedsContainer");
+
+  numberInput.addEventListener("input", () => {
+    container.innerHTML = "";
+    const n = parseInt(numberInput.value, 10) || 0;
+
+    for (let i = 1; i <= n; i++) {
+      const select = document.createElement("select");
+      select.name = "breeds";
+      select.required = true;
+
+      const opt0 = document.createElement("option");
+      opt0.value = "";
+      opt0.textContent = "Selecione a raça";
+      select.appendChild(opt0);
+
+      breeds.forEach(b => {
+        const opt = document.createElement("option");
+        opt.value = b;
+        opt.textContent = b;
+        select.appendChild(opt);
+      });
+
+      container.appendChild(select);
+    }
+  });
+</script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll("form").forEach((form) => {
+      form.addEventListener("submit", () => {
+        const submitBtn = form.querySelector("button[type='submit']");
+        if (!submitBtn) return;
+
+        const textEl = submitBtn.querySelector(".submit-text");
+        const spinnerEl = submitBtn.querySelector(".spinner");
+
+        // bloqueia botão
+        submitBtn.disabled = true;
+
+        // altera texto
+        if (textEl) {
+          textEl.dataset.original = textEl.textContent;
+          textEl.textContent = "Processando...";
+        }
+
+        // mostra spinner
+        if (spinnerEl) {
+          spinnerEl.style.display = "inline-block";
+        }
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

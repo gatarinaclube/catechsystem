@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Homologação de Pedigree - CaTech</title>
+
+  <link rel="stylesheet" href="/css/theme.css" />
+  <link rel="stylesheet" href="/css/layout.css" />
+</head>
+<body>
+<div class="shell">
+  <%- include('../partials/sidebar', { user, currentPath }) %>
+
+  <main class="main">
+    <div class="header">
+      <div>
+        <div class="title-main">Homologação de Pedigree</div>
+        <div class="title-sub">
+          Solicitação de homologação de pedigree
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="/services" class="btn">← Voltar</a>
+      </div>
+    </div>
+
+    <!-- FORMULÁRIO -->
+    <form
+  method="post"
+  action="/services/pedigree-homologation"
+  enctype="multipart/form-data"
+>
+
+      <!-- 🔴 ISSO NÃO EXISTIA ANTES -->
+      <!-- 🔴 ESSA DIV É O QUE FAZ O FOOTER FUNCIONAR -->
+      <div class="content">
+
+        <!-- GATO -->
+        <div class="section">
+          <div class="section-title"><strong>Gato</strong></div>
+          <select name="catId" required>
+            <option value="">Selecione o gato...</option>
+            <% cats.forEach(c => { %>
+              <option value="<%= c.id %>"><%= c.name %></option>
+            <% }) %>
+          </select>
+        
+
+        <div style="margin-top:12px;">
+  <label><strong>Propriedade</strong></label>
+
+  <div style="margin-top:6px;">
+    <label>
+      <input type="radio" name="ownershipDeclaration" value="OWNER" checked />
+      Sou proprietário
+    </label>
+  </div>
+
+  <div>
+    <label>
+      <input type="radio" name="ownershipDeclaration" value="NOT_OWNER" />
+      Não sou proprietário
+    </label>
+  </div>
+</div>
+
+<div id="nonOwnerOptions" style="display:none; margin-top:12px;">
+  <label><strong>Opções</strong></label>
+
+  <div>
+    <label>
+      <input type="radio" name="transferDecision" value="REQUEST_TRANSFER" />
+      Solicitar Transferência de Propriedade
+    </label>
+  </div>
+
+  <div>
+    <label>
+      <input type="radio" name="transferDecision" value="NO_TRANSFER" />
+      Não Realizar Transferência de Propriedade
+    </label>
+  </div>
+</div>
+
+<div
+  id="noTransferWarning"
+  style="display:none; margin-top:10px; color:#b71c1c; font-size:0.9rem;"
+>
+  ⚠️ <strong>
+    Solicitação de Homologação de Pedigree sem propriedade destina-se
+    exclusivamente para Registro de Ninhada, não sendo emitido Pedigree.
+  </strong>
+</div>
+</div>
+
+<div id="transferBox" style="display:none; margin-top:16px;">
+  <div class="section">
+    <div class="section-title"><strong>Transferência de Propriedade</strong></div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label>Uso para Reprodução</label>
+        <select name="breedingStatus">
+          <option value="">Selecione...</option>
+          <option value="BREEDING">Breeding</option>
+          <option value="NOT_FOR_BREEDING">Not For Breeding</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Novo Proprietário</label>
+        <input type="text" name="newOwnerName" value="<%= user.name %>" readonly />
+      </div>
+    </div>
+
+    <div class="field" style="margin-top:10px;">
+      <label>Nome do Antigo Proprietário</label>
+      <input type="text" name="oldOwnerName" />
+    </div>
+
+    <div class="field" style="margin-top:10px;">
+      <label>
+        Anexar documento de Autorização de Transferência (Obrigatório)
+      </label>
+      <input type="file" name="transferAuthorizationFile" />
+    </div>
+  </div>
+</div>
+
+
+        <!-- TIPO DE HOMOLOGAÇÃO -->
+        <div class="section">
+          <div class="section-title"><strong>Tipo de Homologação</strong></div>
+          <select name="homologationType" required>
+            <option value="">Selecione...</option>
+            <option value="NACIONAL">Homologação Nacional</option>
+            <option value="INTERNACIONAL">Homologação Internacional</option>
+          </select>
+        </div>
+
+      </div>
+    
+      <!-- REGRAS PARA REGISTRO DE NINHADA -->
+<div class="section">
+  <div class="section-title"><strong>Regras para Homologação de Pedigree</strong></div>
+
+  <ul class="rules-list">
+    <li>
+      <strong>É do criador solicitante a total <strong>responsabilidade</strong> das informações mencionadas neste pedido de Homologação de Pedigree</strong>.
+    </li>
+
+    <li>
+       Solicitação de Homologação de Pedigree <strong>sem propriedade</strong> destina-se exclusivamente para Registro de Ninhada, <strong>não sendo emitido Pedigree</strong>.
+    </li>
+
+    <li>
+      A FFB, ao Homologar o Pedigree, <strong>não coloca o sufixo do Gatil do novo proprietário</strong>, (exceto quando o gato já venha registrado com sufixo por outra Federação)
+    </li>
+
+    <li>
+      O Pedigree atual deve estar anexado no cadastro do gato.
+    </li>
+
+  </ul>
+</div>
+
+      <!-- FOOTER DO FORMULÁRIO (IGUAL AO DE TRANSFERÊNCIA) -->
+      <div class="footer">
+        <a href="/services" class="btn">Cancelar</a>
+        <button type="submit" class="btn btn-primary submit-btn">
+  <span class="submit-text">Salvar/Enviar</span>
+  <span class="spinner" style="display:none; margin-left:8px;"></span>
+</button>
+
+      </div>
+
+    </form>
+  </main>
+</div>
+
+<script>
+  const ownershipRadios = document.querySelectorAll(
+    'input[name="ownershipDeclaration"]'
+  );
+  const transferRadios = document.querySelectorAll(
+    'input[name="transferDecision"]'
+  );
+
+  const nonOwnerOptions = document.getElementById("nonOwnerOptions");
+  const noTransferWarning = document.getElementById("noTransferWarning");
+  const transferBox = document.getElementById("transferBox");
+
+  ownershipRadios.forEach(r => {
+    r.addEventListener("change", () => {
+      if (r.value === "NOT_OWNER" && r.checked) {
+        nonOwnerOptions.style.display = "block";
+      } else {
+        nonOwnerOptions.style.display = "none";
+        noTransferWarning.style.display = "none";
+        transferBox.style.display = "none";
+      }
+    });
+  });
+
+  transferRadios.forEach(r => {
+    r.addEventListener("change", () => {
+      if (r.value === "NO_TRANSFER" && r.checked) {
+        noTransferWarning.style.display = "block";
+        transferBox.style.display = "none";
+      }
+
+      if (r.value === "REQUEST_TRANSFER" && r.checked) {
+        transferBox.style.display = "block";
+        noTransferWarning.style.display = "none";
+      }
+    });
+  });
+</script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll("form").forEach((form) => {
+      form.addEventListener("submit", () => {
+        const submitBtn = form.querySelector("button[type='submit']");
+        if (!submitBtn) return;
+
+        const textEl = submitBtn.querySelector(".submit-text");
+        const spinnerEl = submitBtn.querySelector(".spinner");
+
+        // bloqueia botão
+        submitBtn.disabled = true;
+
+        // altera texto
+        if (textEl) {
+          textEl.dataset.original = textEl.textContent;
+          textEl.textContent = "Processando...";
+        }
+
+        // mostra spinner
+        if (spinnerEl) {
+          spinnerEl.style.display = "inline-block";
+        }
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Novo gato - CaTech</title>
+
+    <!-- CSS GLOBAL -->
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body>
+  <div class="shell">
+    <%- include('../partials/sidebar', { user, currentPath }) %>
+
+    <main class="main">
+        <div class="header">
+          <div>
+            <div class="title-main">Cadastrar novo gato</div>
+            <div class="title-sub">
+              Preencha as informações abaixo para registrar o gato no CaTech.
+            </div>
+          </div>
+          <div class="header-actions">
+            <a href="/dashboard" class="btn">← Voltar ao dashboard</a>
+            <a href="/cats" class="btn">Ver meus gatos</a>
+          </div>
+        </div>
+
+        <form method="post" action="/cats" enctype="multipart/form-data">
+          <div class="content">
+            <!-- INFORMAÇÕES -->
+            <div class="section">
+              <div class="section-title"><strong>Informações do Gato</strong></div>
+              
+              
+         <div class="section">   
+<div class="grid-3">
+  <!-- Títulos antes do nome -->
+  <div class="field">
+    <label for="titleBeforeName">Títulos antes do nome</label>
+    <input
+      id="titleBeforeName"
+      type="text"
+      name="titleBeforeName"
+      placeholder="Ex: GIC, SC, IC"
+    />
+  </div>
+
+  <!-- Títulos depois do nome -->
+  <div class="field">
+    <label for="titleAfterName">Títulos depois do nome</label>
+    <input
+      id="titleAfterName"
+      type="text"
+      name="titleAfterName"
+      placeholder="Ex: JW, DSM"
+    />
+  </div>
+
+  <!-- País -->
+  <div class="field">
+    <label for="country">País</label>
+    <select id="country" name="country" required>
+      <option value="">Selecione...</option>
+      <% [
+        "BR","AR","AT","BE","BG","BY","CA","CH","CL","CO","CY","CZ",
+        "DE","DK","EE","ES","FI","FR","GB","GR","HR","HU","ID","IL",
+        "IS","IT","KO","KR","LI","LT","LU","LV","MX","MY","NL","NO",
+        "PL","PT","RO","RS","RU","SE","SI","SK","TR","UA","US","UY"
+      ].forEach(function(code) { %>
+        <option value="<%= code %>"><%= code %>*</option>
+      <% }); %>
+    </select>
+  </div>
+</div>
+
+
+<div class="grid-3" style="margin-top: 10px;">
+  
+  <!-- Nome do gato -->
+  <div class="field">
+    <label for="name">Nome do gato</label>
+    <input id="name" type="text" name="name" required />
+  </div>
+
+  <!-- Microchip -->
+  <div class="field">
+    <label class="field-label" for="microchip">Microchip</label>
+    <input
+      id="microchip"
+      name="microchip"
+      type="text"
+      value="<%= cat && cat.microchip ? cat.microchip : '' %>"
+    />
+    <% if (typeof microchipError !== "undefined" && microchipError) { %>
+      <div style="color:#b91c1c; font-size:12px; margin-top:4px;">
+        <%= microchipError %>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Data de nascimento -->
+  <div class="field">
+    <label for="birthDate">Data de nascimento</label>
+    <input id="birthDate" type="date" name="birthDate" />
+    <div id="ageDisplay" class="age-badge"></div>
+  </div>
+</div>
+
+<div class="grid-3" style="margin-top: 10px;">
+
+<!-- Sexo -->
+      <div class="field">
+                  <label for="sex">Sexo</label>
+                  <select id="sex" name="sex" required>
+                    <option value="">Selecione...</option>
+                    <option value="M">Macho</option>
+                    <option value="F">Fêmea</option>
+                  </select>
+                </div>
+
+
+<div class="field">
+  <label for="breed">Raça</label>
+  <select id="breed" name="breed" required>
+    <option value="">Selecione...</option>
+  <option value="ABY">ABY</option>
+  <option value="SOM">SOM</option>
+  <option value="ACL">ACL</option>
+  <option value="ACS">ACS</option>
+  <option value="BAL">BAL</option>
+  <option value="SIA">SIA</option>
+  <option value="BEN">BEN</option>
+  <option value="BLH">BLH</option>
+  <option value="BSH">BSH</option>
+  <option value="BML">BML</option>
+  <option value="BOM">BOM</option>
+  <option value="BUR">BUR</option>
+  <option value="CHA">CHA</option>
+  <option value="CRX">CRX</option>
+  <option value="DRX">DRX</option>
+  <option value="DSP">DSP</option>
+  <option value="EUR">EUR</option>
+  <option value="EXO">EXO</option>
+  <option value="PER">PER</option>
+  <option value="GRX">GRX</option>
+  <option value="HCL">HCL</option>
+  <option value="HCS">HCS</option>
+  <option value="JBS">JBS</option>
+  <option value="KBL">KBL</option>
+  <option value="KBS">KBS</option>
+  <option value="KOR">KOR</option>
+  <option value="LPL">LPL</option>
+  <option value="LPS">LPS</option>
+  <option value="LYO">LYO</option>
+  <option value="MAU">MAU</option>
+  <option value="MCO">MCO</option>
+  <option value="NEM">NEM</option>
+  <option value="NFO">NFO</option>
+  <option value="OCI">OCI</option>
+  <option value="OLH">OLH</option>
+  <option value="OSH">OSH</option>
+  <option value="PEB">PEB</option>
+  <option value="RAG">RAG</option>
+  <option value="RUS">RUS</option>
+  <option value="SBI">SBI</option>
+  <option value="SIB">SIB</option>
+  <option value="SNO">SNO</option>
+  <option value="SOK">SOK</option>
+  <option value="SPH">SPH</option>
+  <option value="SRL">SRL</option>
+  <option value="SRS">SRS</option>
+  <option value="THA">THA</option>
+  <option value="TUA">TUA</option>
+  <option value="TUV">TUV</option>
+</select>
+</div>
+
+                <div class="field">
+                  <label for="colorEms">Cor / Código EMS</label>
+                  <select id="colorEms" name="colorEms" required>
+  <option value="">Selecione a raça primeiro...</option>
+</select>
+                </div>
+              </div>
+
+
+              <div class="grid-3" style="margin-top: 20px;">
+
+
+          
+
+                <div class="field">
+  <label>Castrado?</label>
+
+  <div class="inline-radio">
+    <label>
+      <input type="radio" name="neutered" value="SIM" />
+      Sim
+    </label>
+
+    <label>
+      <input type="radio" name="neutered" value="NAO" checked />
+      Não
+    </label>
+  </div>
+</div>
+
+              </div>
+</div> 
+
+<!-- PAIS -->
+<div class="section">
+  <div class="section-title"><strong>Informações dos Pais</strong></div>
+
+  <!-- Pai -->
+  <div class="field" style="margin-bottom: 12px;">
+    <label><strong>Pai</strong></label>
+    <div class="inline">
+      <label>
+        <input
+          type="radio"
+          name="fatherSource"
+          value="existing"
+          checked
+          onclick="toggleFatherSource()"
+        />
+        Usar gato cadastrado
+      </label>
+      <label>
+        <input
+          type="radio"
+          name="fatherSource"
+          value="manual"
+          onclick="toggleFatherSource()"
+        />
+        Informar manualmente
+      </label>
+    </div>
+  </div>
+
+  <!-- Pai EXISTENTE -->
+  <div
+    id="fatherExistingBlock"
+    class="field"
+    style="margin-bottom: 10px;"
+  >
+    <label for="fatherId">Selecione o pai (machos cadastrados)</label>
+    <select id="fatherId" name="fatherId">
+      <option value="">Nenhum selecionado</option>
+      <% if (maleCats && maleCats.length) { %>
+        <% maleCats.forEach(function(m) { %>
+          <option value="<%= m.id %>"><%= m.name %></option>
+        <% }); %>
+      <% } %>
+    </select>
+  </div>
+
+  <!-- Pai MANUAL -->
+  <div id="fatherManualBlock" style="display: none;">
+    <div class="grid-3">
+      <div class="field">
+        <label for="fatherNameManual">Nome do pai</label>
+        <input id="fatherNameManual" type="text" name="fatherNameManual" />
+      </div>
+
+      <div class="field">
+        <label for="fatherBreedManual">Raça</label>
+        <select id="fatherBreedManual" name="fatherBreedManual">
+          <option value="">Selecione...</option>
+          <option value="ABY">ABY</option>
+          <option value="SOM">SOM</option>
+          <option value="ACL">ACL</option>
+          <option value="ACS">ACS</option>
+          <option value="BAL">BAL</option>
+          <option value="SIA">SIA</option>
+          <option value="BEN">BEN</option>
+          <option value="BLH">BLH</option>
+          <option value="BSH">BSH</option>
+          <option value="BML">BML</option>
+          <option value="BOM">BOM</option>
+          <option value="BUR">BUR</option>
+          <option value="CHA">CHA</option>
+          <option value="CRX">CRX</option>
+          <option value="DRX">DRX</option>
+          <option value="DSP">DSP</option>
+          <option value="EUR">EUR</option>
+          <option value="EXO">EXO</option>
+          <option value="PER">PER</option>
+          <option value="GRX">GRX</option>
+          <option value="HCL">HCL</option>
+          <option value="HCS">HCS</option>
+          <option value="JBS">JBS</option>
+          <option value="KBL">KBL</option>
+          <option value="KBS">KBS</option>
+          <option value="KOR">KOR</option>
+          <option value="LPL">LPL</option>
+          <option value="LPS">LPS</option>
+          <option value="LYO">LYO</option>
+          <option value="MAU">MAU</option>
+          <option value="MCO">MCO</option>
+          <option value="NEM">NEM</option>
+          <option value="NFO">NFO</option>
+          <option value="OCI">OCI</option>
+          <option value="OLH">OLH</option>
+          <option value="OSH">OSH</option>
+          <option value="PEB">PEB</option>
+          <option value="RAG">RAG</option>
+          <option value="RUS">RUS</option>
+          <option value="SBI">SBI</option>
+          <option value="SIB">SIB</option>
+          <option value="SNO">SNO</option>
+          <option value="SOK">SOK</option>
+          <option value="SPH">SPH</option>
+          <option value="SRL">SRL</option>
+          <option value="SRS">SRS</option>
+          <option value="THA">THA</option>
+          <option value="TUA">TUA</option>
+          <option value="TUV">TUV</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="fatherColorEmsManual">Cor / Código EMS</label>
+        <select id="fatherColorEmsManual" name="fatherColorEmsManual">
+          <option value="">Selecione a raça primeiro...</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <hr
+    style="
+      border: none;
+      border-top: 1px dashed rgba(148, 163, 184, 0.4);
+      margin: 12px 0;
+    "
+  />
+
+  <!-- Mãe -->
+  <div class="field" style="margin-bottom: 12px;">
+    <label><strong>Mãe</strong></label>
+    <div class="inline">
+      <label>
+        <input
+          type="radio"
+          name="motherSource"
+          value="existing"
+          checked
+          onclick="toggleMotherSource()"
+        />
+        Usar gata cadastrada
+      </label>
+      <label>
+        <input
+          type="radio"
+          name="motherSource"
+          value="manual"
+          onclick="toggleMotherSource()"
+        />
+        Informar manualmente
+      </label>
+    </div>
+  </div>
+
+  <!-- Mãe EXISTENTE -->
+  <div
+    id="motherExistingBlock"
+    class="field"
+    style="margin-bottom: 10px;"
+  >
+    <label for="motherId">Selecione a mãe (fêmeas cadastradas)</label>
+    <select id="motherId" name="motherId">
+      <option value="">Nenhum selecionado</option>
+      <% if (femaleCats && femaleCats.length) { %>
+        <% femaleCats.forEach(function(f) { %>
+          <option value="<%= f.id %>"><%= f.name %></option>
+        <% }); %>
+      <% } %>
+    </select>
+  </div>
+
+<!-- Mãe MANUAL -->
+<div id="motherManualBlock" style="display: none;">
+  <div class="grid-3">
+
+    <!-- Nome da mãe -->
+    <div class="field">
+      <label for="motherNameManual">Nome da mãe</label>
+      <input
+        id="motherNameManual"
+        type="text"
+        name="motherNameManual"
+      />
+    </div>
+
+    <!-- Raça -->
+    <div class="field">
+      <label for="motherBreedManual">Raça</label>
+      <select id="motherBreedManual" name="motherBreedManual">
+        <option value="">Selecione...</option>
+        <option value="ABY">ABY</option>
+        <option value="SOM">SOM</option>
+        <option value="ACL">ACL</option>
+        <option value="ACS">ACS</option>
+        <option value="BAL">BAL</option>
+        <option value="SIA">SIA</option>
+        <option value="BEN">BEN</option>
+        <option value="BLH">BLH</option>
+        <option value="BSH">BSH</option>
+        <option value="BML">BML</option>
+        <option value="BOM">BOM</option>
+        <option value="BUR">BUR</option>
+        <option value="CHA">CHA</option>
+        <option value="CRX">CRX</option>
+        <option value="DRX">DRX</option>
+        <option value="DSP">DSP</option>
+        <option value="EUR">EUR</option>
+        <option value="EXO">EXO</option>
+        <option value="PER">PER</option>
+        <option value="GRX">GRX</option>
+        <option value="HCL">HCL</option>
+        <option value="HCS">HCS</option>
+        <option value="JBS">JBS</option>
+        <option value="KBL">KBL</option>
+        <option value="KBS">KBS</option>
+        <option value="KOR">KOR</option>
+        <option value="LPL">LPL</option>
+        <option value="LPS">LPS</option>
+        <option value="LYO">LYO</option>
+        <option value="MAU">MAU</option>
+        <option value="MCO">MCO</option>
+        <option value="NEM">NEM</option>
+        <option value="NFO">NFO</option>
+        <option value="OCI">OCI</option>
+        <option value="OLH">OLH</option>
+        <option value="OSH">OSH</option>
+        <option value="PEB">PEB</option>
+        <option value="RAG">RAG</option>
+        <option value="RUS">RUS</option>
+        <option value="SBI">SBI</option>
+        <option value="SIB">SIB</option>
+        <option value="SNO">SNO</option>
+        <option value="SOK">SOK</option>
+        <option value="SPH">SPH</option>
+        <option value="SRL">SRL</option>
+        <option value="SRS">SRS</option>
+        <option value="THA">THA</option>
+        <option value="TUA">TUA</option>
+        <option value="TUV">TUV</option>
+      </select>
+    </div>
+
+    <!-- EMS -->
+    <div class="field">
+      <label for="motherColorEmsManual">Cor / Código EMS</label>
+      <select id="motherColorEmsManual" name="motherColorEmsManual">
+        <option value="">Selecione a raça primeiro...</option>
+      </select>
+    </div>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+            <!-- REGISTRO -->
+            <div class="section">
+              <div class="section-title"><strong>Registro</strong></div>
+              <div class="grid-3">
+                <div class="field">
+                  <label for="memberType">Membro</label>
+                  <select id="memberType" name="memberType">
+                    <option value="">Selecione...</option>
+                    <option value="Fife Brasil">Fife Brasil</option>
+                    <option value="Fife Não Brasil">Fife Não Brasil</option>
+                    <option value="Não Fife">Não Fife</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="registerType">Tipo de registro</label>
+                  <select id="registerType" name="registerType">
+                    <option value="">Selecione...</option>
+                    <option value="RX">RX</option>
+                    <option value="LO">LO</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="pedigreeNumber">Número do pedigree</label>
+                  <input id="pedigreeNumber" type="text" name="pedigreeNumber" />
+                </div>
+              </div>
+
+              <div class="field" style="margin-top: 10px;">
+                <label>
+                  <input type="checkbox" name="registerPending" />
+                  Registro pendente
+                </label>
+              </div>
+            </div>
+
+            <!-- CRIADOR / PROPRIETÁRIO -->
+            <div class="section">
+              <div class="section-title"><strong>Criador / Proprietário</strong></div>
+              <div class="grid-2">
+                <div class="field">
+                  <label>Criador</label>
+                  <div class="inline">
+                    <label>
+                      <input
+                        type="radio"
+                        name="breederType"
+                        value="Eu Mesmo"
+                        checked
+                        onclick="document.getElementById('breederOtherName').style.display='none'; document.getElementById('breederOtherName').value='';"
+                      />
+                      Eu mesmo
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name="breederType"
+                        value="Outro"
+                        onclick="document.getElementById('breederOtherName').style.display='block';"
+                      />
+                      Outro
+                    </label>
+                  </div>
+                  <input
+                    id="breederOtherName"
+                    type="text"
+                    name="breederOtherName"
+                    placeholder="Nome do criador (se outro)"
+                    style="margin-top: 6px; display: none;"
+                  />
+                </div>
+
+                <div class="field">
+                  <label>Proprietários</label>
+                  <div class="inline">
+                    <label>
+                      <input
+                        type="radio"
+                        name="ownershipType"
+                        value="OWNER"
+                        checked
+                      />
+                      Sou proprietário
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name="ownershipType"
+                        value="CO-OWNERSHIP"
+                      />
+                      Co-propriedade
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- DOCUMENTOS -->
+            <div class="section">
+              <div class="section-title"><strong>Documentos</strong></div>
+              <div class="grid-3">
+                <div class="field">
+                  <label class="file-label" for="photo">Foto do gato (Opcional)</label>
+                  <input id="photo" class="file-input" type="file" name="photo" />
+                </div>
+
+                <div class="field">
+                  <label class="file-label" for="pedigreeFile">Pedigree (Obrigatório)</label>
+                  <input
+                    id="pedigreeFile"
+                    class="file-input"
+                    type="file"
+                    name="pedigreeFile"
+                  />
+                </div>
+
+                <div class="field">
+                  <label class="file-label" for="breedingCertificateFile">
+                    Atestado de reprodução / Certificado (Se Necessário)
+                  </label>
+                  <input
+                    id="breedingCertificateFile"
+                    class="file-input"
+                    type="file"
+                    name="breedingCertificateFile"
+                  />
+                </div>
+              </div>
+
+              <div class="field" style="margin-top: 10px;">
+                <label class="file-label" for="extraDocumentsFile">
+                  Documentos extras (Se Necessário)
+                </label>
+                <input
+                  id="extraDocumentsFile"
+                  class="file-input"
+                  type="file"
+                  name="extraDocumentsFile"
+                />
+            </div>
+          </div>
+
+<!-- OBSERVAÇÕES -->
+<div class="section">
+  <div class="section-title"><strong>Observações</strong></div>
+
+  <ul class="rules-list">
+
+      <li>
+      <strong>É do criador solicitante a total <strong>responsabilidade</strong> das informações mencionadas neste cadastro</strong>.
+    </li>
+
+    <li>
+      Caso seja filhote e o registro do pedigree esteja em andamento, deve-se selecionar "Registro Pendente". No lugar de anexar o pedigree, seve-se anexar a comprovação de Registro de Ninhada.
+    </li>
+
+    <li>
+      Foto do Gato: Opcional / Pedigree: Obrigatório / Atestado de reprodução ou Certificado: Obritório em caso de Registro de Ninhada / Documentos Extras: Quando Necessário ou solicitado.
+    </li>
+
+    <li>
+      Em caso de dúvidas, contate os admnistradores.
+    </li>
+  </ul>
+</div>
+
+          <!-- AÇÕES DO FORMULÁRIO -->
+          <div class="form-actions" style="margin-top: 24px; text-align: right;">
+            <button type="submit" class="btn btn-primary">
+              Salvar gato
+            </button>
+          </div>
+        </form>
+
+<script src="/js/ems-data.js"></script>
+
+    <script>
+      
+      // Formatar microchip
+      const microchipInput = document.getElementById("microchip");
+      if (microchipInput) {
+        microchipInput.addEventListener("input", () => {
+          let digits = microchipInput.value.replace(/\D/g, "").slice(0, 15);
+          let formatted = digits.replace(
+            /(\d{3})(\d{3})(\d{3})(\d{3})(\d{3})/,
+            function (_, a, b, c, d, e) {
+              let parts = [];
+              if (a) parts.push(a);
+              if (b) parts.push(b);
+              if (c) parts.push(c);
+              if (d) parts.push(d);
+              if (e) parts.push(e);
+              return parts.join(".");
+            }
+          );
+          microchipInput.value = formatted;
+        });
+      }
+
+      // Calcular idade
+      const birthInput = document.getElementById("birthDate");
+      const ageDisplay = document.getElementById("ageDisplay");
+      function updateAge() {
+        if (!birthInput || !ageDisplay || !birthInput.value) {
+          ageDisplay.textContent = "";
+          return;
+        }
+        const birth = new Date(birthInput.value);
+        if (isNaN(birth.getTime())) {
+          ageDisplay.textContent = "";
+          return;
+        }
+        const now = new Date();
+        let years = now.getFullYear() - birth.getFullYear();
+        let months = now.getMonth() - birth.getMonth();
+        if (months < 0) {
+          years--;
+          months += 12;
+        }
+        if (years < 0) {
+          ageDisplay.textContent = "";
+          return;
+        }
+        let text = "";
+        if (years > 0) text += years + (years === 1 ? " ano" : " anos");
+        if (months >= 0) {
+          if (text) text += " e ";
+          text += months + (months === 1 ? " mês" : " meses");
+        }
+        ageDisplay.textContent = text ? "Idade: " + text : "";
+      }
+      if (birthInput) {
+        birthInput.addEventListener("change", updateAge);
+        birthInput.addEventListener("input", updateAge);
+      }
+
+      // Alternar fonte do Pai
+      function toggleFatherSource() {
+        const radios = document.getElementsByName("fatherSource");
+        let mode = "existing";
+
+        for (let i = 0; i < radios.length; i++) {
+          if (radios[i].checked) {
+            mode = radios[i].value;
+            break;
+          }
+        }
+
+        const existing = document.getElementById("fatherExistingBlock");
+        const manual = document.getElementById("fatherManualBlock");
+
+        if (mode === "existing") {
+          if (existing) existing.style.display = "block";
+          if (manual) manual.style.display = "none";
+        } else {
+          if (existing) existing.style.display = "none";
+          if (manual) manual.style.display = "block";
+        }
+      }
+
+      // Alternar fonte da Mãe
+      function toggleMotherSource() {
+        const radios = document.getElementsByName("motherSource");
+        let mode = "existing";
+
+        for (let i = 0; i < radios.length; i++) {
+          if (radios[i].checked) {
+            mode = radios[i].value;
+            break;
+          }
+        }
+
+        const existing = document.getElementById("motherExistingBlock");
+        const manual = document.getElementById("motherManualBlock");
+
+        if (mode === "existing") {
+          if (existing) existing.style.display = "block";
+          if (manual) manual.style.display = "none";
+        } else {
+          if (existing) existing.style.display = "none";
+          if (manual) manual.style.display = "block";
+        }
+      }
+
+      // garantir que carrega já no estado correto
+      toggleFatherSource();
+      toggleMotherSource();
+
+// ================================
+// EMS DINÂMICO POR RAÇA (REUTILIZÁVEL)
+// ================================
+function bindBreedToEms(breedSelectId, emsSelectId) {
+  const breedSelect = document.getElementById(breedSelectId);
+  const emsSelect = document.getElementById(emsSelectId);
+
+  if (!breedSelect || !emsSelect) return;
+
+  breedSelect.addEventListener("change", () => {
+    const breedCode = breedSelect.value;
+    const emsList = window.EMS_BY_BREED[breedCode] || [];
+
+    emsSelect.innerHTML = "";
+
+    if (emsList.length === 0) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "Nenhum código disponível";
+      emsSelect.appendChild(opt);
+      return;
+    }
+
+    emsList.forEach(ems => {
+      const opt = document.createElement("option");
+      opt.value = ems;
+      opt.textContent = ems;
+      emsSelect.appendChild(opt);
+    });
+  });
+}
+
+// Gato principal
+bindBreedToEms("breed", "colorEms");
+
+// Pai (manual)
+bindBreedToEms("fatherBreedManual", "fatherColorEmsManual");
+
+// Mãe (manual)
+bindBreedToEms("motherBreedManual", "motherColorEmsManual");
+    </script>
+  </body>
+</html>

@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+
+<head>
+  <meta charset="utf-8" />
+  <title>Editar Serviço FFB - CaTech</title>
+
+  <!-- CSS GLOBAL -->
+  <link rel="stylesheet" href="/css/theme.css" />
+  <link rel="stylesheet" href="/css/layout.css" />
+  <link rel="stylesheet" href="/css/ffb-edit.css" />
+</head>
+
+
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div style="max-width: 1100px; margin: 0 auto;">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">
+              Editar Serviço FFB #<%= service.id %>
+            </h2>
+            <div class="welcome-sub">
+              Edição completa das informações do serviço. Apenas administradores têm acesso.
+            </div>
+          </div>
+          <div class="header-actions">
+            <a href="/ffb-services" class="btn">
+              ← Voltar para Serviços FFB
+            </a>
+          </div>
+        </div>
+
+        <div class="content-card">
+          <form method="POST" action="/ffb-services/<%= service.id %>/edit">
+            
+            
+            
+            <!-- ===================== DADOS DO SERVIÇO ===================== -->
+            <div class="section-card">
+              <div class="section-title">DADOS DO SERVIÇO</div>
+              <div class="section-helper">
+                Informações gerais do pedido de serviço.
+              </div>
+
+              <div class="section-grid">
+                <div class="form-row">
+                  <label>ID do serviço</label>
+                  <input
+                    type="text"
+                    value="<%= service.id %>"
+                    readonly
+                  />
+                </div>
+
+                <div class="form-row">
+                  <label>Tipo do serviço</label>
+                  <input
+                    type="text"
+                    name="type"
+                    value="<%= service.type || '' %>"
+                  />
+                </div>
+
+                <div class="form-row">
+                  <label>Status</label>
+                  <select name="status">
+                    <option value="ENVIADO_GATARINA" <%= service.status === "ENVIADO_GATARINA" ? "selected" : "" %>>
+                      Enviado Gatarina
+                    </option>
+                    <option value="ENVIADO_FFB" <%= service.status === "ENVIADO_FFB" ? "selected" : "" %>>
+                      Enviado FFB
+                    </option>
+                    <option value="RECEBIDO_FFB" <%= service.status === "RECEBIDO_FFB" ? "selected" : "" %>>
+                      Recebido FFB
+                    </option>
+                    <option value="ENVIADO_ASSOCIADO" <%= service.status === "ENVIADO_ASSOCIADO" ? "selected" : "" %>>
+                      Enviado para Associado
+                    </option>
+                  </select>
+                </div>
+
+                <div class="form-row">
+                  <label>Data de criação</label>
+                  <input
+                    type="text"
+                    value="<%= new Date(service.createdAt).toLocaleString('pt-BR') %>"
+                    readonly
+                  />
+                </div>
+
+                <div class="form-row">
+                  <label>Associado</label>
+                  <input
+                    type="text"
+                    value="<%= service.user && service.user.name ? service.user.name : 'N/D' %>"
+                    readonly
+                  />
+                </div>
+
+                <div class="form-row">
+                  <label>E-mail do associado</label>
+                  <input
+                    type="text"
+                    value="<%= service.user && service.user.email ? service.user.email : 'N/D' %>"
+                    readonly
+                  />
+                </div>
+              </div>
+
+              <div class="form-row" style="margin-top: 10px;">
+                <label>Descrição / Observações do serviço</label>
+                <textarea name="description"><%= service.description || "" %></textarea>
+              </div>
+            </div>
+
+<!-- ===================== DADOS DO MACHO ===================== -->
+<div class="section-card">
+  <div class="section-title">DADOS DO MACHO</div>
+  <div class="section-helper">
+    Informações do reprodutor macho.
+  </div>
+
+  <div class="section-grid">
+    <div class="form-row">
+      <label>Nome</label>
+      <input
+        type="text"
+        name="maleName"
+        value="<%= litter ? (litter.maleName || '') : '' %>"
+      />
+    </div>
+
+    <div class="form-row">
+      <label>Raça</label>
+      <input
+        type="text"
+        name="maleBreed"
+        value="<%= litter ? (litter.maleBreed || '') : '' %>"
+      />
+    </div>
+
+    <div class="form-row">
+      <label>Cód. EMS</label>
+      <input
+        type="text"
+        name="maleEms"
+        value="<%= litter ? (litter.maleEms || '') : '' %>"
+      />
+    </div>
+
+    <div class="form-row">
+      <label>Nº Microchip</label>
+      <input
+        type="text"
+        name="maleMicrochip"
+        value="<%= litter ? (litter.maleMicrochip || '') : '' %>"
+      />
+    </div>
+
+    <div class="form-row">
+      <label>(BR) FFB</label>
+<input
+  type="text"
+  name="maleFfbLo"
+  value="<%= sire ? ((sire.pedigreeType || '') + ' ' + (sire.pedigreeNumber || '')) : (litter ? litter.maleFfbLo || '' : '') %>"
+/>
+    </div>
+
+    <div class="form-row">
+      <label>Nº do pedigree</label>
+<input
+  type="text"
+  name="malePedigree"
+  value="<%= sire ? (sire.pedigreeNumber || '') : '' %>"
+/>
+    </div>
+  </div>
+</div>
+
+<div class="section-card">
+  <div class="section-title">PROPRIEDADE DO MACHO</div>
+
+  <div class="form-row">
+    <label>Propriedade</label>
+    <div class="inline">
+      <label>
+        <input
+          type="radio"
+          name="maleOwnership"
+          value="OWNER"
+          <%= litter && litter.maleOwnership !== "NOT_OWNER" ? "checked" : "" %>
+        />
+        Sou proprietário
+      </label>
+
+      <label>
+        <input
+          type="radio"
+          name="maleOwnership"
+          value="NOT_OWNER"
+          <%= litter && litter.maleOwnership === "NOT_OWNER" ? "checked" : "" %>
+        />
+        Não sou proprietário
+      </label>
+    </div>
+  </div>
+
+  <div id="maleNotOwnerBlock"
+       style="<%= litter && litter.maleOwnership === 'NOT_OWNER' ? '' : 'display:none;' %>">
+
+    <div class="section-grid">
+      <div class="form-row">
+        <label>Nome do proprietário</label>
+        <input type="text" name="externalOwnerName"
+               value="<%= litter?.externalOwnerName || '' %>" />
+      </div>
+
+      <div class="form-row">
+        <label>Email</label>
+        <input type="email" name="externalOwnerEmail"
+               value="<%= litter?.externalOwnerEmail || '' %>" />
+      </div>
+
+      <div class="form-row">
+        <label>CPF</label>
+        <input type="text" name="externalOwnerCpf"
+               value="<%= litter?.externalOwnerCpf || '' %>" />
+      </div>
+
+      <div class="form-row">
+        <label>Telefone</label>
+        <input type="text" name="externalOwnerPhone"
+               value="<%= litter?.externalOwnerPhone || '' %>" />
+      </div>
+
+      <div class="form-row">
+        <label>Gatil</label>
+        <input type="text" name="externalOwnerCattery"
+               value="<%= litter?.externalOwnerCattery || '' %>" />
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ===================== DADOS DA FÊMEA ===================== -->
+<div class="section-card">
+  <div class="section-title">DADOS DA FÊMEA</div>
+  <div class="section-helper">
+    Informações da reprodutora fêmea.
+  </div>
+
+  <div class="section-grid">
+    <div class="form-row">
+      <label>Nome</label>
+      <input
+        type="text"
+        name="femaleName"
+        value="<%= litter ? (litter.femaleName || '') : '' %>"
+      />
+    </div>
+
+    <div class="form-row">
+      <label>Raça</label>
+      <input
+        type="text"
+        name="femaleBreed"
+        value="<%= litter ? (litter.femaleBreed || '') : '' %>"
+      />
+    </div>
+
+    <div class="form-row">
+      <label>Cód. EMS</label>
+      <input
+        type="text"
+        name="femaleEms"
+        value="<%= litter ? (litter.femaleEms || '') : '' %>"
+      />
+    </div>
+
+    <div class="form-row">
+      <label>Nº Microchip</label>
+      <input
+        type="text"
+        name="femaleMicrochip"
+        value="<%= litter ? (litter.femaleMicrochip || '') : '' %>"
+      />
+    </div>
+
+    <div class="form-row">
+      <label>(BR) FFB</label>
+<input
+  type="text"
+  name="femaleFfbLo"
+  value="<%= dam ? ((dam.pedigreeType || '') + ' ' + (dam.pedigreeNumber || '')) : (litter ? litter.femaleFfbLo || '' : '') %>"
+/>
+    </div>
+
+    <div class="form-row">
+      <label>Nº do pedigree</label>
+<input
+  type="text"
+  name="femalePedigree"
+  value="<%= dam ? (dam.pedigreeNumber || '') : '' %>"
+/>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== DADOS DA NINHADA ===================== -->
+<div class="section-card">
+  <div class="section-title">DADOS DA NINHADA</div>
+  <div class="section-helper">
+    Informações gerais da ninhada.
+  </div>
+
+  <div class="section-grid">
+    <div class="form-row">
+  <label>País</label>
+  <select name="litterCountry">
+    <% ["BR","AR","US","PT","FR","IT"].forEach(function(c){ %>
+      <option
+        value="<%= c %>"
+        <%= litter?.catteryCountry === c ? "selected" : "" %>
+      >
+        <%= c %>
+      </option>
+    <% }) %>
+  </select>
+</div>
+
+
+
+<div class="form-row">
+  <label>Nome do Gatil</label>
+  <input
+    type="text"
+    name="catteryName"
+    maxlength="15"
+    value="<%= litter ? (litter.catteryName || '') : '' %>"
+  />
+</div>
+
+
+
+    <div class="form-row">
+  <label>Nº de filhotes</label>
+  <input
+    type="number"
+    min="0"
+    name="litterCount"
+    value="<%= litter ? (litter.litterCount || '') : '' %>"
+  />
+</div>
+
+
+    <div class="form-row">
+      <label>Data de nascimento</label>
+      <input
+        type="date"
+        name="litterBirthDate"
+        value="<%= litter && litter.litterBirthDate ? new Date(litter.litterBirthDate).toISOString().slice(0,10) : '' %>"
+      />
+    </div>
+  </div>
+</div>
+
+            <!-- ===================== DADOS DOS FILHOTES ===================== -->
+            <div class="section-card">
+              <div class="section-title">DADOS DOS FILHOTES</div>
+              <div class="section-helper">
+                Edição linha a linha dos filhotes. Nesta versão os dados são apenas organizados; para salvar alterações de cada filhote, vamos ajustar depois a lógica do POST.
+              </div>
+<% if (kittens && kittens.length) { %>
+<div style="overflow-x: auto; width: 100%;">
+  <table class="kittens-table">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Nome</th>
+      <th>Raça</th>
+      <th>EMS / Cor + Olhos</th>
+      <th>Sexo</th>
+      <th>Microchip</th>
+      <th>Uso para reprodução</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% kittens.forEach(function(kitten, idx) { %>
+      <tr>
+        <td><%= idx + 1 %></td>
+
+        <!-- Nome -->
+        <td>
+          <input
+            type="text"
+            name="kittens[<%= idx %>][name]"
+            value="<%= kitten.name || '' %>"
+          />
+        </td>
+
+<!-- RAÇA (SIGLA) -->
+<td>
+  <select
+    name="kittens[<%= idx %>][breed]"
+    data-kitten-breed="<%= idx %>"
+  >
+    <option value="">Selecione...</option>
+
+    <% [
+      "ABY","ACL","ACS","BAL","BEN","BLH","BML","BOM","BSH","BUR","CHA","CRX","DRX","DSP","EUR",
+      "EXO","GRX","HCL","HCS","JBS","KBL","KBS","KOR","LPL","LPS","LYO","MAU","MCO","NEM",
+      "NFO","OCI","OLH","OSH","PEB","PER","RAG","RUS","SBI","SIA","SIN","SIB","SNO",
+      "SOK","SOM","SPH","SRL","SRS","BHA","TUA","TUV"
+    ].forEach(function(code) { %>
+      <option
+        value="<%= code %>"
+        <%= kitten.breed === code ? "selected" : "" %>
+      >
+        <%= code %>
+      </option>
+    <% }); %>
+  </select>
+</td>
+
+<!-- EMS (DINÂMICO) -->
+<td>
+  <select
+    name="kittens[<%= idx %>][emsEyes]"
+    data-kitten-ems="<%= idx %>"
+    data-current="<%= kitten.emsEyes || '' %>"
+  >
+    <option value="">Selecione uma raça primeiro...</option>
+  </select>
+</td>
+
+        <!-- Sexo -->
+<td>
+  <select name="kittens[<%= idx %>][sex]">
+    <option value="">---</option>
+    <option value="M" <%= kitten.sex === "M" ? "selected" : "" %>>Macho</option>
+    <option value="F" <%= kitten.sex === "F" ? "selected" : "" %>>Fêmea</option>
+  </select>
+</td>
+
+
+        <!-- Microchip -->
+        <td>
+          <input
+            type="text"
+            name="kittens[<%= idx %>][microchip]"
+            value="<%= kitten.microchip || '' %>"
+          />
+        </td>
+
+        <!-- Repro -->
+        <td style="text-align:center;">
+  <input
+    type="checkbox"
+    name="kittens[<%= idx %>][breeding]"
+    value="Breeding"
+    <%= kitten.breeding === "Breeding" ? "checked" : "" %>
+  />
+</td>
+      </tr>
+    <% }); %>
+  </tbody>
+</table>
+</div>
+<% } else { %>
+  <div class="section-helper">
+    Nenhum filhote vinculado a esta ninhada foi encontrado.
+  </div>
+<% } %>
+
+<div class="form-row" style="margin-top:10px;">
+  <label>Observações gerais dos filhotes</label>
+  <textarea name="kittensGeneralObs">
+    <%= litter?.kittensGeneralObs || '' %>
+  </textarea>
+</div>
+
+            </div>
+
+            <!-- ===================== AÇÕES ===================== -->
+            <div
+              style="
+                display: flex;
+                justify-content: flex-end;
+                gap: 8px;
+                margin-top: 16px;
+              "
+            >
+              <a href="/ffb-services" class="btn">Cancelar</a>
+              <button type="submit" class="btn btn-primary">
+                Salvar alterações
+              </button>
+            </div> 
+          </form>
+        </div> 
+      </div> 
+    </main>
+  </div> 
+
+<script src="/js/ems-data.js"></script>
+
+<script>
+  function updateEMSOptions(breedSelect, emsSelect, currentEMS = "") {
+    const breed = breedSelect.value;
+    const list = window.EMS_BY_BREED[breed] || [];
+
+    emsSelect.innerHTML = "";
+
+    if (list.length === 0) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "Nenhuma opção disponível";
+      emsSelect.appendChild(opt);
+      return;
+    }
+
+    list.forEach((ems) => {
+      const opt = document.createElement("option");
+      opt.value = ems;
+      opt.textContent = ems;
+      if (ems === currentEMS) opt.selected = true;
+      emsSelect.appendChild(opt);
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll("[data-kitten-breed]").forEach((breedSelect) => {
+      const idx = breedSelect.dataset.kittenBreed;
+      const emsSelect = document.querySelector(`[data-kitten-ems="${idx}"]`);
+      const savedEMS = emsSelect.getAttribute("data-current") || "";
+
+      breedSelect.addEventListener("change", () => {
+        updateEMSOptions(breedSelect, emsSelect);
+      });
+
+      if (breedSelect.value) {
+        updateEMSOptions(breedSelect, emsSelect, savedEMS);
+      }
+    });
+
+    /* ===== PROPRIEDADE DO MACHO ===== */
+    const maleOwnershipRadios = document.getElementsByName("maleOwnership");
+    const maleNotOwnerBlock = document.getElementById("maleNotOwnerBlock");
+
+    function refreshMaleOwnership() {
+      let show = false;
+      maleOwnershipRadios.forEach(radio => {
+        if (radio.checked && radio.value === "NOT_OWNER") {
+          show = true;
+        }
+      });
+      if (maleNotOwnerBlock) {
+        maleNotOwnerBlock.style.display = show ? "block" : "none";
+      }
+    }
+
+    maleOwnershipRadios.forEach(radio => {
+      radio.addEventListener("change", refreshMaleOwnership);
+    });
+
+    refreshMaleOwnership();
+  });
+</script>
+
+
+</body>
+</html>
+

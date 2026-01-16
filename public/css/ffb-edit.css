@@ -1,0 +1,168 @@
+/* ============================
+   AJUSTE PARA IGUALAR FORMULÁRIOS
+   ============================ */
+
+/* cartão vira section */
+.section-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+/* título igual section-title */
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+/* helper */
+.section-helper {
+  font-size: 12px;
+  color: var(--text-soft);
+  margin-bottom: 12px;
+}
+
+/* grid igual grid-3 */
+.section-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* quebra automática em telas menores */
+@media (max-width: 900px) {
+  .section-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .section-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* form-row vira field */
+.form-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-row label {
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.form-row input,
+.form-row select,
+.form-row textarea {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-soft);
+  font-size: 13px;
+}
+
+/* textarea */
+.form-row textarea {
+  resize: vertical;
+  min-height: 70px;
+}
+
+/* radios inline */
+.form-row .inline,
+.form-row .inline-radio {
+  display: flex;
+  gap: 16px;
+  margin-top: 6px;
+}
+
+/* tabela filhotes */
+.kittens-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.kittens-table th,
+.kittens-table td {
+  border: 1px solid var(--border-soft);
+  padding: 6px;
+}
+
+.kittens-table thead {
+  background: var(--bg-soft);
+}
+
+.kittens-table tr:nth-child(even) {
+  background: #fafafa;
+}
+
+
+/* ============================
+   ESPAÇAMENTO CORRETO GRID 3
+   ============================ */
+
+/* grid igual ao formulário original */
+.section-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 16px;
+  row-gap: 16px;
+  margin-top: 12px;
+}
+
+/* quebra responsiva */
+@media (max-width: 900px) {
+  .section-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .section-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* cada campo */
+.form-row {
+  display: flex;
+  flex-direction: column;
+}
+
+/* label */
+.form-row label {
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+/* inputs com espaçamento correto */
+.form-row input,
+.form-row select,
+.form-row textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-soft);
+  font-size: 13px;
+}
+
+/* textarea não grudar */
+.form-row textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* radios alinhados */
+.form-row .inline {
+  display: flex;
+  gap: 20px;
+  margin-top: 6px;
+}

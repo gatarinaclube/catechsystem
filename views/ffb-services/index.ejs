@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Serviços FFB - CaTech</title>
+
+  <link rel="stylesheet" href="/css/theme.css" />
+  <link rel="stylesheet" href="/css/layout.css" />
+</head>
+
+<body>
+<div class="shell">
+  <%- include('../partials/sidebar', { user, currentPath }) %>
+
+  <main class="main">
+
+    <div class="main-header">
+      <div>
+        <h2 class="welcome-title">Serviços FFB</h2>
+        <div class="welcome-sub">
+          Painel administrativo dos serviços enviados pelos associados
+          (ex.: Registro de Ninhada).
+        </div>
+      </div>
+    </div>
+
+    <div class="content-card">
+      <div class="content-title">Serviços recebidos</div>
+      <div class="content-sub">
+        Abaixo estão os serviços mais recentes. Aqui você pode acompanhar,
+        atualizar o status e gerar PDF para conferência.
+      </div>
+
+<%
+const novos = services.filter(s =>
+  s.statuses?.[0]?.status === 'ENVIADO_GATARINA'
+);
+
+const emAndamento = services.filter(s =>
+  ['COM_PENDENCIA', 'ENVIADO_FFB', 'RECEBIDO_FFB'].includes(
+    s.statuses?.[0]?.status
+  )
+);
+
+const concluidos = services.filter(s =>
+  s.statuses?.[0]?.status === 'ENVIADO_ASSOCIADO'
+);
+%>
+
+<!-- ===================== NOVOS ===================== -->
+<h3 style="margin-top:16px;">🆕 Novos</h3>
+
+<% if (!novos.length) { %>
+  <p class="empty">Nenhum serviço novo.</p>
+<% } else { %>
+  <div class="list">
+  <% novos.forEach(function (s) {
+    const lastStatus = s.statuses?.[0] || null;
+  %>
+
+    <div class="item service-item">
+      <div class="service-info">
+
+        <div class="item-link">Serviço #<%= s.id %> — <%= s.type %></div>
+
+        <div class="item-sub">
+          Solicitado por <strong><%= s.user?.name || "N/D" %></strong>
+          <% if (s.user?.email) { %> — <%= s.user.email %> <% } %>
+        </div>
+
+        <div class="item-sub">
+          Criado em: <%= new Date(s.createdAt).toLocaleString("pt-BR") %>
+        </div>
+
+        <!-- MALOTE -->
+<div class="item-sub" style="margin-top:6px;">
+  <label style="font-size:11px; color:#777;">Malote:</label>
+  <input
+  type="text"
+  placeholder="00/26"
+  value="<%= s.malote ?? '' %>"
+  data-service-id="<%= s.id %>"
+  class="malote-input"
+  maxlength="5"
+  style="width:80px; font-size:12px; padding:4px; margin-left:4px;"
+/>
+</div>
+
+
+        <div class="item-sub">
+          Status atual:
+          <span class="status-badge status-<%= lastStatus?.status %>">
+            <%= lastStatus?.status.replaceAll("_", " ") %>
+          </span>
+        </div>
+
+        <div class="item-sub item-description">
+          <%= s.description || '&nbsp;' %>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
+        <a href="/ffb-services/<%= s.id %>/bundle" class="btn">Gerar Serviço</a>
+        <a href="/ffb-services/<%= s.id %>/edit" class="btn">Editar</a>
+
+        <form method="POST" action="/ffb-services/<%= s.id %>/status">
+          <select name="newStatus" style="font-size:12px;">
+            <option value="ENVIADO_GATARINA" selected>Enviado para Gatarina</option>
+            <option value="COM_PENDENCIA">Com Pendência</option>
+            <option value="ENVIADO_FFB">Enviado para FFB</option>
+            <option value="RECEBIDO_FFB">Recebido FFB</option>
+            <option value="ENVIADO_ASSOCIADO">Enviado para Associado</option>
+          </select>
+          <button class="btn" style="margin-top:4px;">Atualizar status</button>
+        </form>
+      </div>
+    </div>
+
+  <% }) %>
+  </div>
+<% } %>
+
+<!-- ===================== EM ANDAMENTO ===================== -->
+<h3 style="margin-top:24px;">⏳ Em Andamento</h3>
+
+<% if (!emAndamento.length) { %>
+  <p class="empty">Nenhum serviço em andamento.</p>
+<% } else { %>
+  <div class="list">
+  <% emAndamento.forEach(function (s) {
+    const lastStatus = s.statuses?.[0] || null;
+  %>
+
+    <div class="item service-item">
+      <div class="service-info">
+
+        <div class="item-link">Serviço #<%= s.id %> — <%= s.type %></div>
+
+        <div class="item-sub">
+          Solicitado por <strong><%= s.user?.name || "N/D" %></strong>
+          <% if (s.user?.email) { %> — <%= s.user.email %> <% } %>
+        </div>
+
+        <div class="item-sub">
+          Criado em: <%= new Date(s.createdAt).toLocaleString("pt-BR") %>
+        </div>
+
+        <!-- MALOTE -->
+<div class="item-sub" style="margin-top:6px;">
+  <label style="font-size:11px; color:#777;">Malote:</label>
+  <input
+  type="text"
+  placeholder="00/26"
+  value="<%= s.malote ?? '' %>"
+  data-service-id="<%= s.id %>"
+  class="malote-input"
+  maxlength="5"
+  style="width:80px; font-size:12px; padding:4px; margin-left:4px;"
+/>
+</div>
+
+
+        <div class="item-sub">
+          Status atual:
+          <span class="status-badge status-<%= lastStatus?.status %>">
+            <%= lastStatus?.status.replaceAll("_", " ") %>
+          </span>
+        </div>
+
+        <div class="item-sub item-description">
+          <%= s.description || '&nbsp;' %>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
+        <a href="/ffb-services/<%= s.id %>/bundle" class="btn">Gerar Serviço</a>
+        <a href="/ffb-services/<%= s.id %>/edit" class="btn">Editar</a>
+
+        <form method="POST" action="/ffb-services/<%= s.id %>/status">
+          <select name="newStatus" style="font-size:12px;">
+            <option value="COM_PENDENCIA" <%= lastStatus.status==='COM_PENDENCIA'?'selected':'' %>>Com Pendência</option>
+            <option value="ENVIADO_FFB" <%= lastStatus.status==='ENVIADO_FFB'?'selected':'' %>>Enviado para FFB</option>
+            <option value="RECEBIDO_FFB" <%= lastStatus.status==='RECEBIDO_FFB'?'selected':'' %>>Recebido FFB</option>
+            <option value="ENVIADO_ASSOCIADO">Enviado para Associado</option>
+          </select>
+          <button class="btn" style="margin-top:4px;">Atualizar status</button>
+        </form>
+      </div>
+    </div>
+
+  <% }) %>
+  </div>
+<% } %>
+
+<!-- ===================== CONCLUÍDOS ===================== -->
+<h3 style="margin-top:24px;">✅ Concluídos</h3>
+
+<% if (!concluidos.length) { %>
+  <p class="empty">Nenhum serviço concluído.</p>
+<% } else { %>
+  <div class="list">
+
+  <% concluidos.forEach(function (s) { 
+       const lastStatus = s.statuses?.[0] || null;
+  %>
+
+      <!-- LINHA RESUMIDA -->
+<div class="item service-item">
+
+  <div
+    class="item-link"
+    style="cursor:pointer;"
+    onclick="this.parentElement.nextElementSibling.classList.toggle('hidden')"
+  >
+    Serviço #<%= s.id %> — <%= s.type %>
+    / Solicitado por <%= s.user?.name || 'N/D' %>
+    / Malote: <%= s.malote ?? '-' %>
+  </div>
+
+</div>
+
+<!-- BLOCO EXPANDIDO (FORA DO FLEX) -->
+<div class="service-expand hidden">
+
+  <div class="item service-item">
+
+    <!-- ESQUERDA -->
+    <div class="service-info">
+
+      <div class="item-sub">
+        Solicitado por
+        <strong><%= s.user?.name || "N/D" %></strong>
+        <% if (s.user?.email) { %> — <%= s.user.email %> <% } %>
+      </div>
+
+      <div class="item-sub">
+        Criado em:
+        <%= new Date(s.createdAt).toLocaleString("pt-BR") %>
+      </div>
+
+      <!-- MALOTE -->
+<div class="item-sub" style="margin-top:6px;">
+  <label style="font-size:11px; color:#777;">Malote:</label>
+  <input
+  type="text"
+  placeholder="00/26"
+  value="<%= s.malote ?? '' %>"
+  data-service-id="<%= s.id %>"
+  class="malote-input"
+  maxlength="5"
+  style="width:80px; font-size:12px; padding:4px; margin-left:4px;"
+/>
+</div>
+
+      <div class="item-sub">
+        Status atual:
+        <span class="status-badge status-<%= lastStatus?.status %>">
+          <%= lastStatus?.status.replaceAll("_", " ") %>
+        </span>
+      </div>
+
+      <div class="item-sub item-description">
+        <%= s.description || '&nbsp;' %>
+      </div>
+
+    </div>
+
+    <!-- DIREITA -->
+    <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
+
+      <a href="/ffb-services/<%= s.id %>/bundle" class="btn">Gerar Serviço</a>
+      <a href="/ffb-services/<%= s.id %>/edit" class="btn">Editar</a>
+
+      <form method="POST" action="/ffb-services/<%= s.id %>/status">
+        <select name="newStatus" style="font-size:12px;">
+          <option value="ENVIADO_GATARINA">Enviado para Gatarina</option>
+          <option value="COM_PENDENCIA">Com Pendência</option>
+          <option value="ENVIADO_FFB">Enviado para FFB</option>
+          <option value="RECEBIDO_FFB">Recebido FFB</option>
+          <option value="ENVIADO_ASSOCIADO" selected>Enviado para Associado</option>
+        </select>
+        <button class="btn" style="margin-top:4px;">Atualizar status</button>
+      </form>
+
+    </div>
+
+  </div>
+
+</div>
+
+  <% }) %>
+  </div>
+<% } %>
+
+
+    </div>
+  </main>
+</div>
+
+<script src="/js/ffb-services.js"></script>
+</body>
+</html>

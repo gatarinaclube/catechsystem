@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Dashboard - CaTech</title>
+
+    <!-- CSS GLOBAL -->
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body>
+  <div class="shell">
+    <%- include('partials/sidebar', { user, currentPath }) %>
+
+    <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">
+              Olá,
+              <%= user && user.name ? user.name.split(" ")[0] : "criador" %> 👋
+            </h2>
+            <div class="welcome-sub">
+              Use o menu ao lado para acessar seus gatos e outros
+              recursos do CaTech.
+            </div>
+          </div>
+          <div class="actions">
+            <a href="/cats/new" class="btn-primary btn">+ Novo gato</a>
+            <a href="/cats" class="btn">
+  <%= (user && user.role === "ADMIN") ? "Ver todos os gatos" : "Ver meus gatos" %>
+</a>
+          </div>
+        </div>
+
+        <% if (user && user.role === "ADMIN" && catsInReviewCount > 0) { %>
+  <div class="content-card" style="border-left: 4px solid #f59e0b; margin-bottom: 20px;">
+    <div class="content-title" style="display:flex; align-items:center; gap:8px;">
+      ⚠️ Notificações
+    </div>
+
+    <div class="content-sub" style="margin-top:6px;">
+      Existem
+      <strong><%= catsInReviewCount %></strong>
+      gato(s) com status
+      <strong>Em análise</strong>
+      aguardando revisão.
+    </div>
+
+    <div style="margin-top:10px;">
+      <a href="/cats?status=NOVO" class="btn btn-warning">
+        Revisar agora →
+      </a>
+    </div>
+  </div>
+<% } %>
+
+<% if (user && user.role === "ADMIN" && usersPendingApprovalCount > 0) { %>
+  <div class="content-card" style="border-left: 4px solid #dc2626; margin-bottom: 20px;">
+    <div class="content-title">👤 Novos cadastros</div>
+    <div class="content-sub">
+      Existem
+      <strong><%= usersPendingApprovalCount %></strong>
+      usuário(s) aguardando análise de cadastro.
+    </div>
+    <div style="margin-top:10px;">
+      <a href="/users" class="btn btn-danger">
+        Analisar cadastros →
+      </a>
+    </div>
+  </div>
+<% } %>
+
+
+<% if (user && user.role === "ADMIN" && servicesPendingFFBCount > 0) { %>
+  <div class="content-card" style="border-left: 4px solid #2563eb; margin-bottom: 20px;">
+    <div class="content-title">📄 Serviços FFB</div>
+    <div class="content-sub">
+      Existem
+      <strong><%= servicesPendingFFBCount %></strong>
+      serviço(s) enviados para a Gatarina aguardando conferência.
+    </div>
+    <div style="margin-top:10px;">
+      <a href="/ffb-services" class="btn btn-primary">
+        Ver serviços →
+      </a>
+    </div>
+  </div>
+<% } %>
+
+
+
+        <div class="content-card">
+          <div class="content-title">Atalhos rápidos</div>
+          <div class="content-sub">
+            Gerêncie seus gatos nos atalhos abaixo.
+          </div>
+
+          <div class="quick-grid">
+            <div class="quick-card">
+              <div class="quick-label">Principal</div>
+              <div class="quick-value">Meus gatos</div>
+              <div class="quick-link">
+                <a href="/cats">Acessar lista de gatos →</a>
+              </div>
+            </div>
+
+            <div class="quick-card">
+              <div class="quick-label">Cadastro</div>
+              <div class="quick-value">Adicionar novo gato</div>
+              <div class="quick-link">
+                <a href="/cats/new">Ir para cadastro →</a>
+              </div>
+            </div>
+
+            <% if (user && user.role === "ADMIN") { %>
+              <div class="quick-card">
+                <div class="quick-label">Admin</div>
+                <div class="quick-value">Serviços FFB</div>
+                <div class="quick-link">
+                  <a href="/ffb-services">Ver registros de ninhada →</a>
+                </div>
+              </div>
+            <% } %>
+          </div>
+        </div>

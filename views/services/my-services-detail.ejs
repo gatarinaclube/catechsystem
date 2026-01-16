@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Detalhe do Serviço - CaTech</title>
+
+    <!-- CSS GLOBAL -->
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <!-- HEADER PADRÃO -->
+        <div class="header">
+          <div>
+            <div class="title-main">Detalhe do Serviço</div>
+            <div class="title-sub">
+              Código: <strong><%= service.id %></strong>
+              · Tipo: <strong><%= service.type %></strong>
+            </div>
+          </div>
+
+          <div class="header-actions">
+            <a href="/my-services" class="btn">
+              ← Voltar para Meus Serviços
+            </a>
+
+            <a
+              href="/my-services/<%= service.id %>/pdf"
+              class="btn"
+            >
+              📄 Baixar comprovante (PDF)
+            </a>
+
+          </div>
+        </div>
+
+        <div class="content">
+          <!-- BLOCO: INFORMAÇÕES DO SERVIÇO -->
+          <div class="section">
+            <div class="section-title">Informações do serviço</div>
+
+            <div class="grid-2">
+              <div class="field">
+                <div class="field-label">Tipo de serviço</div>
+                <div class="field-value"><%= service.type %></div>
+              </div>
+
+              <div class="field">
+                <div class="field-label">Data da solicitação</div>
+                <div class="field-value">
+                  <%= new Date(service.createdAt).toLocaleString('pt-BR') %>
+                </div>
+              </div>
+            </div>
+
+            <div class="field">
+              <div class="field-label">Descrição</div>
+              <div class="field-value">
+                <%= service.description || "-" %>
+              </div>
+            </div>
+          </div>
+
+          <!-- BLOCO: LINHA DO TEMPO DE STATUS -->
+          <div class="section">
+            <div class="section-title">Linha do tempo de status</div>
+
+            <% 
+              const mapStatus = {
+                ENVIADO_GATARINA: "Enviado para Gatarina",
+                ENVIADO_FFB: "Enviado para FFB",
+                RECEBIDO_FFB: "Recebido FFB",
+                ENVIADO_ASSOCIADO: "Enviado para Associado",
+              };
+            %>
+
+            <% if (!service.statuses || service.statuses.length === 0) { %>
+              <p class="empty">
+                Nenhum status adicional foi registrado além da criação do serviço.<br />
+                <span style="font-size:12px;">
+                  Solicitado em
+                  <%= new Date(service.createdAt).toLocaleString('pt-BR') %>.
+                </span>
+              </p>
+            <% } else { %>
+              <ul class="list">
+                <% service.statuses.forEach(function(st, index) { %>
+                  <li class="item">
+                    <div>
+                      <div class="item-link" style="font-weight:600; text-decoration:none;">
+                        <%= index + 1 %>. <%= mapStatus[st.status] || st.status %>
+                      </div>
+                      <div class="item-sub">
+                        Registrado em
+                        <%= new Date(st.createdAt).toLocaleString('pt-BR') %>
+                      </div>
+                    </div>
+                  </li>
+                <% }) %>
+              </ul>
+            <% } %>
+          </div>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
