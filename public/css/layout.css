@@ -984,3 +984,11 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* Ajuste exclusivo para a tela de login no mobile */
+@media (max-width: 480px) {
+  .auth-card {
+    width: 95%;
+    max-width: 420px;
+    padding: 32px 24px;
+  }
+}

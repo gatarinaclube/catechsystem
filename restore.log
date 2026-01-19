@@ -1,0 +1,180 @@
+pg_restore: connecting to database for restore
+pg_restore: dropping FK CONSTRAINT TransferRequest TransferRequest_serviceRequestId_fkey
+pg_restore: dropping FK CONSTRAINT TransferRequest TransferRequest_catId_fkey
+pg_restore: dropping FK CONSTRAINT TitleHomologation TitleHomologation_serviceRequestId_fkey
+pg_restore: dropping FK CONSTRAINT ServiceStatus ServiceStatus_serviceId_fkey
+pg_restore: dropping FK CONSTRAINT ServiceRequest ServiceRequest_userId_fkey
+pg_restore: dropping FK CONSTRAINT ServiceRequest ServiceRequest_litterId_fkey
+pg_restore: dropping FK CONSTRAINT SecondCopyRequest SecondCopyRequest_serviceRequestId_fkey
+pg_restore: dropping FK CONSTRAINT SecondCopyRequest SecondCopyRequest_catId_fkey
+pg_restore: dropping FK CONSTRAINT PedigreeHomologation PedigreeHomologation_serviceRequestId_fkey
+pg_restore: dropping FK CONSTRAINT Litter Litter_ownerId_fkey
+pg_restore: dropping FK CONSTRAINT LitterKitten LitterKitten_litterId_fkey
+pg_restore: dropping FK CONSTRAINT CatteryRegistration CatteryRegistration_serviceRequestId_fkey
+pg_restore: dropping FK CONSTRAINT Cat Cat_ownerId_fkey
+pg_restore: dropping FK CONSTRAINT Cat Cat_motherId_fkey
+pg_restore: dropping FK CONSTRAINT Cat Cat_fatherId_fkey
+pg_restore: dropping INDEX User_email_key
+pg_restore: dropping INDEX TransferRequest_serviceRequestId_key
+pg_restore: dropping INDEX TitleHomologation_serviceRequestId_key
+pg_restore: dropping INDEX SecondCopyRequest_serviceRequestId_key
+pg_restore: dropping INDEX PedigreeHomologation_serviceRequestId_key
+pg_restore: dropping INDEX CatteryRegistration_serviceRequestId_key
+pg_restore: dropping INDEX Cat_microchip_key
+pg_restore: dropping CONSTRAINT _prisma_migrations _prisma_migrations_pkey
+pg_restore: dropping CONSTRAINT User User_pkey
+pg_restore: dropping CONSTRAINT TransferRequest TransferRequest_pkey
+pg_restore: dropping CONSTRAINT TitleHomologation TitleHomologation_pkey
+pg_restore: dropping CONSTRAINT ServiceStatus ServiceStatus_pkey
+pg_restore: dropping CONSTRAINT ServiceRequest ServiceRequest_pkey
+pg_restore: dropping CONSTRAINT SecondCopyRequest SecondCopyRequest_pkey
+pg_restore: dropping CONSTRAINT PedigreeHomologation PedigreeHomologation_pkey
+pg_restore: dropping CONSTRAINT Litter Litter_pkey
+pg_restore: dropping CONSTRAINT LitterKitten LitterKitten_pkey
+pg_restore: dropping CONSTRAINT CatteryRegistration CatteryRegistration_pkey
+pg_restore: dropping CONSTRAINT Cat Cat_pkey
+pg_restore: dropping DEFAULT User id
+pg_restore: dropping DEFAULT TransferRequest id
+pg_restore: dropping DEFAULT TitleHomologation id
+pg_restore: dropping DEFAULT ServiceStatus id
+pg_restore: dropping DEFAULT ServiceRequest id
+pg_restore: dropping DEFAULT SecondCopyRequest id
+pg_restore: dropping DEFAULT PedigreeHomologation id
+pg_restore: dropping DEFAULT LitterKitten id
+pg_restore: dropping DEFAULT Litter id
+pg_restore: dropping DEFAULT CatteryRegistration id
+pg_restore: dropping DEFAULT Cat id
+pg_restore: dropping TABLE _prisma_migrations
+pg_restore: dropping SEQUENCE User_id_seq
+pg_restore: dropping TABLE User
+pg_restore: dropping SEQUENCE TransferRequest_id_seq
+pg_restore: dropping TABLE TransferRequest
+pg_restore: dropping SEQUENCE TitleHomologation_id_seq
+pg_restore: dropping TABLE TitleHomologation
+pg_restore: dropping SEQUENCE ServiceStatus_id_seq
+pg_restore: dropping TABLE ServiceStatus
+pg_restore: dropping SEQUENCE ServiceRequest_id_seq
+pg_restore: dropping TABLE ServiceRequest
+pg_restore: dropping SEQUENCE SecondCopyRequest_id_seq
+pg_restore: dropping TABLE SecondCopyRequest
+pg_restore: dropping SEQUENCE PedigreeHomologation_id_seq
+pg_restore: dropping TABLE PedigreeHomologation
+pg_restore: dropping SEQUENCE Litter_id_seq
+pg_restore: dropping SEQUENCE LitterKitten_id_seq
+pg_restore: dropping TABLE LitterKitten
+pg_restore: dropping TABLE Litter
+pg_restore: dropping SEQUENCE CatteryRegistration_id_seq
+pg_restore: dropping TABLE CatteryRegistration
+pg_restore: dropping SEQUENCE Cat_id_seq
+pg_restore: dropping TABLE Cat
+pg_restore: dropping TYPE ServiceStatusType
+pg_restore: dropping TYPE CatStatus
+pg_restore: dropping TYPE ApprovalStatus
+pg_restore: dropping SCHEMA public
+pg_restore: creating SCHEMA "public"
+pg_restore: creating COMMENT "SCHEMA public"
+pg_restore: creating TYPE "public.ApprovalStatus"
+pg_restore: creating TYPE "public.CatStatus"
+pg_restore: creating TYPE "public.ServiceStatusType"
+pg_restore: creating TABLE "public.Cat"
+pg_restore: creating SEQUENCE "public.Cat_id_seq"
+pg_restore: creating SEQUENCE OWNED BY "public.Cat_id_seq"
+pg_restore: creating TABLE "public.CatteryRegistration"
+pg_restore: creating SEQUENCE "public.CatteryRegistration_id_seq"
+pg_restore: creating SEQUENCE OWNED BY "public.CatteryRegistration_id_seq"
+pg_restore: creating TABLE "public.Litter"
+pg_restore: creating TABLE "public.LitterKitten"
+pg_restore: creating SEQUENCE "public.LitterKitten_id_seq"
+pg_restore: creating SEQUENCE OWNED BY "public.LitterKitten_id_seq"
+pg_restore: creating SEQUENCE "public.Litter_id_seq"
+pg_restore: creating SEQUENCE OWNED BY "public.Litter_id_seq"
+pg_restore: creating TABLE "public.PedigreeHomologation"
+pg_restore: creating SEQUENCE "public.PedigreeHomologation_id_seq"
+pg_restore: creating SEQUENCE OWNED BY "public.PedigreeHomologation_id_seq"
+pg_restore: creating TABLE "public.SecondCopyRequest"
+pg_restore: creating SEQUENCE "public.SecondCopyRequest_id_seq"
+pg_restore: creating SEQUENCE OWNED BY "public.SecondCopyRequest_id_seq"
+pg_restore: creating TABLE "public.ServiceRequest"
+pg_restore: creating SEQUENCE "public.ServiceRequest_id_seq"
+pg_restore: creating SEQUENCE OWNED BY "public.ServiceRequest_id_seq"
+pg_restore: creating TABLE "public.ServiceStatus"
+pg_restore: creating SEQUENCE "public.ServiceStatus_id_seq"
+pg_restore: creating SEQUENCE OWNED BY "public.ServiceStatus_id_seq"
+pg_restore: creating TABLE "public.TitleHomologation"
+pg_restore: creating SEQUENCE "public.TitleHomologation_id_seq"
+pg_restore: creating SEQUENCE OWNED BY "public.TitleHomologation_id_seq"
+pg_restore: creating TABLE "public.TransferRequest"
+pg_restore: creating SEQUENCE "public.TransferRequest_id_seq"
+pg_restore: creating SEQUENCE OWNED BY "public.TransferRequest_id_seq"
+pg_restore: creating TABLE "public.User"
+pg_restore: creating SEQUENCE "public.User_id_seq"
+pg_restore: creating SEQUENCE OWNED BY "public.User_id_seq"
+pg_restore: creating TABLE "public._prisma_migrations"
+pg_restore: creating DEFAULT "public.Cat id"
+pg_restore: creating DEFAULT "public.CatteryRegistration id"
+pg_restore: creating DEFAULT "public.Litter id"
+pg_restore: creating DEFAULT "public.LitterKitten id"
+pg_restore: creating DEFAULT "public.PedigreeHomologation id"
+pg_restore: creating DEFAULT "public.SecondCopyRequest id"
+pg_restore: creating DEFAULT "public.ServiceRequest id"
+pg_restore: creating DEFAULT "public.ServiceStatus id"
+pg_restore: creating DEFAULT "public.TitleHomologation id"
+pg_restore: creating DEFAULT "public.TransferRequest id"
+pg_restore: creating DEFAULT "public.User id"
+pg_restore: processing data for table "public.Cat"
+pg_restore: processing data for table "public.CatteryRegistration"
+pg_restore: processing data for table "public.Litter"
+pg_restore: processing data for table "public.LitterKitten"
+pg_restore: processing data for table "public.PedigreeHomologation"
+pg_restore: processing data for table "public.SecondCopyRequest"
+pg_restore: processing data for table "public.ServiceRequest"
+pg_restore: processing data for table "public.ServiceStatus"
+pg_restore: processing data for table "public.TitleHomologation"
+pg_restore: processing data for table "public.TransferRequest"
+pg_restore: processing data for table "public.User"
+pg_restore: processing data for table "public._prisma_migrations"
+pg_restore: executing SEQUENCE SET Cat_id_seq
+pg_restore: executing SEQUENCE SET CatteryRegistration_id_seq
+pg_restore: executing SEQUENCE SET LitterKitten_id_seq
+pg_restore: executing SEQUENCE SET Litter_id_seq
+pg_restore: executing SEQUENCE SET PedigreeHomologation_id_seq
+pg_restore: executing SEQUENCE SET SecondCopyRequest_id_seq
+pg_restore: executing SEQUENCE SET ServiceRequest_id_seq
+pg_restore: executing SEQUENCE SET ServiceStatus_id_seq
+pg_restore: executing SEQUENCE SET TitleHomologation_id_seq
+pg_restore: executing SEQUENCE SET TransferRequest_id_seq
+pg_restore: executing SEQUENCE SET User_id_seq
+pg_restore: creating CONSTRAINT "public.Cat Cat_pkey"
+pg_restore: creating CONSTRAINT "public.CatteryRegistration CatteryRegistration_pkey"
+pg_restore: creating CONSTRAINT "public.LitterKitten LitterKitten_pkey"
+pg_restore: creating CONSTRAINT "public.Litter Litter_pkey"
+pg_restore: creating CONSTRAINT "public.PedigreeHomologation PedigreeHomologation_pkey"
+pg_restore: creating CONSTRAINT "public.SecondCopyRequest SecondCopyRequest_pkey"
+pg_restore: creating CONSTRAINT "public.ServiceRequest ServiceRequest_pkey"
+pg_restore: creating CONSTRAINT "public.ServiceStatus ServiceStatus_pkey"
+pg_restore: creating CONSTRAINT "public.TitleHomologation TitleHomologation_pkey"
+pg_restore: creating CONSTRAINT "public.TransferRequest TransferRequest_pkey"
+pg_restore: creating CONSTRAINT "public.User User_pkey"
+pg_restore: creating CONSTRAINT "public._prisma_migrations _prisma_migrations_pkey"
+pg_restore: creating INDEX "public.Cat_microchip_key"
+pg_restore: creating INDEX "public.CatteryRegistration_serviceRequestId_key"
+pg_restore: creating INDEX "public.PedigreeHomologation_serviceRequestId_key"
+pg_restore: creating INDEX "public.SecondCopyRequest_serviceRequestId_key"
+pg_restore: creating INDEX "public.TitleHomologation_serviceRequestId_key"
+pg_restore: creating INDEX "public.TransferRequest_serviceRequestId_key"
+pg_restore: creating INDEX "public.User_email_key"
+pg_restore: creating FK CONSTRAINT "public.Cat Cat_fatherId_fkey"
+pg_restore: creating FK CONSTRAINT "public.Cat Cat_motherId_fkey"
+pg_restore: creating FK CONSTRAINT "public.Cat Cat_ownerId_fkey"
+pg_restore: creating FK CONSTRAINT "public.CatteryRegistration CatteryRegistration_serviceRequestId_fkey"
+pg_restore: creating FK CONSTRAINT "public.LitterKitten LitterKitten_litterId_fkey"
+pg_restore: creating FK CONSTRAINT "public.Litter Litter_ownerId_fkey"
+pg_restore: creating FK CONSTRAINT "public.PedigreeHomologation PedigreeHomologation_serviceRequestId_fkey"
+pg_restore: creating FK CONSTRAINT "public.SecondCopyRequest SecondCopyRequest_catId_fkey"
+pg_restore: creating FK CONSTRAINT "public.SecondCopyRequest SecondCopyRequest_serviceRequestId_fkey"
+pg_restore: creating FK CONSTRAINT "public.ServiceRequest ServiceRequest_litterId_fkey"
+pg_restore: creating FK CONSTRAINT "public.ServiceRequest ServiceRequest_userId_fkey"
+pg_restore: creating FK CONSTRAINT "public.ServiceStatus ServiceStatus_serviceId_fkey"
+pg_restore: creating FK CONSTRAINT "public.TitleHomologation TitleHomologation_serviceRequestId_fkey"
+pg_restore: creating FK CONSTRAINT "public.TransferRequest TransferRequest_catId_fkey"
+pg_restore: creating FK CONSTRAINT "public.TransferRequest TransferRequest_serviceRequestId_fkey"
