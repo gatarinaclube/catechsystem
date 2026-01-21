@@ -195,7 +195,7 @@ model ServiceRequest {
   description String?
   status      String   @default("PENDENTE")
   createdAt   DateTime @default(now())
-  malote String? @db.VarChar(5)
+  malote String?
 
   statuses        ServiceStatus[]
   transferRequest TransferRequest?
