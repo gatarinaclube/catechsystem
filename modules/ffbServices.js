@@ -275,14 +275,20 @@ router.post(
   requireAuth,
   async (req, res) => {
     try {
-      const serviceId = Number(req.params.id);
-      const malote = (req.body.malote || "").trim();
+      // 🔒 garante ADMIN
       if (req.session.userRole !== "ADMIN") {
-  return res.status(403).json({ error: "Acesso negado" });
-}
+        return res.status(403).json({ error: "Acesso negado" });
+      }
 
+      const serviceId = Number(req.params.id);
 
-      // aceita vazio ou formato 00/26
+      // 🔥 PROTEÇÃO CONTRA BODY UNDEFINED
+      const malote =
+        req.body && typeof req.body.malote === "string"
+          ? req.body.malote.trim()
+          : "";
+
+      // valida formato 00/26
       if (malote && !/^\d{2}\/\d{2}$/.test(malote)) {
         return res.status(400).json({ error: "Formato inválido. Use 00/26" });
       }
@@ -290,17 +296,18 @@ router.post(
       await prisma.serviceRequest.update({
         where: { id: serviceId },
         data: {
-          malote: malote === "" ? null : malote, // <-- SALVA TEXTO
+          malote: malote || null,
         },
       });
 
       return res.json({ success: true });
     } catch (err) {
-      console.error("Erro ao salvar malote:", err);
-      return res.status(500).json({ error: "Erro ao salvar malote" });
+      console.error("ERRO MALOTE:", err);
+      return res.status(500).json({ error: "Erro interno ao salvar malote" });
     }
   }
 );
+
 
 
 // ============================================================
