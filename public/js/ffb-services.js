@@ -14,12 +14,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const res = await fetch(`/ffb-services/${serviceId}/malote`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ malote }),
-      });
+  method: "POST",
+  credentials: "same-origin", // 🔥 ESSENCIAL
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ malote }),
+});
+
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
