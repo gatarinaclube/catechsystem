@@ -273,11 +273,14 @@ router.post(
 router.post(
   "/ffb-services/:id/malote",
   requireAuth,
-  requireAdmin,
   async (req, res) => {
     try {
       const serviceId = Number(req.params.id);
       const malote = (req.body.malote || "").trim();
+      if (req.session.userRole !== "ADMIN") {
+  return res.status(403).json({ error: "Acesso negado" });
+}
+
 
       // aceita vazio ou formato 00/26
       if (malote && !/^\d{2}\/\d{2}$/.test(malote)) {
