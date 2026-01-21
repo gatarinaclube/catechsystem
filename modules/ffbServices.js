@@ -270,8 +270,6 @@ router.post(
   }
 );
 
-
-
 router.post(
   "/ffb-services/:id/malote",
   requireAuth,
@@ -279,16 +277,17 @@ router.post(
   async (req, res) => {
     try {
       const serviceId = Number(req.params.id);
-      const malote = req.body.malote;
+      const malote = (req.body.malote || "").trim();
 
-      if (malote !== null && (malote < 0 || malote > 100)) {
-        return res.status(400).json({ error: "Malote inválido" });
+      // aceita vazio ou formato 00/26
+      if (malote && !/^\d{2}\/\d{2}$/.test(malote)) {
+        return res.status(400).json({ error: "Formato inválido. Use 00/26" });
       }
 
       await prisma.serviceRequest.update({
         where: { id: serviceId },
         data: {
-          malote: malote === "" ? null : Number(malote),
+          malote: malote === "" ? null : malote, // <-- SALVA TEXTO
         },
       });
 
@@ -299,6 +298,7 @@ router.post(
     }
   }
 );
+
 
 // ============================================================
 // LISTAR TODOS OS SERVIÇOS FFB
