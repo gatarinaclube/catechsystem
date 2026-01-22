@@ -562,21 +562,28 @@ res.setHeader(
   // FUNÇÃO AUXILIAR (ROBUSTA)
   // ============================
   function addIfExists(label, relPath) {
-    if (!relPath) return;
+  if (!relPath) return;
 
-    let clean = relPath.replace(/^\/+/, "");
-    if (!clean.startsWith("uploads/")) {
-      clean = "uploads/" + clean;
-    }
+  // Normaliza barras e remove qualquer prefixo antes de /uploads/
+  let clean = String(relPath).replace(/\\/g, "/");
 
-    const abs = path.join(__dirname, "../../public", clean);
+  // se vier tipo "/public/uploads/..." ou "public/uploads/..." ou "/uploads/..."
+  const idx = clean.indexOf("/uploads/");
+  if (idx >= 0) clean = clean.slice(idx + 1); // vira "uploads/..."
 
-    if (fs.existsSync(abs)) {
-      archive.file(abs, {
-        name: `${label} - ${path.basename(abs)}`,
-      });
-    }
+  clean = clean.replace(/^\/+/, ""); // remove "/" no começo
+
+  // se vier só "cats/arquivo.pdf" (sem uploads)
+  if (!clean.startsWith("uploads/")) clean = "uploads/" + clean;
+
+  const abs = path.join(__dirname, "../../public", clean);
+
+  console.log("ADD FILE DEBUG:", { label, relPath, clean, abs, exists: fs.existsSync(abs) });
+
+  if (fs.existsSync(abs)) {
+    archive.file(abs, { name: `${label} - ${path.basename(abs)}` });
   }
+}
 
   // ============================
   // MACHO

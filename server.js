@@ -693,17 +693,18 @@ if (litter) {
     }
   }
 
-  console.log("BUNDLE LITTER", {
+  console.log("BUNDLE LITTER DEBUG:", {
   litterId: litter?.id,
   maleMicrochip: litter?.maleMicrochip,
   femaleMicrochip: litter?.femaleMicrochip,
   sireFound: !!sire,
   damFound: !!dam,
-  sirePedigree: sire?.pedigreeFile,
-  sireRepro: sire?.reproductionFile,
-  damPedigree: dam?.pedigreeFile,
-  damRepro: dam?.reproductionFile,
+  sirePedigreeFile: sire?.pedigreeFile,
+  sireReproFile: sire?.reproductionFile,
+  damPedigreeFile: dam?.pedigreeFile,
+  damReproFile: dam?.reproductionFile,
 });
+
 
   return generateLitterAdminBundle(
     serviceWithStatus,
