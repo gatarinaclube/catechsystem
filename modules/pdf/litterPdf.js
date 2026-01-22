@@ -567,30 +567,43 @@ res.setHeader(
 const UPLOADS_ROOT =
   process.env.UPLOADS_DIR || path.join(__dirname, "../../public/uploads");
 
+// fallback do Render Disk (quando UPLOADS_DIR estiver definido, é /var/data/uploads)
+const DISK_ROOT = process.env.UPLOADS_DIR || "/var/data/uploads";
+
 function addIfExists(label, relPath) {
   if (!relPath) return;
 
-  // Aceita:
-  // "/uploads/cats/arquivo.pdf"
-  // "uploads/cats/arquivo.pdf"
-  // "cats/arquivo.pdf"
-  // "https://catechsystem.com.br/uploads/cats/arquivo.pdf"
   let p = String(relPath).replace(/\\/g, "/").trim();
 
-  // se vier URL completa, corta o domínio
+  // 1) Se vier URL completa, pega só a parte depois de /uploads/
   const u = p.indexOf("/uploads/");
-  if (u >= 0) p = p.slice(u + "/uploads/".length); // vira "cats/arquivo.pdf"
+  if (u >= 0) p = p.slice(u + "/uploads/".length); // ex: cats/arquivo.pdf
 
-  // se veio "uploads/cats/..."
+  // 2) Remove / no começo
   p = p.replace(/^\/+/, "");
-  if (p.startsWith("uploads/")) p = p.replace(/^uploads\//, ""); // vira "cats/arquivo.pdf"
 
-  // raízes onde pode existir fisicamente
+  // 3) Se vier "uploads/cats/..." remove o "uploads/"
+  if (p.startsWith("uploads/")) p = p.replace(/^uploads\//, "");
+
+  // 4) Corrige duplicações tipo "uploads/uploads/cats/..."
+  while (p.startsWith("uploads/")) p = p.replace(/^uploads\//, "");
+
+  // 5) ✅ Se o banco já tiver caminho absoluto, tenta direto
+  // Ex: /var/data/uploads/cats/arquivo.pdf
+  if (p.startsWith("var/data/") || p.startsWith("/var/data/")) {
+    const absDirect = p.startsWith("/") ? p : "/" + p;
+    const ok = fs.existsSync(absDirect);
+    console.log("ADD FILE DIRECT:", { label, relPath, absDirect, ok });
+    if (ok) {
+      archive.file(absDirect, { name: `${label} - ${path.basename(absDirect)}` });
+    }
+    return;
+  }
+
   const roots = [
-    process.env.UPLOADS_DIR,                 // ex: /var/data/uploads
-    "/var/data/uploads",                     // fallback
-    path.join(__dirname, "../../public/uploads"), // fallback dev/antigo
-  ].filter(Boolean);
+    process.env.UPLOADS_DIR || "/var/data/uploads",        // Render Disk
+    path.join(__dirname, "../../public/uploads"),          // dev/antigo
+  ];
 
   let found = null;
 
