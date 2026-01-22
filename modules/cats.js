@@ -29,10 +29,14 @@ module.exports = (prisma, requireAuth) => {
 
 // Produção (Render Disk): UPLOADS_DIR=/var/data  -> salva em /var/data/uploads/cats
 // Dev: salva em /public/uploads/cats
+// UPLOADS_DIR deve apontar para a pasta RAIZ dos uploads (ex.: /var/data/uploads)
+// Em DEV, usamos /public/uploads
 const DISK_ROOT =
-  process.env.UPLOADS_DIR || path.join(__dirname, "..", "public");
+  process.env.UPLOADS_DIR || path.join(__dirname, "..", "public", "uploads");
 
-const uploadDir = path.join(DISK_ROOT, "uploads", "cats");
+// Pasta final: .../cats
+const uploadDir = path.join(DISK_ROOT, "cats");
+
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -47,7 +51,13 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    cb(null, true);
+  },
+});
+
 
 
 // --------- LISTAGEM DE GATOS ---------
@@ -324,7 +334,8 @@ router.post(
           const photoPath =
   files.photo && files.photo[0]
     ? `/uploads/cats/${files.photo[0].filename}`
-    : null;
+    : existingCat.photo;
+
 
 
 
