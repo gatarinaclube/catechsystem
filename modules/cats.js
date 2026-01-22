@@ -260,6 +260,7 @@ router.post(
     { name: "pedigreeFile", maxCount: 1 },
     { name: "breedingCertificateFile", maxCount: 1 },
     { name: "extraDocumentsFile", maxCount: 1 },
+    { name: "photo", maxCount: 1 },
   ]),
   async (req, res) => {
     const { userId, role } = getAuthInfo(req); // pegamos também o role
@@ -319,6 +320,12 @@ router.post(
         files.extraDocumentsFile && files.extraDocumentsFile[0]
           ? `/uploads/cats/${files.extraDocumentsFile[0].filename}`
           : null;
+
+          const photoPath =
+  files.photo && files.photo[0]
+    ? `/uploads/cats/${files.photo[0].filename}`
+    : existingCat.photo;
+
 
       // normaliza microchip para só dígitos
       const microchipDigits = microchip ? microchip.replace(/\D/g, "") : null;
@@ -539,6 +546,8 @@ router.post(
     { name: "pedigreeFile", maxCount: 1 },
     { name: "breedingCertificateFile", maxCount: 1 },
     { name: "extraDocumentsFile", maxCount: 1 },
+    { name: "photo", maxCount: 1 },
+  
   ]),
   async (req, res) => {
     const { id } = req.params;
@@ -688,6 +697,7 @@ router.post(
         pedigreeFile: pedigreePath,
         reproductionFile: reproductionPath,
         otherDocsFile: otherDocsPath,
+        photo: photoPath,
         ownershipType: ownershipType || existingCat.ownershipType || null,
       };
 
