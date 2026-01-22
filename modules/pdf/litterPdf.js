@@ -561,31 +561,26 @@ res.setHeader(
   // ============================
   // FUNÇÃO AUXILIAR (ROBUSTA)
   // ============================
-    // ✅ Diretório real dos uploads (Render Disk em produção; public/uploads em dev)
-  const UPLOADS_ROOT = process.env.UPLOADS_DIR
-  ? path.join(process.env.UPLOADS_DIR, "uploads")   // ✅ /var/data/uploads
-  : path.join(__dirname, "../../public/uploads");   // ✅ dev local
+// ✅ Diretório raiz REAL dos uploads
+// Em produção (Render Disk): UPLOADS_DIR="/var/data/uploads"
+// Em dev: cai no public/uploads
+const UPLOADS_ROOT =
+  process.env.UPLOADS_DIR || path.join(__dirname, "../../public/uploads");
 
-  function addIfExists(label, relPath) {
-    console.log("UPLOADS_ROOT =", UPLOADS_ROOT);
-
+function addIfExists(label, relPath) {
   if (!relPath) return;
 
-  // Normaliza barras e remove qualquer prefixo antes de /uploads/
-  let clean = String(relPath).replace(/\\/g, "/");
+  // relPath vem do banco tipo "/uploads/cats/arquivo.pdf"
+  const clean = String(relPath).replace(/\\/g, "/").replace(/^\/+/, "");
 
-  // se vier tipo "/public/uploads/..." ou "public/uploads/..." ou "/uploads/..."
-  const idx = clean.indexOf("/uploads/");
-  if (idx >= 0) clean = clean.slice(idx + 1); // vira "uploads/..."
+  // remove o prefixo "uploads/" e fica só "cats/arquivo.pdf"
+  const relative = clean.startsWith("uploads/") ? clean.slice("uploads/".length) : clean;
 
-  clean = clean.replace(/^\/+/, ""); // remove "/" no começo
+  // monta o caminho final corretamente:
+  // /var/data/uploads + cats/arquivo.pdf
+  const abs = path.join(UPLOADS_ROOT, relative);
 
-  // se vier só "cats/arquivo.pdf" (sem uploads)
-  if (!clean.startsWith("uploads/")) clean = "uploads/" + clean;
-
-  const abs = path.join(UPLOADS_ROOT, clean.replace(/^uploads\//, ""));
-
-  console.log("ADD FILE DEBUG:", { label, relPath, clean, abs, exists: fs.existsSync(abs) });
+  console.log("ADD FILE DEBUG:", { label, relPath, clean, relative, abs, exists: fs.existsSync(abs) });
 
   if (fs.existsSync(abs)) {
     archive.file(abs, { name: `${label} - ${path.basename(abs)}` });
