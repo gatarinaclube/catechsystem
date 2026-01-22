@@ -47,6 +47,17 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // arquivos estáticos (CSS, JS, imagens, uploads etc.)
+// -------------------------------
+// UPLOADS (Render Disk / local)
+// -------------------------------
+const uploadsBase =
+  process.env.UPLOADS_DIR
+    ? path.join(process.env.UPLOADS_DIR, "uploads")
+    : path.join(__dirname, "public", "uploads");
+
+// Serve /uploads/... mesmo quando os arquivos estiverem no disco persistente
+app.use("/uploads", express.static(uploadsBase));
+
 app.use(express.static(path.join(__dirname, "public")));
 
 // ✅ Servir uploads a partir do diretório real (Disk no Render, ou public/uploads no dev)

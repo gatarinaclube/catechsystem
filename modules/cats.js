@@ -29,7 +29,12 @@ module.exports = (prisma, requireAuth) => {
 const UPLOADS_ROOT =
   process.env.UPLOADS_DIR || path.join(__dirname, "..", "public", "uploads");
 
-const uploadDir = path.join(UPLOADS_ROOT, "cats");
+const baseUploadsDir =
+  process.env.UPLOADS_DIR
+    ? path.join(process.env.UPLOADS_DIR, "uploads")
+    : path.join(__dirname, "..", "public", "uploads");
+
+const uploadDir = path.join(baseUploadsDir, "cats");
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });

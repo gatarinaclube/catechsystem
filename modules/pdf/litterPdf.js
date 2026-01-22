@@ -562,8 +562,9 @@ res.setHeader(
   // FUNÇÃO AUXILIAR (ROBUSTA)
   // ============================
     // ✅ Diretório real dos uploads (Render Disk em produção; public/uploads em dev)
-  const UPLOADS_ROOT =
-    process.env.UPLOADS_DIR || path.join(__dirname, "../../public/uploads");
+  const UPLOADS_ROOT = process.env.UPLOADS_DIR
+  ? path.join(process.env.UPLOADS_DIR, "uploads")   // ✅ /var/data/uploads
+  : path.join(__dirname, "../../public/uploads");   // ✅ dev local
 
   function addIfExists(label, relPath) {
   if (!relPath) return;
