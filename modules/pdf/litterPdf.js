@@ -567,6 +567,8 @@ res.setHeader(
   : path.join(__dirname, "../../public/uploads");   // ✅ dev local
 
   function addIfExists(label, relPath) {
+    console.log("UPLOADS_ROOT =", UPLOADS_ROOT);
+
   if (!relPath) return;
 
   // Normaliza barras e remove qualquer prefixo antes de /uploads/

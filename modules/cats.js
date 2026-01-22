@@ -25,31 +25,30 @@ module.exports = (prisma, requireAuth) => {
     );
   }
 
- // --------- CONFIGURAÇÃO DO MULTER ---------
-const UPLOADS_ROOT =
-  process.env.UPLOADS_DIR || path.join(__dirname, "..", "public", "uploads");
+// --------- CONFIGURAÇÃO DO MULTER ---------
 
-const baseUploadsDir =
-  process.env.UPLOADS_DIR
-    ? path.join(process.env.UPLOADS_DIR, "uploads")
-    : path.join(__dirname, "..", "public", "uploads");
+// Produção (Render Disk): UPLOADS_DIR=/var/data  -> salva em /var/data/uploads/cats
+// Dev: salva em /public/uploads/cats
+const DISK_ROOT =
+  process.env.UPLOADS_DIR || path.join(__dirname, "..", "public");
 
-const uploadDir = path.join(baseUploadsDir, "cats");
+const uploadDir = path.join(DISK_ROOT, "uploads", "cats");
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-  const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadDir),
-    filename: (req, file, cb) => {
-      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      const ext = path.extname(file.originalname);
-      cb(null, uniqueSuffix + ext);
-    },
-  });
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, uniqueSuffix + ext);
+  },
+});
 
-  const upload = multer({ storage });
+const upload = multer({ storage });
+
 
 // --------- LISTAGEM DE GATOS ---------
 router.get("/cats", requireAuth, async (req, res) => {
