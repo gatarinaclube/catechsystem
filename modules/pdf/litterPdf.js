@@ -393,6 +393,21 @@ let rowY = headerY + 16;
 // nome do gatil (uma vez só, fora do loop)
 const catteryName = (litter?.catteryName || "").trim();
 
+// ✅ LIMITAR FILHOTES PELO Nº INFORMADO EM litter.litterCount
+const litterCountLimit = Number.isFinite(Number(litter?.litterCount))
+  ? parseInt(litter.litterCount, 10)
+  : null;
+
+// ordena por índice e corta pelo limite (se houver)
+const kittensToRender = Array.isArray(kittens)
+  ? [...kittens].sort((a, b) => (a.index || 0) - (b.index || 0))
+  : [];
+
+const limitedKittens =
+  litterCountLimit && litterCountLimit > 0
+    ? kittensToRender.slice(0, litterCountLimit)
+    : kittensToRender;
+
 limitedKittens.forEach((k, idx) => {
   if (idx % 2 === 0) {
     doc.save();
@@ -415,21 +430,6 @@ limitedKittens.forEach((k, idx) => {
 
   doc.text(fullKittenName, cx, rowY, { width: colWidths.name });
   cx += colWidths.name;
-
-  // ✅ LIMITAR FILHOTES PELO Nº INFORMADO EM litter.litterCount
-const litterCountLimit = Number.isFinite(Number(litter?.litterCount))
-  ? parseInt(litter.litterCount, 10)
-  : null;
-
-// ordena por índice e corta pelo limite (se houver)
-const kittensToRender = Array.isArray(kittens)
-  ? [...kittens].sort((a, b) => (a.index || 0) - (b.index || 0))
-  : [];
-
-const limitedKittens =
-  litterCountLimit && litterCountLimit > 0
-    ? kittensToRender.slice(0, litterCountLimit)
-    : kittensToRender;
 
   // Sexo (por extenso)
   const sexText =
