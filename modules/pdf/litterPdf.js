@@ -570,40 +570,47 @@ const UPLOADS_ROOT =
 function addIfExists(label, relPath) {
   if (!relPath) return;
 
-  // relPath vem tipo: "/uploads/cats/arquivo.pdf"
-  let clean = String(relPath).replace(/\\/g, "/").trim();
+  // Aceita:
+  // "/uploads/cats/arquivo.pdf"
+  // "uploads/cats/arquivo.pdf"
+  // "cats/arquivo.pdf"
+  // "https://catechsystem.com.br/uploads/cats/arquivo.pdf"
+  let p = String(relPath).replace(/\\/g, "/").trim();
 
-  // pega sempre a parte depois de "/uploads/"
-  const marker = "/uploads/";
-  const idx = clean.indexOf(marker);
-  if (idx >= 0) clean = clean.slice(idx + marker.length); // vira "cats/arquivo.pdf"
+  // se vier URL completa, corta o domínio
+  const u = p.indexOf("/uploads/");
+  if (u >= 0) p = p.slice(u + "/uploads/".length); // vira "cats/arquivo.pdf"
 
-  clean = clean.replace(/^\/+/, ""); // remove "/" inicial se sobrar
+  // se veio "uploads/cats/..."
+  p = p.replace(/^\/+/, "");
+  if (p.startsWith("uploads/")) p = p.replace(/^uploads\//, ""); // vira "cats/arquivo.pdf"
 
-  // Monta possíveis caminhos físicos (fallback)
-  const candidates = [
-    // ✅ Render Disk (produção)
-    path.join(process.env.UPLOADS_DIR || "/var/data/uploads", clean),
+  // raízes onde pode existir fisicamente
+  const roots = [
+    process.env.UPLOADS_DIR,                 // ex: /var/data/uploads
+    "/var/data/uploads",                     // fallback
+    path.join(__dirname, "../../public/uploads"), // fallback dev/antigo
+  ].filter(Boolean);
 
-    // ✅ Local do projeto (caso antigo/dev)
-    path.join(__dirname, "../../public/uploads", clean),
-  ];
+  let found = null;
 
-  // Debug (pra você ver exatamente onde está procurando)
-  console.log("ADD FILE DEBUG:", {
-    label,
-    relPath,
-    clean,
-    candidates,
-  });
+  for (const root of roots) {
+    const abs = path.join(root, p);
+    const ok = fs.existsSync(abs);
 
-  // escolhe o primeiro que existir
-  const found = candidates.find((p) => fs.existsSync(p));
+    console.log("ADD FILE TRY:", { label, relPath, root, p, abs, ok });
 
-  console.log("ADD FILE FOUND:", { label, found: found || null });
+    if (ok) {
+      found = abs;
+      break;
+    }
+  }
 
   if (found) {
     archive.file(found, { name: `${label} - ${path.basename(found)}` });
+    console.log("ADD FILE OK:", { label, found });
+  } else {
+    console.log("ADD FILE NOT FOUND:", { label, relPath, p, roots });
   }
 }
 
@@ -628,22 +635,9 @@ function addIfExists(label, relPath) {
 // AUTORIZAÇÃO DE REPRODUÇÃO – MACHO EXTERNO
 // ========================================
 if (litter?.externalOwnerAuthorization) {
-  const authPath = path.join(
-    __dirname,
-    "..",
-    "..",
-    "public",
-    litter.externalOwnerAuthorization.replace(/^\/+/, "")
-  );
-
-  if (fs.existsSync(authPath)) {
-    const originalExt = path.extname(authPath);
-
-archive.file(authPath, {
-  name: `AUTORIZACAO_REPRODUCAO_MACHO${originalExt}`,
-});
-  }
+  addIfExists("AUTORIZACAO_REPRODUCAO_MACHO", litter.externalOwnerAuthorization);
 }
+
 
   archive.finalize();
 });
