@@ -661,38 +661,49 @@ if (serviceWithStatus.type === "Registro de Ninhada") {
       const litterId = parseInt(match[1], 10);
 
       litter = await prisma.litter.findUnique({
-        where: { id: litterId },
-        include: { kittens: { orderBy: { index: "asc" } } },
-      });
+  where: { id: litterId },
+  include: { kittens: { orderBy: { index: "asc" } } },
+});
 
-      if (litter.maleMicrochip) {
-  const maleMc = String(litter.maleMicrochip).replace(/\D/g, "").slice(0, 15);
+if (litter) {
+  // ✅ ESSA LINHA é a correção principal
+  kittens = litter.kittens || [];
 
-  sire = await prisma.cat.findFirst({
-    where: {
-      OR: [
-        { microchip: litter.maleMicrochip }, // caso já esteja “cru”
-        { microchip: maleMc },               // caso esteja normalizado
-      ],
-    },
-  });
-}
+  if (litter.maleMicrochip) {
+    const maleMc = String(litter.maleMicrochip).replace(/\D/g, "").slice(0, 15);
 
-if (litter.femaleMicrochip) {
-  const femaleMc = String(litter.femaleMicrochip).replace(/\D/g, "").slice(0, 15);
+    sire = await prisma.cat.findFirst({
+      where: {
+        OR: [{ microchip: litter.maleMicrochip }, { microchip: maleMc }],
+      },
+    });
+  }
 
-  dam = await prisma.cat.findFirst({
-    where: {
-      OR: [
-        { microchip: litter.femaleMicrochip },
-        { microchip: femaleMc },
-      ],
-    },
-  });
+  if (litter.femaleMicrochip) {
+    const femaleMc = String(litter.femaleMicrochip).replace(/\D/g, "").slice(0, 15);
+
+    dam = await prisma.cat.findFirst({
+      where: {
+        OR: [{ microchip: litter.femaleMicrochip }, { microchip: femaleMc }],
+      },
+    });
+  }
 }
 
     }
   }
+
+  console.log("BUNDLE LITTER", {
+  litterId: litter?.id,
+  maleMicrochip: litter?.maleMicrochip,
+  femaleMicrochip: litter?.femaleMicrochip,
+  sireFound: !!sire,
+  damFound: !!dam,
+  sirePedigree: sire?.pedigreeFile,
+  sireRepro: sire?.reproductionFile,
+  damPedigree: dam?.pedigreeFile,
+  damRepro: dam?.reproductionFile,
+});
 
   return generateLitterAdminBundle(
     serviceWithStatus,
@@ -797,18 +808,6 @@ res.setHeader(
 
     archive.finalize();
   });
-
-  console.log("BUNDLE LITTER", {
-  litterId: litter?.id,
-  maleMicrochip: litter?.maleMicrochip,
-  femaleMicrochip: litter?.femaleMicrochip,
-  sireFound: !!sire,
-  damFound: !!dam,
-  sirePedigree: sire?.pedigreeFile,
-  sireRepro: sire?.reproductionFile,
-  damPedigree: dam?.pedigreeFile,
-  damRepro: dam?.reproductionFile,
-});
 
   return;
 }
