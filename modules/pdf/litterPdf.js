@@ -570,22 +570,43 @@ const UPLOADS_ROOT =
 function addIfExists(label, relPath) {
   if (!relPath) return;
 
-  // relPath vem do banco tipo "/uploads/cats/arquivo.pdf"
-  const clean = String(relPath).replace(/\\/g, "/").replace(/^\/+/, "");
+  // relPath vem tipo: "/uploads/cats/arquivo.pdf"
+  let clean = String(relPath).replace(/\\/g, "/").trim();
 
-  // remove o prefixo "uploads/" e fica só "cats/arquivo.pdf"
-  const relative = clean.startsWith("uploads/") ? clean.slice("uploads/".length) : clean;
+  // pega sempre a parte depois de "/uploads/"
+  const marker = "/uploads/";
+  const idx = clean.indexOf(marker);
+  if (idx >= 0) clean = clean.slice(idx + marker.length); // vira "cats/arquivo.pdf"
 
-  // monta o caminho final corretamente:
-  // /var/data/uploads + cats/arquivo.pdf
-  const abs = path.join(UPLOADS_ROOT, relative);
+  clean = clean.replace(/^\/+/, ""); // remove "/" inicial se sobrar
 
-  console.log("ADD FILE DEBUG:", { label, relPath, clean, relative, abs, exists: fs.existsSync(abs) });
+  // Monta possíveis caminhos físicos (fallback)
+  const candidates = [
+    // ✅ Render Disk (produção)
+    path.join(process.env.UPLOADS_DIR || "/var/data/uploads", clean),
 
-  if (fs.existsSync(abs)) {
-    archive.file(abs, { name: `${label} - ${path.basename(abs)}` });
+    // ✅ Local do projeto (caso antigo/dev)
+    path.join(__dirname, "../../public/uploads", clean),
+  ];
+
+  // Debug (pra você ver exatamente onde está procurando)
+  console.log("ADD FILE DEBUG:", {
+    label,
+    relPath,
+    clean,
+    candidates,
+  });
+
+  // escolhe o primeiro que existir
+  const found = candidates.find((p) => fs.existsSync(p));
+
+  console.log("ADD FILE FOUND:", { label, found: found || null });
+
+  if (found) {
+    archive.file(found, { name: `${label} - ${path.basename(found)}` });
   }
 }
+
 
   // ============================
   // MACHO
