@@ -49,6 +49,13 @@ app.use(express.json());
 // arquivos estáticos (CSS, JS, imagens, uploads etc.)
 app.use(express.static(path.join(__dirname, "public")));
 
+// ✅ Servir uploads a partir do diretório real (Disk no Render, ou public/uploads no dev)
+const UPLOADS_ROOT =
+  process.env.UPLOADS_DIR || path.join(__dirname, "public", "uploads");
+
+app.use("/uploads", express.static(UPLOADS_ROOT));
+
+
 // ---------- VIEW ENGINE ----------
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));

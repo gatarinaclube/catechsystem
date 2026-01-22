@@ -561,6 +561,10 @@ res.setHeader(
   // ============================
   // FUNÇÃO AUXILIAR (ROBUSTA)
   // ============================
+    // ✅ Diretório real dos uploads (Render Disk em produção; public/uploads em dev)
+  const UPLOADS_ROOT =
+    process.env.UPLOADS_DIR || path.join(__dirname, "../../public/uploads");
+
   function addIfExists(label, relPath) {
   if (!relPath) return;
 
@@ -576,7 +580,7 @@ res.setHeader(
   // se vier só "cats/arquivo.pdf" (sem uploads)
   if (!clean.startsWith("uploads/")) clean = "uploads/" + clean;
 
-  const abs = path.join(__dirname, "../../public", clean);
+  const abs = path.join(UPLOADS_ROOT, clean.replace(/^uploads\//, ""));
 
   console.log("ADD FILE DEBUG:", { label, relPath, clean, abs, exists: fs.existsSync(abs) });
 

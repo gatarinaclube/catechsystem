@@ -25,11 +25,15 @@ module.exports = (prisma, requireAuth) => {
     );
   }
 
-  // --------- CONFIGURAÇÃO DO MULTER ---------
-  const uploadDir = path.join(__dirname, "..", "public", "uploads", "cats");
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-  }
+ // --------- CONFIGURAÇÃO DO MULTER ---------
+const UPLOADS_ROOT =
+  process.env.UPLOADS_DIR || path.join(__dirname, "..", "public", "uploads");
+
+const uploadDir = path.join(UPLOADS_ROOT, "cats");
+
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
   const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, uploadDir),
