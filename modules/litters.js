@@ -139,7 +139,9 @@ console.log("=======================");
           maleName = maleCat.name || null;
           maleBreed = maleCat.breed || null;
           maleEms = maleCat.colorEms || maleCat.emsCode || null;
-          maleMicrochip = maleCat.microchip || null;
+          maleMicrochip = maleCat.microchip
+  ? String(maleCat.microchip).replace(/\D/g, "").slice(0, 15)
+  : null;
         }
       }
 
@@ -158,7 +160,9 @@ console.log("=======================");
           femaleName = femaleCat.name || null;
           femaleBreed = femaleCat.breed || null;
           femaleEms = femaleCat.colorEms || femaleCat.emsCode || null;
-          femaleMicrochip = femaleCat.microchip || null;
+          femaleMicrochip = femaleCat.microchip
+  ? String(femaleCat.microchip).replace(/\D/g, "").slice(0, 15)
+  : null;
         }
       }
 

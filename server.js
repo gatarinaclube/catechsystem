@@ -665,21 +665,32 @@ if (serviceWithStatus.type === "Registro de Ninhada") {
         include: { kittens: { orderBy: { index: "asc" } } },
       });
 
-      if (litter) {
-        kittens = litter.kittens;
+      if (litter.maleMicrochip) {
+  const maleMc = String(litter.maleMicrochip).replace(/\D/g, "").slice(0, 15);
 
-        if (litter.maleMicrochip) {
-          sire = await prisma.cat.findFirst({
-            where: { microchip: litter.maleMicrochip },
-          });
-        }
+  sire = await prisma.cat.findFirst({
+    where: {
+      OR: [
+        { microchip: litter.maleMicrochip }, // caso já esteja “cru”
+        { microchip: maleMc },               // caso esteja normalizado
+      ],
+    },
+  });
+}
 
-        if (litter.femaleMicrochip) {
-          dam = await prisma.cat.findFirst({
-            where: { microchip: litter.femaleMicrochip },
-          });
-        }
-      }
+if (litter.femaleMicrochip) {
+  const femaleMc = String(litter.femaleMicrochip).replace(/\D/g, "").slice(0, 15);
+
+  dam = await prisma.cat.findFirst({
+    where: {
+      OR: [
+        { microchip: litter.femaleMicrochip },
+        { microchip: femaleMc },
+      ],
+    },
+  });
+}
+
     }
   }
 
@@ -786,6 +797,18 @@ res.setHeader(
 
     archive.finalize();
   });
+
+  console.log("BUNDLE LITTER", {
+  litterId: litter?.id,
+  maleMicrochip: litter?.maleMicrochip,
+  femaleMicrochip: litter?.femaleMicrochip,
+  sireFound: !!sire,
+  damFound: !!dam,
+  sirePedigree: sire?.pedigreeFile,
+  sireRepro: sire?.reproductionFile,
+  damPedigree: dam?.pedigreeFile,
+  damRepro: dam?.reproductionFile,
+});
 
   return;
 }
