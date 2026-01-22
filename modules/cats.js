@@ -324,7 +324,8 @@ router.post(
           const photoPath =
   files.photo && files.photo[0]
     ? `/uploads/cats/${files.photo[0].filename}`
-    : existingCat.photo;
+    : null;
+
 
 
       // normaliza microchip para só dígitos
@@ -620,6 +621,13 @@ router.post(
         files.extraDocumentsFile && files.extraDocumentsFile[0]
           ? `/uploads/cats/${files.extraDocumentsFile[0].filename}`
           : existingCat.otherDocsFile;
+
+          const photoPath =
+  files.photo && files.photo[0]
+    ? `/uploads/cats/${files.photo[0].filename}`
+    : null;
+
+
 
       const microchipDigits = microchip ? microchip.replace(/\D/g, "") : null;
       const birthDateObj = birthDate ? new Date(birthDate) : null;
