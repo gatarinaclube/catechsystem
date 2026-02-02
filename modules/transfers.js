@@ -2,15 +2,30 @@
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
+const fs = require("fs");
+
 
 
 
 module.exports = (prisma, requireAuth) => {
   const router = express.Router();
 
-  const storage = multer.diskStorage({
+  // ===============================
+// PADRÃO DE UPLOAD (IGUAL AO SERVER)
+// ===============================
+const UPLOADS_ROOT =
+  process.env.UPLOADS_DIR || path.join(__dirname, "..", "public", "uploads");
+
+const uploadDir = path.join(UPLOADS_ROOT, "transfer-authorization");
+
+// garante que a pasta exista
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "public/uploads/transfer-authorization/");
+    cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname);
