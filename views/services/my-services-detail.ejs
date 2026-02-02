@@ -63,6 +63,28 @@
                 <%= service.description || "-" %>
               </div>
             </div>
+
+<%
+  // pega a pendência mais recente (se existir)
+  const lastPending = (service.statuses || [])
+    .filter(s => s.status === 'COM_PENDENCIA' && s.pendingNote)
+    .slice(-1)[0];
+%>
+
+<% if (lastPending && lastPending.pendingNote) { %>
+  <div class="field" style="margin-top:10px;">
+    <div class="field-label">⚠️ Pendência</div>
+    <div class="field-value" style="color:#dc2626; font-weight:600;">
+      <%= lastPending.pendingNote %>
+    </div>
+    <div style="font-size:12px; color:#991b1b; margin-top:4px;">
+      Registrado em <%= new Date(lastPending.createdAt).toLocaleString('pt-BR') %>
+    </div>
+  </div>
+<% } %>
+
+
+
           </div>
 
           <!-- BLOCO: LINHA DO TEMPO DE STATUS -->
@@ -72,6 +94,7 @@
             <% 
               const mapStatus = {
                 ENVIADO_GATARINA: "Enviado para Gatarina",
+                COM_PENDENCIA: "Com Pendência",
                 ENVIADO_FFB: "Enviado para FFB",
                 RECEBIDO_FFB: "Recebido FFB",
                 ENVIADO_ASSOCIADO: "Enviado para Associado",
@@ -94,10 +117,20 @@
                       <div class="item-link" style="font-weight:600; text-decoration:none;">
                         <%= index + 1 %>. <%= mapStatus[st.status] || st.status %>
                       </div>
+
+
                       <div class="item-sub">
                         Registrado em
                         <%= new Date(st.createdAt).toLocaleString('pt-BR') %>
                       </div>
+
+                      <% if (st.status === 'COM_PENDENCIA' && st.pendingNote) { %>
+  <div class="item-sub" style="color:#dc2626; font-weight:600; margin-top:4px;">
+    Pendência: <%= st.pendingNote %>
+  </div>
+<% } %>
+
+
                     </div>
                   </li>
                 <% }) %>
