@@ -114,11 +114,12 @@ const concluidos = services.filter(s =>
           </select>
           <div class="pending-note-wrap" style="display:none; margin-top:6px; width:260px;">
   <textarea
-    name="pendingNote"
-    rows="3"
-    placeholder="Descreva o que está pendente (ex.: falta assinatura, documento ilegível...)"
-    style="width:100%; font-size:12px; padding:6px; resize:vertical;"
-  ></textarea>
+  name="pendingNote"
+  rows="3"
+  placeholder="Descreva o que está pendente (ex.: falta assinatura, documento ilegível...)"
+  style="width:100%; font-size:12px; padding:6px; resize:vertical;"
+><%= (lastStatus && lastStatus.status === 'COM_PENDENCIA' && lastStatus.pendingNote) ? lastStatus.pendingNote : '' %></textarea>
+
 </div>
           <button class="btn" style="margin-top:4px;">Atualizar status</button>
         </form>
@@ -194,11 +195,12 @@ const concluidos = services.filter(s =>
           </select>
           <div class="pending-note-wrap" style="display:none; margin-top:6px; width:260px;">
   <textarea
-    name="pendingNote"
-    rows="3"
-    placeholder="Descreva o que está pendente (ex.: falta assinatura, documento ilegível...)"
-    style="width:100%; font-size:12px; padding:6px; resize:vertical;"
-  ></textarea>
+  name="pendingNote"
+  rows="3"
+  placeholder="Descreva o que está pendente (ex.: falta assinatura, documento ilegível...)"
+  style="width:100%; font-size:12px; padding:6px; resize:vertical;"
+><%= (lastStatus && lastStatus.status === 'COM_PENDENCIA' && lastStatus.pendingNote) ? lastStatus.pendingNote : '' %></textarea>
+
 </div>
           <button class="btn" style="margin-top:4px;">Atualizar status</button>
         </form>
@@ -298,11 +300,12 @@ const concluidos = services.filter(s =>
         </select>
         <div class="pending-note-wrap" style="display:none; margin-top:6px; width:260px;">
   <textarea
-    name="pendingNote"
-    rows="3"
-    placeholder="Descreva o que está pendente (ex.: falta assinatura, documento ilegível...)"
-    style="width:100%; font-size:12px; padding:6px; resize:vertical;"
-  ></textarea>
+  name="pendingNote"
+  rows="3"
+  placeholder="Descreva o que está pendente (ex.: falta assinatura, documento ilegível...)"
+  style="width:100%; font-size:12px; padding:6px; resize:vertical;"
+><%= (lastStatus && lastStatus.status === 'COM_PENDENCIA' && lastStatus.pendingNote) ? lastStatus.pendingNote : '' %></textarea>
+
 </div>
         <button class="btn" style="margin-top:4px;">Atualizar status</button>
       </form>
