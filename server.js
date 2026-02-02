@@ -806,20 +806,23 @@ res.setHeader(
     }
 
     certificates.forEach((cert, index) => {
-      if (!cert.file) return;
+  if (!cert.file) return;
 
-      const abs = path.join(
-        __dirname,
-        "public",
-        cert.file.replace(/^\/+/, "")
-      );
+  const UPLOADS_ROOT =
+    process.env.UPLOADS_DIR || path.join(__dirname, "public", "uploads");
 
-      if (fs.existsSync(abs)) {
-        archive.file(abs, {
-          name: `CERTIFICADO-${index + 1}-${path.basename(abs)}`,
-        });
-      }
+  // remove "/uploads/" e resolve caminho real
+  const relativePath = cert.file.replace(/^\/uploads\/+/, "");
+  const abs = path.join(UPLOADS_ROOT, relativePath);
+
+  if (fs.existsSync(abs)) {
+    archive.file(abs, {
+      name: `CERTIFICADO-${index + 1}-${path.basename(abs)}`,
     });
+  } else {
+    console.warn("⚠️ Certificado não encontrado:", abs);
+  }
+});
 
     archive.finalize();
   });

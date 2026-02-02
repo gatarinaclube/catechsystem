@@ -2,14 +2,15 @@
 const fs = require("fs");
 const path = require("path");
 
-const uploadDir = path.join(
-  __dirname,
-  "..",
-  "public",
-  "uploads",
-  "title-certificates"
-);
+// ===============================
+// PADRÃO DE UPLOAD (IGUAL AO SERVER)
+// ===============================
+const UPLOADS_ROOT =
+  process.env.UPLOADS_DIR || path.join(__dirname, "..", "public", "uploads");
 
+const uploadDir = path.join(UPLOADS_ROOT, "title-certificates");
+
+// garante que a pasta exista
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
