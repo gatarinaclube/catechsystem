@@ -262,6 +262,21 @@ if (req.session.userRole === "ADMIN") {
   ).length;
 }
 
+let pendingServices = [];
+
+if (req.session.userRole !== "ADMIN") {
+  const services = await prisma.serviceRequest.findMany({
+    where: { userId: req.session.userId },
+    orderBy: { createdAt: "desc" },
+    include: {
+      statuses: { orderBy: { createdAt: "desc" }, take: 1 },
+    },
+  });
+
+  pendingServices = services.filter(
+    (s) => s.statuses[0]?.status === "COM_PENDENCIA"
+  );
+}
 
 
 res.render("dashboard", {
@@ -271,6 +286,9 @@ res.render("dashboard", {
   catsInReviewCount,
   usersPendingApprovalCount,
   servicesPendingFFBCount,
+
+  pendingServices,
+pendingServicesCount: pendingServices.length,
 
   currentPath: req.path,
 });

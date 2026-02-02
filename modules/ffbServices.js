@@ -238,19 +238,28 @@ router.post(
   async (req, res) => {
     try {
       const serviceId = Number(req.params.id);
-      const { newStatus } = req.body;
+      const { newStatus, pendingNote } = req.body;
 
       if (!serviceId || !newStatus) {
         return res.status(400).send("Dados inválidos");
       }
 
       // 1️⃣ Cria histórico
-      await prisma.serviceStatus.create({
-        data: {
-          serviceId,
-          status: newStatus,
-        },
-      });
+      const note =
+  typeof pendingNote === "string" ? pendingNote.trim() : "";
+
+if (newStatus === "COM_PENDENCIA" && !note) {
+  return res.status(400).send("Informe o que está pendente.");
+}
+
+await prisma.serviceStatus.create({
+  data: {
+    serviceId,
+    status: newStatus,
+    pendingNote: newStatus === "COM_PENDENCIA" ? note : null,
+  },
+});
+
 
       // 2️⃣ Atualiza status resumo
       await prisma.serviceRequest.update({

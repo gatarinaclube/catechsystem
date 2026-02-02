@@ -105,13 +105,21 @@ const concluidos = services.filter(s =>
         <a href="/ffb-services/<%= s.id %>/edit" class="btn">Editar</a>
 
         <form method="POST" action="/ffb-services/<%= s.id %>/status">
-          <select name="newStatus" style="font-size:12px;">
+          <select name="newStatus" class="status-select" style="font-size:12px;">
             <option value="ENVIADO_GATARINA" selected>Enviado para Gatarina</option>
             <option value="COM_PENDENCIA">Com Pendência</option>
             <option value="ENVIADO_FFB">Enviado para FFB</option>
             <option value="RECEBIDO_FFB">Recebido FFB</option>
             <option value="ENVIADO_ASSOCIADO">Enviado para Associado</option>
           </select>
+          <div class="pending-note-wrap" style="display:none; margin-top:6px; width:260px;">
+  <textarea
+    name="pendingNote"
+    rows="3"
+    placeholder="Descreva o que está pendente (ex.: falta assinatura, documento ilegível...)"
+    style="width:100%; font-size:12px; padding:6px; resize:vertical;"
+  ></textarea>
+</div>
           <button class="btn" style="margin-top:4px;">Atualizar status</button>
         </form>
       </div>
@@ -178,12 +186,20 @@ const concluidos = services.filter(s =>
         <a href="/ffb-services/<%= s.id %>/edit" class="btn">Editar</a>
 
         <form method="POST" action="/ffb-services/<%= s.id %>/status">
-          <select name="newStatus" style="font-size:12px;">
+          <select name="newStatus" class="status-select" style="font-size:12px;">
             <option value="COM_PENDENCIA" <%= lastStatus.status==='COM_PENDENCIA'?'selected':'' %>>Com Pendência</option>
             <option value="ENVIADO_FFB" <%= lastStatus.status==='ENVIADO_FFB'?'selected':'' %>>Enviado para FFB</option>
             <option value="RECEBIDO_FFB" <%= lastStatus.status==='RECEBIDO_FFB'?'selected':'' %>>Recebido FFB</option>
             <option value="ENVIADO_ASSOCIADO">Enviado para Associado</option>
           </select>
+          <div class="pending-note-wrap" style="display:none; margin-top:6px; width:260px;">
+  <textarea
+    name="pendingNote"
+    rows="3"
+    placeholder="Descreva o que está pendente (ex.: falta assinatura, documento ilegível...)"
+    style="width:100%; font-size:12px; padding:6px; resize:vertical;"
+  ></textarea>
+</div>
           <button class="btn" style="margin-top:4px;">Atualizar status</button>
         </form>
       </div>
@@ -273,13 +289,21 @@ const concluidos = services.filter(s =>
       <a href="/ffb-services/<%= s.id %>/edit" class="btn">Editar</a>
 
       <form method="POST" action="/ffb-services/<%= s.id %>/status">
-        <select name="newStatus" style="font-size:12px;">
+        <select name="newStatus" class="status-select" style="font-size:12px;">
           <option value="ENVIADO_GATARINA">Enviado para Gatarina</option>
           <option value="COM_PENDENCIA">Com Pendência</option>
           <option value="ENVIADO_FFB">Enviado para FFB</option>
           <option value="RECEBIDO_FFB">Recebido FFB</option>
           <option value="ENVIADO_ASSOCIADO" selected>Enviado para Associado</option>
         </select>
+        <div class="pending-note-wrap" style="display:none; margin-top:6px; width:260px;">
+  <textarea
+    name="pendingNote"
+    rows="3"
+    placeholder="Descreva o que está pendente (ex.: falta assinatura, documento ilegível...)"
+    style="width:100%; font-size:12px; padding:6px; resize:vertical;"
+  ></textarea>
+</div>
         <button class="btn" style="margin-top:4px;">Atualizar status</button>
       </form>
 
@@ -301,3 +325,37 @@ const concluidos = services.filter(s =>
 <script src="/js/ffb-services.js"></script>
 </body>
 </html>
+
+document.addEventListener("DOMContentLoaded", () => {
+  document
+    .querySelectorAll("form[action*='/ffb-services/'][action$='/status']")
+    .forEach((form) => {
+      const select = form.querySelector(".status-select");
+      const wrap = form.querySelector(".pending-note-wrap");
+      const textarea = form.querySelector("textarea[name='pendingNote']");
+
+      if (!select || !wrap || !textarea) return;
+
+      const toggle = () => {
+        if (select.value === "COM_PENDENCIA") {
+          wrap.style.display = "block";
+          textarea.required = true;
+        } else {
+          wrap.style.display = "none";
+          textarea.required = false;
+          textarea.value = "";
+        }
+      };
+
+      select.addEventListener("change", toggle);
+      toggle();
+
+      form.addEventListener("submit", (e) => {
+        if (select.value === "COM_PENDENCIA" && !textarea.value.trim()) {
+          e.preventDefault();
+          alert("Informe o que está pendente antes de atualizar o status.");
+          textarea.focus();
+        }
+      });
+    });
+});

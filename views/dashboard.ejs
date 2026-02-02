@@ -87,6 +87,43 @@
   </div>
 <% } %>
 
+<% if (user && user.role !== "ADMIN" && pendingServicesCount > 0) { %>
+  <div class="content-card" style="border-left: 4px solid #f59e0b; margin-bottom: 20px;">
+    <div class="content-title" style="display:flex; align-items:center; gap:8px;">
+      ⚠️ Serviço com pendência
+    </div>
+
+    <div class="content-sub" style="margin-top:6px;">
+      Você possui <strong><%= pendingServicesCount %></strong> serviço(s) com pendência.
+    </div>
+
+    <div style="margin-top:10px; display:flex; flex-direction:column; gap:10px;">
+      <% pendingServices.forEach(function(s) { 
+        const st = s.statuses?.[0];
+      %>
+        <div style="padding:10px; border:1px solid #eee; border-radius:10px;">
+          <div style="font-size:13px;">
+            <strong><%= s.type %></strong>
+          </div>
+
+          <div style="font-size:12px; color:#666; margin-top:4px;">
+            Mensagem do administrador:
+          </div>
+
+          <div style="font-size:12px; margin-top:4px; white-space:pre-wrap;">
+            <%= (st && st.pendingNote) ? st.pendingNote : "Sem mensagem." %>
+          </div>
+
+          <div style="margin-top:8px;">
+            <a href="/my-services/<%= s.id %>" class="btn btn-warning">Ver serviço →</a>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+<% } %>
+
+
 
 
         <div class="content-card">
