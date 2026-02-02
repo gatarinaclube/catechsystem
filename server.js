@@ -955,20 +955,23 @@ res.setHeader(
           }
         }
 
-        // --------------------------------------
+// --------------------------------------
 // AUTORIZAÇÃO DE TRANSFERÊNCIA (se existir)
 // --------------------------------------
 if (transfer.authorizationFile) {
-  const authPath = path.join(
-    __dirname,
-    "public",
-    transfer.authorizationFile.replace("/uploads/", "uploads/")
-  );
+  const UPLOADS_ROOT =
+    process.env.UPLOADS_DIR || path.join(__dirname, "public", "uploads");
+
+  // remove "/uploads/" do início e resolve caminho real no disco
+  const relativePath = transfer.authorizationFile.replace(/^\/uploads\/+/, "");
+  const authPath = path.join(UPLOADS_ROOT, relativePath);
 
   if (fs.existsSync(authPath)) {
     archive.file(authPath, {
       name: `AUTORIZACAO_TRANSFERENCIA${path.extname(authPath)}`,
     });
+  } else {
+    console.warn("⚠️ Arquivo de autorização não encontrado:", authPath);
   }
 }
 
