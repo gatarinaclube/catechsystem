@@ -213,6 +213,7 @@ model ServiceStatus {
   service   ServiceRequest @relation(fields: [serviceId], references: [id])
 
   status    ServiceStatusType
+  pendingNote String? 
   createdAt DateTime          @default(now())
 }
 
