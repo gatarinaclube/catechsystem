@@ -1,5 +1,16 @@
 // modules/ffbServices.js
 const express = require("express");
+const { sendStatusEmail } = require("../utils/mailer");
+
+function escapeHtml(str) {
+  return String(str || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 
 module.exports = (prisma, requireAuth, requireAdmin) => {
   const router = express.Router();
@@ -106,6 +117,7 @@ router.get(
     }
   }
 );
+
 
 
 // ============================================================
@@ -229,7 +241,7 @@ if (litter && Array.isArray(kittens)) {
 );
 
 // ============================================================
-// ATUALIZAR STATUS DO SERVIÇO FFB (POST RÁPIDO)
+// ATUALIZAR STATUS DO SERVIÇO FFB (POST RÁPIDO + E-MAIL)
 // ============================================================
 router.post(
   "/ffb-services/:id/status",
@@ -244,69 +256,89 @@ router.post(
         return res.status(400).send("Dados inválidos");
       }
 
-      // 1️⃣ Cria histórico
-      const note =
-  typeof pendingNote === "string" ? pendingNote.trim() : "";
-
-if (newStatus === "COM_PENDENCIA" && !note) {
-  return res.status(400).send("Informe o que está pendente.");
-}
-
-await prisma.serviceStatus.create({
-  data: {
-    serviceId,
-    status: newStatus,
-    pendingNote: newStatus === "COM_PENDENCIA" ? note : null,
-  },
-});
-
-
-      // 2️⃣ Atualiza status resumo
-      await prisma.serviceRequest.update({
+      // 🔹 Buscar serviço + usuário (para e-mail)
+      const service = await prisma.serviceRequest.findUnique({
         where: { id: serviceId },
+        include: { user: true },
+      });
+
+      if (!service) {
+        return res.status(404).send("Serviço não encontrado.");
+      }
+
+      // 🔹 Tratar pendência
+      const note =
+        typeof pendingNote === "string" ? pendingNote.trim() : "";
+
+      if (newStatus === "COM_PENDENCIA" && !note) {
+        return res.status(400).send("Informe o que está pendente.");
+      }
+
+      // 🔹 Criar histórico
+      await prisma.serviceStatus.create({
         data: {
+          serviceId,
           status: newStatus,
+          pendingNote: newStatus === "COM_PENDENCIA" ? note : null,
         },
       });
 
-      // 3️⃣ Volta para lista
-      return res.redirect("/ffb-services");
+      // 🔹 Atualizar status principal
+      await prisma.serviceRequest.update({
+        where: { id: serviceId },
+        data: { status: newStatus },
+      });
 
+      // 🔹 Envio de e-mail (não pode quebrar o fluxo)
+      if (service.user?.email) {
+        try {
+          const statusLabel = {
+            ENVIADO_GATARINA: "Enviado para Gatarina",
+            COM_PENDENCIA: "Com Pendência",
+            ENVIADO_FFB: "Enviado para FFB",
+            RECEBIDO_FFB: "Recebido pela FFB",
+            ENVIADO_ASSOCIADO: "Enviado para Associado",
+          }[newStatus] || newStatus;
+
+          const subject = `CaTech: atualização no seu serviço #${serviceId}`;
+
+          const pendenciaHtml =
+            newStatus === "COM_PENDENCIA"
+              ? `<p style="color:#b91c1c;"><strong>Pendência:</strong> ${escapeHtml(
+                  note
+                )}</p>`
+              : "";
+
+          const html = `
+            <div style="font-family: Arial, sans-serif; line-height:1.4;">
+              <h2>Atualização do Serviço</h2>
+              <p><strong>Código:</strong> ${serviceId}</p>
+              <p><strong>Tipo:</strong> ${escapeHtml(service.type || "-")}</p>
+              <p><strong>Novo status:</strong> ${escapeHtml(statusLabel)}</p>
+              ${pendenciaHtml}
+              <p>
+                Acompanhe em:
+                <a href="https://catechsystem.com.br/my-services/${serviceId}">
+                  https://catechsystem.com.br/my-services/${serviceId}
+                </a>
+              </p>
+            </div>
+          `;
+
+          await sendStatusEmail({
+            to: service.user.email,
+            subject,
+            html,
+          });
+        } catch (mailErr) {
+          console.error("⚠️ Erro ao enviar e-mail de status:", mailErr);
+        }
+      }
+
+      return res.redirect("/ffb-services");
     } catch (err) {
       console.error("Erro ao atualizar status FFB:", err);
       return res.status(500).send("Erro ao atualizar status");
-    }
-  }
-);
-
-router.post(
-  "/ffb-services/:id/malote",
-  requireAuth,
-  requireAdmin,
-  async (req, res) => {
-    try {
-      const serviceId = Number(req.params.id);
-
-      const malote =
-        typeof req.body?.malote === "string"
-          ? req.body.malote.trim()
-          : "";
-
-      if (malote && !/^\d{2}\/\d{2}$/.test(malote)) {
-        return res.status(400).json({ error: "Formato inválido (use 00/26)" });
-      }
-
-      await prisma.serviceRequest.update({
-        where: { id: serviceId },
-        data: {
-          malote: malote || null,
-        },
-      });
-
-      return res.json({ success: true });
-    } catch (err) {
-      console.error("Erro ao salvar malote:", err);
-      return res.status(500).json({ error: "Erro ao salvar malote" });
     }
   }
 );
