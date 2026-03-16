@@ -267,74 +267,74 @@ router.post(
   "/cats",
   requireAuth,
   upload.fields([
-    { name: "pedigreeFile", maxCount: 1 },
-    { name: "breedingCertificateFile", maxCount: 1 },
-    { name: "extraDocumentsFile", maxCount: 1 },
-    { name: "photo", maxCount: 1 },
-  ]),
+  { name: "pedigreeFile", maxCount: 1 },
+  { name: "reproductionFile", maxCount: 1 },
+  { name: "otherDocsFile", maxCount: 1 },
+  { name: "photo", maxCount: 1 },
+]),
   async (req, res) => {
     const { userId, role } = getAuthInfo(req); // pegamos também o role
 
     try {
       const {
-        // Informações
-        country,
-        titleBeforeName,
-        titleAfterName,
-        name,
-        microchip,
-        birthDate,
-        sex, // no banco está como gender
-        neutered,
-        breed,
-        colorEms,
+  // Informações
+  country,
+  titleBeforeName,
+  titleAfterName,
+  name,
+  microchip,
+  birthDate,
+  gender,
+  neutered,
+  breed,
+  emsCode,
 
-        // Registro
-        memberType,
-        registerType,
-        pedigreeNumber,
-        registerPending,
+  // Registro
+  fifeStatus,
+  pedigreeType,
+  pedigreeNumber,
+  pedigreePending,
 
-        // Criador / Proprietário
-        breederType,
-        breederOtherName,
-        ownershipType,
+  // Criador / Proprietário
+  breederType,
+  breederName,
+  ownershipType,
 
-        // Pais
-        fatherSource,
-        fatherId,
-        fatherNameManual,
-        fatherColorEmsManual,
-        fatherBreedManual,
+  // Pais
+  fatherSource,
+  fatherId,
+  fatherName,
+  fatherEmsCode,
+  fatherBreed,
 
-        motherSource,
-        motherId,
-        motherNameManual,
-        motherColorEmsManual,
-        motherBreedManual,
-      } = req.body;
+  motherSource,
+  motherId,
+  motherName,
+  motherEmsCode,
+  motherBreed,
+} = req.body;
 
       const files = req.files || {};
 
       const pedigreePath =
-        files.pedigreeFile && files.pedigreeFile[0]
-          ? `/uploads/cats/${files.pedigreeFile[0].filename}`
-          : null;
+  files.pedigreeFile && files.pedigreeFile[0]
+    ? `/uploads/cats/${files.pedigreeFile[0].filename}`
+    : null;
 
-      const reproductionPath =
-        files.breedingCertificateFile && files.breedingCertificateFile[0]
-          ? `/uploads/cats/${files.breedingCertificateFile[0].filename}`
-          : null;
+const reproductionPath =
+  files.reproductionFile && files.reproductionFile[0]
+    ? `/uploads/cats/${files.reproductionFile[0].filename}`
+    : null;
 
-      const otherDocsPath =
-        files.extraDocumentsFile && files.extraDocumentsFile[0]
-          ? `/uploads/cats/${files.extraDocumentsFile[0].filename}`
-          : null;
+const otherDocsPath =
+  files.otherDocsFile && files.otherDocsFile[0]
+    ? `/uploads/cats/${files.otherDocsFile[0].filename}`
+    : null;
 
           const photoPath =
   files.photo && files.photo[0]
     ? `/uploads/cats/${files.photo[0].filename}`
-    : existingCat.photo;
+    : null;
 
 
 
@@ -363,10 +363,10 @@ router.post(
           fatherBreedValue = fatherCat.breed || null;
         }
       } else if (fatherSource === "manual") {
-        fatherNameValue = fatherNameManual || null;
-        fatherEmsValue = fatherColorEmsManual || null;
-        fatherBreedValue = fatherBreedManual || null;
-      }
+  fatherNameValue = fatherName || null;
+  fatherEmsValue = fatherEmsCode || null;
+  fatherBreedValue = fatherBreed || null;
+}
 
       // --------- MÃE ---------
       let motherIdValue = null;
@@ -386,10 +386,10 @@ router.post(
           motherBreedValue = motherCat.breed || null;
         }
       } else if (motherSource === "manual") {
-        motherNameValue = motherNameManual || null;
-        motherEmsValue = motherColorEmsManual || null;
-        motherBreedValue = motherBreedManual || null;
-      }
+  motherNameValue = motherName || null;
+  motherEmsValue = motherEmsCode || null;
+  motherBreedValue = motherBreed || null;
+}
 
       // --------- CHECAGEM DE MICROCHIP DUPLICADO ---------
       if (microchipDigits) {
@@ -420,15 +420,15 @@ router.post(
           // re-renderiza o formulário com a mensagem de erro
           return res.render("cats/new", {
             cat: {
-              name,
-              microchip, // mantém como o usuário digitou (com pontos)
-              country,
-              birthDate,
-              sex,
-              neutered,
-              breed,
-              colorEms,
-            },
+  name,
+  microchip,
+  country,
+  birthDate,
+  gender,
+  neutered,
+  breed,
+  emsCode,
+},
             maleCats,
             femaleCats,
             user,
@@ -440,51 +440,54 @@ router.post(
 
       // --------- CRIA O GATO SE NÃO HOUVER DUPLICIDADE ---------
       await prisma.cat.create({
-        data: {
-          ownerId: userId,
-          status: "NOVO",
+  data: {
+    ownerId: userId,
+    status: "NOVO",
 
-          // Informações básicas
-          country: country || null,
-          titleBeforeName: titleBeforeName || null, 
-          titleAfterName: titleAfterName || null,  
-          name,
-          microchip: microchipDigits,
-          birthDate: birthDateObj,
-          gender: sex || null,
-          neutered: neuteredBool,
-          breed: breed || null,
-          emsCode: colorEms || null,
+    // Informações básicas
+    country: country || null,
+    titleBeforeName: titleBeforeName || null,
+    titleAfterName: titleAfterName || null,
+    name,
+    microchip: microchipDigits,
+    birthDate: birthDateObj,
+    gender: gender || null,
+    neutered: neuteredBool,
+    breed: breed || null,
+    emsCode: emsCode || null,
 
-          // Registro
-          fifeStatus: memberType || null,
-          pedigreeType: registerType || null,
-          pedigreeNumber: pedigreeNumber || null,
-          pedigreePending: pedigreePendingBool,
+    // Registro
+    fifeStatus: fifeStatus || null,
+    pedigreeType: pedigreeType || null,
+    pedigreeNumber: pedigreeNumber || null,
+    pedigreePending: pedigreePending === "on",
 
-          // Criador
-          breederType: breederType || null,
-          breederName:
-            breederType === "OTHER" ? breederOtherName || null : null,
-          ownershipType: ownershipType || null,
+    // Criador
+    breederType: breederType || null,
+    breederName:
+      breederType === "Outro" || breederType === "OTHER"
+        ? breederName || null
+        : null,
+    ownershipType: ownershipType || null,
 
-          // Pais
-          fatherId: fatherIdValue,
-          fatherName: fatherNameValue,
-          fatherEmsCode: fatherEmsValue,
-          fatherBreed: fatherBreedValue,
+    // Pais
+    fatherId: fatherIdValue,
+    fatherName: fatherNameValue,
+    fatherEmsCode: fatherEmsValue,
+    fatherBreed: fatherBreedValue,
 
-          motherId: motherIdValue,
-          motherName: motherNameValue,
-          motherEmsCode: motherEmsValue,
-          motherBreed: motherBreedValue,
+    motherId: motherIdValue,
+    motherName: motherNameValue,
+    motherEmsCode: motherEmsValue,
+    motherBreed: motherBreedValue,
 
-          // Documentos
-          pedigreeFile: pedigreePath,
-          reproductionFile: reproductionPath,
-          otherDocsFile: otherDocsPath,
-        },
-      });
+    // Documentos
+    photo: photoPath,
+    pedigreeFile: pedigreePath,
+    reproductionFile: reproductionPath,
+    otherDocsFile: otherDocsPath,
+  },
+});
 
       res.redirect("/cats");
     } catch (err) {

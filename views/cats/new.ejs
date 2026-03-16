@@ -112,7 +112,7 @@
 <!-- Sexo -->
       <div class="field">
                   <label for="sex">Sexo</label>
-                  <select id="sex" name="sex" required>
+                  <select id="sex" name="gender" required>
                     <option value="">Selecione...</option>
                     <option value="M">Macho</option>
                     <option value="F">Fêmea</option>
@@ -178,7 +178,7 @@
 
                 <div class="field">
                   <label for="colorEms">Cor / Código EMS</label>
-                  <select id="colorEms" name="colorEms" required>
+                  <select id="colorEms" name="emsCode" required>
   <option value="">Selecione a raça primeiro...</option>
 </select>
                 </div>
@@ -261,12 +261,12 @@
     <div class="grid-3">
       <div class="field">
         <label for="fatherNameManual">Nome do pai</label>
-        <input id="fatherNameManual" type="text" name="fatherNameManual" />
+        <input id="fatherNameManual" type="text" name="fatherName" />
       </div>
 
       <div class="field">
         <label for="fatherBreedManual">Raça</label>
-        <select id="fatherBreedManual" name="fatherBreedManual">
+        <select id="fatherBreedManual" name="fatherBreed">
           <option value="">Selecione...</option>
           <option value="ABY">ABY</option>
           <option value="SOM">SOM</option>
@@ -322,7 +322,7 @@
 
       <div class="field">
         <label for="fatherColorEmsManual">Cor / Código EMS</label>
-        <select id="fatherColorEmsManual" name="fatherColorEmsManual">
+        <select id="fatherColorEmsManual" name="fatherEmsCode">
           <option value="">Selecione a raça primeiro...</option>
         </select>
       </div>
@@ -390,14 +390,14 @@
       <input
         id="motherNameManual"
         type="text"
-        name="motherNameManual"
+        name="motherName"
       />
     </div>
 
     <!-- Raça -->
     <div class="field">
       <label for="motherBreedManual">Raça</label>
-      <select id="motherBreedManual" name="motherBreedManual">
+      <select id="motherBreedManual" name="motherBreed">
         <option value="">Selecione...</option>
         <option value="ABY">ABY</option>
         <option value="SOM">SOM</option>
@@ -454,7 +454,7 @@
     <!-- EMS -->
     <div class="field">
       <label for="motherColorEmsManual">Cor / Código EMS</label>
-      <select id="motherColorEmsManual" name="motherColorEmsManual">
+      <select id="motherColorEmsManual" name="motherEmsCode">
         <option value="">Selecione a raça primeiro...</option>
       </select>
     </div>
@@ -473,7 +473,7 @@
               <div class="grid-3">
                 <div class="field">
                   <label for="memberType">Membro</label>
-                  <select id="memberType" name="memberType">
+                  <select id="memberType" name="fifeStatus">
                     <option value="">Selecione...</option>
                     <option value="Fife Brasil">Fife Brasil</option>
                     <option value="Fife Não Brasil">Fife Não Brasil</option>
@@ -483,7 +483,7 @@
 
                 <div class="field">
                   <label for="registerType">Tipo de registro</label>
-                  <select id="registerType" name="registerType">
+                  <select id="registerType" name="pedigreeType">
                     <option value="">Selecione...</option>
                     <option value="RX">RX</option>
                     <option value="LO">LO</option>
@@ -498,7 +498,7 @@
 
               <div class="field" style="margin-top: 10px;">
                 <label>
-                  <input type="checkbox" name="registerPending" />
+                  <input type="checkbox" name="pedigreePending" />
                   Registro pendente
                 </label>
               </div>
@@ -534,7 +534,7 @@
                   <input
                     id="breederOtherName"
                     type="text"
-                    name="breederOtherName"
+                    name="breederName"
                     placeholder="Nome do criador (se outro)"
                     style="margin-top: 6px; display: none;"
                   />
@@ -592,7 +592,7 @@
                     id="breedingCertificateFile"
                     class="file-input"
                     type="file"
-                    name="breedingCertificateFile"
+                    name="reproductionFile"
                   />
                 </div>
               </div>
@@ -605,7 +605,7 @@
                   id="extraDocumentsFile"
                   class="file-input"
                   type="file"
-                  name="extraDocumentsFile"
+                  name="otherDocsFile"
                 />
             </div>
           </div>
