@@ -1,29 +1,44 @@
-document.querySelectorAll(".malote-input").forEach(input => {
-  input.addEventListener("change", async () => {
-    const serviceId = input.dataset.serviceId;
-    const malote = input.value;
-
-    try {
-      const response = await fetch(`/ffb-services/${serviceId}/malote`, {
-        method: "POST",
-        credentials: "same-origin", // 🔥 ISSO É O QUE FALTAVA
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ malote }),
-      });
-
-      if (!response.ok) {
-        alert("Não foi possível salvar o malote.");
-      }
-    } catch (err) {
-      console.error("Erro ao salvar malote:", err);
-      alert("Erro ao salvar malote.");
-    }
-  });
-});
-
 document.addEventListener("DOMContentLoaded", () => {
+  // =========================
+  // SALVAR MALOTE
+  // =========================
+  document.querySelectorAll(".malote-input").forEach((input) => {
+    input.addEventListener("change", async () => {
+      const serviceId = input.dataset.serviceId;
+      const malote = input.value.trim();
+
+      try {
+        const response = await fetch(`/ffb-services/${serviceId}/malote`, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ malote }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          alert("Não foi possível salvar o malote.");
+          return;
+        }
+
+        input.style.borderColor = "#16a34a";
+        setTimeout(() => {
+          input.style.borderColor = "";
+        }, 1000);
+      } catch (err) {
+        console.error("Erro ao salvar malote:", err);
+        alert("Erro ao salvar malote.");
+        input.style.borderColor = "#dc2626";
+      }
+    });
+  });
+
+  // =========================
+  // STATUS COM PENDÊNCIA
+  // =========================
   document
     .querySelectorAll("form[action*='/ffb-services/'][action$='/status']")
     .forEach((form) => {
@@ -56,4 +71,3 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
 });
-

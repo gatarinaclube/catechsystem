@@ -1133,7 +1133,7 @@ res.setHeader(
       }
     }
 
-    // 📎 ANEXOS DO FORMULÁRIO
+// 📎 ANEXOS DO FORMULÁRIO
 let attachments = [];
 try {
   attachments = sc.attachmentsJson
@@ -1143,28 +1143,52 @@ try {
   attachments = [];
 }
 
-attachments.forEach((relPath, index) => {
-  if (!relPath) return;
+console.log("SECOND COPY ATTACHMENTS DEBUG:", {
+  serviceId: serviceWithStatus.id,
+  raw: sc.attachmentsJson,
+  parsed: attachments,
+});
+
+attachments.forEach((item, index) => {
+  if (!item) return;
 
   const UPLOADS_ROOT =
     process.env.UPLOADS_DIR || path.join(__dirname, "public", "uploads");
 
-  // remove "/uploads/" do início e resolve o caminho real no disco
-  const relativePath = String(relPath).replace(/^\/uploads\/+/, "");
+  // aceita tanto string quanto objeto
+  let filePath = null;
+
+  if (typeof item === "string") {
+    filePath = item;
+  } else if (typeof item === "object") {
+    filePath =
+      item.file ||
+      item.path ||
+      item.url ||
+      item.location ||
+      null;
+  }
+
+  if (!filePath) {
+    console.warn("⚠️ Anexo da Segunda Via sem caminho válido:", item);
+    return;
+  }
+
+  // remove "uploads/" ou "/uploads/" do início
+  const relativePath = String(filePath).replace(/^\/?uploads\/+/, "");
   const abs = path.join(UPLOADS_ROOT, relativePath);
 
   if (fs.existsSync(abs)) {
     archive.file(abs, {
       name: `ANEXO-${index + 1}-${path.basename(abs)}`,
     });
+    console.log("✅ Anexo adicionado ao ZIP:", abs);
   } else {
-    console.warn("⚠️ Anexo da Segunda Via não encontrado:", abs);
+    console.warn("⚠️ Anexo da Segunda Via não encontrado:", {
+      original: filePath,
+      resolved: abs,
+    });
   }
-});
-
-console.log("SECOND COPY ATTACHMENTS DEBUG:", {
-  serviceId: serviceWithStatus.id,
-  attachmentsJson: sc.attachmentsJson,
 });
 
     archive.finalize();

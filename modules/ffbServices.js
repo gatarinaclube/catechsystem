@@ -411,5 +411,48 @@ for (const s of services) {
   }
 );
 
+// ============================================================
+// SALVAR MALOTE DO SERVIÇO
+// ============================================================
+router.post(
+  "/ffb-services/:id/malote",
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const serviceId = Number(req.params.id);
+      const { malote } = req.body;
+
+      if (!serviceId) {
+        return res.status(400).json({
+          ok: false,
+          error: "ID do serviço inválido.",
+        });
+      }
+
+      const maloteValue =
+        typeof malote === "string" ? malote.trim() : "";
+
+      await prisma.serviceRequest.update({
+        where: { id: serviceId },
+        data: {
+          malote: maloteValue || null,
+        },
+      });
+
+      return res.json({
+        ok: true,
+        malote: maloteValue,
+      });
+    } catch (err) {
+      console.error("Erro ao salvar malote:", err);
+      return res.status(500).json({
+        ok: false,
+        error: "Erro ao salvar malote.",
+      });
+    }
+  }
+);
+
   return router;
 };
