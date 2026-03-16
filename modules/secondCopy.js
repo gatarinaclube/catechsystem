@@ -1,25 +1,34 @@
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
+const fs = require("fs");
 
 module.exports = (prisma, requireAuth) => {
   const router = express.Router();
 
+    const UPLOADS_ROOT =
+    process.env.UPLOADS_DIR || path.join(__dirname, "..", "public", "uploads");
+
+  const uploadDir = path.join(UPLOADS_ROOT, "second-copy");
+
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+
   const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-  cb(null, path.join("public", "uploads", "second-copy"));
-},
+    destination: (req, file, cb) => {
+      cb(null, uploadDir);
+    },
 
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const safeName = file.originalname
-      .replace(/\s+/g, "_")
-      .replace(/[^\w.-]/g, "");
-    cb(null, `${Date.now()}-${safeName}`);
-  },
-});
+    filename: (req, file, cb) => {
+      const safeName = file.originalname
+        .replace(/\s+/g, "_")
+        .replace(/[^\w.-]/g, "");
+      cb(null, `${Date.now()}-${safeName}`);
+    },
+  });
 
-const upload = multer({ storage });
+  const upload = multer({ storage });
 
   // FORM
 router.get("/services/segunda-via-alteracoes", requireAuth, async (req, res) => {

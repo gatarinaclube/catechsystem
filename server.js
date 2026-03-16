@@ -1152,10 +1152,6 @@ console.log("SECOND COPY ATTACHMENTS DEBUG:", {
 attachments.forEach((item, index) => {
   if (!item) return;
 
-  const UPLOADS_ROOT =
-    process.env.UPLOADS_DIR || path.join(__dirname, "public", "uploads");
-
-  // aceita tanto string quanto objeto
   let filePath = null;
 
   if (typeof item === "string") {
@@ -1174,19 +1170,44 @@ attachments.forEach((item, index) => {
     return;
   }
 
-  // remove "uploads/" ou "/uploads/" do início
-  const relativePath = String(filePath).replace(/^\/?uploads\/+/, "");
-  const abs = path.join(UPLOADS_ROOT, relativePath);
+  const cleanPath = String(filePath).replace(/^\/+/, "");
+  const relativePath = cleanPath.replace(/^uploads\/+/, "");
 
-  if (fs.existsSync(abs)) {
-    archive.file(abs, {
-      name: `ANEXO-${index + 1}-${path.basename(abs)}`,
+  const possiblePaths = [
+    process.env.UPLOADS_DIR
+      ? path.join(process.env.UPLOADS_DIR, relativePath)
+      : null,
+    process.env.UPLOADS_DIR
+      ? path.join(process.env.UPLOADS_DIR.replace(/\/uploads\/?$/, ""), relativePath)
+      : null,
+    process.env.UPLOADS_DIR
+      ? path.join(process.env.UPLOADS_DIR.replace(/\/uploads\/?$/, ""), "uploads", relativePath)
+      : null,
+    path.join(__dirname, "public", "uploads", relativePath),
+    path.join(__dirname, "public", relativePath),
+  ].filter(Boolean);
+
+  console.log("SECOND COPY PATHS TEST:", possiblePaths);
+
+  possiblePaths.forEach((p) => {
+  try {
+    console.log("PATH CHECK:", p, fs.existsSync(p));
+  } catch (e) {
+    console.log("PATH CHECK ERROR:", p, e.message);
+  }
+});
+
+  const existingPath = possiblePaths.find((p) => fs.existsSync(p));
+
+  if (existingPath) {
+    archive.file(existingPath, {
+      name: `ANEXO-${index + 1}-${path.basename(existingPath)}`,
     });
-    console.log("✅ Anexo adicionado ao ZIP:", abs);
+    console.log("✅ Anexo adicionado ao ZIP:", existingPath);
   } else {
     console.warn("⚠️ Anexo da Segunda Via não encontrado:", {
       original: filePath,
-      resolved: abs,
+      tried: possiblePaths,
     });
   }
 });
