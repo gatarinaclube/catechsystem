@@ -343,7 +343,7 @@ const otherDocsPath =
       const microchipDigits = microchip ? microchip.replace(/\D/g, "") : null;
       const birthDateObj = birthDate ? new Date(birthDate) : null;
       const neuteredBool = neutered === "SIM";
-      const pedigreePendingBool = registerPending === "on";
+      const pedigreePendingBool = pedigreePending === "on";
 
       // --------- PAI ---------
       let fatherIdValue = null;
@@ -598,7 +598,7 @@ router.post(
         memberType,
         registerType,
         pedigreeNumber,
-        registerPending,
+        pedigreePending,
 
         // Criador / Proprietário
         breederType,
@@ -646,7 +646,7 @@ router.post(
       const microchipDigits = microchip ? microchip.replace(/\D/g, "") : null;
       const birthDateObj = birthDate ? new Date(birthDate) : null;
       const neuteredBool = neutered === "SIM";
-      const pedigreePendingBool = registerPending === "on";
+      const pedigreePendingBool = pedigreePending === "on";
 
       // --------- PAI ---------
       let fatherIdValue = existingCat.fatherId || null;
