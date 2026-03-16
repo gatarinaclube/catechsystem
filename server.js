@@ -1134,25 +1134,38 @@ res.setHeader(
     }
 
     // 📎 ANEXOS DO FORMULÁRIO
-    let attachments = [];
-    try {
-      attachments = sc.attachmentsJson
-        ? JSON.parse(sc.attachmentsJson)
-        : [];
-    } catch {}
+let attachments = [];
+try {
+  attachments = sc.attachmentsJson
+    ? JSON.parse(sc.attachmentsJson)
+    : [];
+} catch {
+  attachments = [];
+}
 
-    attachments.forEach((relPath, index) => {
-      const abs = path.join(
-        __dirname,
-        "public",
-        relPath.replace(/^\/+/, "")
-      );
-      if (fs.existsSync(abs)) {
-        archive.file(abs, {
-          name: `ANEXO-${index + 1}-${path.basename(abs)}`,
-        });
-      }
+attachments.forEach((relPath, index) => {
+  if (!relPath) return;
+
+  const UPLOADS_ROOT =
+    process.env.UPLOADS_DIR || path.join(__dirname, "public", "uploads");
+
+  // remove "/uploads/" do início e resolve o caminho real no disco
+  const relativePath = String(relPath).replace(/^\/uploads\/+/, "");
+  const abs = path.join(UPLOADS_ROOT, relativePath);
+
+  if (fs.existsSync(abs)) {
+    archive.file(abs, {
+      name: `ANEXO-${index + 1}-${path.basename(abs)}`,
     });
+  } else {
+    console.warn("⚠️ Anexo da Segunda Via não encontrado:", abs);
+  }
+});
+
+console.log("SECOND COPY ATTACHMENTS DEBUG:", {
+  serviceId: serviceWithStatus.id,
+  attachmentsJson: sc.attachmentsJson,
+});
 
     archive.finalize();
   });
