@@ -6,7 +6,7 @@ const fs = require("fs");
 module.exports = (prisma, requireAuth) => {
   const router = express.Router();
 
-    const UPLOADS_ROOT =
+  const UPLOADS_ROOT =
     process.env.UPLOADS_DIR || path.join(__dirname, "..", "public", "uploads");
 
   const uploadDir = path.join(UPLOADS_ROOT, "second-copy");

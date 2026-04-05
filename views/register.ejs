@@ -196,6 +196,50 @@
               </div>
             </div>
 
+<div class="section">
+  <div class="section-title">
+    Declaração de ciência e responsabilidade
+  </div>
+
+  <div style="font-size:14px; line-height:1.6;">
+
+    <p>
+      Ao solicitar associação ao Gatarina Clube, concordo e afirmo que tenho conhecimento sobre todas as regras, principalmente:
+    </p>
+
+    <ul style="margin-left:18px;">
+      <li>Conhecer e seguir as normas, regulamentos e diretrizes estabelecidas pela Fédération Internationale Féline (FIFe), bem como pela Federação Felina Brasileira (FFB);</li>
+      <li>Não criar, promover, registrar ou comercializar raças felinas que não sejam reconhecidas pela FIFe, bem como a não participar de programas de criação envolvendo raças expressamente proibidas ou banidas por esta entidade, como por exemplo Scottish Fold, Munchkin entre outros;</li>
+      <li>São permitidas na FIFe apenas 3 ninhadas a cada 2 anos de uma mesma fêmea, com limitação máxima de 2 ninhadas no intervalo de 12 meses;</li>
+      <li>Todos os filhotes criados por um associado FIFe devem ser primeiramente registrados na FIFe.</li>
+    </ul>
+
+    <p style="margin-top:10px;">
+      <strong>Regras, regulamentos e informações FIFe/FFB:</strong><br />
+      Raças reconhecidas: <a href="https://fifeweb.org/cats/breeds/" target="_blank">fifeweb.org/cats/breeds</a><br />
+      Normas FIFe: <a href="https://fifeweb.org/library/rules-and-forms/" target="_blank">fifeweb.org/library/rules-and-forms</a><br />
+      Normas FFB: <a href="https://www.fifebrasil.com.br" target="_blank">fifebrasil.com.br</a>
+    </p>
+
+    <div style="margin-top:15px; display:flex; flex-direction:column; gap:10px;">
+      <label class="checkbox-label">
+        <input type="checkbox" id="agree1" />
+        Declaro que todas as minhas atividades de criação seguirão rigorosamente os padrões de bem-estar animal e ética estabelecidos pelas entidades mencionadas
+      </label>
+
+      <label class="checkbox-label">
+        <input type="checkbox" id="agree2" />
+        Estou ciente de que o descumprimento desta declaração poderá resultar em sanções administrativas, incluindo suspensão ou exclusão de registros
+      </label>
+    </div>
+
+    <div id="checkboxError" style="color:#c0392b; margin-top:10px; display:none;">
+      ⚠️ É necessário aceitar as declarações para continuar.
+    </div>
+
+  </div>
+</div>
+
             <!-- AÇÕES -->
             <div class="footer">
               <a href="/login" class="btn">Já tenho conta</a>
@@ -222,6 +266,18 @@
           input.value = "";
         }
       }
+
+      document.querySelector("form").addEventListener("submit", function (e) {
+  const agree1 = document.getElementById("agree1").checked;
+  const agree2 = document.getElementById("agree2").checked;
+  const error = document.getElementById("checkboxError");
+
+  if (!agree1 || !agree2) {
+    e.preventDefault();
+    error.style.display = "block";
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+  }
+});
     </script>
   </body>
 </html>
