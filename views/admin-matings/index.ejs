@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Acasalamentos - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <style>
+      .mating-table {
+        display: grid;
+        grid-template-columns: 220px 180px 220px 180px 220px 160px 250px 180px;
+        gap: 10px;
+        align-items: start;
+      }
+      .mating-header {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-muted);
+      }
+      .mating-row {
+        padding: 12px;
+        border: 1px solid var(--border-soft);
+        border-radius: 14px;
+        margin-bottom: 12px;
+      }
+      .mini-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .inline-plus {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      @media (max-width: 1400px) {
+        .mating-table {
+          grid-template-columns: 1fr;
+        }
+        .mating-header {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Acasalamentos</h2>
+            <div class="welcome-sub">Planejamento reprodutivo das fêmeas cadastradas.</div>
+          </div>
+          <div class="actions">
+            <a href="/dashboard" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <div class="content-card" style="margin-bottom: 18px;">
+          <form method="get" action="/admin/matings" style="display:flex; gap:10px; align-items:end; flex-wrap:wrap;">
+            <div class="field" style="min-width:320px; flex:1;">
+              <label class="field-label" for="matingsOwnerSearch">Filtrar por usuário</label>
+              <input type="hidden" name="ownerId" id="matingsOwnerId" value="<%= selectedOwnerId || '' %>" />
+              <input
+                id="matingsOwnerSearch"
+                list="matingsOwnersList"
+                type="text"
+                placeholder="Digite o nome do usuário"
+                value="<%= selectedOwnerId ? ((users.find((u) => u.id === selectedOwnerId) || {}).name || '') : '' %>"
+              />
+              <datalist id="matingsOwnersList">
+                <% users.forEach(function(item) { %>
+                  <option value="<%= item.name %>"><%= item.email %></option>
+                <% }) %>
+              </datalist>
+            </div>
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+            <a href="/admin/matings" class="btn">Limpar</a>
+          </form>
+        </div>
+
+        <% groups.forEach(function(group) { %>
+          <section class="content-card" style="margin-bottom: 18px;">
+            <div class="content-title"><%= group.label %></div>
+            <div class="mating-table mating-header" style="margin-top:12px;">
+              <div>Fêmea</div>
+              <div>Pai e Mãe</div>
+              <div>Consanguinidade</div>
+              <div>Macho</div>
+              <div>Histórico</div>
+              <div>Próxima Cruza</div>
+              <div>Data Cruza</div>
+              <div>DPP</div>
+            </div>
+
+            <% if (!grouped[group.key] || !grouped[group.key].length) { %>
+              <div class="empty" style="margin-top:12px;">Nenhum registro nesta divisão.</div>
+            <% } else { %>
+              <% grouped[group.key].forEach(function(row) { %>
+                <form method="post" action="/admin/matings/<%= row.female.id %>" class="mating-row">
+                  <input type="hidden" name="ownerId" value="<%= selectedOwnerId || '' %>" />
+                  <div class="mating-table">
+                    <div>
+                      <div class="item-title"><%= row.femaleDisplayName %></div>
+                    </div>
+
+                    <div class="mini-stack">
+                      <div>Pai: <strong><%= row.fatherName %></strong></div>
+                      <div>Mãe: <strong><%= row.motherName %></strong></div>
+                    </div>
+
+                    <div class="mini-stack" data-consanguinity-box>
+                      <% const consList = row.consanguinity.length ? row.consanguinity : [""]; %>
+                      <% consList.forEach(function(value, idx) { %>
+                        <div class="inline-plus">
+                          <select name="consanguinityIds">
+                            <option value="">Sem consanguinidade</option>
+                            <% row.allMaleOptions.forEach(function(male) { %>
+                              <option value="<%= male.id %>" <%= String(value) === String(male.id) ? "selected" : "" %>><%= male.name %></option>
+                            <% }) %>
+                          </select>
+                          <% if (idx === consList.length - 1) { %>
+                            <button type="button" class="btn add-consanguinity">+</button>
+                          <% } %>
+                        </div>
+                      <% }) %>
+                    </div>
+
+                    <div>
+                      <select name="maleCatId">
+                        <option value="">Selecione...</option>
+                        <% row.maleOptions.forEach(function(male) { %>
+                          <option value="<%= male.id %>" <%= String(row.plan?.maleCatId || '') === String(male.id) ? "selected" : "" %>><%= male.name %></option>
+                        <% }) %>
+                      </select>
+                    </div>
+
+                    <div class="mini-stack" data-history-box>
+                      <% const historyList = row.litterHistory.length ? row.litterHistory : [""]; %>
+                      <% historyList.forEach(function(value, idx) { %>
+                        <div class="inline-plus">
+                          <input type="date" name="litterHistoryDates" value="<%= value %>" />
+                          <% if (idx === historyList.length - 1) { %>
+                            <button type="button" class="btn add-history-date">+</button>
+                          <% } %>
+                        </div>
+                      <% }) %>
+                    </div>
+
+                    <div>
+                      <strong><%= row.nextCrossDate ? formatDate(row.nextCrossDate) : "-" %></strong>
+                    </div>
+
+                    <div class="mini-stack">
+                      <input type="date" name="matingStartDate" value="<%= row.plan?.matingStartDate ? formatDate(row.plan.matingStartDate) : '' %>" />
+                      <input type="date" name="matingEndDate" value="<%= row.plan?.matingEndDate ? formatDate(row.plan.matingEndDate) : '' %>" />
+                      <select name="status">
+                        <% groups.forEach(function(statusItem) { %>
+                          <option value="<%= statusItem.key %>" <%= (row.plan?.status || "PARA_ACASALAR") === statusItem.key ? "selected" : "" %>><%= statusItem.label %></option>
+                        <% }) %>
+                      </select>
+                      <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+
+                    <div class="mini-stack">
+                      <div><strong><%= row.dppDate ? formatDate(row.dppDate) : "-" %></strong></div>
+                      <div><%= row.gestationDays !== null ? row.gestationDays + " dias de gestação" : "-" %></div>
+                    </div>
+                  </div>
+                </form>
+              <% }) %>
+            <% } %>
+          </section>
+        <% }) %>
+      </main>
+    </div>
+
+    <script>
+      (function () {
+        const users = <%- JSON.stringify(users) %>;
+        const ownerSearch = document.getElementById("matingsOwnerSearch");
+        const ownerId = document.getElementById("matingsOwnerId");
+
+        function syncOwnerId() {
+          const match = users.find((item) => item.name === ownerSearch.value);
+          ownerId.value = match ? match.id : "";
+        }
+
+        ownerSearch.addEventListener("input", syncOwnerId);
+        ownerSearch.addEventListener("change", syncOwnerId);
+
+        document.querySelectorAll(".add-consanguinity").forEach((button) => {
+          button.addEventListener("click", () => {
+            const box = button.closest("[data-consanguinity-box]");
+            const row = button.parentElement.cloneNode(true);
+            row.querySelector("select").value = "";
+            row.querySelector("button").remove();
+            box.appendChild(row);
+          });
+        });
+
+        document.querySelectorAll(".add-history-date").forEach((button) => {
+          button.addEventListener("click", () => {
+            const box = button.closest("[data-history-box]");
+            const row = button.parentElement.cloneNode(true);
+            row.querySelector("input").value = "";
+            row.querySelector("button").remove();
+            box.appendChild(row);
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>

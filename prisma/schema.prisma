@@ -57,6 +57,7 @@ model User {
   cats            Cat[]
   currentOwnedCats Cat[] @relation("CurrentKittenOwner")
   litters         Litter[]
+  matings         MatingPlan[]
   serviceRequests ServiceRequest[]
 }
 
@@ -118,6 +119,8 @@ model Cat {
   currentOwnerId   Int?
   currentOwner     User?             @relation("CurrentKittenOwner", fields: [currentOwnerId], references: [id])
   historyNotes     String?
+  matingPlansAsFemale MatingPlan[]   @relation("MatingFemale")
+  matingPlansAsMale   MatingPlan[]   @relation("MatingMale")
 
   createdAt        DateTime          @default(now())
   transferRequests TransferRequest[]
@@ -211,6 +214,28 @@ model LitterKitten {
   deceased  Boolean? @default(false)
 
   createdAt DateTime @default(now())
+}
+
+model MatingPlan {
+  id Int @id @default(autoincrement())
+
+  ownerId Int?
+  owner   User? @relation(fields: [ownerId], references: [id])
+
+  femaleCatId Int @unique
+  femaleCat   Cat @relation("MatingFemale", fields: [femaleCatId], references: [id])
+
+  maleCatId Int?
+  maleCat   Cat? @relation("MatingMale", fields: [maleCatId], references: [id])
+
+  status String @default("PARA_ACASALAR")
+  consanguinityJson String?
+  litterHistoryJson String?
+  matingStartDate DateTime?
+  matingEndDate DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ServiceRequest {

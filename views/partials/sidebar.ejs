@@ -123,6 +123,16 @@
         </a>
       <% } %>
 
+      <% if (access && access.canAccessMatingsAdmin) { %>
+        <a
+          href="/admin/matings"
+          class="<%= (currentPath && currentPath.startsWith('/admin/matings')) ? 'active' : '' %>"
+        >
+          <span class="menu-icon">💞</span>
+          <span>Acasalamentos</span>
+        </a>
+      <% } %>
+
     </nav>
   </div>
 
