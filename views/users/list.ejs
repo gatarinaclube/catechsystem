@@ -46,8 +46,9 @@
                         <% } %>
                       </div>
                     </div>
-                    <div>
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
                       <span class="badge-status badge-status--new">Novo cadastro</span>
+                      <%- include('_quick-actions', { u, roleOptions, approvalOptions }) %>
                     </div>
                   </li>
                 <% }); %>
@@ -73,8 +74,9 @@
                         • Perfil: <%= u.roleLabel || "Usuário" %>
                       </div>
                     </div>
-                    <div>
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
                       <span class="badge-status badge-status--active">Ativo</span>
+                      <%- include('_quick-actions', { u, roleOptions, approvalOptions }) %>
                     </div>
                   </li>
                 <% }); %>
@@ -99,8 +101,9 @@
                         Email: <%= u.email || "-" %>
                       </div>
                     </div>
-                    <div>
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
                       <span class="badge-status badge-status--inactive">Restrição</span>
+                      <%- include('_quick-actions', { u, roleOptions, approvalOptions }) %>
                     </div>
                   </li>
                 <% }); %>

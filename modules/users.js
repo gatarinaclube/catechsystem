@@ -4,6 +4,17 @@ const { ROLES, getRoleLabel, normalizeRole, isAdminRole } = require("../utils/ac
 
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
+  const roleOptions = [
+    { value: ROLES.BASIC, label: getRoleLabel(ROLES.BASIC) },
+    { value: ROLES.MASTER, label: getRoleLabel(ROLES.MASTER) },
+    { value: ROLES.PREMIUM, label: getRoleLabel(ROLES.PREMIUM) },
+    { value: ROLES.ADMIN, label: getRoleLabel(ROLES.ADMIN) },
+  ];
+  const approvalOptions = [
+    { value: "INDEFERIDO", label: "Novo cadastro" },
+    { value: "DEFERIDO", label: "Ativo" },
+    { value: "RESTRICOES", label: "Restrição" },
+  ];
 
   // Helper igual aos outros módulos
   function getAuthInfo(req) {
@@ -61,6 +72,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         activeUsers,
         newUsers,
         inactiveUsers,
+        roleOptions,
+        approvalOptions,
         currentPath: req.path,
       });
     } catch (err) {
@@ -103,12 +116,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           roleLabel: getRoleLabel(userDetail.role),
         },
         logs,
-        roleOptions: [
-          { value: ROLES.BASIC, label: getRoleLabel(ROLES.BASIC) },
-          { value: ROLES.MASTER, label: getRoleLabel(ROLES.MASTER) },
-          { value: ROLES.PREMIUM, label: getRoleLabel(ROLES.PREMIUM) },
-          { value: ROLES.ADMIN, label: getRoleLabel(ROLES.ADMIN) },
-        ],
+        roleOptions,
         currentPath: req.path,
       });
     } catch (err) {
@@ -187,6 +195,67 @@ router.post("/users/:id", requireAuth, requirePermission("admin.users"), async (
     res.status(500).send("Erro ao atualizar usuário");
   }
 });
+
+router.post(
+  "/users/:id/quick-update",
+  requireAuth,
+  requirePermission("admin.users"),
+  async (req, res) => {
+    const { isAdmin, userId } = getAuthInfo(req);
+    const targetId = Number(req.params.id);
+
+    if (!isAdmin) {
+      return res
+        .status(403)
+        .send("Acesso restrito apenas para administradores.");
+    }
+
+    try {
+      const targetUser = await prisma.user.findUnique({
+        where: { id: targetId },
+      });
+
+      if (!targetUser) {
+        return res.status(404).send("Usuário não encontrado.");
+      }
+
+      let finalStatus = "INDEFERIDO";
+      if (req.body.approvalStatus === "DEFERIDO") {
+        finalStatus = "DEFERIDO";
+      } else if (req.body.approvalStatus === "RESTRICOES") {
+        finalStatus = "RESTRICOES";
+      }
+
+      const nextRole = normalizeRole(req.body.role) || ROLES.BASIC;
+
+      // Evita que o último admin ativo se remova do perfil administrativo sem querer.
+      if (targetId === userId && nextRole !== ROLES.ADMIN) {
+        const adminCount = await prisma.user.count({
+          where: { role: ROLES.ADMIN, approvalStatus: "DEFERIDO" },
+        });
+
+        if (adminCount <= 1) {
+          return res
+            .status(400)
+            .send("Mantenha pelo menos um administrador ativo no sistema.");
+        }
+      }
+
+      await prisma.user.update({
+        where: { id: targetId },
+        data: {
+          role: nextRole,
+          approvalStatus: finalStatus,
+        },
+      });
+
+      res.redirect("/users");
+    } catch (err) {
+      console.error("Erro na atualização rápida do usuário:", err);
+      res.status(500).send("Erro ao atualizar usuário");
+    }
+  }
+);
 
   return router;
 };

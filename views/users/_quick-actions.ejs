@@ -1,0 +1,30 @@
+<form
+  method="post"
+  action="/users/<%= u.id %>/quick-update"
+  style="display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; align-items:center; max-width:460px;"
+>
+  <select name="approvalStatus" style="min-width:140px;">
+    <% approvalOptions.forEach(function(option) { %>
+      <option
+        value="<%= option.value %>"
+        <%= u.approvalStatus === option.value ? "selected" : "" %>
+      >
+        <%= option.label %>
+      </option>
+    <% }) %>
+  </select>
+
+  <select name="role" style="min-width:130px;">
+    <% roleOptions.forEach(function(option) { %>
+      <option
+        value="<%= option.value %>"
+        <%= u.role === option.value ? "selected" : "" %>
+      >
+        <%= option.label %>
+      </option>
+    <% }) %>
+  </select>
+
+  <button type="submit" class="btn btn-primary">Salvar</button>
+  <a href="/users/<%= u.id %>" class="btn">Detalhes</a>
+</form>
