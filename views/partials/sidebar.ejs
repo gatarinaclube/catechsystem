@@ -133,6 +133,16 @@
         </a>
       <% } %>
 
+      <% if (access && access.canAccessVaccinationsAdmin) { %>
+        <a
+          href="/admin/vaccinations"
+          class="<%= (currentPath && currentPath.startsWith('/admin/vaccinations')) ? 'active' : '' %>"
+        >
+          <span class="menu-icon">💉</span>
+          <span>Vacinação</span>
+        </a>
+      <% } %>
+
     </nav>
   </div>
 

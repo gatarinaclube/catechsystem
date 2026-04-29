@@ -27,6 +27,7 @@ const breedersRouterFactory = require("./modules/breeders");
 const littersAdminRouterFactory = require("./modules/litters-admin");
 const kittensAdminRouterFactory = require("./modules/kittens-admin");
 const matingsAdminRouterFactory = require("./modules/matings-admin");
+const vaccinationsAdminRouterFactory = require("./modules/vaccinations-admin");
 const {generateTitleHomologationPDF,} = require("./modules/pdf/titleHomologationPdf");
 const {generatePedigreeHomologationPDF,} = require("./modules/pdf/pedigreeHomologationPdf");
 const { generateCatteryRegistrationPDF } = require("./modules/pdf/catteryRegistrationPdf");
@@ -744,6 +745,13 @@ const matingsAdminRouter = matingsAdminRouterFactory(
   requirePermission
 );
 app.use(matingsAdminRouter);
+
+const vaccinationsAdminRouter = vaccinationsAdminRouterFactory(
+  prisma,
+  requireAuth,
+  requirePermission
+);
+app.use(vaccinationsAdminRouter);
 
 
 

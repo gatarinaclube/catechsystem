@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Vacinação - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <style>
+      .vaccination-grid {
+        display: grid;
+        grid-template-columns: 220px 180px 140px 220px 260px 220px;
+        gap: 10px;
+        align-items: start;
+      }
+      .vaccination-header {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-muted);
+      }
+      .vaccination-row {
+        padding: 12px;
+        border: 1px solid var(--border-soft);
+        border-radius: 14px;
+        margin-bottom: 12px;
+      }
+      .vaccination-row.is-overdue {
+        border-left: 5px solid #dc2626;
+      }
+      .vaccination-row.is-upcoming {
+        border-left: 5px solid #f59e0b;
+      }
+      .vaccination-row.is-vaccinated {
+        border-left: 5px solid #16a34a;
+      }
+      .mini-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .inline-plus {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      @media (max-width: 1300px) {
+        .vaccination-grid {
+          grid-template-columns: 1fr;
+        }
+        .vaccination-header {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Vacinação</h2>
+            <div class="welcome-sub">Controle vacinal administrativo dos gatos do gatil.</div>
+          </div>
+          <div class="actions">
+            <a href="/dashboard" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <% categories.forEach(function(category) { %>
+          <section class="content-card" style="margin-bottom: 18px; border-left: 5px solid <%= category.color %>;">
+            <div class="content-title"><%= category.label %></div>
+
+            <div class="vaccination-grid vaccination-header" style="margin-top: 12px;">
+              <div>Nome do Gato</div>
+              <div>Mãe</div>
+              <div>Data de Nascimento</div>
+              <div>Histórico Antirrábica</div>
+              <div>Histórico Feline</div>
+              <div>Próxima vacinação</div>
+            </div>
+
+            <% if (!grouped[category.key] || !grouped[category.key].length) { %>
+              <div class="empty" style="margin-top:12px;">Nenhum gato nesta categoria.</div>
+            <% } else { %>
+              <% grouped[category.key].forEach(function(row) { %>
+                <form method="post" action="/admin/vaccinations/<%= row.cat.id %>" class="vaccination-row is-<%= row.vaccinationState %>">
+                  <div class="vaccination-grid">
+                    <div>
+                      <div class="item-title" style="color:<%= row.vaccinationState === 'overdue' ? '#dc2626' : row.vaccinationState === 'upcoming' ? '#f59e0b' : '#16a34a' %>;">
+                        <%= row.displayName %>
+                      </div>
+                    </div>
+
+                    <div><strong><%= row.motherName %></strong></div>
+                    <div><strong><%= row.birthDateLabel %></strong></div>
+
+                    <div class="mini-stack" data-antirabic-box>
+                      <% row.antirabicHistory.forEach(function(item, idx) { %>
+                        <div class="inline-plus">
+                          <input type="date" name="antirabicDates" value="<%= item.date %>" />
+                          <% if (idx === row.antirabicHistory.length - 1) { %>
+                            <button type="button" class="btn add-antirabic">+</button>
+                          <% } %>
+                        </div>
+                      <% }) %>
+                    </div>
+
+                    <div class="mini-stack" data-feline-box>
+                      <% row.felineHistory.forEach(function(item, idx) { %>
+                        <div class="inline-plus">
+                          <input type="date" name="felineDates" value="<%= item.date %>" />
+                          <select name="felineTypes" style="width:120px;">
+                            <option value="">Tipo</option>
+                            <% felineTypes.forEach(function(type) { %>
+                              <option value="<%= type %>" <%= item.type === type ? "selected" : "" %>><%= type %></option>
+                            <% }) %>
+                          </select>
+                          <% if (idx === row.felineHistory.length - 1) { %>
+                            <button type="button" class="btn add-feline">+</button>
+                          <% } %>
+                        </div>
+                      <% }) %>
+                    </div>
+
+                    <div class="mini-stack">
+                      <div>Antirrábica: <strong><%= row.nextAntirabic ? formatDate(row.nextAntirabic) : "-" %></strong></div>
+                      <div>Feline: <strong><%= row.nextFeline ? formatDate(row.nextFeline) : "-" %></strong></div>
+                      <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                  </div>
+                </form>
+              <% }) %>
+            <% } %>
+          </section>
+        <% }) %>
+      </main>
+    </div>
+
+    <script>
+      (function () {
+        document.querySelectorAll(".add-antirabic").forEach((button) => {
+          button.addEventListener("click", () => {
+            const box = button.closest("[data-antirabic-box]");
+            const row = button.parentElement.cloneNode(true);
+            row.querySelector("input").value = "";
+            row.querySelector("button").remove();
+            box.appendChild(row);
+          });
+        });
+
+        document.querySelectorAll(".add-feline").forEach((button) => {
+          button.addEventListener("click", () => {
+            const box = button.closest("[data-feline-box]");
+            const row = button.parentElement.cloneNode(true);
+            row.querySelector("input").value = "";
+            row.querySelector("select").value = "";
+            row.querySelector("button").remove();
+            box.appendChild(row);
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>
