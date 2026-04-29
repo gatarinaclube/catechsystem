@@ -82,23 +82,31 @@
         </div>
 
         <% groups.forEach(function(group) { %>
-          <section class="content-card" style="margin-bottom: 18px;">
-            <div class="content-title"><%= group.label %></div>
-            <div class="mating-table mating-header" style="margin-top:12px;">
-              <div>Fêmea</div>
-              <div>Pai e Mãe</div>
-              <div>Consanguinidade</div>
-              <div>Macho</div>
-              <div>Histórico</div>
-              <div>Próxima Cruza</div>
-              <div>Data Cruza</div>
-              <div>DPP</div>
-            </div>
+          <% const items = grouped[group.key] || []; %>
+          <details class="content-card module-panel module-accordion">
+            <summary>
+              <div class="module-accordion-summary">
+                <span class="module-accordion-icon">⌄</span>
+                <span class="module-accordion-title"><%= group.label %></span>
+              </div>
+              <span class="module-accordion-count"><%= items.length %></span>
+            </summary>
+            <div class="module-accordion-body">
+              <div class="mating-table mating-header">
+                <div>Fêmea</div>
+                <div>Pai e Mãe</div>
+                <div>Consanguinidade</div>
+                <div>Macho</div>
+                <div>Histórico</div>
+                <div>Próxima Cruza</div>
+                <div>Data Cruza</div>
+                <div>DPP</div>
+              </div>
 
-            <% if (!grouped[group.key] || !grouped[group.key].length) { %>
-              <div class="empty" style="margin-top:12px;">Nenhum registro nesta divisão.</div>
-            <% } else { %>
-              <% grouped[group.key].forEach(function(row) { %>
+              <% if (!items.length) { %>
+                <div class="empty" style="margin-top:12px;">Nenhum registro nesta divisão.</div>
+              <% } else { %>
+                <% items.forEach(function(row) { %>
                 <form method="post" action="/admin/matings/<%= row.female.id %>" class="mating-row">
                   <input type="hidden" name="ownerId" value="<%= selectedOwnerId || '' %>" />
                   <div class="mating-table">
@@ -170,9 +178,10 @@
                     </div>
                   </div>
                 </form>
-              <% }) %>
-            <% } %>
-          </section>
+                <% }) %>
+              <% } %>
+            </div>
+          </details>
         <% }) %>
       </main>
     </div>

@@ -48,77 +48,39 @@
           </form>
         </div>
 
-        <section class="content-card module-panel module-list-card" style="border-left: 5px solid #2563eb;">
-          <div class="content-title">Padreadores</div>
-          <% if (!groups.sires.length) { %>
-            <div class="empty">Nenhum registro nesta categoria.</div>
-          <% } else { %>
-            <ul class="list">
-              <% groups.sires.forEach(function(cat) { %>
-                <li class="item">
-                  <div>
-                    <a class="item-link" href="/breeders/<%= cat.id %>"><%= cat.displayName %></a>
-                    <div class="item-sub">Idade: <%= cat.ageLabel %></div>
-                  </div>
-                </li>
-              <% }) %>
-            </ul>
-          <% } %>
-        </section>
-
-        <section class="content-card module-panel module-list-card" style="border-left: 5px solid #db2777;">
-          <div class="content-title">Matrizes</div>
-          <% if (!groups.dams.length) { %>
-            <div class="empty">Nenhum registro nesta categoria.</div>
-          <% } else { %>
-            <ul class="list">
-              <% groups.dams.forEach(function(cat) { %>
-                <li class="item">
-                  <div>
-                    <a class="item-link" href="/breeders/<%= cat.id %>"><%= cat.displayName %></a>
-                    <div class="item-sub">Idade: <%= cat.ageLabel %></div>
-                  </div>
-                </li>
-              <% }) %>
-            </ul>
-          <% } %>
-        </section>
-
-        <section class="content-card module-panel module-list-card" style="border-left: 5px solid #6b7280;">
-          <div class="content-title">Fundadores</div>
-          <% if (!groups.founders.length) { %>
-            <div class="empty">Nenhum registro nesta categoria.</div>
-          <% } else { %>
-            <ul class="list">
-              <% groups.founders.forEach(function(cat) { %>
-                <li class="item">
-                  <div>
-                    <a class="item-link" href="/breeders/<%= cat.id %>"><%= cat.displayName %></a>
-                    <div class="item-sub">Idade: <%= cat.ageLabel %></div>
-                  </div>
-                </li>
-              <% }) %>
-            </ul>
-          <% } %>
-        </section>
-
-        <section class="content-card module-list-card" style="border-left: 5px solid #16a34a;">
-          <div class="content-title">Novos</div>
-          <% if (!groups.new.length) { %>
-            <div class="empty">Nenhum registro nesta categoria.</div>
-          <% } else { %>
-            <ul class="list">
-              <% groups.new.forEach(function(cat) { %>
-                <li class="item">
-                  <div>
-                    <a class="item-link" href="/breeders/<%= cat.id %>"><%= cat.displayName %></a>
-                    <div class="item-sub">Idade: <%= cat.ageLabel %></div>
-                  </div>
-                </li>
-              <% }) %>
-            </ul>
-          <% } %>
-        </section>
+        <% const sections = [
+          { key: 'sires', title: 'Padreadores', color: '#2563eb', items: groups.sires },
+          { key: 'dams', title: 'Matrizes', color: '#db2777', items: groups.dams },
+          { key: 'founders', title: 'Fundadores', color: '#6b7280', items: groups.founders },
+          { key: 'new', title: 'Novos', color: '#16a34a', items: groups.new },
+        ]; %>
+        <% sections.forEach(function(section) { %>
+          <details class="content-card module-panel module-list-card module-accordion" style="border-left: 5px solid <%= section.color %>;">
+            <summary>
+              <div class="module-accordion-summary">
+                <span class="module-accordion-icon">⌄</span>
+                <span class="module-accordion-title"><%= section.title %></span>
+              </div>
+              <span class="module-accordion-count"><%= section.items.length %></span>
+            </summary>
+            <div class="module-accordion-body">
+              <% if (!section.items.length) { %>
+                <div class="empty">Nenhum registro nesta categoria.</div>
+              <% } else { %>
+                <ul class="list">
+                  <% section.items.forEach(function(cat) { %>
+                    <li class="item">
+                      <div>
+                        <a class="item-link" href="/breeders/<%= cat.id %>"><%= cat.displayName %></a>
+                        <div class="item-sub">Idade: <%= cat.ageLabel %></div>
+                      </div>
+                    </li>
+                  <% }) %>
+                </ul>
+              <% } %>
+            </div>
+          </details>
+        <% }) %>
       </main>
     </div>
     <script>

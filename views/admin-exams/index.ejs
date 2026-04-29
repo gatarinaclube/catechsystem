@@ -62,22 +62,29 @@
         </div>
 
         <% categories.forEach(function(category) { %>
-          <section class="content-card" style="margin-bottom: 18px; border-left: 5px solid <%= category.color %>;">
-            <div class="content-title"><%= category.label %></div>
+          <% const items = grouped[category.key] || []; %>
+          <details class="content-card module-panel module-accordion" style="border-left: 5px solid <%= category.color %>;">
+            <summary>
+              <div class="module-accordion-summary">
+                <span class="module-accordion-icon">⌄</span>
+                <span class="module-accordion-title"><%= category.label %></span>
+              </div>
+              <span class="module-accordion-count"><%= items.length %></span>
+            </summary>
+            <div class="module-accordion-body">
+              <div class="exam-grid exam-header">
+                <div>Nome do Gato</div>
+                <div>Data de Nascimento</div>
+                <div>PKDef</div>
+                <div>PRA-bf</div>
+                <div>Ecocardiodoppler</div>
+                <div>Próximo Eco</div>
+              </div>
 
-            <div class="exam-grid exam-header" style="margin-top: 12px;">
-              <div>Nome do Gato</div>
-              <div>Data de Nascimento</div>
-              <div>PKDef</div>
-              <div>PRA-bf</div>
-              <div>Ecocardiodoppler</div>
-              <div>Próximo Eco</div>
-            </div>
-
-            <% if (!grouped[category.key] || !grouped[category.key].length) { %>
-              <div class="empty" style="margin-top:12px;">Nenhum gato nesta categoria.</div>
-            <% } else { %>
-              <% grouped[category.key].forEach(function(row) { %>
+              <% if (!items.length) { %>
+                <div class="empty" style="margin-top:12px;">Nenhum gato nesta categoria.</div>
+              <% } else { %>
+                <% items.forEach(function(row) { %>
                 <form method="post" action="/admin/exams/<%= row.cat.id %>" class="exam-row <%= row.urgent ? 'is-urgent' : '' %>">
                   <div class="exam-grid">
                     <div>
@@ -135,9 +142,10 @@
                     </div>
                   </div>
                 </form>
-              <% }) %>
-            <% } %>
-          </section>
+                <% }) %>
+              <% } %>
+            </div>
+          </details>
         <% }) %>
       </main>
     </div>
