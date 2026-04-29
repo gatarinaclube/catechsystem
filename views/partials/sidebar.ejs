@@ -153,6 +153,16 @@
         </a>
       <% } %>
 
+      <% if (access && access.canAccessWeighingAdmin) { %>
+        <a
+          href="/admin/weighing"
+          class="<%= (currentPath && currentPath.startsWith('/admin/weighing')) ? 'active' : '' %>"
+        >
+          <span class="menu-icon">⚖️</span>
+          <span>Pesagem</span>
+        </a>
+      <% } %>
+
     </nav>
   </div>
 
