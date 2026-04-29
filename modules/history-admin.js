@@ -1,4 +1,10 @@
 const express = require("express");
+const {
+  parseDate,
+  formatDate,
+  buildDisplayName,
+  classifyOperationalCat,
+} = require("../utils/cattery-admin");
 
 const CATEGORY_META = [
   { key: "sires", label: "Padreadores", color: "#2563eb" },
@@ -15,17 +21,6 @@ const HISTORY_SECTIONS = {
 
 const TREATMENT_TYPES = ["Internação", "Tratamento", "Cirurgia"];
 const DOSAGE_OPTIONS = ["2/2", "4/4", "6/6", "8/8", "12/12", "24h", "48h", "72h"];
-
-function parseDate(value) {
-  if (!value || value === "0000-00-00") return null;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function formatDate(value) {
-  const parsed = parseDate(value);
-  return parsed ? parsed.toISOString().slice(0, 10) : "";
-}
 
 function formatDateLabel(value) {
   return formatDate(value) || "-";
@@ -49,17 +44,6 @@ function safeJsonParse(value, fallback = null) {
   }
 }
 
-function buildDisplayName(cat) {
-  return [
-    cat.titleBeforeName,
-    cat.country ? `${cat.country}*` : null,
-    cat.name,
-    cat.titleAfterName,
-  ]
-    .filter(Boolean)
-    .join(" ");
-}
-
 function calculateAgeLabel(date) {
   if (!date) return "-";
   const birth = new Date(date);
@@ -78,51 +62,8 @@ function calculateAgeLabel(date) {
   return `${years} ${years === 1 ? "ano" : "anos"} e ${months} ${months === 1 ? "mês" : "meses"}`;
 }
 
-function classifyCat(cat) {
-  const birthDate = parseDate(cat.birthDate);
-  const now = new Date();
-  let months = 0;
-  if (birthDate) {
-    months =
-      (now.getFullYear() - birthDate.getFullYear()) * 12 +
-      (now.getMonth() - birthDate.getMonth());
-    if (now.getDate() < birthDate.getDate()) months -= 1;
-  }
-
-  const ownerIsSelf = !cat.currentOwnerId || cat.currentOwnerId === cat.ownerId;
-
-  if (cat.kittenNumber) {
-    if (!cat.delivered) {
-      if (months > 4 && ownerIsSelf) {
-        return cat.gender === "M" ? "sires" : "dams";
-      }
-      return "kittens";
-    }
-    return null;
-  }
-
-  if (cat.deceased) return "founders";
-  if (cat.neutered === true) return "founders";
-
-  if (cat.gender === "M") return "sires";
-  if (cat.gender === "F") return "dams";
-  return "founders";
-}
-
 function sortByName(rows) {
   rows.sort((a, b) => a.displayName.localeCompare(b.displayName, "pt-BR"));
-}
-
-function normalizeBirthEntries(body) {
-  const dates = [].concat(reqArray(body.birthDates));
-  const notes = [].concat(reqArray(body.birthNotes));
-
-  return dates
-    .map((date, index) => ({
-      date: formatDate(date),
-      notes: (notes[index] || "").trim(),
-    }))
-    .filter((item) => item.date || item.notes);
 }
 
 function reqArray(value) {
@@ -264,7 +205,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       );
 
       cats.forEach((cat) => {
-        const category = classifyCat(cat);
+        const category = classifyOperationalCat(cat, {
+          includeDeliveredKittensInHistory: true,
+          excludeCoOwnedAdults: false,
+        });
         if (!category) return;
 
         grouped[category].push({
@@ -354,11 +298,20 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         owner: cat.owner?.name || "-",
         currentOwner: cat.currentOwner?.name || cat.owner?.name || "-",
         classification:
-          classifyCat(cat) === "sires"
+          classifyOperationalCat(cat, {
+            includeDeliveredKittensInHistory: true,
+            excludeCoOwnedAdults: false,
+          }) === "sires"
             ? "Padreador"
-            : classifyCat(cat) === "dams"
+            : classifyOperationalCat(cat, {
+                includeDeliveredKittensInHistory: true,
+                excludeCoOwnedAdults: false,
+              }) === "dams"
               ? "Matriz"
-              : classifyCat(cat) === "kittens"
+              : classifyOperationalCat(cat, {
+                  includeDeliveredKittensInHistory: true,
+                  excludeCoOwnedAdults: false,
+                }) === "kittens"
                 ? "Filhote"
                 : "Fundador",
       };

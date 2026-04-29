@@ -399,7 +399,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         formTitle: "Editar Padreador/Matriz",
         submitLabel: "Salvar",
         formAction: `/breeders/${cat.id}`,
-        historyPath: `/breeders/${cat.id}/history`,
+        historyPath: `/admin/history/${cat.id}`,
         cancelPath: "/breeders",
         error: null,
       });
@@ -436,7 +436,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             formTitle: "Editar Padreador/Matriz",
             submitLabel: "Salvar",
             formAction: `/breeders/${existingCat.id}`,
-            historyPath: `/breeders/${existingCat.id}/history`,
+            historyPath: `/admin/history/${existingCat.id}`,
             cancelPath: "/breeders",
             error:
               err.code === "DUPLICATE_MICROCHIP"

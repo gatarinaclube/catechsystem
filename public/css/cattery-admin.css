@@ -1,0 +1,182 @@
+.admin-filter-form {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.admin-filter-form .field {
+  min-width: min(320px, 100%);
+  flex: 1;
+}
+
+.module-panel {
+  margin-bottom: 18px;
+}
+
+.module-list-card .item {
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  background: #ffffff;
+}
+
+.module-list-card .item:last-child {
+  margin-bottom: 0;
+}
+
+.module-grid-card,
+.mating-row,
+.vaccination-row,
+.deworming-row,
+.weighing-row,
+.exam-row,
+.kitten-row,
+.history-readonly {
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+}
+
+.mating-table,
+.vaccination-grid,
+.deworming-grid,
+.weighing-grid,
+.exam-grid,
+.kitten-grid,
+.info-grid {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.mini-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.inline-plus {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.inline-plus > * {
+  min-width: 0;
+}
+
+.mobile-stack {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.section-note {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.field-panel {
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 16px;
+  background: #fffefa;
+}
+
+.soft-card {
+  border-radius: 12px;
+  background: rgba(148, 163, 184, 0.08);
+  padding: 10px;
+}
+
+@media (max-width: 1100px) {
+  .main-header {
+    flex-direction: column;
+  }
+
+  .actions {
+    width: 100%;
+  }
+
+  .actions .btn {
+    flex: 1 1 180px;
+    text-align: center;
+  }
+
+  .grid-2,
+  .grid-3,
+  .grid-4 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .history-form-row,
+  .history-form-row.treatment {
+    grid-template-columns: 1fr !important;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .shell {
+    margin: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  .shell {
+    flex-direction: column;
+  }
+
+  .main {
+    padding: 16px 14px 20px;
+  }
+
+  .content-card {
+    padding: 14px;
+  }
+
+  .admin-filter-form .field {
+    min-width: 100%;
+  }
+
+  .admin-filter-form .btn {
+    flex: 1 1 140px;
+    text-align: center;
+  }
+
+  .mating-table,
+  .vaccination-grid,
+  .deworming-grid,
+  .weighing-grid,
+  .exam-grid,
+  .kitten-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .mating-header,
+  .vaccination-header,
+  .deworming-header,
+  .weighing-header,
+  .exam-header,
+  .kitten-grid-header {
+    display: none !important;
+  }
+
+  .mobile-stack {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

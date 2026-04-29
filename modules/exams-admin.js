@@ -1,4 +1,11 @@
 const express = require("express");
+const {
+  parseDate,
+  formatDate,
+  addYears,
+  buildDisplayName,
+  classifyOperationalCat,
+} = require("../utils/cattery-admin");
 
 const CATEGORY_META = [
   { key: "sires", label: "Padreadores", color: "#2563eb" },
@@ -9,23 +16,6 @@ const CATEGORY_META = [
 const SourceOptions = ["Antecedente", "Próprio", "Realizar"];
 const PkdefResults = ["N/N", "N/K"];
 const PrabfResults = ["N/N", "N/PRA"];
-
-function parseDate(value) {
-  if (!value || value === "0000-00-00") return null;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function formatDate(value) {
-  const parsed = parseDate(value);
-  return parsed ? parsed.toISOString().slice(0, 10) : "";
-}
-
-function addYears(date, years) {
-  const result = new Date(date);
-  result.setFullYear(result.getFullYear() + years);
-  return result;
-}
 
 function safeJsonParse(value, fallback = []) {
   if (!value) return fallback;
@@ -50,33 +40,6 @@ function sortHistory(history) {
       if (!bDate) return 1;
       return aDate - bDate;
     });
-}
-
-function buildDisplayName(cat) {
-  return [
-    cat.titleBeforeName,
-    cat.country ? `${cat.country}*` : null,
-    cat.name,
-    cat.titleAfterName,
-  ]
-    .filter(Boolean)
-    .join(" ");
-}
-
-function classifyCat(cat) {
-  const ownerIsSelf = !cat.currentOwnerId || cat.currentOwnerId === cat.ownerId;
-
-  if (cat.kittenNumber) return null;
-  if (cat.deceased) return null;
-  if (!ownerIsSelf && cat.ownershipType === "CO-OWNERSHIP") return null;
-
-  if (cat.neutered === true) {
-    return "founders";
-  }
-
-  if (cat.gender === "M") return "sires";
-  if (cat.gender === "F") return "dams";
-  return null;
 }
 
 function computeNextEco(birthDate, history) {
@@ -122,7 +85,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       );
 
       cats.forEach((cat) => {
-        const category = classifyCat(cat);
+        const category = classifyOperationalCat(cat, {
+          includeDeliveredKittensInHistory: false,
+        });
+        if (category === "kittens") return;
         if (!category) return;
 
         const ecoHistory = safeJsonParse(cat.examPlan?.ecoHistoryJson, [

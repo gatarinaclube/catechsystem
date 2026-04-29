@@ -5,6 +5,7 @@
     <title>Filhotes - CaTech</title>
     <link rel="stylesheet" href="/css/theme.css" />
     <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
   </head>
   <body>
     <div class="shell">
@@ -21,8 +22,8 @@
           </div>
         </div>
 
-        <div class="content-card" style="margin-bottom: 18px;">
-          <form method="get" action="/admin/kittens" style="display:flex; gap:10px; align-items:end; flex-wrap:wrap;">
+        <div class="content-card module-panel">
+          <form method="get" action="/admin/kittens" class="admin-filter-form">
             <input type="hidden" name="ownerId" id="kittensOwnerId" value="<%= selectedOwnerId || '' %>" />
             <div class="field" style="min-width:320px; flex:1;">
               <label class="field-label" for="kittensOwnerSearch">Filtrar por usuário</label>
@@ -44,7 +45,7 @@
           </form>
         </div>
 
-        <div class="content-card">
+        <div class="content-card module-list-card">
           <% if (!kittens.length) { %>
             <div class="empty">Nenhum filhote cadastrado.</div>
           <% } else { %>

@@ -233,7 +233,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         formTitle: "Editar Filhote",
         formAction: `/admin/kittens/${kitten.id}`,
         cancelPath: "/admin/kittens",
-        historyPath: `/breeders/${kitten.id}/history`,
+        historyPath: `/admin/history/${kitten.id}`,
       });
     }
   );
@@ -267,7 +267,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           formTitle: "Editar Filhote",
           formAction: `/admin/kittens/${existingKitten.id}`,
           cancelPath: "/admin/kittens",
-          historyPath: `/breeders/${existingKitten.id}/history`,
+          historyPath: `/admin/history/${existingKitten.id}`,
         });
       }
     }

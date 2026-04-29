@@ -1,4 +1,12 @@
 const express = require("express");
+const {
+  addMonths,
+  addDays,
+  formatDate,
+  parseDate,
+  buildDisplayName,
+  classifyOperationalCat,
+} = require("../utils/cattery-admin");
 
 const STATUS_GROUPS = [
   { key: "CONFIRMADO", label: "Confirmado" },
@@ -8,36 +16,11 @@ const STATUS_GROUPS = [
   { key: "EM_DESENVOLVIMENTO", label: "Em Desenvolvimento" },
 ];
 
-function addMonths(date, months) {
-  const result = new Date(date);
-  result.setMonth(result.getMonth() + months);
-  return result;
-}
-
-function addDays(date, days) {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
-}
-
 function monthsBetween(a, b) {
   let months =
     (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
   if (b.getDate() < a.getDate()) months -= 1;
   return months;
-}
-
-function formatDate(date) {
-  if (!date) return "";
-  const parsed = new Date(date);
-  if (Number.isNaN(parsed.getTime())) return "";
-  return parsed.toISOString().slice(0, 10);
-}
-
-function parseDate(value) {
-  if (!value) return null;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 function safeJsonParse(value, fallback = []) {
@@ -111,15 +94,6 @@ function computeGestationDays(startDate, endDate) {
   return Math.max(0, Math.floor((now - reference) / 86400000));
 }
 
-function buildFemaleName(cat) {
-  return [
-    cat.titleBeforeName,
-    cat.country ? `${cat.country}*` : null,
-    cat.name,
-    cat.titleAfterName,
-  ].filter(Boolean).join(" ");
-}
-
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
@@ -153,7 +127,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         kittenNumber: null,
       },
       orderBy: { name: "asc" },
-      select: { id: true, name: true },
+      select: { id: true, name: true, titleBeforeName: true, titleAfterName: true, country: true, currentOwnerId: true, ownerId: true, neutered: true, deceased: true, kittenNumber: true, delivered: true, gender: true, birthDate: true },
     });
 
     const plans = await prisma.matingPlan.findMany({
@@ -166,7 +140,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
     const grouped = Object.fromEntries(STATUS_GROUPS.map((group) => [group.key, []]));
 
-    females.forEach((female) => {
+    females
+      .filter((female) => classifyOperationalCat(female) === "dams")
+      .forEach((female) => {
       const plan = planMap.get(female.id);
       const litterHistory = safeJsonParse(plan?.litterHistoryJson);
       const consanguinity = safeJsonParse(plan?.consanguinityJson);
@@ -181,8 +157,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       grouped[status].push({
         female,
         plan,
-        allMaleOptions: males,
-        maleOptions: males.filter((male) => !consanguinity.includes(String(male.id))),
+        allMaleOptions: males.filter((male) => classifyOperationalCat(male) === "sires"),
+        maleOptions: males
+          .filter((male) => classifyOperationalCat(male) === "sires")
+          .filter((male) => !consanguinity.includes(String(male.id))),
         consanguinity,
         litterHistory,
         nextCrossDate,
@@ -190,7 +168,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         gestationDays,
         fatherName,
         motherName,
-        femaleDisplayName: buildFemaleName(female),
+        femaleDisplayName: buildDisplayName(female),
       });
     });
 

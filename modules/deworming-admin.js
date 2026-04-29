@@ -1,4 +1,12 @@
 const express = require("express");
+const {
+  parseDate,
+  formatDate,
+  addDays,
+  ageInMonths,
+  buildDisplayName,
+  classifyOperationalCat,
+} = require("../utils/cattery-admin");
 
 const CATEGORY_META = [
   { key: "sires", label: "Padreadores", color: "#2563eb" },
@@ -7,42 +15,7 @@ const CATEGORY_META = [
   { key: "founders", label: "Fundadores", color: "#f59e0b" },
 ];
 
-const DewormingTypes = [
-  "Panacur",
-  "VetMax Plus",
-  "Febendazol",
-  "Secnidazol",
-];
-
-function parseDate(value) {
-  if (!value || value === "0000-00-00") return null;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function formatDate(value) {
-  const parsed = parseDate(value);
-  return parsed ? parsed.toISOString().slice(0, 10) : "";
-}
-
-function addDays(date, days) {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
-}
-
-function ageInMonths(birthDate) {
-  const birth = parseDate(birthDate);
-  if (!birth) return 0;
-
-  const now = new Date();
-  let months =
-    (now.getFullYear() - birth.getFullYear()) * 12 +
-    (now.getMonth() - birth.getMonth());
-
-  if (now.getDate() < birth.getDate()) months -= 1;
-  return Math.max(0, months);
-}
+const DewormingTypes = ["Panacur", "VetMax Plus", "Febendazol", "Secnidazol"];
 
 function safeJsonParse(value, fallback = []) {
   if (!value) return fallback;
@@ -94,43 +67,6 @@ function getDewormingState(nextDeworming) {
   return nextDeworming < today ? "overdue" : "dewormed";
 }
 
-function buildDisplayName(cat) {
-  return [
-    cat.titleBeforeName,
-    cat.country ? `${cat.country}*` : null,
-    cat.name,
-    cat.titleAfterName,
-  ]
-    .filter(Boolean)
-    .join(" ");
-}
-
-function classifyCat(cat) {
-  const months = ageInMonths(cat.birthDate);
-  const ownerIsSelf = !cat.currentOwnerId || cat.currentOwnerId === cat.ownerId;
-
-  if (cat.kittenNumber) {
-    if (!cat.delivered) {
-      if (months > 4 && ownerIsSelf) {
-        return cat.gender === "M" ? "sires" : "dams";
-      }
-      return "kittens";
-    }
-    return null;
-  }
-
-  if (cat.deceased) return null;
-  if (!ownerIsSelf && cat.ownershipType === "CO-OWNERSHIP") return null;
-
-  if (cat.neutered === true) {
-    return "founders";
-  }
-
-  if (cat.gender === "M") return "sires";
-  if (cat.gender === "F") return "dams";
-  return null;
-}
-
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
@@ -152,7 +88,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       );
 
       cats.forEach((cat) => {
-        const category = classifyCat(cat);
+        const category = classifyOperationalCat(cat);
         if (!category) return;
 
         const history = safeJsonParse(cat.dewormingPlan?.historyJson, [

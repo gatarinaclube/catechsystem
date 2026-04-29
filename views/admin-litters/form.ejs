@@ -5,6 +5,7 @@
     <title><%= formTitle %> - CaTech</title>
     <link rel="stylesheet" href="/css/theme.css" />
     <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
     <style>
       .kitten-grid {
         display: grid;
@@ -268,7 +269,7 @@
                 <option value="FOR_BREEDING" ${kitten.breeding === "FOR_BREEDING" ? "selected" : ""}>For Breeding</option>
                 <option value="NOT_FOR_BREEDING" ${kitten.breeding === "NOT_FOR_BREEDING" ? "selected" : ""}>Not For Breeding</option>
               </select>
-              ${kitten.kittenCatId ? `<a href="/breeders/${kitten.kittenCatId}/history" class="btn">Histórico</a>` : `<span style="font-size:12px; color:var(--text-muted);">Será criado ao salvar</span>`}
+              ${kitten.kittenCatId ? `<a href="/admin/history/${kitten.kittenCatId}" class="btn">Histórico</a>` : `<span style="font-size:12px; color:var(--text-muted);">Será criado ao salvar</span>`}
               <label style="display:flex; align-items:center; gap:6px;">
                 <input type="checkbox" name="kitten_deceased_${i}" ${kitten.deceased ? "checked" : ""}>
                 Óbito
