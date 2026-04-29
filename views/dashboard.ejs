@@ -27,12 +27,12 @@
           <div class="actions">
             <a href="/cats/new" class="btn-primary btn">+ Novo gato</a>
             <a href="/cats" class="btn">
-  <%= (user && user.role === "ADMIN") ? "Ver todos os gatos" : "Ver meus gatos" %>
+  <%= (access && access.canViewAllCats) ? "Ver todos os gatos" : "Ver meus gatos" %>
 </a>
           </div>
         </div>
 
-        <% if (user && user.role === "ADMIN" && catsInReviewCount > 0) { %>
+        <% if (access && access.isAdmin && catsInReviewCount > 0) { %>
   <div class="content-card" style="border-left: 4px solid #f59e0b; margin-bottom: 20px;">
     <div class="content-title" style="display:flex; align-items:center; gap:8px;">
       ⚠️ Notificações
@@ -54,7 +54,7 @@
   </div>
 <% } %>
 
-<% if (user && user.role === "ADMIN" && usersPendingApprovalCount > 0) { %>
+<% if (access && access.isAdmin && usersPendingApprovalCount > 0) { %>
   <div class="content-card" style="border-left: 4px solid #dc2626; margin-bottom: 20px;">
     <div class="content-title">👤 Novos cadastros</div>
     <div class="content-sub">
@@ -71,7 +71,7 @@
 <% } %>
 
 
-<% if (user && user.role === "ADMIN" && servicesPendingFFBCount > 0) { %>
+<% if (access && access.isAdmin && servicesPendingFFBCount > 0) { %>
   <div class="content-card" style="border-left: 4px solid #2563eb; margin-bottom: 20px;">
     <div class="content-title">📄 Serviços FFB</div>
     <div class="content-sub">
@@ -87,7 +87,7 @@
   </div>
 <% } %>
 
-<% if (user && user.role !== "ADMIN" && pendingServicesCount > 0) { %>
+<% if (access && !access.isAdmin && pendingServicesCount > 0) { %>
   <div class="content-card" style="border-left: 4px solid #f59e0b; margin-bottom: 20px;">
     <div class="content-title" style="display:flex; align-items:center; gap:8px;">
       ⚠️ Serviço com pendência
@@ -149,7 +149,7 @@
               </div>
             </div>
 
-            <% if (user && user.role === "ADMIN") { %>
+            <% if (access && access.canAccessFfbServices) { %>
               <div class="quick-card">
                 <div class="quick-label">Admin</div>
                 <div class="quick-value">Serviços FFB</div>
@@ -219,4 +219,3 @@
     </div>
   </div>
 </div>
-

@@ -21,6 +21,13 @@ enum ServiceStatusType {
   ENVIADO_ASSOCIADO
 }
 
+enum UserRole {
+  ADMIN
+  PREMIUM
+  MASTER
+  BASIC
+}
+
 model User {
   id       Int     @id @default(autoincrement())
   name     String
@@ -33,7 +40,7 @@ model User {
   email    String  @unique
   cpf      String?
   password String
-  role     String  @default("USER")
+  role     UserRole @default(BASIC)
   clubs    String?
 
   // 🔹 GATIL FIFe
@@ -311,4 +318,3 @@ enum CatStatus {
   APROVADO
   NAO_APROVADO
 }
-

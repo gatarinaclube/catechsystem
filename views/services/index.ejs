@@ -3,16 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <title>Serviços - CaTech</title>
-
-<head>
-  <meta charset="utf-8" />
-  <title>Serviços - CaTech</title>
-
-  <!-- CSS GLOBAL -->
-  <link rel="stylesheet" href="/css/theme.css" />
-  <link rel="stylesheet" href="/css/layout.css" />
-</head>
-
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
   </head>
   <body>
   <div class="shell">
@@ -34,8 +26,8 @@
             Estes são os serviços atualmente integrados ao sistema.
           </div>
 
-  <!-- SERVIÇO 1: REGISTRO DE NINHADA -->
           <div class="quick-grid">
+            <% if (access && access.canUseLitterService) { %>
             <div class="quick-card">
               <div class="quick-label">Registro</div>
               <div class="quick-value">Registro de Ninhada</div>
@@ -45,7 +37,9 @@
                 </a>
               </div>
             </div>
-<!-- NOVO SERVIÇO: PEDIDO DE TRANSFERÊNCIA -->
+            <% } %>
+
+            <% if (access && access.canUseTransferService) { %>
 <div class="quick-card">
   <div class="quick-label">Transferência</div>
   <div class="quick-value">Pedido de Transferência</div>
@@ -55,8 +49,9 @@
     </a>
   </div>
 </div>
+            <% } %>
 
-<!-- NOVO SERVIÇO: HOMOLOGAÇÃO DE TÍTULOS -->
+            <% if (access && access.canUseTitleHomologationService) { %>
 <div class="quick-card">
   <div class="quick-label">Homologação</div>
   <div class="quick-value">Homologação de Títulos</div>
@@ -66,8 +61,9 @@
     </a>
   </div>
 </div>
+            <% } %>
 
-<!-- HOMOLOGAÇÃO DE PEDIGREE -->
+            <% if (access && access.canUsePedigreeHomologationService) { %>
 <div class="quick-card">
   <div class="quick-label">Homologação</div>
   <div class="quick-value">Homologação de Pedigree</div>
@@ -77,8 +73,9 @@
     </a>
   </div>
 </div>
+            <% } %>
 
-<!-- REGISTRO DE GATIL -->
+            <% if (access && access.canUseCatteryRegistrationService) { %>
 <div class="quick-card">
   <div class="quick-label">Registro</div>
   <div class="quick-value">Registro de Gatil</div>
@@ -88,8 +85,9 @@
     </a>
   </div>
 </div>
+            <% } %>
 
-<!-- OUTROS SERVIÇOS -->
+            <% if (access && access.canUseSecondCopyService) { %>
 <div class="quick-card">
   <div class="quick-label">Serviço</div>
   <div class="quick-value">Segunda Via e Alterações</div>
@@ -99,7 +97,9 @@
     </a>
   </div>
 </div>
+            <% } %>
 
+            <% if (access && access.canDownloadServiceForms) { %>
 <hr
   style="
     margin: 16px 0;
@@ -139,6 +139,7 @@
     </a>
   </div>
 </div>
+            <% } %>
 
 </div>
         </div>

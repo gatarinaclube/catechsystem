@@ -2,6 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const { isAdminRole, normalizeRole } = require("../utils/access");
 
 const baseUploadsDir =
   process.env.UPLOADS_DIR
@@ -29,20 +30,24 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 
-module.exports = (prisma, requireAuth) => {
+module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
 
   // Helper simples para pegar dados de auth
   function getAuthInfo(req) {
     const userId = req.session.userId;
-    const role = req.session.userRole || "USER";
-    const isAdmin = role === "ADMIN";
+    const role = normalizeRole(req.session.userRole);
+    const isAdmin = isAdminRole(role);
     return { userId, role, isAdmin };
   }
 
   // ---------- FORMULÁRIO: NOVA NINHADA ----------
-  router.get("/litters/new", requireAuth, async (req, res) => {
+  router.get(
+    "/litters/new",
+    requireAuth,
+    requirePermission("service.litter"),
+    async (req, res) => {
     try {
       const { userId } = getAuthInfo(req);
 
@@ -68,12 +73,14 @@ module.exports = (prisma, requireAuth) => {
       console.error("Erro ao abrir formulário de ninhada:", err);
       res.status(500).send("Erro ao abrir formulário de ninhada");
     }
-  });
+    }
+  );
 
   // ---------- SALVAR NINHADA ----------
  router.post(
   "/litters",
   requireAuth,
+  requirePermission("service.litter"),
   upload.single("externalOwnerAuthorization"),
   async (req, res) => {
 

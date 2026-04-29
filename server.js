@@ -8,6 +8,13 @@ const bcrypt = require("bcryptjs");
 const PDFDocument = require("pdfkit");
 const fs = require("fs");
 const archiver = require("archiver");
+const {
+  ROLES,
+  normalizeRole,
+  isAdminRole,
+  buildAccessContext,
+  userCan,
+} = require("./utils/access");
 const { generateLitterAdminBundle, generateLitterUserPDF } = require("./modules/pdf/litterPdf");
 const { generateTransferPDF } = require("./modules/pdf/transferPdf");
 const { generateLitterAuthorizationPDF } = require("./modules/pdf/litterAuthorizationPdf");
@@ -86,11 +93,63 @@ function requireAuth(req, res, next) {
 }
 
 function requireAdmin(req, res, next) {
-  if (req.session.userRole !== "ADMIN") {
+  if (!isAdminRole(req.session.userRole)) {
     return res.status(403).send("Acesso negado");
   }
   next();
 }
+
+function requirePermission(permission) {
+  return (req, res, next) => {
+    if (!userCan(req.session?.userRole, permission)) {
+      return res
+        .status(403)
+        .send("Seu perfil não possui acesso a este módulo.");
+    }
+
+    next();
+  };
+}
+
+app.use(async (req, res, next) => {
+  try {
+    const sessionRole = normalizeRole(req.session?.userRole);
+
+    req.user = null;
+    res.locals.user = null;
+    res.locals.access = buildAccessContext(sessionRole);
+
+    if (!req.session?.userId) {
+      return next();
+    }
+
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.session.userId },
+    });
+
+    if (!currentUser) {
+      req.session.destroy(() => {});
+      return next();
+    }
+
+    const normalizedRole = normalizeRole(currentUser.role || sessionRole);
+    req.session.userRole = normalizedRole;
+
+    req.user = {
+      ...currentUser,
+      role: normalizedRole,
+      roleLabel: buildAccessContext(normalizedRole).roleLabel,
+    };
+
+    req.session.user = req.user;
+    res.locals.user = req.user;
+    res.locals.access = buildAccessContext(normalizedRole);
+
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 // ---------- ROTAS BÁSICAS ----------
 app.get("/", (req, res) => {
@@ -128,7 +187,7 @@ app.post("/login", async (req, res) => {
     }
 
     req.session.userId = user.id;
-    req.session.userRole = user.role; // <- importante p/ saber se é ADMIN
+    req.session.userRole = normalizeRole(user.role); // <- importante p/ saber o perfil atual
 
     return res.redirect("/dashboard");
   } catch (err) {
@@ -199,7 +258,7 @@ await prisma.user.create({
     email,
     cpf,
     password: passwordHash,
-    role: "USER",
+    role: ROLES.BASIC,
     clubs: clubsValue,
 
     hasFifeCattery: hasFifeCattery || "NO",
@@ -221,13 +280,11 @@ app.get("/dashboard", requireAuth, async (req, res) => {
   try {
    
    
-    const user = await prisma.user.findUnique({
-      where: { id: req.session.userId },
-    });
+    const user = req.user;
 
     let catsInReviewCount = 0;
 
-if (req.session.userRole === "ADMIN") {
+if (isAdminRole(req.session.userRole)) {
   catsInReviewCount = await prisma.cat.count({
     where: {
       status: "NOVO", // Em análise
@@ -237,7 +294,7 @@ if (req.session.userRole === "ADMIN") {
 
 let usersPendingApprovalCount = 0;
 
-if (req.session.userRole === "ADMIN") {
+if (isAdminRole(req.session.userRole)) {
   usersPendingApprovalCount = await prisma.user.count({
     where: {
       approvalStatus: "INDEFERIDO",
@@ -247,7 +304,7 @@ if (req.session.userRole === "ADMIN") {
 
 let servicesPendingFFBCount = 0;
 
-if (req.session.userRole === "ADMIN") {
+if (isAdminRole(req.session.userRole)) {
   const services = await prisma.serviceRequest.findMany({
     include: {
       statuses: {
@@ -264,7 +321,7 @@ if (req.session.userRole === "ADMIN") {
 
 let pendingServices = [];
 
-if (req.session.userRole !== "ADMIN") {
+if (!isAdminRole(req.session.userRole)) {
   const services = await prisma.serviceRequest.findMany({
     where: { userId: req.session.userId },
     orderBy: { createdAt: "desc" },
@@ -304,13 +361,11 @@ pendingServicesCount: pendingServices.length,
 app.get("/meus-dados", requireAuth, async (req, res) => {
   try {
     // Bloqueia ADMIN (ADMIN não usa essa tela)
-    if (req.session.userRole === "ADMIN") {
+    if (isAdminRole(req.session.userRole)) {
       return res.redirect("/dashboard");
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: req.session.userId },
-    });
+    const user = req.user;
 
     res.render("users/my-profile", {
       user,
@@ -324,7 +379,7 @@ app.get("/meus-dados", requireAuth, async (req, res) => {
 
 app.post("/meus-dados", requireAuth, async (req, res) => {
   try {
-    if (req.session.userRole === "ADMIN") {
+    if (isAdminRole(req.session.userRole)) {
       return res.redirect("/dashboard");
     }
 
@@ -366,9 +421,7 @@ app.post("/meus-dados", requireAuth, async (req, res) => {
 // ---------- SERVIÇOS (USUÁRIO LOGADO) ----------
 app.get("/services", requireAuth, async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.session.userId },
-    });
+    const user = req.user;
 
     res.render("services/index", {
       user,
@@ -600,9 +653,21 @@ app.get("/logout", (req, res) => {
 
 // ---------- ROTAS DOS MÓDULOS ----------
 const catsRouter = require("./modules/cats")(prisma, requireAuth);
-const littersRouter = require("./modules/litters")(prisma, requireAuth);
-const usersRouter = require("./modules/users")(prisma, requireAuth);
-const transfersRouter = require("./modules/transfers")(prisma, requireAuth);
+const littersRouter = require("./modules/litters")(
+  prisma,
+  requireAuth,
+  requirePermission
+);
+const usersRouter = require("./modules/users")(
+  prisma,
+  requireAuth,
+  requirePermission
+);
+const transfersRouter = require("./modules/transfers")(
+  prisma,
+  requireAuth,
+  requirePermission
+);
 
 app.use(catsRouter);
 app.use(littersRouter);
@@ -612,13 +677,13 @@ app.use(transfersRouter);
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 // MÓDULO: HOMOLOGAÇÃO DE TÍTULOS
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-app.use(titleHomologation(prisma, requireAuth));
+app.use(titleHomologation(prisma, requireAuth, requirePermission));
 
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 // MÓDULO: HOMOLOGAÇÃO DE PEDIGREE
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-app.use(pedigreeHomologation(prisma, requireAuth));
+app.use(pedigreeHomologation(prisma, requireAuth, requirePermission));
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 // DOWNLOAD: ATESTADO DE SAÚDE PARA REPRODUÇÃO
@@ -628,7 +693,7 @@ app.use(atestadoSaude(requireAuth, requireAdmin));
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 //  MÓDULO: REGISTRO DE GATIL
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-app.use(catteryRegistration(prisma, requireAuth));
+app.use(catteryRegistration(prisma, requireAuth, requirePermission));
 
 
 // ---------- ROTAS DO MÓDULO SERVIÇOS FFB (somente ADMIN) ----------
@@ -643,7 +708,8 @@ app.use(ffbServicesRouter);
 // ---------- MÓDULO: SEGUNDA VIA E ALTERAÇÕES ----------
 const secondCopyRouter = require("./modules/secondCopy")(
   prisma,
-  requireAuth
+  requireAuth,
+  requirePermission
 );
 app.use(secondCopyRouter);
 
@@ -1461,5 +1527,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
-
-

@@ -1,19 +1,24 @@
 const express = require("express");
+const { isAdminRole, normalizeRole } = require("../utils/access");
 
-module.exports = (prisma, requireAuth) => {
+module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
   function getAuthInfo(req) {
     const userId = req.session.userId;
-    const role = req.session.userRole || "USER";
-    const isAdmin = role === "ADMIN";
+    const role = normalizeRole(req.session.userRole);
+    const isAdmin = isAdminRole(role);
     return { userId, isAdmin };
   }
 
   // ============================
   // FORMULÁRIO
   // ============================
-  router.get("/services/cattery-registration", requireAuth, async (req, res) => {
+  router.get(
+    "/services/cattery-registration",
+    requireAuth,
+    requirePermission("service.catteryRegistration"),
+    async (req, res) => {
     try {
       res.render("service-forms/cattery-registration", {
         user: req.user,
@@ -23,12 +28,17 @@ module.exports = (prisma, requireAuth) => {
       console.error("Erro ao abrir Registro de Gatil:", err);
       res.status(500).send("Erro ao abrir formulário");
     }
-  });
+    }
+  );
 
   // ============================
   // SUBMISSÃO
   // ============================
-  router.post("/services/cattery-registration", requireAuth, async (req, res) => {
+  router.post(
+    "/services/cattery-registration",
+    requireAuth,
+    requirePermission("service.catteryRegistration"),
+    async (req, res) => {
     try {
       const userId = req.session.userId;
 
@@ -68,7 +78,8 @@ module.exports = (prisma, requireAuth) => {
       console.error("Erro ao salvar Registro de Gatil:", err);
       res.status(500).send("Erro ao enviar Registro de Gatil");
     }
-  });
+    }
+  );
 
   return router;
 };

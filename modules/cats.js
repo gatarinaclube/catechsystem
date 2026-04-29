@@ -299,8 +299,6 @@ router.post(
   breederType,
   breederName,
   ownershipType,
-
-  // Pais
   fatherSource,
   fatherId,
   fatherName,

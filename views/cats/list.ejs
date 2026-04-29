@@ -16,7 +16,7 @@
         <div class="main-header">
           <div>
             <h2 class="welcome-title">
-              <%= (user && user.role === "ADMIN") ? "Todos os gatos" : "Meus gatos" %>
+              <%= (access && access.canViewAllCats) ? "Todos os gatos" : "Meus gatos" %>
             </h2>
             <div class="welcome-sub">
               Lista de gatos em ordem alfabética. Clique em um nome para ver os
@@ -31,7 +31,7 @@
 
         <div class="content-card">
           <!-- FILTRO POR USUÁRIO (APENAS PARA ADMIN) -->
-          <% if (user && user.role === "ADMIN") { %>
+          <% if (access && access.canViewAllCats) { %>
             <form method="get" action="/cats" class="filter-bar" style="margin-bottom: 16px;">
               <div class="field">
                 <label class="field-label" for="ownerId">
@@ -72,7 +72,7 @@
 <% if (totalCats === 0) { %>
 
             <div class="empty">
-              <% if (user && user.role === "ADMIN") { %>
+              <% if (access && access.canViewAllCats) { %>
                 Nenhum gato encontrado para o filtro atual.
               <% } else { %>
                 Você ainda não cadastrou nenhum gato.
@@ -181,11 +181,7 @@
 
           <div class="list-footer">
             <div>
-              <% if (user && user.role === "ADMIN") { %>
-                <span class="badge-role">Administrador</span>
-              <% } else { %>
-                <span class="badge-role">Usuário</span>
-              <% } %>
+              <span class="badge-role"><%= access.roleLabel %></span>
             </div>
             <div>
               Total de gatos:

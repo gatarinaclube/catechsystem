@@ -1,19 +1,20 @@
 // modules/users.js
 const express = require("express");
+const { ROLES, getRoleLabel, normalizeRole, isAdminRole } = require("../utils/access");
 
-module.exports = (prisma, requireAuth) => {
+module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
   // Helper igual aos outros módulos
   function getAuthInfo(req) {
     const userId = req.session?.userId || null;
-    const role = req.session?.userRole || "USER";
-    const isAdmin = role === "ADMIN";
+    const role = normalizeRole(req.session?.userRole);
+    const isAdmin = isAdminRole(role);
     return { userId, role, isAdmin };
   }
 
   // --------- LISTA DE USUÁRIOS (apenas ADMIN) ---------
-  router.get("/users", requireAuth, async (req, res) => {
+  router.get("/users", requireAuth, requirePermission("admin.users"), async (req, res) => {
     const { userId, isAdmin } = getAuthInfo(req);
 
     if (!isAdmin) {
@@ -38,14 +39,20 @@ module.exports = (prisma, requireAuth) => {
       const inactiveUsers = [];
 
       allUsers.forEach((u) => {
+        const normalizedRole = normalizeRole(u.role);
+        const userWithRole = {
+          ...u,
+          role: normalizedRole,
+          roleLabel: getRoleLabel(normalizedRole),
+        };
         const status = u.approvalStatus || "INDEFERIDO";
 
         if (status === "DEFERIDO") {
-          activeUsers.push(u);
+          activeUsers.push(userWithRole);
         } else if (status === "RESTRICOES") {
-          inactiveUsers.push(u);
+          inactiveUsers.push(userWithRole);
         } else {
-          newUsers.push(u);
+          newUsers.push(userWithRole);
         }
       });
 
@@ -63,7 +70,7 @@ module.exports = (prisma, requireAuth) => {
   });
 
   // --------- DETALHES DO USUÁRIO (apenas ADMIN) ---------
-  router.get("/users/:id", requireAuth, async (req, res) => {
+  router.get("/users/:id", requireAuth, requirePermission("admin.users"), async (req, res) => {
     const { userId, isAdmin } = getAuthInfo(req);
     const targetId = Number(req.params.id);
 
@@ -90,8 +97,18 @@ module.exports = (prisma, requireAuth) => {
 
       res.render("users/show", {
         user: currentUser,
-        userDetail,
+        userDetail: {
+          ...userDetail,
+          role: normalizeRole(userDetail.role),
+          roleLabel: getRoleLabel(userDetail.role),
+        },
         logs,
+        roleOptions: [
+          { value: ROLES.BASIC, label: getRoleLabel(ROLES.BASIC) },
+          { value: ROLES.MASTER, label: getRoleLabel(ROLES.MASTER) },
+          { value: ROLES.PREMIUM, label: getRoleLabel(ROLES.PREMIUM) },
+          { value: ROLES.ADMIN, label: getRoleLabel(ROLES.ADMIN) },
+        ],
         currentPath: req.path,
       });
     } catch (err) {
@@ -101,7 +118,7 @@ module.exports = (prisma, requireAuth) => {
   });
 
 // --------- ATUALIZAR DADOS + STATUS / OBSERVAÇÕES DO USUÁRIO ---------
-router.post("/users/:id", requireAuth, async (req, res) => {
+router.post("/users/:id", requireAuth, requirePermission("admin.users"), async (req, res) => {
   const { isAdmin } = getAuthInfo(req);
   const targetId = Number(req.params.id);
 
@@ -153,7 +170,7 @@ router.post("/users/:id", requireAuth, async (req, res) => {
         country,
         phones,
         clubs,
-        role: role || "USER",
+        role: normalizeRole(role) || ROLES.BASIC,
         approvalStatus: finalStatus,
         adminNotes: adminNotes || null,
 

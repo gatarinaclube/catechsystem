@@ -2,8 +2,9 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const { isAdminRole, normalizeRole } = require("../utils/access");
 
-module.exports = (prisma, requireAuth) => {
+module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
   const UPLOADS_ROOT =
@@ -31,13 +32,17 @@ module.exports = (prisma, requireAuth) => {
   const upload = multer({ storage });
 
   // FORM
-router.get("/services/segunda-via-alteracoes", requireAuth, async (req, res) => {
+router.get(
+  "/services/segunda-via-alteracoes",
+  requireAuth,
+  requirePermission("service.secondCopy"),
+  async (req, res) => {
   try {
     const userId = req.session.userId;
-    const role = req.session.userRole;
+    const role = normalizeRole(req.session.userRole);
 
     const cats = await prisma.cat.findMany({
-      where: role === "ADMIN" ? {} : { ownerId: userId },
+      where: isAdminRole(role) ? {} : { ownerId: userId },
       orderBy: { name: "asc" },
     });
 
@@ -50,13 +55,15 @@ router.get("/services/segunda-via-alteracoes", requireAuth, async (req, res) => 
     console.error("Erro ao abrir Segunda Via / Alterações:", err);
     return res.status(500).send("Erro ao abrir formulário");
   }
-});
+  }
+);
 
 
   // SUBMIT
   router.post(
     "/services/segunda-via-alteracoes",
     requireAuth,
+    requirePermission("service.secondCopy"),
     upload.array("attachments", 5),
     async (req, res) => {
       const { catId, requestType, details, newValue } = req.body;

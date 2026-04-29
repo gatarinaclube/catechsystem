@@ -37,21 +37,26 @@ const upload = multer({
 });
 
 const express = require("express");
+const { isAdminRole, normalizeRole } = require("../utils/access");
 
-module.exports = (prisma, requireAuth) => {
+module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
   function getAuthInfo(req) {
     const userId = req.session.userId;
-    const role = req.session.userRole || "USER";
-    const isAdmin = role === "ADMIN";
+    const role = normalizeRole(req.session.userRole);
+    const isAdmin = isAdminRole(role);
     return { userId, role, isAdmin };
   }
 
   // ============================
   // FORMULÁRIO
   // ============================
-  router.get("/services/title-homologation", requireAuth, async (req, res) => {
+  router.get(
+    "/services/title-homologation",
+    requireAuth,
+    requirePermission("service.titleHomologation"),
+    async (req, res) => {
     try {
       const { userId, isAdmin } = getAuthInfo(req);
 
@@ -69,7 +74,8 @@ module.exports = (prisma, requireAuth) => {
       console.error("Erro ao abrir Homologação de Títulos:", err);
       res.status(500).send("Erro ao abrir formulário");
     }
-  });
+    }
+  );
 
   // ============================
   // SUBMISSÃO
@@ -77,6 +83,7 @@ module.exports = (prisma, requireAuth) => {
  router.post(
   "/services/title-homologation",
   requireAuth,
+  requirePermission("service.titleHomologation"),
   upload.array("certificatesFiles"),
   async (req, res) => {
     try {

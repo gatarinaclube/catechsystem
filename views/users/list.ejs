@@ -70,11 +70,7 @@
                       </a>
                       <div class="item-sub">
                         Email: <%= u.email || "-" %>
-                        <% if (u.role === "ADMIN") { %>
-                          • Perfil: Administrador
-                        <% } else { %>
-                          • Perfil: Usuário
-                        <% } %>
+                        • Perfil: <%= u.roleLabel || "Usuário" %>
                       </div>
                     </div>
                     <div>
@@ -114,7 +110,7 @@
 
           <div class="list-footer">
             <div>
-              <span class="badge-role">Administrador</span>
+              <span class="badge-role">Perfis SaaS ativos</span>
             </div>
             <div>
               Total de usuários:

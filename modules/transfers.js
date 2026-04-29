@@ -3,11 +3,12 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const { isAdminRole, normalizeRole } = require("../utils/access");
 
 
 
 
-module.exports = (prisma, requireAuth) => {
+module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
   // ===============================
@@ -40,13 +41,17 @@ const upload = multer({ storage });
   // Helper simples para pegar info de sessão
   function getAuthInfo(req) {
     const userId = req.session?.userId || null;
-    const role = req.session?.userRole || "USER";
-    const isAdmin = role === "ADMIN";
+    const role = normalizeRole(req.session?.userRole);
+    const isAdmin = isAdminRole(role);
     return { userId, role, isAdmin };
   }
 
   // ---------- GET /transfers/new (formulário) ----------
-  router.get("/transfers/new", requireAuth, async (req, res) => {
+  router.get(
+    "/transfers/new",
+    requireAuth,
+    requirePermission("service.transfer"),
+    async (req, res) => {
     const { userId, isAdmin } = getAuthInfo(req);
 
     // Busca usuário logado (para preencher "Antigo Proprietário")
@@ -66,12 +71,14 @@ const user = await prisma.user.findUnique({
   currentPath: "/transfers/new",
 });
 
-  });
+    }
+  );
 
 // ---------- POST /transfers/new ----------
 router.post(
   "/transfers/new",
   requireAuth,
+  requirePermission("service.transfer"),
   upload.single("authorizationFile"),
   async (req, res) => {
 

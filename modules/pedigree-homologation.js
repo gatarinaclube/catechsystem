@@ -1,20 +1,25 @@
 const express = require("express");
 const multer = require("multer");
+const { isAdminRole, normalizeRole } = require("../utils/access");
 
-module.exports = (prisma, requireAuth) => {
+module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
   // ============================
   // FORMULÁRIO
   // ============================
-  router.get("/services/pedigree-homologation", requireAuth, async (req, res) => {
+  router.get(
+    "/services/pedigree-homologation",
+    requireAuth,
+    requirePermission("service.pedigreeHomologation"),
+    async (req, res) => {
     try {
       const userId = req.session.userId;
 
-      const role = req.session.userRole;
+      const role = normalizeRole(req.session.userRole);
 
 const cats = await prisma.cat.findMany({
-  where: role === "ADMIN" ? {} : { ownerId: userId },
+  where: isAdminRole(role) ? {} : { ownerId: userId },
   orderBy: { name: "asc" },
 });
 
@@ -32,7 +37,8 @@ const cats = await prisma.cat.findMany({
       console.error("Erro ao abrir Homologação de Pedigree:", err);
       return res.status(500).send("Erro ao abrir formulário");
     }
-  });
+    }
+  );
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -52,6 +58,7 @@ const upload = multer({ storage });
 router.post(
   "/services/pedigree-homologation",
   requireAuth,
+  requirePermission("service.pedigreeHomologation"),
   upload.single("transferAuthorizationFile"),
   async (req, res) => {
 
@@ -86,13 +93,13 @@ router.post(
           where: { id: Number(catId) },
         });
 
-const role = req.session.userRole;
+const role = normalizeRole(req.session.userRole);
 
 if (!cat) {
   throw new Error("Gato inválido para homologação.");
 }
 
-if (role !== "ADMIN" && cat.ownerId !== userId) {
+if (!isAdminRole(role) && cat.ownerId !== userId) {
   throw new Error("Você não tem permissão para homologar este gato.");
 }
 
