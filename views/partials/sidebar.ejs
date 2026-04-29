@@ -103,6 +103,16 @@
         </a>
       <% } %>
 
+      <% if (access && access.canAccessLittersAdmin) { %>
+        <a
+          href="/admin/litters"
+          class="<%= (currentPath && currentPath.startsWith('/admin/litters')) ? 'active' : '' %>"
+        >
+          <span class="menu-icon">🐾</span>
+          <span>Ninhadas</span>
+        </a>
+      <% } %>
+
     </nav>
   </div>
 

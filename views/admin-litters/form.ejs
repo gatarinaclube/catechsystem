@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title><%= formTitle %> - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <style>
+      .kitten-grid {
+        display: grid;
+        grid-template-columns: 90px 1.5fr 120px 150px 180px 170px 110px 90px;
+        gap: 8px;
+        align-items: center;
+      }
+      .kitten-grid-header {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+      }
+      .kitten-row {
+        padding: 10px;
+        border: 1px solid var(--border-soft);
+        border-radius: 12px;
+        margin-bottom: 10px;
+      }
+      .kitten-row.is-deceased {
+        background: #e5e7eb;
+      }
+      @media (max-width: 1200px) {
+        .kitten-grid {
+          grid-template-columns: 1fr;
+        }
+        .kitten-grid-header {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title"><%= formTitle %></h2>
+            <div class="welcome-sub">Cadastro administrativo da ninhada e dos filhotes.</div>
+          </div>
+          <div class="actions">
+            <a href="<%= cancelPath %>" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <% if (error) { %>
+          <div class="content-card" style="border-left:4px solid #b91c1c; margin-bottom:18px;">
+            <div class="content-sub"><%= error %></div>
+          </div>
+        <% } %>
+
+        <form method="post" action="<%= formAction %>">
+          <div class="content-card" style="margin-bottom:18px;">
+            <div class="content-title">Quadro 01: Informações da Ninhada</div>
+            <div class="grid-3" style="margin-top:12px;">
+              <div class="field">
+                <label class="field-label" for="litterNumber">N da ninhada</label>
+                <input id="litterNumber" name="litterNumber" type="text" maxlength="3" value="<%= litter?.litterNumber || '' %>" placeholder="000" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="femaleCatId">Nome da Mãe</label>
+                <select id="femaleCatId" name="femaleCatId">
+                  <option value="">Selecione...</option>
+                  <% females.forEach(function(cat) { %>
+                    <option value="<%= cat.id %>" <%= String(litter?.femaleCatId || '') === String(cat.id) || litter?.femaleName === cat.name ? "selected" : "" %>><%= cat.name %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="maleCatId">Nome do Pai</label>
+                <select id="maleCatId" name="maleCatId">
+                  <option value="">Selecione...</option>
+                  <% males.forEach(function(cat) { %>
+                    <option value="<%= cat.id %>" <%= String(litter?.maleCatId || '') === String(cat.id) || litter?.maleName === cat.name ? "selected" : "" %>><%= cat.name %></option>
+                  <% }) %>
+                </select>
+              </div>
+            </div>
+            <div class="grid-3" style="margin-top:12px;">
+              <div class="field">
+                <label class="field-label" for="litterBirthDate">Data de Nascimento</label>
+                <input id="litterBirthDate" name="litterBirthDate" type="date" value="<%= litter?.litterBirthDate ? new Date(litter.litterBirthDate).toISOString().slice(0,10) : '' %>" />
+              </div>
+            </div>
+          </div>
+
+          <div class="content-card" style="margin-bottom:18px;">
+            <div class="content-title">Quadro 02: Informações dos Filhotes</div>
+            <div class="grid-3" style="margin-top:12px;">
+              <div class="field">
+                <label class="field-label" for="femaleCount">Qtde de Fêmeas</label>
+                <input id="femaleCount" name="femaleCount" type="number" min="0" max="99" value="<%= litter?.femaleCount ?? '' %>" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="maleCount">Qtde de Machos</label>
+                <input id="maleCount" name="maleCount" type="number" min="0" max="99" value="<%= litter?.maleCount ?? '' %>" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="litterCountDisplay">Qtde de Filhotes</label>
+                <input id="litterCountDisplay" type="number" readonly value="<%= litter?.litterCount ?? 0 %>" />
+              </div>
+            </div>
+
+            <div class="kitten-grid kitten-grid-header" style="margin-top:16px;">
+              <div>N do Filhote</div>
+              <div>Nome do Filhote</div>
+              <div>Sexo</div>
+              <div>Cor e EMS</div>
+              <div>Microchip</div>
+              <div>Reprodução?</div>
+              <div>Histórico</div>
+              <div>Óbito</div>
+            </div>
+
+            <div id="kittenRows" style="margin-top:10px;"></div>
+          </div>
+
+          <div class="content-card" style="margin-bottom:18px;">
+            <div class="content-title">Quadro 03: Estatísticas</div>
+            <div class="grid-3" style="margin-top:12px;">
+              <div class="field">
+                <label class="field-label" for="deadCount">N de Filhotes Mortos</label>
+                <input id="deadCount" name="deadCount" type="number" min="0" value="<%= litter?.deadCount ?? 0 %>" />
+              </div>
+            </div>
+
+            <div id="deadStatsBlock" style="margin-top:12px;">
+              <div class="grid-3">
+                <div class="field">
+                  <label class="field-label" for="deadAtBirthCount">Qtde mortes no parto</label>
+                  <input id="deadAtBirthCount" name="deadAtBirthCount" type="number" min="0" value="<%= litter?.deadAtBirthCount ?? 0 %>" />
+                </div>
+                <div class="field">
+                  <label class="field-label" for="deadAfterBirthCount">Qtde mortes pós parto</label>
+                  <input id="deadAfterBirthCount" name="deadAfterBirthCount" type="number" min="0" value="<%= litter?.deadAfterBirthCount ?? 0 %>" />
+                </div>
+              </div>
+
+              <div id="deadAtBirthDetails" class="grid-3" style="margin-top:12px;">
+                <div class="field">
+                  <label class="field-label" for="deadAtBirthMaleCount">Machos mortos no parto</label>
+                  <input id="deadAtBirthMaleCount" name="deadAtBirthMaleCount" type="number" min="0" value="<%= litter?.deadAtBirthMaleCount ?? 0 %>" />
+                </div>
+                <div class="field">
+                  <label class="field-label" for="deadAtBirthFemaleCount">Fêmeas mortas no parto</label>
+                  <input id="deadAtBirthFemaleCount" name="deadAtBirthFemaleCount" type="number" min="0" value="<%= litter?.deadAtBirthFemaleCount ?? 0 %>" />
+                </div>
+              </div>
+
+              <div id="deadAfterBirthDetails" class="grid-3" style="margin-top:12px;">
+                <div class="field">
+                  <label class="field-label" for="deadAfterBirthMaleCount">Machos mortos pós parto</label>
+                  <input id="deadAfterBirthMaleCount" name="deadAfterBirthMaleCount" type="number" min="0" value="<%= litter?.deadAfterBirthMaleCount ?? 0 %>" />
+                </div>
+                <div class="field">
+                  <label class="field-label" for="deadAfterBirthFemaleCount">Fêmeas mortas pós parto</label>
+                  <input id="deadAfterBirthFemaleCount" name="deadAfterBirthFemaleCount" type="number" min="0" value="<%= litter?.deadAfterBirthFemaleCount ?? 0 %>" />
+                </div>
+              </div>
+            </div>
+
+            <div class="field" style="margin-top:12px;">
+              <label class="field-label" for="historyNotes">Histórico</label>
+              <textarea id="historyNotes" name="historyNotes" rows="5"><%= litter?.historyNotes || '' %></textarea>
+            </div>
+          </div>
+
+          <div class="form-actions" style="text-align:right;">
+            <button type="submit" class="btn btn-primary">Salvar</button>
+            <a href="<%= cancelPath %>" class="btn">Cancelar</a>
+          </div>
+        </form>
+      </main>
+    </div>
+
+    <script src="/js/ems-data.js"></script>
+    <script>
+      const breeds = <%- JSON.stringify(breeds) %>;
+      const kittens = <%- JSON.stringify(kittens.map((kitten) => ({
+        ...kitten,
+        kittenCatId: kitten.kittenCatId || null,
+      }))) %>;
+      const femaleCountInput = document.getElementById("femaleCount");
+      const maleCountInput = document.getElementById("maleCount");
+      const litterCountDisplay = document.getElementById("litterCountDisplay");
+      const kittenRows = document.getElementById("kittenRows");
+      const deadCountInput = document.getElementById("deadCount");
+      const deadStatsBlock = document.getElementById("deadStatsBlock");
+      const deadAtBirthCountInput = document.getElementById("deadAtBirthCount");
+      const deadAtBirthDetails = document.getElementById("deadAtBirthDetails");
+      const deadAfterBirthCountInput = document.getElementById("deadAfterBirthCount");
+      const deadAfterBirthDetails = document.getElementById("deadAfterBirthDetails");
+
+      function bindBreedToEms(select, emsSelect, currentValue) {
+        const emsList = window.EMS_BY_BREED[select.value] || [];
+        emsSelect.innerHTML = "";
+
+        if (!emsList.length) {
+          const opt = document.createElement("option");
+          opt.value = "";
+          opt.textContent = "Nenhum código disponível";
+          emsSelect.appendChild(opt);
+          return;
+        }
+
+        emsList.forEach((ems) => {
+          const opt = document.createElement("option");
+          opt.value = ems;
+          opt.textContent = ems;
+          if (currentValue === ems) opt.selected = true;
+          emsSelect.appendChild(opt);
+        });
+      }
+
+      function formatMicrochipInput(input) {
+        let digits = input.value.replace(/\D/g, "").slice(0, 15);
+        const groups = digits.match(/.{1,3}/g) || [];
+        input.value = groups.join(".");
+      }
+
+      function updateDeadBlocks() {
+        deadStatsBlock.style.display = Number(deadCountInput.value || 0) > 0 ? "block" : "none";
+        deadAtBirthDetails.style.display = Number(deadAtBirthCountInput.value || 0) > 0 ? "grid" : "none";
+        deadAfterBirthDetails.style.display = Number(deadAfterBirthCountInput.value || 0) > 0 ? "grid" : "none";
+      }
+
+      function renderKittenRows() {
+        const femaleCount = Number(femaleCountInput.value || 0);
+        const maleCount = Number(maleCountInput.value || 0);
+        const total = femaleCount + maleCount;
+        litterCountDisplay.value = total;
+        kittenRows.innerHTML = "";
+
+        for (let i = 0; i < total; i += 1) {
+          const kitten = kittens[i] || {};
+          const row = document.createElement("div");
+          row.className = "kitten-row" + (kitten.deceased ? " is-deceased" : "");
+          row.innerHTML = `
+            <input type="hidden" name="kitten_id_${i}" value="${kitten.id || ""}">
+            <input type="hidden" name="kitten_cat_id_${i}" value="${kitten.kittenCatId || ""}">
+            <div class="kitten-grid">
+              <input name="kitten_number_${i}" maxlength="4" value="${kitten.kittenNumber || ""}" />
+              <input name="kitten_name_${i}" maxlength="21" value="${kitten.name || ""}" />
+              <select name="kitten_sex_${i}">
+                <option value="">Selecione...</option>
+                <option value="M" ${kitten.sex === "M" ? "selected" : ""}>Macho</option>
+                <option value="F" ${kitten.sex === "F" ? "selected" : ""}>Fêmea</option>
+              </select>
+              <div>
+                <select name="kitten_breed_${i}" data-kit-breed="${i}">
+                  <option value="">Raça...</option>
+                  ${breeds.map((breed) => `<option value="${breed}" ${kitten.breed === breed ? "selected" : ""}>${breed}</option>`).join("")}
+                </select>
+                <select name="kitten_ems_${i}" data-kit-ems="${i}" style="margin-top:6px;">
+                  <option value="${kitten.emsEyes || ""}">${kitten.emsEyes || "EMS..."}</option>
+                </select>
+              </div>
+              <input name="kitten_microchip_${i}" class="kitten-microchip" value="${kitten.microchip || ""}" />
+              <select name="kitten_breeding_${i}">
+                <option value="FOR_BREEDING" ${kitten.breeding === "FOR_BREEDING" ? "selected" : ""}>For Breeding</option>
+                <option value="NOT_FOR_BREEDING" ${kitten.breeding === "NOT_FOR_BREEDING" ? "selected" : ""}>Not For Breeding</option>
+              </select>
+              ${kitten.kittenCatId ? `<a href="/breeders/${kitten.kittenCatId}/history" class="btn">Histórico</a>` : `<span style="font-size:12px; color:var(--text-muted);">Será criado ao salvar</span>`}
+              <label style="display:flex; align-items:center; gap:6px;">
+                <input type="checkbox" name="kitten_deceased_${i}" ${kitten.deceased ? "checked" : ""}>
+                Óbito
+              </label>
+            </div>
+          `;
+          kittenRows.appendChild(row);
+        }
+
+        document.querySelectorAll("[data-kit-breed]").forEach((select) => {
+          const idx = select.dataset.kitBreed;
+          const emsSelect = document.querySelector(`[data-kit-ems="${idx}"]`);
+          const kitten = kittens[idx] || {};
+          bindBreedToEms(select, emsSelect, kitten.emsEyes || "");
+          select.addEventListener("change", () => bindBreedToEms(select, emsSelect, ""));
+        });
+
+        document.querySelectorAll(".kitten-microchip").forEach((input) => {
+          input.addEventListener("input", () => formatMicrochipInput(input));
+          formatMicrochipInput(input);
+        });
+
+        document.querySelectorAll('input[type="checkbox"][name^="kitten_deceased_"]').forEach((checkbox) => {
+          checkbox.addEventListener("change", () => {
+            checkbox.closest(".kitten-row").classList.toggle("is-deceased", checkbox.checked);
+          });
+        });
+      }
+
+      femaleCountInput.addEventListener("input", renderKittenRows);
+      maleCountInput.addEventListener("input", renderKittenRows);
+      deadCountInput.addEventListener("input", updateDeadBlocks);
+      deadAtBirthCountInput.addEventListener("input", updateDeadBlocks);
+      deadAfterBirthCountInput.addEventListener("input", updateDeadBlocks);
+
+      renderKittenRows();
+      updateDeadBlocks();
+    </script>
+  </body>
+</html>

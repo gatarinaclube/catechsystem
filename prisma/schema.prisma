@@ -115,6 +115,7 @@ model Cat {
   createdAt        DateTime          @default(now())
   transferRequests TransferRequest[]
   secondCopyRequests SecondCopyRequest[]
+  litterKitten     LitterKitten?     @relation("KittenCat")
 
   status    CatStatus @default(NOVO)
 }
@@ -155,8 +156,19 @@ model Litter {
   catteryName String?
   catteryCountry  String?
   litterBreed     String?
+  litterNumber    String?   @unique
   litterCount     Int?
   litterBirthDate DateTime?
+  femaleCount     Int?
+  maleCount       Int?
+  deadCount       Int?
+  deadAtBirthCount Int?
+  deadAtBirthMaleCount Int?
+  deadAtBirthFemaleCount Int?
+  deadAfterBirthCount Int?
+  deadAfterBirthMaleCount Int?
+  deadAfterBirthFemaleCount Int?
+  historyNotes    String?
 
   // Recebimento / assinaturas (não usados no form, mas mantidos)
   receivedDate  DateTime?
@@ -177,8 +189,11 @@ model LitterKitten {
 
   litter   Litter @relation(fields: [litterId], references: [id])
   litterId Int
+  kittenCatId Int? @unique
+  kittenCat Cat? @relation("KittenCat", fields: [kittenCatId], references: [id])
 
   index     Int // 1 a 9 (número da linha)
+  kittenNumber String?
   name      String?
   breed     String?
   emsEyes   String?
@@ -186,6 +201,7 @@ model LitterKitten {
   microchip String?
   breeding  String? // BREEDING / NOT_FOR_BREEDING
   obs       String?
+  deceased  Boolean? @default(false)
 
   createdAt DateTime @default(now())
 }
