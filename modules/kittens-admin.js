@@ -91,7 +91,12 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   }
 
   function makeListLabel(cat) {
-    return `${cat.kittenNumber || "----"} - ${cat.name || "Sem nome"} - ${formatDateForInput(cat.birthDate) || "-"} - ${formatMicrochip(cat.microchip)} - Entregue: ${cat.delivered ? "SIM" : "NÃO"}`;
+    const linkedKittenNumber =
+      cat.kittenNumber ||
+      cat.litterKitten?.kittenNumber ||
+      (cat.litterKitten?.index ? String(cat.litterKitten.index).padStart(4, "0") : "----");
+
+    return `${linkedKittenNumber} - ${cat.name || "Sem nome"} - ${formatDateForInput(cat.birthDate) || "-"} - ${formatMicrochip(cat.microchip)} - Entregue: ${cat.delivered ? "SIM" : "NÃO"}`;
   }
 
   async function syncLitterKitten(tx, catId, data) {
@@ -160,10 +165,16 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       });
       const kittens = await prisma.cat.findMany({
         where: {
-          kittenNumber: { not: null },
+          OR: [
+            { kittenNumber: { not: null } },
+            { litterKitten: { isNot: null } },
+          ],
           ...(selectedOwnerId ? { ownerId: selectedOwnerId } : {}),
         },
-        orderBy: [{ kittenNumber: "asc" }, { name: "asc" }],
+        include: {
+          litterKitten: true,
+        },
+        orderBy: [{ birthDate: "asc" }, { name: "asc" }],
       });
 
       res.render("admin-kittens/list", {
