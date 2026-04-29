@@ -1,0 +1,9 @@
+ALTER TABLE "Cat"
+ADD COLUMN "kittenNumber" TEXT,
+ADD COLUMN "delivered" BOOLEAN DEFAULT false,
+ADD COLUMN "currentOwnerId" INTEGER,
+ADD COLUMN "historyNotes" TEXT;
+
+ALTER TABLE "Cat"
+ADD CONSTRAINT "Cat_currentOwnerId_fkey"
+FOREIGN KEY ("currentOwnerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;

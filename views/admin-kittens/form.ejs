@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title><%= formTitle %> - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title"><%= formTitle %></h2>
+            <div class="welcome-sub">Cadastro administrativo de filhotes.</div>
+          </div>
+          <div class="actions">
+            <% if (historyPath) { %>
+              <a href="<%= historyPath %>" class="btn">Histórico</a>
+            <% } %>
+            <a href="<%= cancelPath %>" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <% if (error) { %>
+          <div class="content-card" style="border-left:4px solid #b91c1c; margin-bottom:18px;">
+            <div class="content-sub"><%= error %></div>
+          </div>
+        <% } %>
+
+        <form method="post" action="<%= formAction %>">
+          <div class="content-card" style="margin-bottom:18px;">
+            <div class="content-title">Quadro 01: Informações dos Filhotes</div>
+
+            <div class="grid-3" style="margin-top:12px;">
+              <div class="field">
+                <label class="field-label" for="kittenNumber">N do Filhote</label>
+                <input id="kittenNumber" name="kittenNumber" type="text" maxlength="4" value="<%= kitten?.kittenNumber || '' %>" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="name">Nome do Filhote</label>
+                <input id="name" name="name" type="text" maxlength="21" value="<%= kitten?.name || '' %>" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="gender">Sexo</label>
+                <select id="gender" name="gender">
+                  <option value="">Selecione...</option>
+                  <option value="M" <%= kitten?.gender === "M" ? "selected" : "" %>>Macho</option>
+                  <option value="F" <%= kitten?.gender === "F" ? "selected" : "" %>>Fêmea</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid-4" style="margin-top:12px; display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:16px;">
+              <div class="field">
+                <label class="field-label" for="microchip">Microchip</label>
+                <input id="microchip" name="microchip" type="text" value="<%= kitten?.microchip || '' %>" placeholder="000.000.000.000.000" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="birthDate">Data de Nascimento</label>
+                <input id="birthDate" name="birthDate" type="date" value="<%= kitten?.birthDate ? new Date(kitten.birthDate).toISOString().slice(0,10) : '' %>" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="motherId">Nome da Mãe</label>
+                <select id="motherId" name="motherId">
+                  <option value="">Selecione...</option>
+                  <% females.forEach(function(cat) { %>
+                    <option value="<%= cat.id %>" <%= String(kitten?.motherId || '') === String(cat.id) ? "selected" : "" %>><%= cat.name %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="fatherId">Nome do Pai</label>
+                <select id="fatherId" name="fatherId">
+                  <option value="">Selecione...</option>
+                  <% males.forEach(function(cat) { %>
+                    <option value="<%= cat.id %>" <%= String(kitten?.fatherId || '') === String(cat.id) ? "selected" : "" %>><%= cat.name %></option>
+                  <% }) %>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid-4" style="margin-top:12px; display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:16px;">
+              <div class="field">
+                <label class="field-label" for="pedigreeType">Tipo de Registro</label>
+                <select id="pedigreeType" name="pedigreeType">
+                  <option value="">Selecione...</option>
+                  <option value="LO" <%= kitten?.pedigreeType === "LO" ? "selected" : "" %>>LO</option>
+                  <option value="RX" <%= kitten?.pedigreeType === "RX" ? "selected" : "" %>>RX</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="pedigreeNumber">N de Registro</label>
+                <input id="pedigreeNumber" name="pedigreeNumber" type="text" maxlength="6" value="<%= kitten?.pedigreeNumber || '' %>" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="breed">Raça</label>
+                <select id="breed" name="breed">
+                  <option value="">Selecione...</option>
+                  <% breeds.forEach(function(breed) { %>
+                    <option value="<%= breed %>" <%= kitten?.breed === breed ? "selected" : "" %>><%= breed %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="emsCode">Cor e EMS</label>
+                <select id="emsCode" name="emsCode">
+                  <option value="<%= kitten?.emsCode || '' %>"><%= kitten?.emsCode || 'Selecione a raça primeiro...' %></option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid-3" style="margin-top:12px;">
+              <div class="field">
+                <label class="field-label" for="breedingStatus">Reprodução</label>
+                <select id="breedingStatus" name="breedingStatus">
+                  <option value="FOR_BREEDING" <%= kitten?.neutered === true ? "" : "selected" %>>For Breeding</option>
+                  <option value="NOT_FOR_BREEDING" <%= kitten?.neutered === true ? "selected" : "" %>>Not For Breeding</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="content-card" style="margin-bottom:18px;">
+            <div class="content-title">Quadro 02: Informações de Propriedade</div>
+            <div class="grid-3" style="margin-top:12px;">
+              <div class="field">
+                <label class="field-label" for="currentOwnerMode">Proprietário</label>
+                <select id="currentOwnerMode" name="currentOwnerMode">
+                  <option value="ME" <%= !kitten?.currentOwnerId || kitten?.currentOwnerId === kitten?.ownerId ? "selected" : "" %>>Eu Mesmo</option>
+                  <option value="OTHER" <%= kitten?.currentOwnerId && kitten?.currentOwnerId !== kitten?.ownerId ? "selected" : "" %>>Outro</option>
+                </select>
+              </div>
+              <div class="field" id="currentOwnerField">
+                <label class="field-label" for="currentOwnerId">Pessoa cadastrada</label>
+                <select id="currentOwnerId" name="currentOwnerId">
+                  <option value="">Selecione...</option>
+                  <% users.forEach(function(item) { %>
+                    <option value="<%= item.id %>" <%= String(kitten?.currentOwnerId || '') === String(item.id) ? "selected" : "" %>><%= item.name %></option>
+                  <% }) %>
+                </select>
+                <a href="#" id="ownerInfoLink" style="display:inline-block; margin-top:8px;">informações</a>
+              </div>
+              <div class="field">
+                <label class="field-label" for="delivered">Entregue</label>
+                <select id="delivered" name="delivered">
+                  <option value="NO" <%= kitten?.delivered ? "" : "selected" %>>NÃO</option>
+                  <option value="YES" <%= kitten?.delivered ? "selected" : "" %>>SIM</option>
+                </select>
+              </div>
+            </div>
+            <div id="ownerInfoBox" class="content-card" style="display:none; margin-top:12px; padding:12px;"></div>
+          </div>
+
+          <div class="content-card">
+            <div class="content-title">Quadro 03: Histórico</div>
+            <div class="grid-3" style="margin-top:12px;">
+              <div class="field">
+                <label class="field-label" for="deceased">Óbito</label>
+                <select id="deceased" name="deceased">
+                  <option value="NO" <%= kitten?.deceased ? "" : "selected" %>>Não</option>
+                  <option value="YES" <%= kitten?.deceased ? "selected" : "" %>>Sim</option>
+                </select>
+              </div>
+            </div>
+            <div class="field" style="margin-top:12px;">
+              <label class="field-label" for="historyNotes">Histórico</label>
+              <textarea id="historyNotes" name="historyNotes" rows="5"><%= kitten?.historyNotes || '' %></textarea>
+            </div>
+            <div class="form-actions" style="margin-top:24px; text-align:right;">
+              <button type="submit" class="btn btn-primary">Salvar</button>
+              <a href="<%= cancelPath %>" class="btn">Cancelar</a>
+            </div>
+          </div>
+        </form>
+      </main>
+    </div>
+
+    <script src="/js/ems-data.js"></script>
+    <script>
+      const users = <%- JSON.stringify(users) %>;
+      const currentOwnerMode = document.getElementById("currentOwnerMode");
+      const currentOwnerField = document.getElementById("currentOwnerField");
+      const currentOwnerSelect = document.getElementById("currentOwnerId");
+      const ownerInfoLink = document.getElementById("ownerInfoLink");
+      const ownerInfoBox = document.getElementById("ownerInfoBox");
+      const microchipInput = document.getElementById("microchip");
+      const breedSelect = document.getElementById("breed");
+      const emsSelect = document.getElementById("emsCode");
+
+      function formatMicrochip() {
+        let digits = microchipInput.value.replace(/\D/g, "").slice(0, 15);
+        microchipInput.value = (digits.match(/.{1,3}/g) || []).join(".");
+      }
+
+      function toggleOwnerField() {
+        currentOwnerField.style.display = currentOwnerMode.value === "OTHER" ? "block" : "none";
+        if (currentOwnerMode.value !== "OTHER") {
+          ownerInfoBox.style.display = "none";
+        }
+      }
+
+      function renderOwnerInfo(event) {
+        event.preventDefault();
+        const selected = users.find((item) => String(item.id) === currentOwnerSelect.value);
+        if (!selected) {
+          ownerInfoBox.style.display = "none";
+          return;
+        }
+        ownerInfoBox.style.display = "block";
+        ownerInfoBox.innerHTML = `
+          <strong>${selected.name}</strong><br>
+          E-mail: ${selected.email || "-"}<br>
+          Telefone: ${selected.phones || "-"}<br>
+          Cidade: ${selected.city || "-"} / ${selected.state || "-"}
+        `;
+      }
+
+      function bindBreedToEms() {
+        const emsList = window.EMS_BY_BREED[breedSelect.value] || [];
+        const currentValue = "<%= kitten?.emsCode || '' %>";
+        emsSelect.innerHTML = "";
+        if (!emsList.length) {
+          const option = document.createElement("option");
+          option.value = "";
+          option.textContent = "Nenhum código disponível";
+          emsSelect.appendChild(option);
+          return;
+        }
+        emsList.forEach((ems) => {
+          const option = document.createElement("option");
+          option.value = ems;
+          option.textContent = ems;
+          if (ems === currentValue) option.selected = true;
+          emsSelect.appendChild(option);
+        });
+      }
+
+      currentOwnerMode.addEventListener("change", toggleOwnerField);
+      ownerInfoLink.addEventListener("click", renderOwnerInfo);
+      microchipInput.addEventListener("input", formatMicrochip);
+      breedSelect.addEventListener("change", bindBreedToEms);
+
+      toggleOwnerField();
+      formatMicrochip();
+      bindBreedToEms();
+    </script>
+  </body>
+</html>

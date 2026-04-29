@@ -55,6 +55,7 @@ model User {
   createdAt DateTime @default(now())
 
   cats            Cat[]
+  currentOwnedCats Cat[] @relation("CurrentKittenOwner")
   litters         Litter[]
   serviceRequests ServiceRequest[]
 }
@@ -112,6 +113,11 @@ model Cat {
   reproductionFile String?
   otherDocsFile    String?
   deceased         Boolean?          @default(false)
+  kittenNumber     String?
+  delivered        Boolean?          @default(false)
+  currentOwnerId   Int?
+  currentOwner     User?             @relation("CurrentKittenOwner", fields: [currentOwnerId], references: [id])
+  historyNotes     String?
 
   createdAt        DateTime          @default(now())
   transferRequests TransferRequest[]

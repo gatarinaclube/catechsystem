@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Filhotes - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Filhotes</h2>
+            <div class="welcome-sub">Lista administrativa dos filhotes cadastrados.</div>
+          </div>
+          <div class="actions">
+            <a href="/admin/kittens/new" class="btn btn-primary">+ Novo Filhote</a>
+            <a href="/dashboard" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <div class="content-card" style="margin-bottom: 18px;">
+          <form method="get" action="/admin/kittens" style="display:flex; gap:10px; align-items:end; flex-wrap:wrap;">
+            <input type="hidden" name="ownerId" id="kittensOwnerId" value="<%= selectedOwnerId || '' %>" />
+            <div class="field" style="min-width:320px; flex:1;">
+              <label class="field-label" for="kittensOwnerSearch">Filtrar por usuário</label>
+              <input
+                id="kittensOwnerSearch"
+                list="kittensOwnersList"
+                type="text"
+                placeholder="Digite o nome do usuário"
+                value="<%= selectedOwnerId ? ((users.find((u) => u.id === selectedOwnerId) || {}).name || '') : '' %>"
+              />
+              <datalist id="kittensOwnersList">
+                <% users.forEach(function(item) { %>
+                  <option value="<%= item.name %>"><%= item.email %></option>
+                <% }) %>
+              </datalist>
+            </div>
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+            <a href="/admin/kittens" class="btn">Limpar</a>
+          </form>
+        </div>
+
+        <div class="content-card">
+          <% if (!kittens.length) { %>
+            <div class="empty">Nenhum filhote cadastrado.</div>
+          <% } else { %>
+            <ul class="list">
+              <% kittens.forEach(function(kitten) { %>
+                <li class="item" style="border-left: 4px solid <%= kitten.deceased ? '#6b7280' : kitten.gender === 'F' ? '#db2777' : '#2563eb' %>;">
+                  <div>
+                    <a class="item-link" href="/admin/kittens/<%= kitten.id %>"><%= kitten.label %></a>
+                  </div>
+                </li>
+              <% }) %>
+            </ul>
+          <% } %>
+        </div>
+      </main>
+    </div>
+    <script>
+      (function () {
+        const searchInput = document.getElementById("kittensOwnerSearch");
+        const hiddenInput = document.getElementById("kittensOwnerId");
+        const users = <%- JSON.stringify(users) %>;
+
+        function syncOwnerId() {
+          const match = users.find((item) => item.name === searchInput.value);
+          hiddenInput.value = match ? match.id : "";
+        }
+
+        searchInput.addEventListener("input", syncOwnerId);
+        searchInput.addEventListener("change", syncOwnerId);
+      })();
+    </script>
+  </body>
+</html>
