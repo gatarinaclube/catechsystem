@@ -295,7 +295,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requireAuth,
     requirePermission("admin.breeders"),
     async (req, res) => {
+      const selectedOwnerId = req.query.ownerId ? Number(req.query.ownerId) : null;
+      const users = await prisma.user.findMany({
+        orderBy: { name: "asc" },
+        select: { id: true, name: true, email: true },
+      });
       const cats = await prisma.cat.findMany({
+        where: selectedOwnerId ? { ownerId: selectedOwnerId } : {},
         orderBy: { name: "asc" },
       });
 
@@ -321,6 +327,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         user: req.user,
         currentPath: req.path,
         groups,
+        users,
+        selectedOwnerId,
       });
     }
   );

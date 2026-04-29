@@ -24,6 +24,29 @@
           </div>
         </div>
 
+        <div class="content-card" style="margin-bottom: 18px;">
+          <form method="get" action="/breeders" style="display:flex; gap:10px; align-items:end; flex-wrap:wrap;">
+            <input type="hidden" name="ownerId" id="breedersOwnerId" value="<%= selectedOwnerId || '' %>" />
+            <div class="field" style="min-width:320px; flex:1;">
+              <label class="field-label" for="breedersOwnerSearch">Filtrar por usuário</label>
+              <input
+                id="breedersOwnerSearch"
+                list="breedersOwnersList"
+                type="text"
+                placeholder="Digite o nome do usuário"
+                value="<%= selectedOwnerId ? ((users.find((u) => u.id === selectedOwnerId) || {}).name || '') : '' %>"
+              />
+              <datalist id="breedersOwnersList">
+                <% users.forEach(function(item) { %>
+                  <option value="<%= item.name %>" data-id="<%= item.id %>"><%= item.email %></option>
+                <% }) %>
+              </datalist>
+            </div>
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+            <a href="/breeders" class="btn">Limpar</a>
+          </form>
+        </div>
+
         <section class="content-card" style="margin-bottom: 18px; border-left: 5px solid #2563eb;">
           <div class="content-title">Padreadores</div>
           <% if (!groups.sires.length) { %>
@@ -97,5 +120,20 @@
         </section>
       </main>
     </div>
+    <script>
+      (function () {
+        const searchInput = document.getElementById("breedersOwnerSearch");
+        const hiddenInput = document.getElementById("breedersOwnerId");
+        const users = <%- JSON.stringify(users) %>;
+
+        function syncOwnerId() {
+          const match = users.find((item) => item.name === searchInput.value);
+          hiddenInput.value = match ? match.id : "";
+        }
+
+        searchInput.addEventListener("input", syncOwnerId);
+        searchInput.addEventListener("change", syncOwnerId);
+      })();
+    </script>
   </body>
 </html>

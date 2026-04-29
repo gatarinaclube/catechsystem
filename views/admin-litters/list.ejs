@@ -21,6 +21,29 @@
           </div>
         </div>
 
+        <div class="content-card" style="margin-bottom: 18px;">
+          <form method="get" action="/admin/litters" style="display:flex; gap:10px; align-items:end; flex-wrap:wrap;">
+            <input type="hidden" name="ownerId" id="littersOwnerId" value="<%= selectedOwnerId || '' %>" />
+            <div class="field" style="min-width:320px; flex:1;">
+              <label class="field-label" for="littersOwnerSearch">Filtrar por usuário</label>
+              <input
+                id="littersOwnerSearch"
+                list="littersOwnersList"
+                type="text"
+                placeholder="Digite o nome do usuário"
+                value="<%= selectedOwnerId ? ((users.find((u) => u.id === selectedOwnerId) || {}).name || '') : '' %>"
+              />
+              <datalist id="littersOwnersList">
+                <% users.forEach(function(item) { %>
+                  <option value="<%= item.name %>" data-id="<%= item.id %>"><%= item.email %></option>
+                <% }) %>
+              </datalist>
+            </div>
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+            <a href="/admin/litters" class="btn">Limpar</a>
+          </form>
+        </div>
+
         <div class="content-card">
           <% if (!litters.length) { %>
             <div class="empty">Nenhuma ninhada cadastrada.</div>
@@ -38,5 +61,20 @@
         </div>
       </main>
     </div>
+    <script>
+      (function () {
+        const searchInput = document.getElementById("littersOwnerSearch");
+        const hiddenInput = document.getElementById("littersOwnerId");
+        const users = <%- JSON.stringify(users) %>;
+
+        function syncOwnerId() {
+          const match = users.find((item) => item.name === searchInput.value);
+          hiddenInput.value = match ? match.id : "";
+        }
+
+        searchInput.addEventListener("input", syncOwnerId);
+        searchInput.addEventListener("change", syncOwnerId);
+      })();
+    </script>
   </body>
 </html>

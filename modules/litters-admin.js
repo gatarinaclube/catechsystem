@@ -293,13 +293,21 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requireAuth,
     requirePermission("admin.litters"),
     async (req, res) => {
+      const selectedOwnerId = req.query.ownerId ? Number(req.query.ownerId) : null;
+      const users = await prisma.user.findMany({
+        orderBy: { name: "asc" },
+        select: { id: true, name: true, email: true },
+      });
       const litters = await prisma.litter.findMany({
+        where: selectedOwnerId ? { ownerId: selectedOwnerId } : {},
         orderBy: [{ litterNumber: "asc" }, { id: "asc" }],
       });
 
       res.render("admin-litters/list", {
         user: req.user,
         currentPath: req.path,
+        users,
+        selectedOwnerId,
         litters: litters.map((litter) => ({
           ...litter,
           label: buildLitterLabel(litter),
