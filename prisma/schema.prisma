@@ -127,6 +127,7 @@ model Cat {
   secondCopyRequests SecondCopyRequest[]
   litterKitten     LitterKitten?     @relation("KittenCat")
   vaccinationPlan  VaccinationPlan?
+  dewormingPlan    DewormingPlan?
 
   status    CatStatus @default(NOVO)
 }
@@ -247,6 +248,18 @@ model VaccinationPlan {
 
   antirabicHistoryJson String?
   felineHistoryJson    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DewormingPlan {
+  id Int @id @default(autoincrement())
+
+  catId Int @unique
+  cat   Cat @relation(fields: [catId], references: [id])
+
+  historyJson String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -143,6 +143,16 @@
         </a>
       <% } %>
 
+      <% if (access && access.canAccessDewormingAdmin) { %>
+        <a
+          href="/admin/deworming"
+          class="<%= (currentPath && currentPath.startsWith('/admin/deworming')) ? 'active' : '' %>"
+        >
+          <span class="menu-icon">🧪</span>
+          <span>Vermifugação</span>
+        </a>
+      <% } %>
+
     </nav>
   </div>
 

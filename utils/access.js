@@ -37,6 +37,7 @@ const PERMISSIONS = {
   "admin.kittens": [ROLES.ADMIN],
   "admin.matings": [ROLES.ADMIN],
   "admin.vaccinations": [ROLES.ADMIN],
+  "admin.deworming": [ROLES.ADMIN],
 };
 
 function normalizeRole(role) {
@@ -79,6 +80,7 @@ function buildAccessContext(role) {
     canAccessKittensAdmin: userCan(normalizedRole, "admin.kittens"),
     canAccessMatingsAdmin: userCan(normalizedRole, "admin.matings"),
     canAccessVaccinationsAdmin: userCan(normalizedRole, "admin.vaccinations"),
+    canAccessDewormingAdmin: userCan(normalizedRole, "admin.deworming"),
     canUseLitterService: userCan(normalizedRole, "service.litter"),
     canUseTransferService: userCan(normalizedRole, "service.transfer"),
     canUseSecondCopyService: userCan(normalizedRole, "service.secondCopy"),
