@@ -163,6 +163,16 @@
         </a>
       <% } %>
 
+      <% if (access && access.canAccessExamsAdmin) { %>
+        <a
+          href="/admin/exams"
+          class="<%= (currentPath && currentPath.startsWith('/admin/exams')) ? 'active' : '' %>"
+        >
+          <span class="menu-icon">🩺</span>
+          <span>Exames</span>
+        </a>
+      <% } %>
+
     </nav>
   </div>
 
