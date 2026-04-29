@@ -23,6 +23,7 @@ const titleHomologation = require("./modules/title-homologation");
 const pedigreeHomologation = require("./modules/pedigree-homologation");
 const atestadoSaude = require("./modules/atestado-saude");
 const catteryRegistration = require("./modules/cattery-registration");
+const breedersRouterFactory = require("./modules/breeders");
 const {generateTitleHomologationPDF,} = require("./modules/pdf/titleHomologationPdf");
 const {generatePedigreeHomologationPDF,} = require("./modules/pdf/pedigreeHomologationPdf");
 const { generateCatteryRegistrationPDF } = require("./modules/pdf/catteryRegistrationPdf");
@@ -712,6 +713,13 @@ const secondCopyRouter = require("./modules/secondCopy")(
   requirePermission
 );
 app.use(secondCopyRouter);
+
+const breedersRouter = breedersRouterFactory(
+  prisma,
+  requireAuth,
+  requirePermission
+);
+app.use(breedersRouter);
 
 
 

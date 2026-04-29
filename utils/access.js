@@ -32,6 +32,7 @@ const PERMISSIONS = {
   "service.catteryRegistration": [ROLES.ADMIN, ROLES.PREMIUM],
   "admin.users": [ROLES.ADMIN],
   "admin.ffb": [ROLES.ADMIN],
+  "admin.breeders": [ROLES.ADMIN],
 };
 
 function normalizeRole(role) {
@@ -69,6 +70,7 @@ function buildAccessContext(role) {
     canAccessMyProfile: userCan(normalizedRole, "profile.self"),
     canManageUsers: userCan(normalizedRole, "admin.users"),
     canAccessFfbServices: userCan(normalizedRole, "admin.ffb"),
+    canAccessBreeders: userCan(normalizedRole, "admin.breeders"),
     canUseLitterService: userCan(normalizedRole, "service.litter"),
     canUseTransferService: userCan(normalizedRole, "service.transfer"),
     canUseSecondCopyService: userCan(normalizedRole, "service.secondCopy"),

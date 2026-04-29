@@ -80,6 +80,16 @@
         </a>
       <% } %>
 
+      <% if (access && access.canAccessBreeders) { %>
+        <a
+          href="/breeders"
+          class="<%= (currentPath && currentPath.startsWith('/breeders')) ? 'active' : '' %>"
+        >
+          <span class="menu-icon">🐱</span>
+          <span>Reprodutores</span>
+        </a>
+      <% } %>
+
     </nav>
   </div>
 

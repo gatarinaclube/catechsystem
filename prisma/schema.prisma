@@ -110,6 +110,7 @@ model Cat {
   pedigreeFile     String?
   reproductionFile String?
   otherDocsFile    String?
+  deceased         Boolean?          @default(false)
 
   createdAt        DateTime          @default(now())
   transferRequests TransferRequest[]

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Reprodutores - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Reprodutores</h2>
+            <div class="welcome-sub">
+              Gerencie padreadores, matrizes, fundadores e novos reprodutores.
+            </div>
+          </div>
+          <div class="actions">
+            <a href="/breeders/new" class="btn btn-primary">+ Novo Padreador/Matriz</a>
+            <a href="/dashboard" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <section class="content-card" style="margin-bottom: 18px; border-left: 5px solid #2563eb;">
+          <div class="content-title">Padreadores</div>
+          <% if (!groups.sires.length) { %>
+            <div class="empty">Nenhum registro nesta categoria.</div>
+          <% } else { %>
+            <ul class="list">
+              <% groups.sires.forEach(function(cat) { %>
+                <li class="item">
+                  <div>
+                    <a class="item-link" href="/breeders/<%= cat.id %>"><%= cat.displayName %></a>
+                    <div class="item-sub">Idade: <%= cat.ageLabel %></div>
+                  </div>
+                </li>
+              <% }) %>
+            </ul>
+          <% } %>
+        </section>
+
+        <section class="content-card" style="margin-bottom: 18px; border-left: 5px solid #db2777;">
+          <div class="content-title">Matrizes</div>
+          <% if (!groups.dams.length) { %>
+            <div class="empty">Nenhum registro nesta categoria.</div>
+          <% } else { %>
+            <ul class="list">
+              <% groups.dams.forEach(function(cat) { %>
+                <li class="item">
+                  <div>
+                    <a class="item-link" href="/breeders/<%= cat.id %>"><%= cat.displayName %></a>
+                    <div class="item-sub">Idade: <%= cat.ageLabel %></div>
+                  </div>
+                </li>
+              <% }) %>
+            </ul>
+          <% } %>
+        </section>
+
+        <section class="content-card" style="margin-bottom: 18px; border-left: 5px solid #6b7280;">
+          <div class="content-title">Fundadores</div>
+          <% if (!groups.founders.length) { %>
+            <div class="empty">Nenhum registro nesta categoria.</div>
+          <% } else { %>
+            <ul class="list">
+              <% groups.founders.forEach(function(cat) { %>
+                <li class="item">
+                  <div>
+                    <a class="item-link" href="/breeders/<%= cat.id %>"><%= cat.displayName %></a>
+                    <div class="item-sub">Idade: <%= cat.ageLabel %></div>
+                  </div>
+                </li>
+              <% }) %>
+            </ul>
+          <% } %>
+        </section>
+
+        <section class="content-card" style="border-left: 5px solid #16a34a;">
+          <div class="content-title">Novos</div>
+          <% if (!groups.new.length) { %>
+            <div class="empty">Nenhum registro nesta categoria.</div>
+          <% } else { %>
+            <ul class="list">
+              <% groups.new.forEach(function(cat) { %>
+                <li class="item">
+                  <div>
+                    <a class="item-link" href="/breeders/<%= cat.id %>"><%= cat.displayName %></a>
+                    <div class="item-sub">Idade: <%= cat.ageLabel %></div>
+                  </div>
+                </li>
+              <% }) %>
+            </ul>
+          <% } %>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

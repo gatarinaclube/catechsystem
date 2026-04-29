@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title><%= formTitle %> - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title"><%= formTitle %></h2>
+            <div class="welcome-sub">
+              Cadastro administrativo de padreadores e matrizes.
+            </div>
+          </div>
+          <div class="actions">
+            <% if (historyPath) { %>
+              <a href="<%= historyPath %>" class="btn">Histórico</a>
+            <% } %>
+            <a href="<%= cancelPath %>" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <% if (error) { %>
+          <div class="content-card" style="border-left: 4px solid #b91c1c; margin-bottom: 18px;">
+            <div class="content-sub"><%= error %></div>
+          </div>
+        <% } %>
+
+        <form method="post" action="<%= formAction %>">
+          <div class="content-card" style="margin-bottom: 18px;">
+            <div class="content-title">Quadro 01: Informações do Gato</div>
+
+            <div class="grid-3" style="margin-top: 12px;">
+              <div class="field">
+                <label class="field-label" for="titleBeforeName">Título antes do Nome</label>
+                <input id="titleBeforeName" type="text" name="titleBeforeName" value="<%= cat?.titleBeforeName || '' %>" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="titleAfterName">Título depois do Nome</label>
+                <input id="titleAfterName" type="text" name="titleAfterName" value="<%= cat?.titleAfterName || '' %>" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="country">País</label>
+                <select id="country" name="country">
+                  <option value="">Selecione...</option>
+                  <% countries.forEach(function(country) { %>
+                    <option value="<%= country %>" <%= cat?.country === country ? "selected" : "" %>><%= country %></option>
+                  <% }) %>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid-3" style="margin-top: 12px;">
+              <div class="field">
+                <label class="field-label" for="name">Nome do Gato</label>
+                <input id="name" type="text" name="name" value="<%= cat?.name || '' %>" required />
+              </div>
+              <div class="field">
+                <label class="field-label" for="birthDate">Data de Nascimento</label>
+                <input
+                  id="birthDate"
+                  type="date"
+                  name="birthDate"
+                  value="<%= cat?.birthDate ? new Date(cat.birthDate).toISOString().slice(0, 10) : (cat?.birthDate || '') %>"
+                />
+                <div id="ageDisplay" class="age-badge"><%= ageLabel ? "Idade: " + ageLabel : "" %></div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="gender">Sexo</label>
+                <select id="gender" name="gender">
+                  <option value="">Selecione...</option>
+                  <option value="M" <%= cat?.gender === "M" ? "selected" : "" %>>Macho</option>
+                  <option value="F" <%= cat?.gender === "F" ? "selected" : "" %>>Fêmea</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid-3" style="margin-top: 12px;">
+              <div class="field">
+                <label class="field-label" for="microchip">Microchip</label>
+                <input id="microchip" type="text" name="microchip" value="<%= cat?.microchip || '' %>" maxlength="19" placeholder="000.000.000.000.000" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="pedigreeType">Tipo de Registro</label>
+                <select id="pedigreeType" name="pedigreeType">
+                  <option value="">Selecione...</option>
+                  <option value="RX" <%= cat?.pedigreeType === "RX" ? "selected" : "" %>>RX</option>
+                  <option value="LO" <%= cat?.pedigreeType === "LO" ? "selected" : "" %>>LO</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="pedigreeNumber">Registro FFB</label>
+                <input id="pedigreeNumber" type="text" name="pedigreeNumber" value="<%= cat?.pedigreeNumber || '' %>" maxlength="6" inputmode="numeric" />
+              </div>
+            </div>
+
+            <div class="grid-3" style="margin-top: 12px;">
+              <div class="field">
+                <label class="field-label" for="breed">Cor e EMS</label>
+                <select id="breed" name="breed">
+                  <option value="">Selecione a raça...</option>
+                  <% breeds.forEach(function(breed) { %>
+                    <option value="<%= breed %>" <%= cat?.breed === breed ? "selected" : "" %>><%= breed %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="emsCode">Código EMS</label>
+                <select id="emsCode" name="emsCode">
+                  <option value="<%= cat?.emsCode || '' %>"><%= cat?.emsCode || "Selecione a raça primeiro..." %></option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="content-card" style="margin-bottom: 18px;">
+            <div class="content-title">Quadro 02: Criador e Padreadores</div>
+
+            <div class="grid-3" style="margin-top: 12px;">
+              <div class="field">
+                <label class="field-label">Criador</label>
+                <div class="inline">
+                  <label>
+                    <input type="radio" name="breederType" value="Eu Mesmo" <%= !cat?.breederType || cat?.breederType === "Eu Mesmo" ? "checked" : "" %> />
+                    Eu Mesmo
+                  </label>
+                  <label>
+                    <input type="radio" name="breederType" value="Outro" <%= cat?.breederType === "Outro" ? "checked" : "" %> />
+                    Outro
+                  </label>
+                </div>
+              </div>
+              <div class="field" id="breederNameBlock">
+                <label class="field-label" for="breederName">Nome do outro criador</label>
+                <input id="breederName" type="text" name="breederName" value="<%= cat?.breederName || '' %>" />
+              </div>
+            </div>
+
+            <div class="grid-2" style="margin-top: 16px;">
+              <div class="field" style="border:1px solid var(--border-soft); border-radius:14px; padding:16px;">
+                <label class="field-label">Nome do Pai</label>
+                <select name="fatherId" id="fatherId">
+                  <option value="">Selecione um padreador</option>
+                  <% maleCats.forEach(function(maleCat) { %>
+                    <option value="<%= maleCat.id %>" <%= Number(cat?.fatherId || cat?.fatherId) === maleCat.id ? "selected" : "" %>><%= maleCat.name %></option>
+                  <% }) %>
+                </select>
+                <div style="margin-top:10px;">
+                  <label>
+                    <input type="checkbox" id="fatherMode" value="manual" <%= cat?.fatherId ? "" : cat?.fatherName ? "checked" : "" %> />
+                    Pai não cadastrado
+                  </label>
+                  <input type="hidden" name="fatherMode" value="<%= cat?.fatherId ? "existing" : cat?.fatherName ? "manual" : "existing" %>" id="fatherModeValue" />
+                </div>
+                <div id="fatherManualBlock" style="margin-top:12px;">
+                  <input type="text" name="fatherName" placeholder="Nome do pai" value="<%= cat?.fatherName || '' %>" />
+                  <select id="fatherBreed" name="fatherBreed" style="margin-top:10px;">
+                    <option value="">Selecione a raça...</option>
+                    <% breeds.forEach(function(breed) { %>
+                      <option value="<%= breed %>" <%= cat?.fatherBreed === breed ? "selected" : "" %>><%= breed %></option>
+                    <% }) %>
+                  </select>
+                  <select id="fatherEmsCode" name="fatherEmsCode" style="margin-top:10px;">
+                    <option value="<%= cat?.fatherEmsCode || '' %>"><%= cat?.fatherEmsCode || "Selecione a raça primeiro..." %></option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="field" style="border:1px solid var(--border-soft); border-radius:14px; padding:16px;">
+                <label class="field-label">Nome da Mãe</label>
+                <select name="motherId" id="motherId">
+                  <option value="">Selecione uma matriz</option>
+                  <% femaleCats.forEach(function(femaleCat) { %>
+                    <option value="<%= femaleCat.id %>" <%= Number(cat?.motherId || cat?.motherId) === femaleCat.id ? "selected" : "" %>><%= femaleCat.name %></option>
+                  <% }) %>
+                </select>
+                <div style="margin-top:10px;">
+                  <label>
+                    <input type="checkbox" id="motherMode" value="manual" <%= cat?.motherId ? "" : cat?.motherName ? "checked" : "" %> />
+                    Mãe não cadastrada
+                  </label>
+                  <input type="hidden" name="motherMode" value="<%= cat?.motherId ? "existing" : cat?.motherName ? "manual" : "existing" %>" id="motherModeValue" />
+                </div>
+                <div id="motherManualBlock" style="margin-top:12px;">
+                  <input type="text" name="motherName" placeholder="Nome da mãe" value="<%= cat?.motherName || '' %>" />
+                  <select id="motherBreed" name="motherBreed" style="margin-top:10px;">
+                    <option value="">Selecione a raça...</option>
+                    <% breeds.forEach(function(breed) { %>
+                      <option value="<%= breed %>" <%= cat?.motherBreed === breed ? "selected" : "" %>><%= breed %></option>
+                    <% }) %>
+                  </select>
+                  <select id="motherEmsCode" name="motherEmsCode" style="margin-top:10px;">
+                    <option value="<%= cat?.motherEmsCode || '' %>"><%= cat?.motherEmsCode || "Selecione a raça primeiro..." %></option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="content-card">
+            <div class="content-title">Quadro 03: Status Atual</div>
+
+            <div class="grid-3" style="margin-top: 12px;">
+              <div class="field">
+                <label class="field-label" for="breedingStatus">Castrado</label>
+                <select id="breedingStatus" name="breedingStatus">
+                  <option value="FOR_BREEDING" <%= breedingValue === "FOR_BREEDING" ? "selected" : "" %>>For Breeding</option>
+                  <option value="NOT_FOR_BREEDING" <%= breedingValue === "NOT_FOR_BREEDING" ? "selected" : "" %>>Not For Breeding</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="deceased">Óbito</label>
+                <select id="deceased" name="deceased">
+                  <option value="NO" <%= deceasedValue === "NO" ? "selected" : "" %>>Não</option>
+                  <option value="YES" <%= deceasedValue === "YES" ? "selected" : "" %>>Sim</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="ownershipMode">Propriedade</label>
+                <select id="ownershipMode" name="ownershipMode">
+                  <option value="ME" <%= ownershipValue === "ME" ? "selected" : "" %>>Eu Mesmo</option>
+                  <option value="OTHER" <%= ownershipValue === "OTHER" ? "selected" : "" %>>Outro</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-actions" style="margin-top: 24px; text-align: right;">
+              <button type="submit" class="btn btn-primary"><%= submitLabel %></button>
+              <a href="<%= cancelPath %>" class="btn">Cancelar</a>
+            </div>
+          </div>
+        </form>
+      </main>
+    </div>
+
+    <script src="/js/ems-data.js"></script>
+    <script>
+      const birthInput = document.getElementById("birthDate");
+      const ageDisplay = document.getElementById("ageDisplay");
+      const microchipInput = document.getElementById("microchip");
+      const breederOtherField = document.getElementById("breederNameBlock");
+      const breederTypeInputs = document.querySelectorAll('input[name="breederType"]');
+      const fatherModeCheckbox = document.getElementById("fatherMode");
+      const fatherModeValue = document.getElementById("fatherModeValue");
+      const fatherSelect = document.getElementById("fatherId");
+      const fatherManualBlock = document.getElementById("fatherManualBlock");
+      const motherModeCheckbox = document.getElementById("motherMode");
+      const motherModeValue = document.getElementById("motherModeValue");
+      const motherSelect = document.getElementById("motherId");
+      const motherManualBlock = document.getElementById("motherManualBlock");
+
+      function updateAge() {
+        if (!birthInput || !birthInput.value) {
+          ageDisplay.textContent = "";
+          return;
+        }
+
+        const birth = new Date(birthInput.value);
+        if (Number.isNaN(birth.getTime())) {
+          ageDisplay.textContent = "";
+          return;
+        }
+
+        const now = new Date();
+        let years = now.getFullYear() - birth.getFullYear();
+        let months = now.getMonth() - birth.getMonth();
+
+        if (now.getDate() < birth.getDate()) {
+          months -= 1;
+        }
+
+        if (months < 0) {
+          years -= 1;
+          months += 12;
+        }
+
+        ageDisplay.textContent = years >= 0
+          ? `Idade: ${years} ${years === 1 ? "ano" : "anos"} e ${months} ${months === 1 ? "mês" : "meses"}`
+          : "";
+      }
+
+      function formatMicrochip() {
+        let digits = microchipInput.value.replace(/\D/g, "").slice(0, 15);
+        const parts = digits.match(/.{1,3}/g) || [];
+        microchipInput.value = parts.join(".");
+      }
+
+      function toggleBreederName() {
+        const selected = document.querySelector('input[name="breederType"]:checked');
+        breederOtherField.style.display = selected && selected.value === "Outro" ? "block" : "none";
+      }
+
+      function toggleFatherMode() {
+        const manual = fatherModeCheckbox.checked;
+        fatherModeValue.value = manual ? "manual" : "existing";
+        fatherSelect.disabled = manual;
+        fatherManualBlock.style.display = manual ? "block" : "none";
+      }
+
+      function toggleMotherMode() {
+        const manual = motherModeCheckbox.checked;
+        motherModeValue.value = manual ? "manual" : "existing";
+        motherSelect.disabled = manual;
+        motherManualBlock.style.display = manual ? "block" : "none";
+      }
+
+      function bindBreedToEms(breedSelectId, emsSelectId, initialValue) {
+        const breedSelect = document.getElementById(breedSelectId);
+        const emsSelect = document.getElementById(emsSelectId);
+
+        function renderOptions() {
+          const breedCode = breedSelect.value;
+          const emsList = window.EMS_BY_BREED[breedCode] || [];
+          const currentValue = initialValue || emsSelect.value;
+          emsSelect.innerHTML = "";
+
+          if (!emsList.length) {
+            const opt = document.createElement("option");
+            opt.value = "";
+            opt.textContent = "Nenhum código disponível";
+            emsSelect.appendChild(opt);
+            return;
+          }
+
+          emsList.forEach((ems) => {
+            const opt = document.createElement("option");
+            opt.value = ems;
+            opt.textContent = ems;
+            if (currentValue === ems) {
+              opt.selected = true;
+            }
+            emsSelect.appendChild(opt);
+          });
+
+          initialValue = "";
+        }
+
+        breedSelect.addEventListener("change", renderOptions);
+        renderOptions();
+      }
+
+      if (birthInput) {
+        birthInput.addEventListener("input", updateAge);
+        updateAge();
+      }
+
+      if (microchipInput) {
+        microchipInput.addEventListener("input", formatMicrochip);
+        formatMicrochip();
+      }
+
+      breederTypeInputs.forEach((input) => input.addEventListener("change", toggleBreederName));
+      fatherModeCheckbox.addEventListener("change", toggleFatherMode);
+      motherModeCheckbox.addEventListener("change", toggleMotherMode);
+
+      toggleBreederName();
+      toggleFatherMode();
+      toggleMotherMode();
+
+      bindBreedToEms("breed", "emsCode", "<%= cat?.emsCode || '' %>");
+      bindBreedToEms("fatherBreed", "fatherEmsCode", "<%= cat?.fatherEmsCode || '' %>");
+      bindBreedToEms("motherBreed", "motherEmsCode", "<%= cat?.motherEmsCode || '' %>");
+    </script>
+  </body>
+</html>
