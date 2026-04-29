@@ -130,6 +130,7 @@ model Cat {
   dewormingPlan    DewormingPlan?
   weighingPlan     WeighingPlan?
   examPlan         ExamPlan?
+  historyEntries   CatHistoryEntry[]
 
   status    CatStatus @default(NOVO)
 }
@@ -290,6 +291,20 @@ model ExamPlan {
   prabfSource String?
   prabfResult String?
   ecoHistoryJson String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CatHistoryEntry {
+  id Int @id @default(autoincrement())
+
+  catId Int
+  cat   Cat @relation(fields: [catId], references: [id])
+
+  section   String
+  sortOrder Int      @default(0)
+  payloadJson String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -173,6 +173,16 @@
         </a>
       <% } %>
 
+      <% if (access && access.canAccessHistoryAdmin) { %>
+        <a
+          href="/admin/history"
+          class="<%= (currentPath && currentPath.startsWith('/admin/history')) ? 'active' : '' %>"
+        >
+          <span class="menu-icon">📚</span>
+          <span>Histórico</span>
+        </a>
+      <% } %>
+
     </nav>
   </div>
 

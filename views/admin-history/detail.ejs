@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Histórico - <%= cat.name %> - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <style>
+      .info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .info-box {
+        border: 1px solid var(--border-soft);
+        border-radius: 12px;
+        padding: 12px;
+        background: rgba(148, 163, 184, 0.06);
+      }
+      .history-form-row {
+        display: grid;
+        grid-template-columns: 160px 1fr;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      .history-form-row.treatment {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .history-readonly {
+        border: 1px solid var(--border-soft);
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 10px;
+      }
+      .sublist {
+        margin: 8px 0 0;
+        padding-left: 18px;
+      }
+      @media (max-width: 1100px) {
+        .info-grid,
+        .history-form-row,
+        .history-form-row.treatment {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Histórico do Gato</h2>
+            <div class="welcome-sub"><%= birthInfo.displayName %></div>
+          </div>
+          <div class="actions">
+            <a href="/admin/history" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <section class="content-card" style="margin-bottom:18px;">
+          <div class="content-title">Informações do Gato</div>
+          <div class="info-grid" style="margin-top:12px;">
+            <div class="info-box"><strong>Nome:</strong><br /><%= birthInfo.displayName %></div>
+            <div class="info-box"><strong>Data de Nascimento:</strong><br /><%= birthInfo.birthDate %></div>
+            <div class="info-box"><strong>Idade:</strong><br /><%= birthInfo.age %></div>
+            <div class="info-box"><strong>Microchip:</strong><br /><%= birthInfo.microchip %></div>
+            <div class="info-box"><strong>Sexo:</strong><br /><%= birthInfo.sex %></div>
+            <div class="info-box"><strong>Classificação:</strong><br /><%= birthInfo.classification %></div>
+            <div class="info-box"><strong>País:</strong><br /><%= birthInfo.country %></div>
+            <div class="info-box"><strong>Raça:</strong><br /><%= birthInfo.breed %></div>
+            <div class="info-box"><strong>Cor / EMS:</strong><br /><%= birthInfo.emsCode %></div>
+            <div class="info-box"><strong>Tipo de Registro:</strong><br /><%= birthInfo.pedigreeType %></div>
+            <div class="info-box"><strong>Número de Registro:</strong><br /><%= birthInfo.pedigreeNumber %></div>
+            <div class="info-box"><strong>Proprietário:</strong><br /><%= birthInfo.currentOwner %></div>
+            <div class="info-box"><strong>Pai:</strong><br /><%= birthInfo.father %></div>
+            <div class="info-box"><strong>Mãe:</strong><br /><%= birthInfo.mother %></div>
+            <div class="info-box"><strong>Criador / Dono original:</strong><br /><%= birthInfo.owner %></div>
+          </div>
+        </section>
+
+        <section class="content-card" style="margin-bottom:18px;">
+          <div class="content-title">Histórico de Nascimento</div>
+          <% if (birthLitter) { %>
+            <div class="history-readonly" style="margin-top:12px;">
+              <strong>Ninhada:</strong> <%= birthLitter.litterNumber || String(birthLitter.id).padStart(3, "0") %><br />
+              <strong>Data:</strong> <%= formatDateLabel(birthLitter.litterBirthDate) %><br />
+              <strong>Observações da ninhada:</strong><br />
+              <%= litterNote || 'Sem observações cadastradas.' %>
+            </div>
+          <% } else { %>
+            <div class="empty" style="margin-top:12px;">Sem vínculo de ninhada cadastrado.</div>
+          <% } %>
+          <form method="post" action="/admin/history/<%= cat.id %>/birth" style="margin-top:12px;">
+            <div data-birth-box>
+              <% const birthItems = birthHistory.length ? birthHistory : [{ date: '', notes: '' }]; %>
+              <% birthItems.forEach(function(item, idx) { %>
+                <div class="history-form-row">
+                  <input type="date" name="birthDates" value="<%= item.date || '' %>" />
+                  <div style="display:flex; gap:8px;">
+                    <textarea name="birthNotes" rows="3" style="flex:1;" placeholder="Descreva o histórico individual de nascimento"><%= item.notes || '' %></textarea>
+                    <% if (idx === birthItems.length - 1) { %>
+                      <button type="button" class="btn add-birth">+</button>
+                    <% } %>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </form>
+        </section>
+
+        <% if (cat.gender === 'F') { %>
+          <section class="content-card" style="margin-bottom:18px;">
+            <div class="content-title">Histórico de Partos</div>
+            <% if (!partumHistory.length) { %>
+              <div class="empty" style="margin-top:12px;">Nenhum parto relacionado encontrado.</div>
+            <% } else { %>
+              <% partumHistory.forEach(function(item) { %>
+                <div class="history-readonly" style="margin-top:12px;">
+                  <strong>Ninhada:</strong> <%= item.litterNumber %><br />
+                  <strong>Data do parto:</strong> <%= item.birthDate %><br />
+                  <strong>Quantidade:</strong> <%= item.totalKittens %> filhotes
+                  (<%= item.females %> fêmeas / <%= item.males %> machos / <%= item.dead %> mortos)<br />
+                  <strong>Observações:</strong><br />
+                  <%= item.notes || 'Sem observações cadastradas.' %>
+                  <% if (item.kittens.length) { %>
+                    <ul class="sublist">
+                      <% item.kittens.forEach(function(kitten) { %>
+                        <li><%= kitten.number %> - <%= kitten.name %> - <%= kitten.sex %> - <%= kitten.microchip %></li>
+                      <% }) %>
+                    </ul>
+                  <% } %>
+                </div>
+              <% }) %>
+            <% } %>
+          </section>
+        <% } %>
+
+        <section class="content-card" style="margin-bottom:18px;">
+          <div class="content-title">Internações / Tratamentos</div>
+          <form method="post" action="/admin/history/<%= cat.id %>/treatments" style="margin-top:12px;">
+            <div data-treatment-box>
+              <% const treatmentItems = treatmentHistory.length ? treatmentHistory : [{ type: '', startDate: '', endDate: '', dischargeDate: '', dosageSchedule: '', medication: '', dosage: '', notes: '' }]; %>
+              <% treatmentItems.forEach(function(item, idx) { %>
+                <div class="history-readonly">
+                  <div class="history-form-row treatment">
+                    <select name="treatmentType">
+                      <option value="">Selecione</option>
+                      <% treatmentTypes.forEach(function(option) { %>
+                        <option value="<%= option %>" <%= item.type === option ? 'selected' : '' %>><%= option %></option>
+                      <% }) %>
+                    </select>
+                    <input type="date" name="treatmentStartDate" value="<%= item.startDate || '' %>" />
+                    <input type="date" name="treatmentEndDate" value="<%= item.endDate || '' %>" />
+                  </div>
+                  <div class="history-form-row treatment">
+                    <input type="date" name="treatmentDischargeDate" value="<%= item.dischargeDate || '' %>" placeholder="Data de alta" />
+                    <select name="treatmentDosageSchedule">
+                      <option value="">Posologia</option>
+                      <% dosageOptions.forEach(function(option) { %>
+                        <option value="<%= option %>" <%= item.dosageSchedule === option ? 'selected' : '' %>><%= option %></option>
+                      <% }) %>
+                    </select>
+                    <input type="text" name="treatmentMedication" value="<%= item.medication || '' %>" placeholder="Medicação" />
+                  </div>
+                  <div class="history-form-row treatment">
+                    <input type="text" name="treatmentDosage" value="<%= item.dosage || '' %>" placeholder="Dosagem" />
+                    <textarea name="treatmentNotes" rows="3" style="grid-column: span 2;" placeholder="Observações"><%= item.notes || '' %></textarea>
+                    <% if (idx === treatmentItems.length - 1) { %>
+                      <button type="button" class="btn add-treatment">+</button>
+                    <% } %>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </form>
+        </section>
+
+        <section class="content-card" style="margin-bottom:18px;">
+          <div class="content-title">Vacinas</div>
+          <div class="history-readonly" style="margin-top:12px;">
+            <strong>Antirrábica</strong>
+            <ul class="sublist">
+              <% (vaccinationHistory.antirabic.length ? vaccinationHistory.antirabic : [{ date: '' }]).forEach(function(item) { %>
+                <li><%= formatDateLabel(item.date) %></li>
+              <% }) %>
+            </ul>
+            <strong>Feline</strong>
+            <ul class="sublist">
+              <% (vaccinationHistory.feline.length ? vaccinationHistory.feline : [{ date: '', type: '' }]).forEach(function(item) { %>
+                <li><%= formatDateLabel(item.date) %> <%= item.type ? `- ${item.type}` : '' %></li>
+              <% }) %>
+            </ul>
+          </div>
+        </section>
+
+        <section class="content-card" style="margin-bottom:18px;">
+          <div class="content-title">Vermifugação</div>
+          <div class="history-readonly" style="margin-top:12px;">
+            <ul class="sublist">
+              <% (dewormingHistory.length ? dewormingHistory : [{ date: '', type: '' }]).forEach(function(item) { %>
+                <li><%= formatDateLabel(item.date) %> <%= item.type ? `- ${item.type}` : '' %></li>
+              <% }) %>
+            </ul>
+          </div>
+        </section>
+
+        <section class="content-card" style="margin-bottom:18px;">
+          <div class="content-title">Pesagem</div>
+          <div class="history-readonly" style="margin-top:12px;">
+            <ul class="sublist">
+              <% (weighingHistory.length ? weighingHistory : [{ date: '', weight: '' }]).forEach(function(item) { %>
+                <li><%= formatDateLabel(item.date) %> <%= item.weight ? `- ${item.weight} kg` : '' %></li>
+              <% }) %>
+            </ul>
+          </div>
+        </section>
+
+        <section class="content-card" style="margin-bottom:18px;">
+          <div class="content-title">Exames</div>
+          <div class="history-readonly" style="margin-top:12px;">
+            <strong>PKDef:</strong> <%= examHistory.pkdefSource || '-' %> <%= examHistory.pkdefResult ? `- ${examHistory.pkdefResult}` : '' %><br />
+            <strong>PRA-bf:</strong> <%= examHistory.prabfSource || '-' %> <%= examHistory.prabfResult ? `- ${examHistory.prabfResult}` : '' %><br />
+            <strong>Ecocardiodoppler:</strong>
+            <ul class="sublist">
+              <% (examHistory.ecoHistory.length ? examHistory.ecoHistory : [{ date: '' }]).forEach(function(item) { %>
+                <li><%= formatDateLabel(item.date) %></li>
+              <% }) %>
+            </ul>
+          </div>
+        </section>
+
+        <section class="content-card">
+          <div class="content-title">Outros Históricos</div>
+          <form method="post" action="/admin/history/<%= cat.id %>/others" style="margin-top:12px;">
+            <div data-other-box>
+              <% const otherItems = otherHistory.length ? otherHistory : [{ date: '', notes: '' }]; %>
+              <% otherItems.forEach(function(item, idx) { %>
+                <div class="history-form-row">
+                  <input type="date" name="otherDates" value="<%= item.date || '' %>" />
+                  <div style="display:flex; gap:8px;">
+                    <textarea name="otherNotes" rows="3" style="flex:1;" placeholder="Descreva o histórico"><%= item.notes || '' %></textarea>
+                    <% if (idx === otherItems.length - 1) { %>
+                      <button type="button" class="btn add-other">+</button>
+                    <% } %>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      (function () {
+        function duplicateLastRow(button, selector) {
+          const box = button.closest(selector);
+          const row = button.closest(".history-form-row, .history-readonly").cloneNode(true);
+          row.querySelectorAll("input, textarea, select").forEach((field) => {
+            field.value = "";
+          });
+          const oldButton = row.querySelector("button");
+          if (oldButton) oldButton.remove();
+          box.appendChild(row);
+        }
+
+        document.querySelectorAll(".add-birth").forEach((button) => {
+          button.addEventListener("click", () => duplicateLastRow(button, "[data-birth-box]"));
+        });
+
+        document.querySelectorAll(".add-other").forEach((button) => {
+          button.addEventListener("click", () => duplicateLastRow(button, "[data-other-box]"));
+        });
+
+        document.querySelectorAll(".add-treatment").forEach((button) => {
+          button.addEventListener("click", () => duplicateLastRow(button, "[data-treatment-box]"));
+        });
+      })();
+    </script>
+  </body>
+</html>

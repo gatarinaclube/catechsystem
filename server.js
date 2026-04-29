@@ -31,6 +31,7 @@ const vaccinationsAdminRouterFactory = require("./modules/vaccinations-admin");
 const dewormingAdminRouterFactory = require("./modules/deworming-admin");
 const weighingAdminRouterFactory = require("./modules/weighing-admin");
 const examsAdminRouterFactory = require("./modules/exams-admin");
+const historyAdminRouterFactory = require("./modules/history-admin");
 const {generateTitleHomologationPDF,} = require("./modules/pdf/titleHomologationPdf");
 const {generatePedigreeHomologationPDF,} = require("./modules/pdf/pedigreeHomologationPdf");
 const { generateCatteryRegistrationPDF } = require("./modules/pdf/catteryRegistrationPdf");
@@ -776,6 +777,13 @@ const examsAdminRouter = examsAdminRouterFactory(
   requirePermission
 );
 app.use(examsAdminRouter);
+
+const historyAdminRouter = historyAdminRouterFactory(
+  prisma,
+  requireAuth,
+  requirePermission
+);
+app.use(historyAdminRouter);
 
 
 

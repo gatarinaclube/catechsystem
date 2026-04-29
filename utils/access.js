@@ -40,6 +40,7 @@ const PERMISSIONS = {
   "admin.deworming": [ROLES.ADMIN],
   "admin.weighing": [ROLES.ADMIN],
   "admin.exams": [ROLES.ADMIN],
+  "admin.history": [ROLES.ADMIN],
 };
 
 function normalizeRole(role) {
@@ -85,6 +86,7 @@ function buildAccessContext(role) {
     canAccessDewormingAdmin: userCan(normalizedRole, "admin.deworming"),
     canAccessWeighingAdmin: userCan(normalizedRole, "admin.weighing"),
     canAccessExamsAdmin: userCan(normalizedRole, "admin.exams"),
+    canAccessHistoryAdmin: userCan(normalizedRole, "admin.history"),
     canUseLitterService: userCan(normalizedRole, "service.litter"),
     canUseTransferService: userCan(normalizedRole, "service.transfer"),
     canUseSecondCopyService: userCan(normalizedRole, "service.secondCopy"),

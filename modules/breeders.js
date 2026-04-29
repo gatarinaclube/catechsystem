@@ -453,63 +453,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requireAuth,
     requirePermission("admin.breeders"),
     async (req, res) => {
-      const cat = await prisma.cat.findUnique({
-        where: { id: Number(req.params.id) },
-      });
-
-      if (!cat) {
-        return res.status(404).send("Reprodutor não encontrado.");
-      }
-
-      const age = calculateAge(cat.birthDate);
-
-      const timeline = [
-        {
-          label: "Cadastro criado em",
-          value: cat.createdAt
-            ? new Date(cat.createdAt).toLocaleString("pt-BR")
-            : "-",
-        },
-        {
-          label: "Classificação atual",
-          value:
-            classifyBreeder(cat) === "sires"
-              ? "Padreador"
-              : classifyBreeder(cat) === "dams"
-                ? "Matriz"
-                : classifyBreeder(cat) === "new"
-                  ? "Novo"
-                  : "Fundador",
-        },
-        {
-          label: "Status reprodutivo",
-          value: mapBreedingValue(cat) === "FOR_BREEDING"
-            ? "For Breeding"
-            : "Not For Breeding",
-        },
-        {
-          label: "Óbito",
-          value: cat.deceased ? "Sim" : "Não",
-        },
-        {
-          label: "Idade atual",
-          value: formatAge(age),
-        },
-        {
-          label: "Status de cadastro",
-          value: cat.status || "-",
-        },
-      ];
-
-      res.render("breeders/history", {
-        user: req.user,
-        currentPath: "/breeders",
-        cat: {
-          ...cat,
-          displayName: buildDisplayName(cat),
-        },
-        timeline,
-      });
+      res.redirect(`/admin/history/${Number(req.params.id)}`);
     }
   );
 
