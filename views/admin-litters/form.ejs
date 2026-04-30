@@ -9,9 +9,18 @@
     <style>
       .kitten-grid {
         display: grid;
-        grid-template-columns: 90px 1.5fr 120px 150px 180px 170px 110px 90px;
-        gap: 8px;
+        grid-template-columns: 90px minmax(170px, 1.4fr) 120px minmax(170px, 1fr) minmax(180px, 1fr) 160px;
+        gap: 10px;
         align-items: center;
+      }
+      .kitten-actions {
+        grid-column: 1 / -1;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        padding-top: 4px;
       }
       .kitten-grid-header {
         font-size: 12px;
@@ -20,7 +29,7 @@
         margin-bottom: 8px;
       }
       .kitten-row {
-        padding: 10px;
+        padding: 12px;
         border: 1px solid var(--border-soft);
         border-radius: 12px;
         margin-bottom: 10px;
@@ -95,7 +104,7 @@
 
           <div class="content-card" style="margin-bottom:18px;">
             <div class="content-title">Informações dos Filhotes</div>
-            <div class="grid-3" style="margin-top:12px;">
+            <div class="grid-4" style="margin-top:12px; display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:16px;">
               <div class="field">
                 <label class="field-label" for="femaleCount">Qtde de Fêmeas</label>
                 <input id="femaleCount" name="femaleCount" type="number" min="0" max="99" value="<%= litter?.femaleCount ?? '' %>" />
@@ -108,6 +117,15 @@
                 <label class="field-label" for="litterCountDisplay">Qtde de Filhotes</label>
                 <input id="litterCountDisplay" type="number" readonly value="<%= litter?.litterCount ?? 0 %>" />
               </div>
+              <div class="field">
+                <label class="field-label" for="deadCount">Óbitos</label>
+                <input id="deadCount" name="deadCount" type="number" min="0" value="<%= litter?.deadCount ?? 0 %>" />
+              </div>
+            </div>
+
+            <div class="field" style="margin-top:12px;">
+              <label class="field-label" for="historyNotes">Histórico</label>
+              <textarea id="historyNotes" name="historyNotes" rows="3"><%= litter?.historyNotes || '' %></textarea>
             </div>
 
             <div class="kitten-grid kitten-grid-header" style="margin-top:16px;">
@@ -117,22 +135,13 @@
               <div>Cor e EMS</div>
               <div>Microchip</div>
               <div>Reprodução?</div>
-              <div>Histórico</div>
-              <div>Óbito</div>
             </div>
 
             <div id="kittenRows" style="margin-top:10px;"></div>
           </div>
 
-          <div class="content-card" style="margin-bottom:18px;">
+          <div class="content-card" id="deadStatsCard" style="margin-bottom:18px;">
             <div class="content-title">Estatísticas</div>
-            <div class="grid-3" style="margin-top:12px;">
-              <div class="field">
-                <label class="field-label" for="deadCount">N de Filhotes Mortos</label>
-                <input id="deadCount" name="deadCount" type="number" min="0" value="<%= litter?.deadCount ?? 0 %>" />
-              </div>
-            </div>
-
             <div id="deadStatsBlock" style="margin-top:12px;">
               <div class="grid-3">
                 <div class="field">
@@ -168,10 +177,6 @@
               </div>
             </div>
 
-            <div class="field" style="margin-top:12px;">
-              <label class="field-label" for="historyNotes">Histórico</label>
-              <textarea id="historyNotes" name="historyNotes" rows="5"><%= litter?.historyNotes || '' %></textarea>
-            </div>
           </div>
 
           <div class="form-actions" style="text-align:right;">
@@ -194,6 +199,7 @@
       const litterCountDisplay = document.getElementById("litterCountDisplay");
       const kittenRows = document.getElementById("kittenRows");
       const deadCountInput = document.getElementById("deadCount");
+      const deadStatsCard = document.getElementById("deadStatsCard");
       const deadStatsBlock = document.getElementById("deadStatsBlock");
       const deadAtBirthCountInput = document.getElementById("deadAtBirthCount");
       const deadAtBirthDetails = document.getElementById("deadAtBirthDetails");
@@ -228,7 +234,9 @@
       }
 
       function updateDeadBlocks() {
-        deadStatsBlock.style.display = Number(deadCountInput.value || 0) > 0 ? "block" : "none";
+        const hasDeadKittens = Number(deadCountInput.value || 0) > 0;
+        deadStatsCard.style.display = hasDeadKittens ? "block" : "none";
+        deadStatsBlock.style.display = hasDeadKittens ? "block" : "none";
         deadAtBirthDetails.style.display = Number(deadAtBirthCountInput.value || 0) > 0 ? "grid" : "none";
         deadAfterBirthDetails.style.display = Number(deadAfterBirthCountInput.value || 0) > 0 ? "grid" : "none";
       }
@@ -269,11 +277,13 @@
                 <option value="FOR_BREEDING" ${kitten.breeding === "FOR_BREEDING" ? "selected" : ""}>For Breeding</option>
                 <option value="NOT_FOR_BREEDING" ${kitten.breeding === "NOT_FOR_BREEDING" ? "selected" : ""}>Not For Breeding</option>
               </select>
-              ${kitten.kittenCatId ? `<a href="/admin/history/${kitten.kittenCatId}" class="btn">Histórico</a>` : `<span style="font-size:12px; color:var(--text-muted);">Será criado ao salvar</span>`}
-              <label style="display:flex; align-items:center; gap:6px;">
-                <input type="checkbox" name="kitten_deceased_${i}" ${kitten.deceased ? "checked" : ""}>
-                Óbito
-              </label>
+              <div class="kitten-actions">
+                ${kitten.kittenCatId ? `<a href="/admin/history/${kitten.kittenCatId}" class="btn">Histórico</a>` : `<span style="font-size:12px; color:var(--text-muted);">Histórico será criado ao salvar</span>`}
+                <label style="display:flex; align-items:center; gap:6px;">
+                  <input type="checkbox" name="kitten_deceased_${i}" ${kitten.deceased ? "checked" : ""}>
+                  Óbito
+                </label>
+              </div>
             </div>
           `;
           kittenRows.appendChild(row);

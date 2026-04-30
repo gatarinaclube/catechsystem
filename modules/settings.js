@@ -72,7 +72,18 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
   async function getSettings(userId) {
     const rows = await prisma.$queryRaw`
-      SELECT "catteryName", "logoPath", "membershipsJson", "breedsJson", "examsJson"
+      SELECT
+        "catteryName",
+        "veterinarian",
+        "veterinarianName",
+        "crmv",
+        "crmvUf",
+        "veterinarianAddress",
+        "veterinarianPhone",
+        "logoPath",
+        "membershipsJson",
+        "breedsJson",
+        "examsJson"
       FROM "UserSettings"
       WHERE "userId" = ${userId}
       LIMIT 1
@@ -82,6 +93,12 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
     return {
       catteryName: settings.catteryName || "",
+      veterinarian: settings.veterinarian || "",
+      veterinarianName: settings.veterinarianName || "",
+      crmv: settings.crmv || "",
+      crmvUf: settings.crmvUf || "",
+      veterinarianAddress: settings.veterinarianAddress || "",
+      veterinarianPhone: settings.veterinarianPhone || "",
       logoPath: settings.logoPath || "",
       memberships: filterAllowed(parseJsonList(settings.membershipsJson), MEMBERSHIP_OPTIONS),
       breeds: filterAllowed(parseJsonList(settings.breedsJson), BREED_OPTIONS),
@@ -120,6 +137,12 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const existingSettings = await getSettings(req.session.userId);
     const settings = {
       catteryName: (req.body.catteryName || "").trim(),
+      veterinarian: (req.body.veterinarian || "").trim(),
+      veterinarianName: (req.body.veterinarianName || "").trim(),
+      crmv: (req.body.crmv || "").trim(),
+      crmvUf: (req.body.crmvUf || "").trim().toUpperCase().slice(0, 2),
+      veterinarianAddress: (req.body.veterinarianAddress || "").trim(),
+      veterinarianPhone: (req.body.veterinarianPhone || "").trim(),
       logoPath: req.file ? `/uploads/settings-logos/${req.file.filename}` : existingSettings.logoPath,
       memberships: filterAllowed(req.body.memberships, MEMBERSHIP_OPTIONS),
       breeds: filterAllowed(req.body.breeds, BREED_OPTIONS),
@@ -135,6 +158,12 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         INSERT INTO "UserSettings" (
           "userId",
           "catteryName",
+          "veterinarian",
+          "veterinarianName",
+          "crmv",
+          "crmvUf",
+          "veterinarianAddress",
+          "veterinarianPhone",
           "logoPath",
           "membershipsJson",
           "breedsJson",
@@ -144,6 +173,12 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         VALUES (
           ${req.session.userId},
           ${settings.catteryName || null},
+          ${settings.veterinarian || null},
+          ${settings.veterinarianName || null},
+          ${settings.crmv || null},
+          ${settings.crmvUf || null},
+          ${settings.veterinarianAddress || null},
+          ${settings.veterinarianPhone || null},
           ${settings.logoPath || null},
           ${JSON.stringify(settings.memberships)},
           ${JSON.stringify(settings.breeds)},
@@ -152,6 +187,12 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         )
         ON CONFLICT ("userId") DO UPDATE SET
           "catteryName" = EXCLUDED."catteryName",
+          "veterinarian" = EXCLUDED."veterinarian",
+          "veterinarianName" = EXCLUDED."veterinarianName",
+          "crmv" = EXCLUDED."crmv",
+          "crmvUf" = EXCLUDED."crmvUf",
+          "veterinarianAddress" = EXCLUDED."veterinarianAddress",
+          "veterinarianPhone" = EXCLUDED."veterinarianPhone",
           "logoPath" = EXCLUDED."logoPath",
           "membershipsJson" = EXCLUDED."membershipsJson",
           "breedsJson" = EXCLUDED."breedsJson",

@@ -125,6 +125,38 @@
                 <label class="field-label" for="catteryName">Nome do Gatil</label>
                 <input id="catteryName" name="catteryName" type="text" value="<%= settings.catteryName || '' %>" />
               </div>
+              <div class="field">
+                <label class="field-label" for="veterinarian">Veterinário</label>
+                <input id="veterinarian" name="veterinarian" type="text" value="<%= settings.veterinarian || '' %>" />
+              </div>
+            </div>
+            <div class="grid-3" style="margin-top:12px;">
+              <div class="field">
+                <label class="field-label" for="veterinarianName">Nome do Veterinário</label>
+                <input id="veterinarianName" name="veterinarianName" type="text" value="<%= settings.veterinarianName || '' %>" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="crmv">CRMV</label>
+                <input id="crmv" name="crmv" type="text" value="<%= settings.crmv || '' %>" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="crmvUf">UF</label>
+                <input id="crmvUf" name="crmvUf" type="text" maxlength="2" value="<%= settings.crmvUf || '' %>" />
+              </div>
+            </div>
+            <div class="grid-2" style="margin-top:12px;">
+              <div class="field">
+                <label class="field-label" for="veterinarianAddress">Endereço</label>
+                <input id="veterinarianAddress" name="veterinarianAddress" type="text" value="<%= settings.veterinarianAddress || '' %>" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="veterinarianPhone">Telefone</label>
+                <input id="veterinarianPhone" name="veterinarianPhone" type="text" value="<%= settings.veterinarianPhone || '' %>" />
+              </div>
+            </div>
+            <div class="section-note">
+              Quando preenchidas, essas informações poderão ser utilizadas em documentos do sistema,
+              como atestados de saúde e outros documentos pertinentes.
             </div>
           </div>
 
