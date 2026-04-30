@@ -9,7 +9,7 @@
     <style>
       .mating-table {
         display: grid;
-        grid-template-columns: 220px 180px 220px 180px 220px 160px 250px 180px;
+        grid-template-columns: 260px 220px 180px 220px 160px 250px 180px;
         gap: 10px;
         align-items: start;
       }
@@ -23,6 +23,15 @@
         border: 1px solid var(--border-soft);
         border-radius: 14px;
         margin-bottom: 12px;
+      }
+      .parent-line {
+        margin-top: 4px;
+        font-size: 11px;
+        line-height: 1.35;
+        color: var(--text-muted);
+      }
+      .parent-line span + span {
+        margin-left: 10px;
       }
       .mini-stack {
         display: flex;
@@ -94,7 +103,6 @@
             <div class="module-accordion-body">
               <div class="mating-table mating-header">
                 <div>Fêmea</div>
-                <div>Pai e Mãe</div>
                 <div>Consanguinidade</div>
                 <div>Macho</div>
                 <div>Histórico</div>
@@ -112,11 +120,10 @@
                   <div class="mating-table">
                     <div>
                       <div class="item-title"><%= row.femaleDisplayName %></div>
-                    </div>
-
-                    <div class="mini-stack">
-                      <div>Pai: <strong><%= row.fatherName %></strong></div>
-                      <div>Mãe: <strong><%= row.motherName %></strong></div>
+                      <div class="parent-line">
+                        <span>Pai: <%= row.fatherName %></span>
+                        <span>Mãe: <%= row.motherName %></span>
+                      </div>
                     </div>
 
                     <div class="mini-stack" data-consanguinity-box>

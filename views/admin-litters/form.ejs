@@ -9,18 +9,19 @@
     <style>
       .kitten-grid {
         display: grid;
-        grid-template-columns: 90px minmax(170px, 1.4fr) 120px minmax(170px, 1fr) minmax(180px, 1fr) 160px;
+        grid-template-columns: 90px minmax(190px, 1.5fr) 120px minmax(190px, 1fr) minmax(190px, 1fr);
         gap: 10px;
         align-items: center;
       }
       .kitten-actions {
         grid-column: 1 / -1;
-        display: flex;
-        gap: 12px;
+        display: grid;
+        grid-template-columns: minmax(160px, 1fr) minmax(120px, 160px) minmax(160px, 220px);
+        gap: 10px;
         align-items: center;
-        justify-content: flex-end;
-        flex-wrap: wrap;
-        padding-top: 4px;
+        padding-top: 8px;
+        border-top: 1px solid var(--border-soft);
+        margin-top: 2px;
       }
       .kitten-grid-header {
         font-size: 12px;
@@ -39,6 +40,9 @@
       }
       @media (max-width: 1200px) {
         .kitten-grid {
+          grid-template-columns: 1fr;
+        }
+        .kitten-actions {
           grid-template-columns: 1fr;
         }
         .kitten-grid-header {
@@ -123,18 +127,12 @@
               </div>
             </div>
 
-            <div class="field" style="margin-top:12px;">
-              <label class="field-label" for="historyNotes">Histórico</label>
-              <textarea id="historyNotes" name="historyNotes" rows="3"><%= litter?.historyNotes || '' %></textarea>
-            </div>
-
             <div class="kitten-grid kitten-grid-header" style="margin-top:16px;">
               <div>N do Filhote</div>
               <div>Nome do Filhote</div>
               <div>Sexo</div>
               <div>Cor e EMS</div>
               <div>Microchip</div>
-              <div>Reprodução?</div>
             </div>
 
             <div id="kittenRows" style="margin-top:10px;"></div>
@@ -177,6 +175,10 @@
               </div>
             </div>
 
+            <div class="field" style="margin-top:12px;">
+              <label class="field-label" for="historyNotes">Histórico</label>
+              <textarea id="historyNotes" name="historyNotes" rows="5"><%= litter?.historyNotes || '' %></textarea>
+            </div>
           </div>
 
           <div class="form-actions" style="text-align:right;">
@@ -199,7 +201,6 @@
       const litterCountDisplay = document.getElementById("litterCountDisplay");
       const kittenRows = document.getElementById("kittenRows");
       const deadCountInput = document.getElementById("deadCount");
-      const deadStatsCard = document.getElementById("deadStatsCard");
       const deadStatsBlock = document.getElementById("deadStatsBlock");
       const deadAtBirthCountInput = document.getElementById("deadAtBirthCount");
       const deadAtBirthDetails = document.getElementById("deadAtBirthDetails");
@@ -235,7 +236,6 @@
 
       function updateDeadBlocks() {
         const hasDeadKittens = Number(deadCountInput.value || 0) > 0;
-        deadStatsCard.style.display = hasDeadKittens ? "block" : "none";
         deadStatsBlock.style.display = hasDeadKittens ? "block" : "none";
         deadAtBirthDetails.style.display = Number(deadAtBirthCountInput.value || 0) > 0 ? "grid" : "none";
         deadAfterBirthDetails.style.display = Number(deadAfterBirthCountInput.value || 0) > 0 ? "grid" : "none";
@@ -273,16 +273,22 @@
                 </select>
               </div>
               <input name="kitten_microchip_${i}" class="kitten-microchip" value="${kitten.microchip || ""}" />
-              <select name="kitten_breeding_${i}">
-                <option value="FOR_BREEDING" ${kitten.breeding === "FOR_BREEDING" ? "selected" : ""}>For Breeding</option>
-                <option value="NOT_FOR_BREEDING" ${kitten.breeding === "NOT_FOR_BREEDING" ? "selected" : ""}>Not For Breeding</option>
-              </select>
               <div class="kitten-actions">
-                ${kitten.kittenCatId ? `<a href="/admin/history/${kitten.kittenCatId}" class="btn">Histórico</a>` : `<span style="font-size:12px; color:var(--text-muted);">Histórico será criado ao salvar</span>`}
-                <label style="display:flex; align-items:center; gap:6px;">
+                <div>
+                  <label class="field-label">Histórico</label>
+                  ${kitten.kittenCatId ? `<a href="/admin/history/${kitten.kittenCatId}" class="btn">Abrir histórico</a>` : `<div style="font-size:12px; color:var(--text-muted);">Será criado ao salvar</div>`}
+                </div>
+                <label style="display:flex; align-items:center; gap:8px; margin-top:18px;">
                   <input type="checkbox" name="kitten_deceased_${i}" ${kitten.deceased ? "checked" : ""}>
                   Óbito
                 </label>
+                <div>
+                  <label class="field-label">Reprodução?</label>
+                  <select name="kitten_breeding_${i}">
+                    <option value="FOR_BREEDING" ${kitten.breeding === "FOR_BREEDING" ? "selected" : ""}>For Breeding</option>
+                    <option value="NOT_FOR_BREEDING" ${kitten.breeding === "NOT_FOR_BREEDING" ? "selected" : ""}>Not For Breeding</option>
+                  </select>
+                </div>
               </div>
             </div>
           `;
