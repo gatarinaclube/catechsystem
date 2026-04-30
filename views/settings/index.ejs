@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Configurações - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+    <style>
+      .settings-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .settings-check {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--border-soft);
+        border-radius: 8px;
+        padding: 10px 12px;
+        background: #ffffff;
+        font-size: 13px;
+      }
+      .breed-picker {
+        display: grid;
+        grid-template-columns: minmax(220px, 360px) auto;
+        gap: 10px;
+        align-items: end;
+        margin-top: 10px;
+      }
+      .breed-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .breed-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--border-soft);
+        border-radius: 999px;
+        padding: 6px 10px;
+        background: rgba(245, 158, 11, 0.08);
+        color: var(--text-main);
+        font-size: 13px;
+      }
+      .breed-chip button {
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 16px;
+        line-height: 1;
+        padding: 0;
+      }
+      .logo-panel {
+        display: grid;
+        grid-template-columns: 180px minmax(0, 1fr);
+        gap: 18px;
+        align-items: center;
+        margin-top: 12px;
+      }
+      .logo-preview {
+        width: 180px;
+        height: 110px;
+        border: 1px dashed var(--border-soft);
+        border-radius: 8px;
+        background: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        color: var(--text-muted);
+        font-size: 12px;
+        text-align: center;
+        padding: 10px;
+      }
+      .logo-preview img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+      @media (max-width: 700px) {
+        .breed-picker,
+        .logo-panel {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Configurações</h2>
+            <div class="welcome-sub">Preferências do login para dados do gatil, raças e exames.</div>
+          </div>
+          <div class="actions">
+            <a href="/dashboard" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <% if (success) { %>
+          <div class="content-card" style="border-left:4px solid #16a34a; margin-bottom:18px;">
+            <div class="content-sub">Configurações salvas com sucesso.</div>
+          </div>
+        <% } %>
+
+        <% if (error) { %>
+          <div class="content-card" style="border-left:4px solid #b91c1c; margin-bottom:18px;">
+            <div class="content-sub"><%= error %></div>
+          </div>
+        <% } %>
+
+        <form method="post" action="/settings" enctype="multipart/form-data">
+          <div class="content-card" style="margin-bottom:18px;">
+            <div class="content-title">Dados do Gatil</div>
+            <div class="grid-2" style="margin-top:12px;">
+              <div class="field">
+                <label class="field-label" for="catteryName">Nome do Gatil</label>
+                <input id="catteryName" name="catteryName" type="text" value="<%= settings.catteryName || '' %>" />
+              </div>
+            </div>
+          </div>
+
+          <div class="content-card" style="margin-bottom:18px;">
+            <div class="content-title">Logo do Gatil</div>
+            <div class="logo-panel">
+              <div class="logo-preview">
+                <% if (settings.logoPath) { %>
+                  <img src="<%= settings.logoPath %>" alt="Logo do gatil" />
+                <% } else { %>
+                  Nenhum logo enviado
+                <% } %>
+              </div>
+              <div class="field">
+                <label class="field-label" for="logo">Enviar logo</label>
+                <input id="logo" name="logo" type="file" accept="image/png,image/jpeg,image/webp" />
+                <div class="section-note">
+                  Formatos aceitos: PNG, JPG ou WEBP. Tamanho máximo: 2 MB.
+                  Para impressão, prefira PNG com fundo transparente e proporção horizontal,
+                  perto de 1200 x 600 px.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="content-card" style="margin-bottom:18px;">
+            <div class="content-title">Membro</div>
+            <div class="settings-options">
+              <% membershipOptions.forEach(function(option) { %>
+                <label class="settings-check">
+                  <input type="checkbox" name="memberships" value="<%= option %>" <%= settings.memberships.includes(option) ? "checked" : "" %> />
+                  <span><%= option %></span>
+                </label>
+              <% }) %>
+            </div>
+          </div>
+
+          <div class="content-card" style="margin-bottom:18px;">
+            <div class="content-title">Raças</div>
+            <div class="breed-picker">
+              <div class="field">
+                <label class="field-label" for="breedSelect">Selecionar raça</label>
+                <select id="breedSelect">
+                  <option value="">Selecione...</option>
+                  <% breedOptions.forEach(function(option) { %>
+                    <option value="<%= option %>"><%= option %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <button type="button" class="btn btn-primary" id="addBreed">+</button>
+            </div>
+            <div class="breed-list" id="breedList"></div>
+          </div>
+
+          <div class="content-card" style="margin-bottom:18px;">
+            <div class="content-title">Exames</div>
+            <div class="settings-options">
+              <% examOptions.forEach(function(option) { %>
+                <label class="settings-check">
+                  <input type="checkbox" name="exams" value="<%= option %>" <%= settings.exams.includes(option) ? "checked" : "" %> />
+                  <span><%= option %></span>
+                </label>
+              <% }) %>
+            </div>
+          </div>
+
+          <div class="form-actions" style="text-align:right;">
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </div>
+        </form>
+      </main>
+    </div>
+
+    <script>
+      (function () {
+        const selectedBreeds = new Set(<%- JSON.stringify(settings.breeds || []) %>);
+        const breedSelect = document.getElementById("breedSelect");
+        const addBreed = document.getElementById("addBreed");
+        const breedList = document.getElementById("breedList");
+
+        function renderBreeds() {
+          breedList.innerHTML = "";
+
+          if (!selectedBreeds.size) {
+            const empty = document.createElement("div");
+            empty.className = "empty";
+            empty.textContent = "Nenhuma raça selecionada.";
+            breedList.appendChild(empty);
+            return;
+          }
+
+          Array.from(selectedBreeds).sort().forEach((breed) => {
+            const chip = document.createElement("span");
+            chip.className = "breed-chip";
+
+            const label = document.createElement("span");
+            label.textContent = breed;
+
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = "breeds";
+            input.value = breed;
+
+            const remove = document.createElement("button");
+            remove.type = "button";
+            remove.textContent = "×";
+            remove.addEventListener("click", () => {
+              selectedBreeds.delete(breed);
+              renderBreeds();
+            });
+
+            chip.appendChild(label);
+            chip.appendChild(input);
+            chip.appendChild(remove);
+            breedList.appendChild(chip);
+          });
+        }
+
+        addBreed.addEventListener("click", () => {
+          if (!breedSelect.value) return;
+          selectedBreeds.add(breedSelect.value);
+          breedSelect.value = "";
+          renderBreeds();
+        });
+
+        renderBreeds();
+      })();
+    </script>
+  </body>
+</html>

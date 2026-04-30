@@ -80,6 +80,16 @@
         </a>
       <% } %>
 
+      <% if (access && access.canAccessSettings) { %>
+        <a
+          href="/settings"
+          class="<%= (currentPath && currentPath.startsWith('/settings')) ? 'active' : '' %>"
+        >
+          <span class="menu-icon">⚙️</span>
+          <span>Configurações</span>
+        </a>
+      <% } %>
+
       <% if (access && access.canAccessBreeders) { %>
         <div
           style="

@@ -23,6 +23,7 @@ const titleHomologation = require("./modules/title-homologation");
 const pedigreeHomologation = require("./modules/pedigree-homologation");
 const atestadoSaude = require("./modules/atestado-saude");
 const catteryRegistration = require("./modules/cattery-registration");
+const settingsRouterFactory = require("./modules/settings");
 const breedersRouterFactory = require("./modules/breeders");
 const littersAdminRouterFactory = require("./modules/litters-admin");
 const kittensAdminRouterFactory = require("./modules/kittens-admin");
@@ -721,6 +722,13 @@ const secondCopyRouter = require("./modules/secondCopy")(
   requirePermission
 );
 app.use(secondCopyRouter);
+
+const settingsRouter = settingsRouterFactory(
+  prisma,
+  requireAuth,
+  requirePermission
+);
+app.use(settingsRouter);
 
 const breedersRouter = breedersRouterFactory(
   prisma,
