@@ -24,6 +24,15 @@ function formatMicrochip(value) {
   return (digits.match(/.{1,3}/g) || []).join(".");
 }
 
+function mergeLinkedKittenFields(cat) {
+  if (!cat) return cat;
+
+  return {
+    ...cat,
+    kittenNumber: cat.kittenNumber || cat.litterKitten?.kittenNumber || null,
+  };
+}
+
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
@@ -183,7 +192,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         users,
         selectedOwnerId,
         kittens: kittens.map((kitten) => ({
-          ...kitten,
+          ...mergeLinkedKittenFields(kitten),
           label: makeListLabel(kitten),
         })),
       });
@@ -233,6 +242,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     async (req, res) => {
       const kitten = await prisma.cat.findUnique({
         where: { id: Number(req.params.id) },
+        include: {
+          litterKitten: true,
+        },
       });
 
       if (!kitten) {
@@ -240,7 +252,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       }
 
       res.render("admin-kittens/form", {
-        ...(await buildContext(req, kitten)),
+        ...(await buildContext(req, mergeLinkedKittenFields(kitten))),
         formTitle: "Editar Filhote",
         formAction: `/admin/kittens/${kitten.id}`,
         cancelPath: "/admin/kittens",
@@ -256,6 +268,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     async (req, res) => {
       const existingKitten = await prisma.cat.findUnique({
         where: { id: Number(req.params.id) },
+        include: {
+          litterKitten: true,
+        },
       });
 
       if (!existingKitten) {
@@ -274,7 +289,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         res.redirect(`/admin/kittens/${existingKitten.id}`);
       } catch (err) {
         res.status(400).render("admin-kittens/form", {
-          ...(await buildContext(req, { ...existingKitten, ...req.body }, err.message || "Erro ao atualizar o filhote.")),
+          ...(await buildContext(
+            req,
+            mergeLinkedKittenFields({ ...existingKitten, ...req.body }),
+            err.message || "Erro ao atualizar o filhote."
+          )),
           formTitle: "Editar Filhote",
           formAction: `/admin/kittens/${existingKitten.id}`,
           cancelPath: "/admin/kittens",
