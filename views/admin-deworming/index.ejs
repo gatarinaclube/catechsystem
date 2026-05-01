@@ -9,9 +9,15 @@
     <style>
       .deworming-grid {
         display: grid;
-        grid-template-columns: 220px 180px 140px 320px 220px;
+        grid-template-columns: 260px 140px 320px 220px;
         gap: 10px;
         align-items: start;
+      }
+      .cat-subline {
+        margin-top: 4px;
+        font-size: 11px;
+        line-height: 1.35;
+        color: var(--text-muted);
       }
       .deworming-header {
         font-size: 12px;
@@ -77,7 +83,6 @@
             <div class="module-accordion-body">
               <div class="deworming-grid deworming-header">
                 <div>Nome do Gato</div>
-                <div>Mãe</div>
                 <div>Data de Nascimento</div>
                 <div>Histórico</div>
                 <div>Próxima vermifugação</div>
@@ -93,9 +98,9 @@
                       <div class="item-title" style="color:<%= row.dewormingState === 'overdue' ? '#dc2626' : '#16a34a' %>;">
                         <%= row.displayName %>
                       </div>
+                      <div class="cat-subline">Mãe: <%= row.motherName %></div>
                     </div>
 
-                    <div><strong><%= row.motherName %></strong></div>
                     <div><strong><%= row.birthDateLabel %></strong></div>
 
                     <div class="mini-stack" data-history-box>
