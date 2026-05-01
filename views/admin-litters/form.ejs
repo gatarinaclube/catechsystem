@@ -9,7 +9,7 @@
     <style>
       .kitten-grid {
         display: grid;
-        grid-template-columns: 90px minmax(180px, 1.4fr) 110px minmax(180px, 1fr) minmax(170px, 1fr) 150px;
+        grid-template-columns: 110px minmax(180px, 1.35fr) 110px minmax(170px, 1fr) minmax(120px, auto);
         gap: 12px;
         align-items: start;
       }
@@ -24,12 +24,18 @@
       .kitten-field .field-label {
         margin-bottom: 4px;
       }
-      .kitten-line-2 {
-        grid-column: 4 / -1;
+      .kitten-history {
+        grid-column: 5;
+        grid-row: 1 / span 2;
+        align-self: center;
+        justify-self: end;
+      }
+      .kitten-row-2 {
+        grid-column: 1 / 5;
         display: grid;
-        grid-template-columns: minmax(180px, 1fr) minmax(140px, 0.8fr) minmax(140px, 0.8fr);
+        grid-template-columns: 110px minmax(180px, 1.35fr) 110px minmax(170px, 1fr);
         gap: 12px;
-        align-items: end;
+        align-items: start;
       }
       .kitten-row {
         padding: 12px;
@@ -44,9 +50,16 @@
         .kitten-grid {
           grid-template-columns: 1fr;
         }
-        .kitten-line-2 {
+        .kitten-row-2,
+        .kitten-history {
           grid-column: 1;
+          grid-row: auto;
+        }
+        .kitten-row-2 {
           grid-template-columns: 1fr;
+        }
+        .kitten-history {
+          justify-self: stretch;
         }
       }
     </style>
@@ -265,37 +278,44 @@
                 </select>
               </div>
               <div class="kitten-field">
-                <label class="field-label">Cor</label>
-                <select name="kitten_breed_${i}" data-kit-breed="${i}">
-                  <option value="">Raça...</option>
-                  ${breeds.map((breed) => `<option value="${breed}" ${kitten.breed === breed ? "selected" : ""}>${breed}</option>`).join("")}
-                </select>
-              </div>
-              <div class="kitten-field">
                 <label class="field-label">Microchip</label>
                 <input name="kitten_microchip_${i}" class="kitten-microchip" value="${kitten.microchip || ""}" />
               </div>
-              <div class="kitten-field">
-                <label class="field-label">Reprodução?</label>
-                <select name="kitten_breeding_${i}">
-                  <option value="FOR_BREEDING" ${kitten.breeding === "FOR_BREEDING" ? "selected" : ""}>For Breeding</option>
-                  <option value="NOT_FOR_BREEDING" ${kitten.breeding === "NOT_FOR_BREEDING" ? "selected" : ""}>Not For Breeding</option>
-                </select>
+              <div class="kitten-history">
+                ${kitten.kittenCatId ? `<a href="/admin/history/${kitten.kittenCatId}" class="btn">Histórico</a>` : `<span style="font-size:12px; color:var(--text-muted);">Histórico será criado ao salvar</span>`}
               </div>
-              <div class="kitten-line-2">
+              <div class="kitten-row-2">
                 <div class="kitten-field">
-                  <label class="field-label">Código EMS</label>
+                  <label class="field-label">Raça</label>
+                  <select name="kitten_breed_${i}" data-kit-breed="${i}">
+                    <option value="">Raça...</option>
+                    ${breeds.map((breed) => `<option value="${breed}" ${kitten.breed === breed ? "selected" : ""}>${breed}</option>`).join("")}
+                  </select>
+                </div>
+                <div class="kitten-field">
+                  <label class="field-label">Cor e EMS</label>
                   <select name="kitten_ems_${i}" data-kit-ems="${i}">
                     <option value="${kitten.emsEyes || ""}">${kitten.emsEyes || "EMS..."}</option>
                   </select>
                 </div>
                 <div class="kitten-field">
-                  ${kitten.kittenCatId ? `<a href="/admin/history/${kitten.kittenCatId}" class="btn">Histórico</a>` : `<span style="font-size:12px; color:var(--text-muted);">Histórico será criado ao salvar</span>`}
+                  <label class="field-label">Reprodução?</label>
+                  <select name="kitten_breeding_${i}">
+                    <option value="FOR_BREEDING" ${kitten.breeding === "FOR_BREEDING" ? "selected" : ""}>For Breeding</option>
+                    <option value="NOT_FOR_BREEDING" ${kitten.breeding === "NOT_FOR_BREEDING" ? "selected" : ""}>Not For Breeding</option>
+                  </select>
                 </div>
-                <label style="display:flex; align-items:center; gap:8px; min-height:38px;">
-                  <input type="checkbox" name="kitten_deceased_${i}" ${kitten.deceased ? "checked" : ""}>
-                  Óbito
-                </label>
+                <div class="kitten-field">
+                  <label style="display:flex; align-items:center; gap:8px; min-height:38px;">
+                    <input type="checkbox" name="kitten_deceased_${i}" ${kitten.deceased ? "checked" : ""}>
+                    Óbito
+                  </label>
+                  <div data-breeding-role-box="${i}" style="display:none; margin-top:6px;">
+                    <select name="kitten_breeding_role_${i}" data-breeding-role="${i}">
+                      <option value="">Selecione...</option>
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
           `;
@@ -313,6 +333,40 @@
         document.querySelectorAll(".kitten-microchip").forEach((input) => {
           input.addEventListener("input", () => formatMicrochipInput(input));
           formatMicrochipInput(input);
+        });
+
+        document.querySelectorAll('select[name^="kitten_breeding_"]:not([name^="kitten_breeding_role_"])').forEach((select) => {
+          const index = select.name.replace("kitten_breeding_", "");
+          const sexSelect = document.querySelector(`[name="kitten_sex_${index}"]`);
+          const roleBox = document.querySelector(`[data-breeding-role-box="${index}"]`);
+          const roleSelect = document.querySelector(`[data-breeding-role="${index}"]`);
+          const kitten = kittens[index] || {};
+
+          function updateBreedingRole() {
+            const sex = sexSelect.value;
+            const isForBreeding = select.value === "FOR_BREEDING";
+            roleBox.style.display = isForBreeding ? "block" : "none";
+            roleSelect.innerHTML = '<option value="">Selecione...</option>';
+
+            if (!isForBreeding) {
+              roleSelect.value = "";
+              return;
+            }
+
+            if (sex === "F") {
+              roleSelect.innerHTML += '<option value="NEW_DAM">Nova Matriz</option>';
+            } else if (sex === "M") {
+              roleSelect.innerHTML += '<option value="NEW_SIRE">Novo Padreador</option>';
+            }
+
+            if (kitten.breedingRole) {
+              roleSelect.value = kitten.breedingRole;
+            }
+          }
+
+          select.addEventListener("change", updateBreedingRole);
+          sexSelect.addEventListener("change", updateBreedingRole);
+          updateBreedingRole();
         });
 
         document.querySelectorAll('input[type="checkbox"][name^="kitten_deceased_"]').forEach((checkbox) => {

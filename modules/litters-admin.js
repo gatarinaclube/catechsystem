@@ -151,6 +151,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         emsEyes: body[`kitten_ems_${i}`] || null,
         microchip: normalizeMicrochip(body[`kitten_microchip_${i}`]),
         breeding: body[`kitten_breeding_${i}`] || null,
+        breedingRole: body[`kitten_breeding_role_${i}`] || null,
         deceased: body[`kitten_deceased_${i}`] === "on",
       });
     }
@@ -257,6 +258,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         sex: kitten.sex,
         microchip: kitten.microchip,
         breeding: kitten.breeding,
+        breedingRole: kitten.breedingRole,
         deceased: kitten.deceased,
         kittenCatId,
       };

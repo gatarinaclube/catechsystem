@@ -235,6 +235,7 @@ model LitterKitten {
   sex       String? // M / F
   microchip String?
   breeding  String? // BREEDING / NOT_FOR_BREEDING
+  breedingRole String? // NEW_DAM / NEW_SIRE
   obs       String?
   deceased  Boolean? @default(false)
 
