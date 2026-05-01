@@ -9,8 +9,9 @@
     <style>
       .kitten-grid {
         display: grid;
-        grid-template-columns: 110px minmax(180px, 1.35fr) 110px minmax(170px, 1fr) minmax(120px, auto);
-        gap: 12px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        column-gap: 16px;
+        row-gap: 12px;
         align-items: start;
       }
       .kitten-grid input,
@@ -25,41 +26,43 @@
         margin-bottom: 4px;
       }
       .kitten-history {
-        grid-column: 5;
-        grid-row: 1 / span 2;
-        align-self: center;
+        grid-column: 1 / -1;
         justify-self: end;
       }
       .kitten-row-2 {
-        grid-column: 1 / 5;
+        grid-column: 1 / -1;
         display: grid;
-        grid-template-columns: 110px minmax(180px, 1.35fr) 110px minmax(170px, 1fr);
-        gap: 12px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        column-gap: 16px;
+        row-gap: 12px;
         align-items: start;
       }
       .kitten-row {
-        padding: 12px;
+        padding: 14px;
         border: 1px solid var(--border-soft);
         border-radius: 12px;
-        margin-bottom: 10px;
+        margin-bottom: 14px;
       }
       .kitten-row.is-deceased {
         background: #e5e7eb;
       }
       @media (max-width: 1200px) {
         .kitten-grid {
-          grid-template-columns: 1fr;
-        }
-        .kitten-row-2,
-        .kitten-history {
-          grid-column: 1;
-          grid-row: auto;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
         .kitten-row-2 {
-          grid-template-columns: 1fr;
+          grid-column: 1 / -1;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
         .kitten-history {
+          grid-column: 1 / -1;
           justify-self: stretch;
+        }
+      }
+      @media (max-width: 700px) {
+        .kitten-grid,
+        .kitten-row-2 {
+          grid-template-columns: 1fr;
         }
       }
     </style>
