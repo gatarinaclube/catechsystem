@@ -131,7 +131,8 @@
                     <div><strong><%= row.birthDateLabel %></strong></div>
 
                     <div class="mini-stack" data-history-box>
-                      <% row.history.forEach(function(item, idx) { %>
+                      <% const historyRows = row.history && row.history.length ? row.history : [{ date: "", weight: "" }]; %>
+                      <% historyRows.forEach(function(item, idx) { %>
                         <div class="inline-plus">
                           <input type="date" name="historyDates" value="<%= item.date %>" />
                           <input
@@ -141,7 +142,7 @@
                             placeholder="0,000 kg"
                             style="width:110px;"
                           />
-                          <% if (idx === row.history.length - 1) { %>
+                          <% if (idx === historyRows.length - 1) { %>
                             <button type="button" class="btn add-history">+</button>
                           <% } %>
                         </div>

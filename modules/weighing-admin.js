@@ -126,9 +126,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         const category = classifyOperationalCat(cat);
         if (!category) return;
 
-        const history = safeJsonParse(cat.weighingPlan?.historyJson, [
-          { date: "", weight: "" },
-        ]);
+        const storedHistory = safeJsonParse(cat.weighingPlan?.historyJson, []);
+        const history = storedHistory.length
+          ? storedHistory
+          : [{ date: "", weight: "" }];
         const shouldWeigh = cat.weighingPlan?.shouldWeigh === true;
         const rowCategory = shouldWeigh ? "weighing" : category;
 
@@ -138,7 +139,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           motherName: cat.mother?.name || cat.motherName || "-",
           birthDateLabel: formatDate(cat.birthDate) || "-",
           history,
-          stats: computeHistoryStats(history),
+          stats: computeHistoryStats(storedHistory),
           shouldWeigh,
           weighingFrequency: cat.weighingPlan?.weighingFrequency || "",
           weighingPeriod: cat.weighingPlan?.weighingPeriod || "",
