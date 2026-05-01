@@ -262,7 +262,7 @@
                   <% } else { %>
                     <div class="field-value" id="birthValue">
                       <% if (cat.birthDate) { %>
-                        <%= cat.birthDate.toISOString().slice(0, 10) %>
+                        <%= cat.birthDate.toLocaleDateString('pt-BR') %>
                       <% } else { %>
                         -
                       <% } %>
@@ -831,6 +831,11 @@
           if (birthValue) {
             const text = birthValue.textContent.trim();
             if (!text || text === "-") return null;
+            const brMatch = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+            if (brMatch) {
+              const [, day, month, year] = brMatch;
+              return new Date(Number(year), Number(month) - 1, Number(day));
+            }
             return new Date(text);
           }
           return null;

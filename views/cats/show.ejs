@@ -129,7 +129,7 @@
               <div class="field-label">Data de nascimento</div>
               <div class="field-value" id="birthValue">
                 <% if (cat.birthDate) { %>
-                  <%= cat.birthDate.toISOString().slice(0, 10) %>
+                  <%= cat.birthDate.toLocaleDateString('pt-BR') %>
                 <% } else { %>
                   -
                 <% } %>
@@ -365,5 +365,4 @@
           </div>
         </div>
       </div>
-
 

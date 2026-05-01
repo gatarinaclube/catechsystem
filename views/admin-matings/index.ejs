@@ -174,7 +174,7 @@
                       <% const historyList = row.litterHistory.length ? row.litterHistory : [""]; %>
                       <% historyList.forEach(function(value, idx) { %>
                         <div class="inline-plus">
-                          <input type="date" name="litterHistoryDates" value="<%= value %>" />
+                          <input type="date" name="litterHistoryDates" value="<%= formatDateInput(value) %>" />
                           <% if (idx === historyList.length - 1) { %>
                             <button type="button" class="btn add-history-date">+</button>
                           <% } %>
@@ -187,8 +187,8 @@
                     </div>
 
                     <div class="mini-stack">
-                      <input type="date" name="matingStartDate" value="<%= row.plan?.matingStartDate ? formatDate(row.plan.matingStartDate) : '' %>" />
-                      <input type="date" name="matingEndDate" value="<%= row.plan?.matingEndDate ? formatDate(row.plan.matingEndDate) : '' %>" />
+                      <input type="date" name="matingStartDate" value="<%= row.plan?.matingStartDate ? formatDateInput(row.plan.matingStartDate) : '' %>" />
+                      <input type="date" name="matingEndDate" value="<%= row.plan?.matingEndDate ? formatDateInput(row.plan.matingEndDate) : '' %>" />
                       <select name="status">
                         <% groups.forEach(function(statusItem) { %>
                           <option value="<%= statusItem.key %>" <%= (row.plan?.status || "PARA_ACASALAR") === statusItem.key ? "selected" : "" %>><%= statusItem.label %></option>

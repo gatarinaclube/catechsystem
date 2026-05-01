@@ -2,6 +2,7 @@ const express = require("express");
 const {
   parseDate,
   formatDate,
+  formatDateInput,
   addDays,
   ageInMonths,
   buildDisplayName,
@@ -30,7 +31,7 @@ function sortHistory(history) {
   return [...history]
     .map((value) => ({
       ...value,
-      date: formatDate(value.date),
+      date: formatDateInput(value.date),
     }))
     .sort((a, b) => {
       const aDate = parseDate(a.date);
@@ -143,7 +144,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       const history = dates
         .map((date, index) => ({
-          date: formatDate(date),
+          date: formatDateInput(date),
           type: types[index] || "",
         }))
         .filter((item) => item.date !== "" || item.type !== "");

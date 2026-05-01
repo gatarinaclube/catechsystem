@@ -2,6 +2,7 @@ const express = require("express");
 const {
   parseDate,
   formatDate,
+  formatDateInput,
   addYears,
   buildDisplayName,
   classifyOperationalCat,
@@ -30,7 +31,7 @@ function sortHistory(history) {
   return [...history]
     .map((value) => ({
       ...value,
-      date: formatDate(value.date),
+      date: formatDateInput(value.date),
     }))
     .sort((a, b) => {
       const aDate = parseDate(a.date);
@@ -147,7 +148,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const ecoDates = [].concat(req.body.ecoDates || []);
 
       const ecoHistory = ecoDates
-        .map((date) => ({ date: formatDate(date) }))
+        .map((date) => ({ date: formatDateInput(date) }))
         .filter((item) => item.date !== "");
 
       await prisma.examPlan.upsert({

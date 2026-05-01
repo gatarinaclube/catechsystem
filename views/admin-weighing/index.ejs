@@ -9,7 +9,7 @@
     <style>
       .weighing-grid {
         display: grid;
-        grid-template-columns: 260px 140px 340px 220px;
+        grid-template-columns: 260px 140px 300px 260px 220px;
         gap: 10px;
         align-items: start;
       }
@@ -44,6 +44,35 @@
         border-radius: 12px;
         background: rgba(148, 163, 184, 0.08);
         padding: 10px;
+      }
+      .weighing-settings {
+        border-radius: 12px;
+        background: rgba(124, 58, 237, 0.07);
+        padding: 10px;
+      }
+      .weighing-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-main);
+        font-weight: 600;
+      }
+      .weighing-toggle input {
+        width: auto;
+      }
+      .weighing-options {
+        display: none;
+        margin-top: 8px;
+      }
+      .weighing-options.is-visible {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .weighing-message {
+        font-size: 12px;
+        color: var(--text-muted);
+        line-height: 1.35;
       }
       @media (max-width: 1300px) {
         .weighing-grid {
@@ -84,6 +113,7 @@
                 <div>Nome do Gato</div>
                 <div>Data de Nascimento</div>
                 <div>Peso</div>
+                <div>Controle</div>
                 <div>Histórico</div>
               </div>
 
@@ -118,6 +148,28 @@
                       <% }) %>
                     </div>
 
+                    <div class="weighing-settings" data-weighing-settings>
+                      <label class="weighing-toggle">
+                        <input type="checkbox" name="shouldWeigh" data-should-weigh <%= row.shouldWeigh ? "checked" : "" %> />
+                        Pesar
+                      </label>
+                      <div class="weighing-options <%= row.shouldWeigh ? 'is-visible' : '' %>" data-weighing-options>
+                        <select name="weighingFrequency" data-weighing-frequency>
+                          <option value="">Periodicidade</option>
+                          <% weighingFrequencies.forEach(function(option) { %>
+                            <option value="<%= option.value %>" <%= row.weighingFrequency === option.value ? "selected" : "" %>><%= option.label %></option>
+                          <% }) %>
+                        </select>
+                        <select name="weighingPeriod" data-weighing-period>
+                          <option value="">Período</option>
+                          <% weighingPeriods.forEach(function(option) { %>
+                            <option value="<%= option %>" <%= row.weighingPeriod === option ? "selected" : "" %>><%= option %></option>
+                          <% }) %>
+                        </select>
+                        <div class="weighing-message" data-weighing-message></div>
+                      </div>
+                    </div>
+
                     <div class="mini-stack history-box">
                       <div>G/P: <strong><%= formatWeight(row.stats.gp) %></strong></div>
                       <div>G/P*: <strong><%= formatWeight(row.stats.gpStar) %></strong></div>
@@ -145,6 +197,52 @@
             row.querySelector("button").remove();
             box.appendChild(row);
           });
+        });
+
+        function updateWeighingSettings(box) {
+          const checkbox = box.querySelector("[data-should-weigh]");
+          const options = box.querySelector("[data-weighing-options]");
+          const frequency = box.querySelector("[data-weighing-frequency]");
+          const period = box.querySelector("[data-weighing-period]");
+          const message = box.querySelector("[data-weighing-message]");
+
+          options.classList.toggle("is-visible", checkbox.checked);
+
+          if (!checkbox.checked) {
+            frequency.value = "";
+            period.value = "";
+            message.textContent = "";
+            period.style.display = "none";
+            return;
+          }
+
+          period.style.display = frequency.value === "ONCE_DAILY" ? "block" : "none";
+
+          if (frequency.value === "ONCE_DAILY") {
+            message.textContent = period.value
+              ? `Pesar no período da ${period.value.toLowerCase()}.`
+              : "Selecione o período para fazer a pesagem.";
+          } else if (frequency.value === "TWICE_DAILY") {
+            period.value = "";
+            message.textContent = "Pesar de manhã e no fim do dia/noite.";
+          } else if (frequency.value === "THREE_DAILY") {
+            period.value = "";
+            message.textContent = "Pesar de manhã cedo, início da tarde e fim da tarde ou noite.";
+          } else {
+            period.value = "";
+            message.textContent = "";
+          }
+        }
+
+        document.querySelectorAll("[data-weighing-settings]").forEach((box) => {
+          const checkbox = box.querySelector("[data-should-weigh]");
+          const frequency = box.querySelector("[data-weighing-frequency]");
+          const period = box.querySelector("[data-weighing-period]");
+
+          checkbox.addEventListener("change", () => updateWeighingSettings(box));
+          frequency.addEventListener("change", () => updateWeighingSettings(box));
+          period.addEventListener("change", () => updateWeighingSettings(box));
+          updateWeighingSettings(box);
         });
       })();
     </script>

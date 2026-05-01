@@ -1,12 +1,44 @@
 function parseDate(value) {
   if (!value || value === "0000-00-00") return null;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    const brMatch = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (brMatch) {
+      const [, day, month, year] = brMatch;
+      const parsed = new Date(Number(year), Number(month) - 1, Number(day));
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (isoMatch) {
+      const [, year, month, day] = isoMatch;
+      const parsed = new Date(Number(year), Number(month) - 1, Number(day));
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+  }
+
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+function formatDateInput(value) {
+  const parsed = parseDate(value);
+  if (!parsed) return "";
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function formatDate(value) {
   const parsed = parseDate(value);
-  return parsed ? parsed.toISOString().slice(0, 10) : "";
+  if (!parsed) return "";
+
+  const day = String(parsed.getDate()).padStart(2, "0");
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const year = parsed.getFullYear();
+  return `${day}/${month}/${year}`;
 }
 
 function addDays(date, days) {
@@ -90,6 +122,7 @@ function classifyOperationalCat(cat, options = {}) {
 module.exports = {
   parseDate,
   formatDate,
+  formatDateInput,
   addDays,
   addMonths,
   addYears,

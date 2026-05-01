@@ -296,6 +296,9 @@ model WeighingPlan {
   cat   Cat @relation(fields: [catId], references: [id])
 
   historyJson String?
+  shouldWeigh Boolean @default(false)
+  weighingFrequency String?
+  weighingPeriod String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

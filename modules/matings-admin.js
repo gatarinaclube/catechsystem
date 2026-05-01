@@ -3,6 +3,7 @@ const {
   addMonths,
   addDays,
   formatDate,
+  formatDateInput,
   parseDate,
   buildDisplayName,
   classifyOperationalCat,
@@ -205,6 +206,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         users,
         selectedOwnerId,
         formatDate,
+        formatDateInput,
       });
     }
   );

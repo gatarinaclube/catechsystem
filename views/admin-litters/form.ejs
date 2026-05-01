@@ -9,7 +9,7 @@
     <style>
       .litter-kitten-grid {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: 120px minmax(260px, 1.5fr) 150px minmax(220px, 1fr) 180px;
         column-gap: 16px;
         row-gap: 12px;
         align-items: start;
@@ -27,13 +27,37 @@
         margin-bottom: 4px;
       }
       .litter-kitten-history {
-        grid-column: 1 / -1;
         justify-self: end;
+        align-self: end;
+      }
+      .litter-kitten-history .btn {
+        min-width: 130px;
+        text-align: center;
+      }
+      .litter-kitten-deceased {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 38px;
+        color: var(--text-muted);
+      }
+      .litter-kitten-deceased input {
+        width: auto;
+        min-width: 0;
+      }
+      .litter-breeding-role {
+        margin-top: 6px;
+      }
+      .litter-breeding-role select {
+        width: 100%;
+      }
+      .litter-breeding-role:empty {
+        display: none;
       }
       .litter-kitten-row-2 {
         grid-column: 1 / -1;
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: minmax(220px, 1fr) minmax(320px, 1.5fr) minmax(170px, 0.75fr) minmax(150px, 0.65fr);
         column-gap: 16px;
         row-gap: 12px;
         align-items: start;
@@ -59,7 +83,6 @@
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
         .litter-kitten-history {
-          grid-column: 1 / -1;
           justify-self: stretch;
         }
       }
@@ -269,7 +292,7 @@
             <input type="hidden" name="kitten_cat_id_${i}" value="${kitten.kittenCatId || ""}">
             <div class="litter-kitten-grid">
               <div class="litter-kitten-field">
-                <label class="field-label">N de Filhotes</label>
+                <label class="field-label">N do Filhote</label>
                 <input name="kitten_number_${i}" maxlength="4" value="${kitten.kittenNumber || ""}" />
               </div>
               <div class="litter-kitten-field">
@@ -288,8 +311,12 @@
                 <label class="field-label">Microchip</label>
                 <input name="kitten_microchip_${i}" class="kitten-microchip" value="${kitten.microchip || ""}" />
               </div>
-              <div class="litter-kitten-history">
-                ${kitten.kittenCatId ? `<a href="/admin/history/${kitten.kittenCatId}" class="btn">Histórico</a>` : `<span style="font-size:12px; color:var(--text-muted);">Histórico será criado ao salvar</span>`}
+              <div class="litter-kitten-field">
+                <label class="field-label">Reprodução?</label>
+                <select name="kitten_breeding_${i}">
+                  <option value="FOR_BREEDING" ${kitten.breeding === "FOR_BREEDING" ? "selected" : ""}>For Breeding</option>
+                  <option value="NOT_FOR_BREEDING" ${kitten.breeding === "NOT_FOR_BREEDING" ? "selected" : ""}>Not For Breeding</option>
+                </select>
               </div>
               <div class="litter-kitten-row-2">
                 <div class="litter-kitten-field">
@@ -306,22 +333,19 @@
                   </select>
                 </div>
                 <div class="litter-kitten-field">
-                  <label class="field-label">Reprodução?</label>
-                  <select name="kitten_breeding_${i}">
-                    <option value="FOR_BREEDING" ${kitten.breeding === "FOR_BREEDING" ? "selected" : ""}>For Breeding</option>
-                    <option value="NOT_FOR_BREEDING" ${kitten.breeding === "NOT_FOR_BREEDING" ? "selected" : ""}>Not For Breeding</option>
-                  </select>
-                </div>
-                <div class="litter-kitten-field">
-                  <label style="display:flex; align-items:center; gap:8px; min-height:38px;">
+                  <label class="field-label">&nbsp;</label>
+                  <label class="litter-kitten-deceased">
                     <input type="checkbox" name="kitten_deceased_${i}" ${kitten.deceased ? "checked" : ""}>
                     Óbito
                   </label>
-                  <div data-breeding-role-box="${i}" style="display:none; margin-top:6px;">
+                  <div class="litter-breeding-role" data-breeding-role-box="${i}" style="display:none;">
                     <select name="kitten_breeding_role_${i}" data-breeding-role="${i}">
                       <option value="">Selecione...</option>
                     </select>
                   </div>
+                </div>
+                <div class="litter-kitten-history">
+                  ${kitten.kittenCatId ? `<a href="/admin/history/${kitten.kittenCatId}" class="btn">Histórico</a>` : `<span style="font-size:12px; color:var(--text-muted);">Histórico será criado ao salvar</span>`}
                 </div>
               </div>
             </div>

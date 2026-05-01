@@ -2,17 +2,27 @@ const express = require("express");
 const {
   parseDate,
   formatDate,
+  formatDateInput,
   ageInMonths,
   buildDisplayName,
   classifyOperationalCat,
 } = require("../utils/cattery-admin");
 
 const CATEGORY_META = [
+  { key: "weighing", label: "Pesagem", color: "#7c3aed", featured: true },
   { key: "sires", label: "Padreadores", color: "#2563eb" },
   { key: "dams", label: "Matrizes", color: "#db2777" },
   { key: "kittens", label: "Filhotes", color: "#16a34a" },
   { key: "founders", label: "Fundadores", color: "#f59e0b" },
 ];
+
+const WEIGHING_FREQUENCIES = [
+  { value: "ONCE_DAILY", label: "1 X/dia" },
+  { value: "TWICE_DAILY", label: "2 X/dia" },
+  { value: "THREE_DAILY", label: "3 X/dia" },
+];
+
+const WEIGHING_PERIODS = ["Manhã", "Tarde", "Noite"];
 
 function safeJsonParse(value, fallback = []) {
   if (!value) return fallback;
@@ -48,7 +58,7 @@ function sortHistory(history) {
   return [...history]
     .map((value) => ({
       ...value,
-      date: formatDate(value.date),
+      date: formatDateInput(value.date),
       weight: normalizeWeight(value.weight || ""),
     }))
     .sort((a, b) => {
@@ -119,14 +129,19 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         const history = safeJsonParse(cat.weighingPlan?.historyJson, [
           { date: "", weight: "" },
         ]);
+        const shouldWeigh = cat.weighingPlan?.shouldWeigh === true;
+        const rowCategory = shouldWeigh ? "weighing" : category;
 
-        grouped[category].push({
+        grouped[rowCategory].push({
           cat,
           displayName: buildDisplayName(cat),
           motherName: cat.mother?.name || cat.motherName || "-",
           birthDateLabel: formatDate(cat.birthDate) || "-",
           history,
           stats: computeHistoryStats(history),
+          shouldWeigh,
+          weighingFrequency: cat.weighingPlan?.weighingFrequency || "",
+          weighingPeriod: cat.weighingPlan?.weighingPeriod || "",
         });
       });
 
@@ -136,6 +151,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         categories: CATEGORY_META,
         grouped,
         formatWeight,
+        weighingFrequencies: WEIGHING_FREQUENCIES,
+        weighingPeriods: WEIGHING_PERIODS,
       });
     }
   );
@@ -148,10 +165,16 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const catId = Number(req.params.catId);
       const dates = [].concat(req.body.historyDates || []);
       const weights = [].concat(req.body.historyWeights || []);
+      const shouldWeigh = req.body.shouldWeigh === "on";
+      const weighingFrequency = shouldWeigh ? req.body.weighingFrequency || null : null;
+      const weighingPeriod =
+        shouldWeigh && weighingFrequency === "ONCE_DAILY"
+          ? req.body.weighingPeriod || null
+          : null;
 
       const history = dates
         .map((date, index) => ({
-          date: formatDate(date),
+          date: formatDateInput(date),
           weight: normalizeWeight(weights[index] || ""),
         }))
         .filter((item) => item.date !== "" || item.weight !== "");
@@ -161,9 +184,15 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         create: {
           catId,
           historyJson: JSON.stringify(history),
+          shouldWeigh,
+          weighingFrequency,
+          weighingPeriod,
         },
         update: {
           historyJson: JSON.stringify(history),
+          shouldWeigh,
+          weighingFrequency,
+          weighingPeriod,
         },
       });
 

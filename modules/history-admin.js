@@ -2,6 +2,7 @@ const express = require("express");
 const {
   parseDate,
   formatDate,
+  formatDateInput,
   buildDisplayName,
   classifyOperationalCat,
 } = require("../utils/cattery-admin");
@@ -78,7 +79,7 @@ function parseBirthEntries(body) {
 
   return dates
     .map((date, index) => ({
-      date: formatDate(date),
+      date: formatDateInput(date),
       notes: (notes[index] || "").trim(),
     }))
     .filter((item) => item.date || item.notes);
@@ -90,7 +91,7 @@ function parseOtherEntries(body) {
 
   return dates
     .map((date, index) => ({
-      date: formatDate(date),
+      date: formatDateInput(date),
       notes: (notes[index] || "").trim(),
     }))
     .filter((item) => item.date || item.notes);
@@ -109,9 +110,9 @@ function parseTreatmentEntries(body) {
   return types
     .map((type, index) => ({
       type: type || "",
-      startDate: formatDate(startDates[index]),
-      endDate: formatDate(endDates[index]),
-      dischargeDate: formatDate(dischargeDates[index]),
+      startDate: formatDateInput(startDates[index]),
+      endDate: formatDateInput(endDates[index]),
+      dischargeDate: formatDateInput(dischargeDates[index]),
       dosageSchedule: dosageSchedules[index] || "",
       medication: (medications[index] || "").trim(),
       dosage: (dosages[index] || "").trim(),
@@ -350,6 +351,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         treatmentTypes: TREATMENT_TYPES,
         dosageOptions: DOSAGE_OPTIONS,
         formatDate,
+        formatDateInput,
         formatDateLabel,
         formatMicrochip,
       });

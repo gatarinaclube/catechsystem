@@ -2,6 +2,7 @@ const express = require("express");
 const {
   parseDate,
   formatDate,
+  formatDateInput,
   addDays,
   addMonths,
   addYears,
@@ -31,7 +32,7 @@ function sortHistoryDates(history) {
   return [...history]
     .map((value) => ({
       ...value,
-      date: formatDate(value.date),
+      date: formatDateInput(value.date),
     }))
     .sort((a, b) => {
       const aDate = parseDate(a.date);
@@ -167,14 +168,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       const antirabicHistory = []
         .concat(req.body.antirabicDates || [])
-        .map((date) => ({ date: formatDate(date) }))
+        .map((date) => ({ date: formatDateInput(date) }))
         .filter((item) => item.date !== "");
 
       const felineDates = [].concat(req.body.felineDates || []);
       const felineTypes = [].concat(req.body.felineTypes || []);
       const felineHistory = felineDates
         .map((date, index) => ({
-          date: formatDate(date),
+          date: formatDateInput(date),
           type: felineTypes[index] || "",
         }))
         .filter((item) => item.date !== "" || item.type !== "");

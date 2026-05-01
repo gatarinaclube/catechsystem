@@ -98,7 +98,7 @@
               <% const birthItems = birthHistory.length ? birthHistory : [{ date: '', notes: '' }]; %>
               <% birthItems.forEach(function(item, idx) { %>
                 <div class="history-form-row">
-                  <input type="date" name="birthDates" value="<%= item.date || '' %>" />
+                  <input type="date" name="birthDates" value="<%= formatDateInput(item.date) %>" />
                   <div style="display:flex; gap:8px;">
                     <textarea name="birthNotes" rows="3" style="flex:1;" placeholder="Descreva o histórico individual de nascimento"><%= item.notes || '' %></textarea>
                     <% if (idx === birthItems.length - 1) { %>
@@ -153,11 +153,11 @@
                         <option value="<%= option %>" <%= item.type === option ? 'selected' : '' %>><%= option %></option>
                       <% }) %>
                     </select>
-                    <input type="date" name="treatmentStartDate" value="<%= item.startDate || '' %>" />
-                    <input type="date" name="treatmentEndDate" value="<%= item.endDate || '' %>" />
+                    <input type="date" name="treatmentStartDate" value="<%= formatDateInput(item.startDate) %>" />
+                    <input type="date" name="treatmentEndDate" value="<%= formatDateInput(item.endDate) %>" />
                   </div>
                   <div class="history-form-row treatment">
-                    <input type="date" name="treatmentDischargeDate" value="<%= item.dischargeDate || '' %>" placeholder="Data de alta" />
+                    <input type="date" name="treatmentDischargeDate" value="<%= formatDateInput(item.dischargeDate) %>" placeholder="Data de alta" />
                     <select name="treatmentDosageSchedule">
                       <option value="">Posologia</option>
                       <% dosageOptions.forEach(function(option) { %>
@@ -241,7 +241,7 @@
               <% const otherItems = otherHistory.length ? otherHistory : [{ date: '', notes: '' }]; %>
               <% otherItems.forEach(function(item, idx) { %>
                 <div class="history-form-row">
-                  <input type="date" name="otherDates" value="<%= item.date || '' %>" />
+                  <input type="date" name="otherDates" value="<%= formatDateInput(item.date) %>" />
                   <div style="display:flex; gap:8px;">
                     <textarea name="otherNotes" rows="3" style="flex:1;" placeholder="Descreva o histórico"><%= item.notes || '' %></textarea>
                     <% if (idx === otherItems.length - 1) { %>
