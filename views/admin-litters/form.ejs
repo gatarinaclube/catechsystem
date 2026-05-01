@@ -7,29 +7,30 @@
     <link rel="stylesheet" href="/css/layout.css" />
     <link rel="stylesheet" href="/css/cattery-admin.css" />
     <style>
-      .kitten-grid {
+      .litter-kitten-grid {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
         column-gap: 16px;
         row-gap: 12px;
         align-items: start;
+        width: 100%;
       }
-      .kitten-grid input,
-      .kitten-grid select {
+      .litter-kitten-grid input,
+      .litter-kitten-grid select {
         width: 100%;
         min-width: 0;
       }
-      .kitten-field {
+      .litter-kitten-field {
         min-width: 0;
       }
-      .kitten-field .field-label {
+      .litter-kitten-field .field-label {
         margin-bottom: 4px;
       }
-      .kitten-history {
+      .litter-kitten-history {
         grid-column: 1 / -1;
         justify-self: end;
       }
-      .kitten-row-2 {
+      .litter-kitten-row-2 {
         grid-column: 1 / -1;
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -47,21 +48,21 @@
         background: #e5e7eb;
       }
       @media (max-width: 1200px) {
-        .kitten-grid {
+        .litter-kitten-grid {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
-        .kitten-row-2 {
+        .litter-kitten-row-2 {
           grid-column: 1 / -1;
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
-        .kitten-history {
+        .litter-kitten-history {
           grid-column: 1 / -1;
           justify-self: stretch;
         }
       }
       @media (max-width: 700px) {
-        .kitten-grid,
-        .kitten-row-2 {
+        .litter-kitten-grid,
+        .litter-kitten-row-2 {
           grid-template-columns: 1fr;
         }
       }
@@ -263,16 +264,16 @@
           row.innerHTML = `
             <input type="hidden" name="kitten_id_${i}" value="${kitten.id || ""}">
             <input type="hidden" name="kitten_cat_id_${i}" value="${kitten.kittenCatId || ""}">
-            <div class="kitten-grid">
-              <div class="kitten-field">
+            <div class="litter-kitten-grid">
+              <div class="litter-kitten-field">
                 <label class="field-label">N de Filhotes</label>
                 <input name="kitten_number_${i}" maxlength="4" value="${kitten.kittenNumber || ""}" />
               </div>
-              <div class="kitten-field">
+              <div class="litter-kitten-field">
                 <label class="field-label">Nome do Filhote</label>
                 <input name="kitten_name_${i}" maxlength="21" value="${kitten.name || ""}" />
               </div>
-              <div class="kitten-field">
+              <div class="litter-kitten-field">
                 <label class="field-label">Sexo</label>
                 <select name="kitten_sex_${i}">
                   <option value="">Selecione...</option>
@@ -280,35 +281,35 @@
                   <option value="F" ${kitten.sex === "F" ? "selected" : ""}>Fêmea</option>
                 </select>
               </div>
-              <div class="kitten-field">
+              <div class="litter-kitten-field">
                 <label class="field-label">Microchip</label>
                 <input name="kitten_microchip_${i}" class="kitten-microchip" value="${kitten.microchip || ""}" />
               </div>
-              <div class="kitten-history">
+              <div class="litter-kitten-history">
                 ${kitten.kittenCatId ? `<a href="/admin/history/${kitten.kittenCatId}" class="btn">Histórico</a>` : `<span style="font-size:12px; color:var(--text-muted);">Histórico será criado ao salvar</span>`}
               </div>
-              <div class="kitten-row-2">
-                <div class="kitten-field">
+              <div class="litter-kitten-row-2">
+                <div class="litter-kitten-field">
                   <label class="field-label">Raça</label>
                   <select name="kitten_breed_${i}" data-kit-breed="${i}">
                     <option value="">Raça...</option>
                     ${breeds.map((breed) => `<option value="${breed}" ${kitten.breed === breed ? "selected" : ""}>${breed}</option>`).join("")}
                   </select>
                 </div>
-                <div class="kitten-field">
+                <div class="litter-kitten-field">
                   <label class="field-label">Cor e EMS</label>
                   <select name="kitten_ems_${i}" data-kit-ems="${i}">
                     <option value="${kitten.emsEyes || ""}">${kitten.emsEyes || "EMS..."}</option>
                   </select>
                 </div>
-                <div class="kitten-field">
+                <div class="litter-kitten-field">
                   <label class="field-label">Reprodução?</label>
                   <select name="kitten_breeding_${i}">
                     <option value="FOR_BREEDING" ${kitten.breeding === "FOR_BREEDING" ? "selected" : ""}>For Breeding</option>
                     <option value="NOT_FOR_BREEDING" ${kitten.breeding === "NOT_FOR_BREEDING" ? "selected" : ""}>Not For Breeding</option>
                   </select>
                 </div>
-                <div class="kitten-field">
+                <div class="litter-kitten-field">
                   <label style="display:flex; align-items:center; gap:8px; min-height:38px;">
                     <input type="checkbox" name="kitten_deceased_${i}" ${kitten.deceased ? "checked" : ""}>
                     Óbito
