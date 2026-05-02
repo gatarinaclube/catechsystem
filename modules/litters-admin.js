@@ -54,7 +54,28 @@ function buildLitterLabel(litter) {
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
+  async function getCatteryNameForUser(userId, litter = null) {
+    const settingsRows = await prisma.$queryRaw`
+      SELECT "catteryName"
+      FROM "UserSettings"
+      WHERE "userId" = ${userId}
+      LIMIT 1
+    `;
+
+    return (settingsRows[0]?.catteryName || litter?.catteryName || "").trim();
+  }
+
+  function getKittenNameMaxLength(catteryName) {
+    return Math.max(1, 30 - (catteryName ? catteryName.length + 1 : 0));
+  }
+
   async function buildFormContext(req, litter = null, error = null) {
+    const catteryName = await getCatteryNameForUser(
+      litter?.ownerId || req.session.userId,
+      litter
+    );
+    const kittenNameMaxLength = getKittenNameMaxLength(catteryName);
+
     const females = await prisma.cat.findMany({
       where: {
         gender: "F",
@@ -85,6 +106,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       breeds: BREEDS,
       litter,
       kittens,
+      catteryName,
+      kittenNameMaxLength,
       error,
     };
   }
@@ -134,7 +157,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     }
   }
 
-  function parseKittenRows(body, existingKittens = []) {
+  function parseKittenRows(body, existingKittens = [], kittenNameMaxLength = 30) {
     const femaleCount = Number(body.femaleCount || 0);
     const maleCount = Number(body.maleCount || 0);
     const litterCount = femaleCount + maleCount;
@@ -147,7 +170,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         kittenCatId: body[`kitten_cat_id_${i}`] ? Number(body[`kitten_cat_id_${i}`]) : existing?.kittenCatId || null,
         index: i + 1,
         kittenNumber: body[`kitten_number_${i}`] || null,
-        name: body[`kitten_name_${i}`] || null,
+        name: body[`kitten_name_${i}`]
+          ? body[`kitten_name_${i}`].trim().slice(0, kittenNameMaxLength)
+          : null,
         sex: body[`kitten_sex_${i}`] || null,
         breed: body[`kitten_breed_${i}`] || null,
         emsEyes: body[`kitten_ems_${i}`] || null,
@@ -343,7 +368,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requirePermission("admin.litters"),
     async (req, res) => {
       try {
-        const { femaleCount, maleCount, litterCount, kittens } = parseKittenRows(req.body);
+        const catteryName = await getCatteryNameForUser(req.session.userId);
+        const kittenNameMaxLength = getKittenNameMaxLength(catteryName);
+        const { femaleCount, maleCount, litterCount, kittens } = parseKittenRows(
+          req.body,
+          [],
+          kittenNameMaxLength
+        );
         await ensureUniqueMicrochips(kittens);
 
         const payload = {
@@ -427,9 +458,15 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       }
 
       try {
+        const catteryName = await getCatteryNameForUser(
+          existingLitter.ownerId || req.session.userId,
+          existingLitter
+        );
+        const kittenNameMaxLength = getKittenNameMaxLength(catteryName);
         const { femaleCount, maleCount, litterCount, kittens } = parseKittenRows(
           req.body,
-          existingLitter.kittens
+          existingLitter.kittens,
+          kittenNameMaxLength
         );
         await ensureUniqueMicrochips(kittens, existingLitter.id);
 
