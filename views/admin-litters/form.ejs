@@ -10,11 +10,11 @@
       .litter-kitten-grid {
         display: grid;
         grid-template-columns: 90px minmax(150px, 22ch) 110px 190px 160px;
-        column-gap: 16px;
+        column-gap: clamp(20px, 3vw, 56px);
         row-gap: 12px;
         align-items: start;
         width: 100%;
-        justify-content: start;
+        justify-content: space-between;
       }
       .litter-kitten-grid input,
       .litter-kitten-grid select {
@@ -60,12 +60,12 @@
         grid-column: 1 / -1;
         display: grid;
         grid-template-columns: 130px minmax(220px, 320px) 150px 140px;
-        column-gap: 16px;
+        column-gap: clamp(20px, 3vw, 56px);
         row-gap: 12px;
         align-items: start;
-        justify-content: start;
+        justify-content: space-between;
       }
-      .kitten-row {
+      .admin-litter-kitten-row {
         display: block;
         width: 100%;
         box-sizing: border-box;
@@ -73,8 +73,10 @@
         border: 1px solid var(--border-soft);
         border-radius: 12px;
         margin-bottom: 14px;
+        background: #ffffff;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
       }
-      .kitten-row.is-deceased {
+      .admin-litter-kitten-row.is-deceased {
         background: #e5e7eb;
       }
       @media (max-width: 1200px) {
@@ -290,7 +292,7 @@
         for (let i = 0; i < total; i += 1) {
           const kitten = kittens[i] || {};
           const row = document.createElement("div");
-          row.className = "kitten-row" + (kitten.deceased ? " is-deceased" : "");
+          row.className = "admin-litter-kitten-row" + (kitten.deceased ? " is-deceased" : "");
           row.innerHTML = `
             <input type="hidden" name="kitten_id_${i}" value="${kitten.id || ""}">
             <input type="hidden" name="kitten_cat_id_${i}" value="${kitten.kittenCatId || ""}">
@@ -406,7 +408,7 @@
 
         document.querySelectorAll('input[type="checkbox"][name^="kitten_deceased_"]').forEach((checkbox) => {
           checkbox.addEventListener("change", () => {
-            checkbox.closest(".kitten-row").classList.toggle("is-deceased", checkbox.checked);
+            checkbox.closest(".admin-litter-kitten-row").classList.toggle("is-deceased", checkbox.checked);
           });
         });
       }
