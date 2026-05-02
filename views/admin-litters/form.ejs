@@ -7,6 +7,23 @@
     <link rel="stylesheet" href="/css/layout.css" />
     <link rel="stylesheet" href="/css/cattery-admin.css" />
     <style>
+      .litter-info-grid {
+        display: grid;
+        grid-template-columns: 110px minmax(220px, 1fr) minmax(220px, 1fr) 170px;
+        column-gap: clamp(20px, 3vw, 56px);
+        row-gap: 12px;
+        align-items: start;
+        justify-content: space-between;
+        margin-top: 12px;
+      }
+      .litter-info-grid input,
+      .litter-info-grid select {
+        width: 100%;
+        min-width: 0;
+      }
+      .litter-info-grid .field-label {
+        white-space: nowrap;
+      }
       .litter-kitten-grid {
         display: grid;
         grid-template-columns: 90px minmax(150px, 22ch) 110px 190px 160px;
@@ -47,15 +64,6 @@
         width: auto;
         min-width: 0;
       }
-      .litter-breeding-role {
-        margin-top: 6px;
-      }
-      .litter-breeding-role select {
-        width: 100%;
-      }
-      .litter-breeding-role:empty {
-        display: none;
-      }
       .litter-kitten-row-2 {
         grid-column: 1 / -1;
         display: grid;
@@ -80,6 +88,9 @@
         background: #e5e7eb;
       }
       @media (max-width: 1200px) {
+        .litter-info-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
         .litter-kitten-grid {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
@@ -92,6 +103,7 @@
         }
       }
       @media (max-width: 700px) {
+        .litter-info-grid,
         .litter-kitten-grid,
         .litter-kitten-row-2 {
           grid-template-columns: 1fr;
@@ -122,10 +134,10 @@
         <form method="post" action="<%= formAction %>">
           <div class="content-card" style="margin-bottom:18px;">
             <div class="content-title">Informações da Ninhada</div>
-            <div class="grid-3" style="margin-top:12px;">
+            <div class="litter-info-grid">
               <div class="field">
                 <label class="field-label" for="litterNumber">N da ninhada</label>
-                <input id="litterNumber" name="litterNumber" type="text" maxlength="3" value="<%= litter?.litterNumber || '' %>" placeholder="000" />
+                <input id="litterNumber" name="litterNumber" type="text" maxlength="5" value="<%= litter?.litterNumber || '' %>" placeholder="00000" />
               </div>
               <div class="field">
                 <label class="field-label" for="femaleCatId">Nome da Mãe</label>
@@ -145,8 +157,6 @@
                   <% }) %>
                 </select>
               </div>
-            </div>
-            <div class="grid-3" style="margin-top:12px;">
               <div class="field">
                 <label class="field-label" for="litterBirthDate">Data de Nascimento</label>
                 <input id="litterBirthDate" name="litterBirthDate" type="date" value="<%= litter?.litterBirthDate ? new Date(litter.litterBirthDate).toISOString().slice(0,10) : '' %>" />
@@ -344,11 +354,6 @@
                     <input type="checkbox" name="kitten_deceased_${i}" ${kitten.deceased ? "checked" : ""}>
                     Óbito
                   </label>
-                  <div class="litter-breeding-role" data-breeding-role-box="${i}" style="display:none;">
-                    <select name="kitten_breeding_role_${i}" data-breeding-role="${i}">
-                      <option value="">Selecione...</option>
-                    </select>
-                  </div>
                 </div>
                 <div class="litter-kitten-history">
                   ${kitten.kittenCatId ? `<a href="/admin/history/${kitten.kittenCatId}" class="btn">Histórico</a>` : `<span style="font-size:12px; color:var(--text-muted);">Histórico será criado ao salvar</span>`}
@@ -370,40 +375,6 @@
         document.querySelectorAll(".kitten-microchip").forEach((input) => {
           input.addEventListener("input", () => formatMicrochipInput(input));
           formatMicrochipInput(input);
-        });
-
-        document.querySelectorAll('select[name^="kitten_breeding_"]:not([name^="kitten_breeding_role_"])').forEach((select) => {
-          const index = select.name.replace("kitten_breeding_", "");
-          const sexSelect = document.querySelector(`[name="kitten_sex_${index}"]`);
-          const roleBox = document.querySelector(`[data-breeding-role-box="${index}"]`);
-          const roleSelect = document.querySelector(`[data-breeding-role="${index}"]`);
-          const kitten = kittens[index] || {};
-
-          function updateBreedingRole() {
-            const sex = sexSelect.value;
-            const isForBreeding = select.value === "FOR_BREEDING";
-            roleBox.style.display = isForBreeding ? "block" : "none";
-            roleSelect.innerHTML = '<option value="">Selecione...</option>';
-
-            if (!isForBreeding) {
-              roleSelect.value = "";
-              return;
-            }
-
-            if (sex === "F") {
-              roleSelect.innerHTML += '<option value="NEW_DAM">Nova Matriz</option>';
-            } else if (sex === "M") {
-              roleSelect.innerHTML += '<option value="NEW_SIRE">Novo Padreador</option>';
-            }
-
-            if (kitten.breedingRole) {
-              roleSelect.value = kitten.breedingRole;
-            }
-          }
-
-          select.addEventListener("change", updateBreedingRole);
-          sexSelect.addEventListener("change", updateBreedingRole);
-          updateBreedingRole();
         });
 
         document.querySelectorAll('input[type="checkbox"][name^="kitten_deceased_"]').forEach((checkbox) => {

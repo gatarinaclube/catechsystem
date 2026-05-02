@@ -178,7 +178,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         emsEyes: body[`kitten_ems_${i}`] || null,
         microchip: normalizeMicrochip(body[`kitten_microchip_${i}`]),
         breeding: body[`kitten_breeding_${i}`] || null,
-        breedingRole: body[`kitten_breeding_role_${i}`] || null,
+        breedingRole: null,
         deceased: body[`kitten_deceased_${i}`] === "on",
       });
     }
@@ -379,7 +379,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
         const payload = {
           ownerId: req.session.userId,
-          litterNumber: req.body.litterNumber?.padStart(3, "0") || null,
+          litterNumber: req.body.litterNumber?.trim().slice(0, 5).padStart(3, "0") || null,
           femaleCatId: req.body.femaleCatId ? Number(req.body.femaleCatId) : null,
           maleCatId: req.body.maleCatId ? Number(req.body.maleCatId) : null,
           litterBirthDate: req.body.litterBirthDate ? new Date(req.body.litterBirthDate) : null,
@@ -472,7 +472,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
         const payload = {
           ownerId: existingLitter.ownerId || req.session.userId,
-          litterNumber: req.body.litterNumber?.padStart(3, "0") || null,
+          litterNumber: req.body.litterNumber?.trim().slice(0, 5).padStart(3, "0") || null,
           femaleCatId: req.body.femaleCatId ? Number(req.body.femaleCatId) : null,
           maleCatId: req.body.maleCatId ? Number(req.body.maleCatId) : null,
           litterBirthDate: req.body.litterBirthDate ? new Date(req.body.litterBirthDate) : null,

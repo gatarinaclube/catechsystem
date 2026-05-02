@@ -45,21 +45,43 @@
           </form>
         </div>
 
-        <div class="content-card module-list-card">
-          <% if (!kittens.length) { %>
+        <% const kittenGroups = [
+          { title: "Não Entregues", items: groupedKittens.notDelivered || [], color: "#16a34a" },
+          { title: "Entregues", items: groupedKittens.delivered || [], color: "#6b7280" },
+        ]; %>
+
+        <% if (!kittenGroups[0].items.length && !kittenGroups[1].items.length) { %>
+          <div class="content-card module-list-card">
             <div class="empty">Nenhum filhote cadastrado.</div>
-          <% } else { %>
-            <ul class="list">
-              <% kittens.forEach(function(kitten) { %>
-                <li class="item" style="border-left: 4px solid <%= kitten.deceased ? '#6b7280' : kitten.gender === 'F' ? '#db2777' : '#2563eb' %>;">
-                  <div>
-                    <a class="item-link" href="/admin/kittens/<%= kitten.id %>"><%= kitten.label %></a>
-                  </div>
-                </li>
-              <% }) %>
-            </ul>
-          <% } %>
-        </div>
+          </div>
+        <% } else { %>
+          <% kittenGroups.forEach(function(group) { %>
+            <details class="content-card module-panel module-accordion" open style="border-left: 5px solid <%= group.color %>;">
+              <summary>
+                <div class="module-accordion-summary">
+                  <span class="module-accordion-icon">⌄</span>
+                  <span class="module-accordion-title"><%= group.title %></span>
+                </div>
+                <span class="module-accordion-count"><%= group.items.length %></span>
+              </summary>
+              <div class="module-accordion-body module-list-card">
+                <% if (!group.items.length) { %>
+                  <div class="empty">Nenhum filhote nesta divisão.</div>
+                <% } else { %>
+                  <ul class="list">
+                    <% group.items.forEach(function(kitten) { %>
+                      <li class="item" style="border-left: 4px solid <%= kitten.deceased ? '#6b7280' : kitten.gender === 'F' ? '#db2777' : '#2563eb' %>;">
+                        <div>
+                          <a class="item-link" href="/admin/kittens/<%= kitten.id %>"><%= kitten.label %></a>
+                        </div>
+                      </li>
+                    <% }) %>
+                  </ul>
+                <% } %>
+              </div>
+            </details>
+          <% }) %>
+        <% } %>
       </main>
     </div>
     <script>

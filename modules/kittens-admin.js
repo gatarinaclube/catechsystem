@@ -28,10 +28,14 @@ function formatMicrochip(value) {
 
 function mergeLinkedKittenFields(cat) {
   if (!cat) return cat;
+  const linkedBreeding = cat.litterKitten?.breeding || null;
 
   return {
     ...cat,
     kittenNumber: cat.kittenNumber || cat.litterKitten?.kittenNumber || null,
+    neutered: linkedBreeding
+      ? linkedBreeding === "NOT_FOR_BREEDING"
+      : cat.neutered,
   };
 }
 
@@ -101,13 +105,25 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     return digits;
   }
 
-  function makeListLabel(cat) {
+function makeListLabel(cat) {
     const linkedKittenNumber =
       cat.kittenNumber ||
       cat.litterKitten?.kittenNumber ||
       (cat.litterKitten?.index ? String(cat.litterKitten.index).padStart(4, "0") : "----");
 
-    return `${linkedKittenNumber} - ${cat.name || "Sem nome"} - ${formatDateForInput(cat.birthDate) || "-"} - ${formatMicrochip(cat.microchip)} - Entregue: ${cat.delivered ? "SIM" : "NÃO"}`;
+    return `${linkedKittenNumber} - ${cat.name || "Sem nome"} - ${formatDateForInput(cat.birthDate) || "-"} - ${formatMicrochip(cat.microchip)} - Vendido: ${cat.sold ? "SIM" : "NÃO"} - Entregue: ${cat.delivered ? "SIM" : "NÃO"}`;
+  }
+
+  function getKittenOrderValue(cat) {
+    const value = cat.kittenNumber || cat.litterKitten?.kittenNumber || cat.litterKitten?.index || "";
+    const numeric = Number(String(value).replace(/\D/g, ""));
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : Number.MAX_SAFE_INTEGER;
+  }
+
+  function sortKittensByNumber(a, b) {
+    const numberDiff = getKittenOrderValue(a) - getKittenOrderValue(b);
+    if (numberDiff !== 0) return numberDiff;
+    return (a.name || "").localeCompare(b.name || "", "pt-BR");
   }
 
   async function syncLitterKitten(tx, catId, data) {
@@ -127,6 +143,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         emsEyes: data.emsCode,
         microchip: data.microchip,
         breeding: data.neutered ? "NOT_FOR_BREEDING" : "FOR_BREEDING",
+        breedingRole: null,
         deceased: data.deceased,
       },
     });
@@ -157,6 +174,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       ownershipType: currentOwnerMode === "OTHER" ? "CO-OWNERSHIP" : "OWNER",
       currentOwnerId,
       delivered: req.body.delivered === "YES",
+      sold: req.body.sold === "YES",
       deceased: req.body.deceased === "YES",
       ownerId: existingKitten?.ownerId || req.session.userId,
       status: existingKitten?.status || "APROVADO",
@@ -188,15 +206,22 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         orderBy: [{ birthDate: "asc" }, { name: "asc" }],
       });
 
+      const kittenRows = kittens
+        .map((kitten) => ({
+          ...mergeLinkedKittenFields(kitten),
+          label: makeListLabel(kitten),
+        }))
+        .sort(sortKittensByNumber);
+
       res.render("admin-kittens/list", {
         user: req.user,
         currentPath: req.path,
         users,
         selectedOwnerId,
-        kittens: kittens.map((kitten) => ({
-          ...mergeLinkedKittenFields(kitten),
-          label: makeListLabel(kitten),
-        })),
+        groupedKittens: {
+          notDelivered: kittenRows.filter((kitten) => !kitten.delivered),
+          delivered: kittenRows.filter((kitten) => kitten.delivered),
+        },
       });
     }
   );

@@ -94,12 +94,23 @@ function classifyOperationalCat(cat, options = {}) {
     excludeCoOwnedAdults = true,
   } = options;
 
-  const months = ageInMonths(cat.birthDate);
+  const hasBirthDate = Boolean(parseDate(cat.birthDate));
+  const months = hasBirthDate ? ageInMonths(cat.birthDate) : null;
+  const isUnderKittenAge = hasBirthDate && months < 8;
+  const isKittenRecord = Boolean(cat.kittenNumber || cat.litterKitten);
   const ownerSelf = isOwnerSelf(cat);
 
-  if (cat.kittenNumber) {
+  if (cat.delivered === true && !includeDeliveredKittensInHistory) {
+    return null;
+  }
+
+  if (isKittenRecord) {
     if (!cat.delivered || includeDeliveredKittensInHistory) {
-      if (includeOwnedBreedingKittensAsAdults && ownerSelf && months > 4) {
+      if (!hasBirthDate || isUnderKittenAge) {
+        return "kittens";
+      }
+
+      if (includeOwnedBreedingKittensAsAdults && ownerSelf) {
         if (cat.deceased === true || cat.neutered === true) {
           return "founders";
         }
@@ -113,6 +124,7 @@ function classifyOperationalCat(cat, options = {}) {
   }
 
   if (!ownerSelf && excludeCoOwnedAdults) return null;
+  if (isUnderKittenAge) return "kittens";
   if (cat.deceased === true || cat.neutered === true) return "founders";
   if (cat.gender === "M") return "sires";
   if (cat.gender === "F") return "dams";

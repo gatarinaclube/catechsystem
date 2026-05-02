@@ -125,7 +125,7 @@
 
           <div class="content-card" style="margin-bottom:18px;">
             <div class="content-title">Informações de Propriedade</div>
-            <div class="grid-3" style="margin-top:12px;">
+            <div class="grid-4" style="margin-top:12px; display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:16px;">
               <div class="field">
                 <label class="field-label" for="currentOwnerMode">Proprietário</label>
                 <select id="currentOwnerMode" name="currentOwnerMode">
@@ -142,6 +142,13 @@
                   <% }) %>
                 </select>
                 <a href="#" id="ownerInfoLink" style="display:inline-block; margin-top:8px;">informações</a>
+              </div>
+              <div class="field">
+                <label class="field-label" for="sold">Vendido</label>
+                <select id="sold" name="sold">
+                  <option value="NO" <%= kitten?.sold ? "" : "selected" %>>NÃO</option>
+                  <option value="YES" <%= kitten?.sold ? "selected" : "" %>>SIM</option>
+                </select>
               </div>
               <div class="field">
                 <label class="field-label" for="delivered">Entregue</label>

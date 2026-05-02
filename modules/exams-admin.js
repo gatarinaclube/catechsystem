@@ -11,6 +11,7 @@ const {
 const CATEGORY_META = [
   { key: "sires", label: "Padreadores", color: "#2563eb" },
   { key: "dams", label: "Matrizes", color: "#db2777" },
+  { key: "kittens", label: "Filhotes", color: "#16a34a" },
   { key: "founders", label: "Fundadores", color: "#f59e0b" },
 ];
 
@@ -89,7 +90,6 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         const category = classifyOperationalCat(cat, {
           includeDeliveredKittensInHistory: false,
         });
-        if (category === "kittens") return;
         if (!category) return;
 
         const ecoHistory = safeJsonParse(cat.examPlan?.ecoHistoryJson, [
