@@ -9,7 +9,7 @@
     <style>
       .vaccination-grid {
         display: grid;
-        grid-template-columns: 260px 140px 220px 260px 220px;
+        grid-template-columns: 260px 220px 300px 220px;
         gap: 10px;
         align-items: start;
       }
@@ -49,6 +49,28 @@
         gap: 8px;
         align-items: center;
       }
+      .history-date-display {
+        flex: 1 1 auto;
+        min-width: 0;
+        padding: 8px 10px;
+        border: 1px solid var(--border-soft);
+        border-radius: 8px;
+        background: #f8fafc;
+        font-size: 13px;
+      }
+      .history-type-display {
+        flex: 0 0 120px;
+        padding: 8px 10px;
+        border: 1px solid var(--border-soft);
+        border-radius: 8px;
+        background: #f8fafc;
+        font-size: 13px;
+      }
+      .delete-history-date {
+        min-width: 38px;
+        padding-left: 0;
+        padding-right: 0;
+      }
       @media (max-width: 1300px) {
         .vaccination-grid {
           grid-template-columns: 1fr;
@@ -86,7 +108,6 @@
             <div class="module-accordion-body">
               <div class="vaccination-grid vaccination-header">
                 <div>Nome do Gato</div>
-                <div>Data de Nascimento</div>
                 <div>Histórico Antirrábica</div>
                 <div>Histórico Feline</div>
                 <div>Próxima vacinação</div>
@@ -102,15 +123,20 @@
                       <div class="item-title" style="color:<%= row.vaccinationState === 'overdue' ? '#dc2626' : row.vaccinationState === 'upcoming' ? '#f59e0b' : '#16a34a' %>;">
                         <%= row.displayName %>
                       </div>
+                      <div class="cat-subline">Nascimento: <%= row.birthDateLabel %></div>
                       <div class="cat-subline">Mãe: <%= row.motherName %></div>
                     </div>
 
-                    <div><strong><%= row.birthDateLabel %></strong></div>
-
                     <div class="mini-stack" data-antirabic-box>
                       <% row.antirabicHistory.forEach(function(item, idx) { %>
-                        <div class="inline-plus">
-                          <input type="date" name="antirabicDates" value="<%= item.date %>" />
+                        <div class="inline-plus" data-antirabic-row>
+                          <% if (item.date) { %>
+                            <input type="hidden" name="antirabicDates" value="<%= item.date %>" />
+                            <span class="history-date-display"><%= formatDate(item.date) %></span>
+                            <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
+                          <% } else { %>
+                            <input type="date" name="antirabicDates" value="" />
+                          <% } %>
                           <% if (idx === row.antirabicHistory.length - 1) { %>
                             <button type="button" class="btn add-antirabic">+</button>
                           <% } %>
@@ -120,14 +146,22 @@
 
                     <div class="mini-stack" data-feline-box>
                       <% row.felineHistory.forEach(function(item, idx) { %>
-                        <div class="inline-plus">
-                          <input type="date" name="felineDates" value="<%= item.date %>" />
-                          <select name="felineTypes" style="width:120px;">
-                            <option value="">Tipo</option>
-                            <% felineTypes.forEach(function(type) { %>
-                              <option value="<%= type %>" <%= item.type === type ? "selected" : "" %>><%= type %></option>
-                            <% }) %>
-                          </select>
+                        <div class="inline-plus" data-feline-row>
+                          <% if (item.date || item.type) { %>
+                            <input type="hidden" name="felineDates" value="<%= item.date || '' %>" />
+                            <input type="hidden" name="felineTypes" value="<%= item.type || '' %>" />
+                            <span class="history-date-display"><%= item.date ? formatDate(item.date) : "-" %></span>
+                            <span class="history-type-display"><%= item.type || "Tipo" %></span>
+                            <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
+                          <% } else { %>
+                            <input type="date" name="felineDates" value="" />
+                            <select name="felineTypes" style="width:120px;">
+                              <option value="">Tipo</option>
+                              <% felineTypes.forEach(function(type) { %>
+                                <option value="<%= type %>" <%= item.type === type ? "selected" : "" %>><%= type %></option>
+                              <% }) %>
+                            </select>
+                          <% } %>
                           <% if (idx === row.felineHistory.length - 1) { %>
                             <button type="button" class="btn add-feline">+</button>
                           <% } %>
@@ -152,26 +186,139 @@
 
     <script>
       (function () {
+        const felineTypes = <%- JSON.stringify(felineTypes) %>;
+
+        function formatDisplayDate(value) {
+          if (!value) return "";
+          const parts = value.split("-");
+          if (parts.length !== 3) return value;
+          return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        function felineTypeOptions() {
+          return [
+            '<option value="">Tipo</option>',
+            ...felineTypes.map((type) => `<option value="${type}">${type}</option>`),
+          ].join("");
+        }
+
         document.querySelectorAll(".add-antirabic").forEach((button) => {
           button.addEventListener("click", () => {
             const box = button.closest("[data-antirabic-box]");
-            const row = button.parentElement.cloneNode(true);
-            row.querySelector("input").value = "";
-            row.querySelector("button").remove();
+            const row = document.createElement("div");
+            row.className = "inline-plus";
+            row.dataset.antirabicRow = "";
+            row.innerHTML = '<input type="date" name="antirabicDates" value="" />';
+            button.remove();
+            row.appendChild(button);
             box.appendChild(row);
+            bindAntirabicRow(row);
           });
         });
 
         document.querySelectorAll(".add-feline").forEach((button) => {
           button.addEventListener("click", () => {
             const box = button.closest("[data-feline-box]");
-            const row = button.parentElement.cloneNode(true);
-            row.querySelector("input").value = "";
-            row.querySelector("select").value = "";
-            row.querySelector("button").remove();
+            const row = document.createElement("div");
+            row.className = "inline-plus";
+            row.dataset.felineRow = "";
+            row.innerHTML = `<input type="date" name="felineDates" value="" /><select name="felineTypes" style="width:120px;">${felineTypeOptions()}</select>`;
+            button.remove();
+            row.appendChild(button);
             box.appendChild(row);
+            bindFelineRow(row);
           });
         });
+
+        function moveAddButtonAfterDelete(row, selector, createEmptyRow) {
+          const box = row.parentElement;
+          const addButton = row.querySelector(selector);
+          row.remove();
+
+          if (!addButton || !box || box.querySelector(selector)) return;
+
+          const rows = box.querySelectorAll("[data-antirabic-row], [data-feline-row]");
+          if (rows.length) {
+            rows[rows.length - 1].appendChild(addButton);
+            return;
+          }
+
+          box.appendChild(createEmptyRow(addButton));
+        }
+
+        function makeAntirabicEmptyRow(addButton) {
+          const row = document.createElement("div");
+          row.className = "inline-plus";
+          row.dataset.antirabicRow = "";
+          row.innerHTML = '<input type="date" name="antirabicDates" value="" />';
+          row.appendChild(addButton);
+          bindAntirabicRow(row);
+          return row;
+        }
+
+        function makeFelineEmptyRow(addButton) {
+          const row = document.createElement("div");
+          row.className = "inline-plus";
+          row.dataset.felineRow = "";
+          row.innerHTML = `<input type="date" name="felineDates" value="" /><select name="felineTypes" style="width:120px;">${felineTypeOptions()}</select>`;
+          row.appendChild(addButton);
+          bindFelineRow(row);
+          return row;
+        }
+
+        function bindDelete(button, addSelector, createEmptyRow) {
+          button.addEventListener("click", () => {
+            moveAddButtonAfterDelete(button.closest(".inline-plus"), addSelector, createEmptyRow);
+          });
+        }
+
+        function bindAntirabicRow(row) {
+          const input = row.querySelector('input[type="date"]');
+          if (input) {
+            input.addEventListener("change", () => {
+              if (!input.value) return;
+              const addButton = row.querySelector(".add-antirabic");
+              row.innerHTML = `
+                <input type="hidden" name="antirabicDates" value="${input.value}" />
+                <span class="history-date-display">${formatDisplayDate(input.value)}</span>
+                <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
+              `;
+              if (addButton) row.appendChild(addButton);
+              bindDelete(row.querySelector(".delete-history-date"), ".add-antirabic", makeAntirabicEmptyRow);
+            });
+          }
+
+          const deleteButton = row.querySelector(".delete-history-date");
+          if (deleteButton) bindDelete(deleteButton, ".add-antirabic", makeAntirabicEmptyRow);
+        }
+
+        function bindFelineRow(row) {
+          const input = row.querySelector('input[type="date"]');
+          const select = row.querySelector("select");
+
+          function maybeFreeze() {
+            if (!input?.value && !select?.value) return;
+            const addButton = row.querySelector(".add-feline");
+            row.innerHTML = `
+              <input type="hidden" name="felineDates" value="${input?.value || ""}" />
+              <input type="hidden" name="felineTypes" value="${select?.value || ""}" />
+              <span class="history-date-display">${input?.value ? formatDisplayDate(input.value) : "-"}</span>
+              <span class="history-type-display">${select?.value || "Tipo"}</span>
+              <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
+            `;
+            if (addButton) row.appendChild(addButton);
+            bindDelete(row.querySelector(".delete-history-date"), ".add-feline", makeFelineEmptyRow);
+          }
+
+          if (input) input.addEventListener("change", maybeFreeze);
+          if (select) select.addEventListener("change", maybeFreeze);
+
+          const deleteButton = row.querySelector(".delete-history-date");
+          if (deleteButton) bindDelete(deleteButton, ".add-feline", makeFelineEmptyRow);
+        }
+
+        document.querySelectorAll("[data-antirabic-row]").forEach(bindAntirabicRow);
+        document.querySelectorAll("[data-feline-row]").forEach(bindFelineRow);
       })();
     </script>
   </body>

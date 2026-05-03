@@ -14,8 +14,8 @@
           minmax(0, 0.85fr)
           minmax(0, 1fr)
           minmax(0, 0.7fr)
-          minmax(0, 1.05fr)
-          minmax(0, 0.8fr);
+          minmax(150px, 0.75fr)
+          minmax(170px, 1fr);
         gap: 10px;
         align-items: start;
         min-width: 0;
@@ -94,6 +94,13 @@
         font-weight: 600;
       }
       .mating-date-field .field-label {
+        display: block;
+        margin-bottom: 4px;
+      }
+      .mating-male-field {
+        margin-top: 8px;
+      }
+      .mating-male-field .field-label {
         display: block;
         margin-bottom: 4px;
       }
@@ -220,7 +227,7 @@
             <div class="module-accordion-body">
               <div class="mating-table mating-header">
                 <div>Fêmea</div>
-                <div>Macho</div>
+                <div>Status</div>
                 <div>Últimas Ninhadas</div>
                 <div>Próxima Cruza</div>
                 <div>Data Cruza</div>
@@ -250,13 +257,21 @@
                           <%- renderPedigreeNode(row.pedigree, "Gata", 5) %>
                         </ul>
                       </dialog>
+                      <div class="mating-male-field">
+                        <label class="field-label">Macho</label>
+                        <select name="maleCatId">
+                          <option value="">Selecione...</option>
+                          <% row.maleOptions.forEach(function(male) { %>
+                            <option value="<%= male.id %>" <%= String(row.plan?.maleCatId || '') === String(male.id) ? "selected" : "" %>><%= male.name %></option>
+                          <% }) %>
+                        </select>
+                      </div>
                     </div>
 
                     <div>
-                      <select name="maleCatId">
-                        <option value="">Selecione...</option>
-                        <% row.maleOptions.forEach(function(male) { %>
-                          <option value="<%= male.id %>" <%= String(row.plan?.maleCatId || '') === String(male.id) ? "selected" : "" %>><%= male.name %></option>
+                      <select name="status">
+                        <% groups.forEach(function(statusItem) { %>
+                          <option value="<%= statusItem.key %>" <%= (row.plan?.status || "PARA_ACASALAR") === statusItem.key ? "selected" : "" %>><%= statusItem.label %></option>
                         <% }) %>
                       </select>
                     </div>
@@ -292,12 +307,6 @@
                         <label class="field-label">2º dia</label>
                         <input type="date" name="matingEndDate" value="<%= row.plan?.matingEndDate ? formatDateInput(row.plan.matingEndDate) : '' %>" />
                       </div>
-                      <select name="status">
-                        <% groups.forEach(function(statusItem) { %>
-                          <option value="<%= statusItem.key %>" <%= (row.plan?.status || "PARA_ACASALAR") === statusItem.key ? "selected" : "" %>><%= statusItem.label %></option>
-                        <% }) %>
-                      </select>
-                      <button type="submit" class="btn btn-primary">Salvar</button>
                     </div>
 
                     <div class="mini-stack">
@@ -327,6 +336,12 @@
 
         ownerSearch.addEventListener("input", syncOwnerId);
         ownerSearch.addEventListener("change", syncOwnerId);
+
+        function autosave(form) {
+          if (!form || form.dataset.submitting === "true") return;
+          form.dataset.submitting = "true";
+          form.requestSubmit();
+        }
 
         document.querySelectorAll("[data-open-origin]").forEach((button) => {
           button.addEventListener("click", () => {
@@ -365,6 +380,7 @@
           button.addEventListener("click", () => {
             const row = button.closest("[data-history-row]");
             const box = button.closest("[data-history-box]");
+            const form = button.closest("form");
             const addButton = row.querySelector(".add-history-date");
             row.remove();
 
@@ -382,6 +398,8 @@
                 bindHistoryRow(newRow);
               }
             }
+
+            autosave(form);
           });
         }
 
@@ -398,6 +416,7 @@
               `;
               if (addButton) row.appendChild(addButton);
               addDeleteHandler(row.querySelector(".delete-history-date"));
+              autosave(row.closest("form"));
             });
           }
 
@@ -406,6 +425,9 @@
         }
 
         document.querySelectorAll("[data-history-row]").forEach(bindHistoryRow);
+        document.querySelectorAll(".mating-row select, .mating-row input[type='date']").forEach((field) => {
+          field.addEventListener("change", () => autosave(field.closest("form")));
+        });
       })();
     </script>
   </body>
