@@ -26,6 +26,15 @@ function formatMicrochip(value) {
   return (digits.match(/.{1,3}/g) || []).join(".");
 }
 
+function safeJsonParse(value, fallback = {}) {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
 function mergeLinkedKittenFields(cat) {
   if (!cat) return cat;
   const linkedBreeding = cat.litterKitten?.breeding || null;
@@ -36,6 +45,7 @@ function mergeLinkedKittenFields(cat) {
     neutered: linkedBreeding
       ? linkedBreeding === "NOT_FOR_BREEDING"
       : cat.neutered,
+    newOwnerInfo: safeJsonParse(cat.newOwnerInfoJson),
   };
 }
 
@@ -152,9 +162,27 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   async function parsePayload(req, existingKitten = null) {
     const microchip = await validateMicrochip(req.body.microchip, existingKitten?.id || null);
     const currentOwnerMode = req.body.currentOwnerMode || "ME";
+    const registeredOwnerMode = req.body.registeredOwnerMode || "YES";
     const currentOwnerId = currentOwnerMode === "OTHER"
-      ? (req.body.currentOwnerId ? Number(req.body.currentOwnerId) : null)
+      ? (registeredOwnerMode === "YES" && req.body.currentOwnerId
+          ? Number(req.body.currentOwnerId)
+          : null)
       : req.session.userId;
+    const newOwnerInfo = currentOwnerMode === "OTHER" && registeredOwnerMode === "NO"
+      ? {
+          name: req.body.newOwnerName || "",
+          document: req.body.newOwnerDocument || "",
+          cep: req.body.newOwnerCep || "",
+          city: req.body.newOwnerCity || "",
+          street: req.body.newOwnerStreet || "",
+          number: req.body.newOwnerNumber || "",
+          neighborhood: req.body.newOwnerNeighborhood || "",
+          state: req.body.newOwnerState || "",
+          country: req.body.newOwnerCountry || "",
+          phone: req.body.newOwnerPhone || "",
+          email: req.body.newOwnerEmail || "",
+        }
+      : null;
 
     return {
       kittenNumber: req.body.kittenNumber || null,
@@ -173,6 +201,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       breederName: null,
       ownershipType: currentOwnerMode === "OTHER" ? "CO-OWNERSHIP" : "OWNER",
       currentOwnerId,
+      newOwnerInfoJson: newOwnerInfo ? JSON.stringify(newOwnerInfo) : null,
       delivered: req.body.delivered === "YES",
       sold: req.body.sold === "YES",
       breedingProspect: req.body.breedingProspect === "YES",
