@@ -95,6 +95,33 @@ function computeGestationDays(startDate, endDate) {
   return Math.max(0, Math.floor((now - reference) / 86400000));
 }
 
+function buildAncestorInclude(depth) {
+  if (depth <= 1) {
+    return {
+      father: true,
+      mother: true,
+    };
+  }
+
+  const childInclude = buildAncestorInclude(depth - 1);
+  return {
+    father: { include: childInclude },
+    mother: { include: childInclude },
+  };
+}
+
+function buildPedigreeNode(cat, depth = 4) {
+  if (!cat || depth <= 0) return null;
+
+  return {
+    name: buildDisplayName(cat) || cat.name || "-",
+    fatherName: cat.father?.name || cat.fatherName || "",
+    motherName: cat.mother?.name || cat.motherName || "",
+    father: buildPedigreeNode(cat.father, depth - 1),
+    mother: buildPedigreeNode(cat.mother, depth - 1),
+  };
+}
+
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
@@ -116,8 +143,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       },
       orderBy: { name: "asc" },
       include: {
-        mother: true,
-        father: true,
+        ...buildAncestorInclude(5),
         owner: true,
       },
     });
@@ -146,7 +172,6 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       .forEach((female) => {
       const plan = planMap.get(female.id);
       const litterHistory = safeJsonParse(plan?.litterHistoryJson);
-      const consanguinity = safeJsonParse(plan?.consanguinityJson);
       const nextCrossDate = computeNextCrossDate(female.birthDate, litterHistory);
       const dppDate = computeDpp(plan?.matingStartDate, plan?.matingEndDate);
       const gestationDays = computeGestationDays(plan?.matingStartDate, plan?.matingEndDate);
@@ -158,11 +183,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       grouped[status].push({
         female,
         plan,
-        allMaleOptions: males.filter((male) => classifyOperationalCat(male) === "sires"),
-        maleOptions: males
-          .filter((male) => classifyOperationalCat(male) === "sires")
-          .filter((male) => !consanguinity.includes(String(male.id))),
-        consanguinity,
+        maleOptions: males.filter((male) => classifyOperationalCat(male) === "sires"),
         litterHistory,
         nextCrossDate,
         dppDate,
@@ -170,6 +191,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         fatherName,
         motherName,
         femaleDisplayName: buildDisplayName(female),
+        pedigree: buildPedigreeNode(female, 5),
       });
     });
 
@@ -219,10 +241,6 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const femaleCatId = Number(req.params.femaleCatId);
       const selectedOwnerId = req.body.ownerId ? Number(req.body.ownerId) : null;
 
-      const consanguinity = []
-        .concat(req.body.consanguinityIds || [])
-        .map(String)
-        .filter(Boolean);
       const female = await prisma.cat.findUnique({
         where: { id: femaleCatId },
         select: { ownerId: true },
@@ -237,7 +255,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         femaleCatId,
         maleCatId: req.body.maleCatId ? Number(req.body.maleCatId) : null,
         status: req.body.status || "PARA_ACASALAR",
-        consanguinityJson: JSON.stringify(consanguinity),
+        consanguinityJson: JSON.stringify([]),
         litterHistoryJson: JSON.stringify(litterHistory),
         matingStartDate: parseDate(req.body.matingStartDate),
         matingEndDate: parseDate(req.body.matingEndDate),

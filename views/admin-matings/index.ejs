@@ -11,7 +11,6 @@
         display: grid;
         grid-template-columns:
           minmax(0, 1.25fr)
-          minmax(0, 1fr)
           minmax(0, 0.85fr)
           minmax(0, 1fr)
           minmax(0, 0.7fr)
@@ -41,6 +40,63 @@
       .parent-line span {
         display: block;
       }
+      .origin-button {
+        margin-top: 4px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: var(--accent);
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .origin-dialog {
+        width: min(860px, calc(100vw - 32px));
+        border: 1px solid var(--border-soft);
+        border-radius: 14px;
+        padding: 18px;
+        color: var(--text-main);
+      }
+      .origin-dialog::backdrop {
+        background: rgba(15, 23, 42, 0.38);
+      }
+      .origin-dialog-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+      .origin-dialog-title {
+        font-size: 16px;
+        font-weight: 700;
+      }
+      .pedigree-tree,
+      .pedigree-tree ul {
+        list-style: none;
+        margin: 0;
+        padding-left: 18px;
+      }
+      .pedigree-tree {
+        padding-left: 0;
+      }
+      .pedigree-tree li {
+        margin: 6px 0;
+        line-height: 1.35;
+      }
+      .pedigree-label {
+        color: var(--text-muted);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .pedigree-name {
+        font-weight: 600;
+      }
+      .mating-date-field .field-label {
+        display: block;
+        margin-bottom: 4px;
+      }
       .mini-stack {
         display: flex;
         flex-direction: column;
@@ -60,6 +116,20 @@
       .inline-plus select,
       .inline-plus input {
         flex: 1 1 auto;
+      }
+      .history-date-display {
+        flex: 1 1 auto;
+        min-width: 0;
+        padding: 8px 10px;
+        border: 1px solid var(--border-soft);
+        border-radius: 8px;
+        background: #f8fafc;
+        font-size: 13px;
+      }
+      .delete-history-date {
+        min-width: 38px;
+        padding-left: 0;
+        padding-right: 0;
       }
       @media (max-width: 900px) {
         .mating-table {
@@ -108,6 +178,35 @@
           </form>
         </div>
 
+        <% function escapeHtml(value) {
+          return String(value || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+        } %>
+        <% function renderPedigreeNode(node, label, level) {
+          if (!node) {
+            return "";
+          }
+
+          const fatherBranch = node.father
+            ? renderPedigreeNode(node.father, "Pai", level - 1)
+            : node.fatherName
+              ? `<li><span class="pedigree-label">Pai</span>: <span class="pedigree-name">${escapeHtml(node.fatherName)}</span></li>`
+              : "";
+          const motherBranch = node.mother
+            ? renderPedigreeNode(node.mother, "Mãe", level - 1)
+            : node.motherName
+              ? `<li><span class="pedigree-label">Mãe</span>: <span class="pedigree-name">${escapeHtml(node.motherName)}</span></li>`
+              : "";
+          const children = level > 1 && (fatherBranch || motherBranch)
+            ? `<ul>${fatherBranch}${motherBranch}</ul>`
+            : "";
+          return `<li><span class="pedigree-label">${escapeHtml(label)}</span>: <span class="pedigree-name">${escapeHtml(node.name)}</span>${children}</li>`;
+        } %>
+
         <% groups.forEach(function(group) { %>
           <% const items = grouped[group.key] || []; %>
           <details class="content-card module-panel module-accordion">
@@ -121,9 +220,8 @@
             <div class="module-accordion-body">
               <div class="mating-table mating-header">
                 <div>Fêmea</div>
-                <div>Consanguinidade</div>
                 <div>Macho</div>
-                <div>Histórico</div>
+                <div>Últimas Ninhadas</div>
                 <div>Próxima Cruza</div>
                 <div>Data Cruza</div>
                 <div>DPP</div>
@@ -142,23 +240,16 @@
                         <span>Pai: <%= row.fatherName %></span>
                         <span>Mãe: <%= row.motherName %></span>
                       </div>
-                    </div>
-
-                    <div class="mini-stack" data-consanguinity-box>
-                      <% const consList = row.consanguinity.length ? row.consanguinity : [""]; %>
-                      <% consList.forEach(function(value, idx) { %>
-                        <div class="inline-plus">
-                          <select name="consanguinityIds">
-                            <option value="">Sem consanguinidade</option>
-                            <% row.allMaleOptions.forEach(function(male) { %>
-                              <option value="<%= male.id %>" <%= String(value) === String(male.id) ? "selected" : "" %>><%= male.name %></option>
-                            <% }) %>
-                          </select>
-                          <% if (idx === consList.length - 1) { %>
-                            <button type="button" class="btn add-consanguinity">+</button>
-                          <% } %>
+                      <button type="button" class="origin-button" data-open-origin="origin-<%= row.female.id %>">Origem</button>
+                      <dialog class="origin-dialog" id="origin-<%= row.female.id %>">
+                        <div class="origin-dialog-header">
+                          <div class="origin-dialog-title">Origem - <%= row.femaleDisplayName %></div>
+                          <button type="button" class="btn" data-close-origin>Fechar</button>
                         </div>
-                      <% }) %>
+                        <ul class="pedigree-tree">
+                          <%- renderPedigreeNode(row.pedigree, "Gata", 5) %>
+                        </ul>
+                      </dialog>
                     </div>
 
                     <div>
@@ -173,8 +264,14 @@
                     <div class="mini-stack" data-history-box>
                       <% const historyList = row.litterHistory.length ? row.litterHistory : [""]; %>
                       <% historyList.forEach(function(value, idx) { %>
-                        <div class="inline-plus">
-                          <input type="date" name="litterHistoryDates" value="<%= formatDateInput(value) %>" />
+                        <div class="inline-plus" data-history-row>
+                          <% if (value) { %>
+                            <input type="hidden" name="litterHistoryDates" value="<%= formatDateInput(value) %>" />
+                            <span class="history-date-display"><%= formatDate(value) %></span>
+                            <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
+                          <% } else { %>
+                            <input type="date" name="litterHistoryDates" value="" />
+                          <% } %>
                           <% if (idx === historyList.length - 1) { %>
                             <button type="button" class="btn add-history-date">+</button>
                           <% } %>
@@ -187,8 +284,14 @@
                     </div>
 
                     <div class="mini-stack">
-                      <input type="date" name="matingStartDate" value="<%= row.plan?.matingStartDate ? formatDateInput(row.plan.matingStartDate) : '' %>" />
-                      <input type="date" name="matingEndDate" value="<%= row.plan?.matingEndDate ? formatDateInput(row.plan.matingEndDate) : '' %>" />
+                      <div class="mating-date-field">
+                        <label class="field-label">1º dia</label>
+                        <input type="date" name="matingStartDate" value="<%= row.plan?.matingStartDate ? formatDateInput(row.plan.matingStartDate) : '' %>" />
+                      </div>
+                      <div class="mating-date-field">
+                        <label class="field-label">2º dia</label>
+                        <input type="date" name="matingEndDate" value="<%= row.plan?.matingEndDate ? formatDateInput(row.plan.matingEndDate) : '' %>" />
+                      </div>
                       <select name="status">
                         <% groups.forEach(function(statusItem) { %>
                           <option value="<%= statusItem.key %>" <%= (row.plan?.status || "PARA_ACASALAR") === statusItem.key ? "selected" : "" %>><%= statusItem.label %></option>
@@ -225,25 +328,84 @@
         ownerSearch.addEventListener("input", syncOwnerId);
         ownerSearch.addEventListener("change", syncOwnerId);
 
-        document.querySelectorAll(".add-consanguinity").forEach((button) => {
+        document.querySelectorAll("[data-open-origin]").forEach((button) => {
           button.addEventListener("click", () => {
-            const box = button.closest("[data-consanguinity-box]");
-            const row = button.parentElement.cloneNode(true);
-            row.querySelector("select").value = "";
-            row.querySelector("button").remove();
-            box.appendChild(row);
+            document.getElementById(button.dataset.openOrigin)?.showModal();
+          });
+        });
+
+        document.querySelectorAll("[data-close-origin]").forEach((button) => {
+          button.addEventListener("click", () => {
+            button.closest("dialog")?.close();
           });
         });
 
         document.querySelectorAll(".add-history-date").forEach((button) => {
           button.addEventListener("click", () => {
             const box = button.closest("[data-history-box]");
-            const row = button.parentElement.cloneNode(true);
-            row.querySelector("input").value = "";
-            row.querySelector("button").remove();
+            const row = document.createElement("div");
+            row.className = "inline-plus";
+            row.dataset.historyRow = "";
+            row.innerHTML = '<input type="date" name="litterHistoryDates" value="" />';
+            button.remove();
+            row.appendChild(button);
             box.appendChild(row);
+            bindHistoryRow(row);
           });
         });
+
+        function formatDisplayDate(value) {
+          if (!value) return "";
+          const parts = value.split("-");
+          if (parts.length !== 3) return value;
+          return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        function addDeleteHandler(button) {
+          button.addEventListener("click", () => {
+            const row = button.closest("[data-history-row]");
+            const box = button.closest("[data-history-box]");
+            const addButton = row.querySelector(".add-history-date");
+            row.remove();
+
+            if (addButton && box && !box.querySelector(".add-history-date")) {
+              const rows = box.querySelectorAll("[data-history-row]");
+              if (rows.length) {
+                rows[rows.length - 1].appendChild(addButton);
+              } else {
+                const newRow = document.createElement("div");
+                newRow.className = "inline-plus";
+                newRow.dataset.historyRow = "";
+                newRow.innerHTML = '<input type="date" name="litterHistoryDates" value="" />';
+                newRow.appendChild(addButton);
+                box.appendChild(newRow);
+                bindHistoryRow(newRow);
+              }
+            }
+          });
+        }
+
+        function bindHistoryRow(row) {
+          const input = row.querySelector('input[type="date"]');
+          if (input) {
+            input.addEventListener("change", () => {
+              if (!input.value) return;
+              const addButton = row.querySelector(".add-history-date");
+              row.innerHTML = `
+                <input type="hidden" name="litterHistoryDates" value="${input.value}" />
+                <span class="history-date-display">${formatDisplayDate(input.value)}</span>
+                <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
+              `;
+              if (addButton) row.appendChild(addButton);
+              addDeleteHandler(row.querySelector(".delete-history-date"));
+            });
+          }
+
+          const deleteButton = row.querySelector(".delete-history-date");
+          if (deleteButton) addDeleteHandler(deleteButton);
+        }
+
+        document.querySelectorAll("[data-history-row]").forEach(bindHistoryRow);
       })();
     </script>
   </body>
