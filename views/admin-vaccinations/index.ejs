@@ -214,8 +214,12 @@
           try {
             const response = await fetch(form.action, {
               method: "POST",
-              body: new FormData(form),
+              body: new URLSearchParams(new FormData(form)),
               credentials: "same-origin",
+              headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-Autosave": "true",
+              },
             });
 
             if (!response.ok) {
