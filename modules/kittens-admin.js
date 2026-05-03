@@ -105,13 +105,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     return digits;
   }
 
-function makeListLabel(cat) {
+  function makeListLabel(cat) {
     const linkedKittenNumber =
       cat.kittenNumber ||
       cat.litterKitten?.kittenNumber ||
       (cat.litterKitten?.index ? String(cat.litterKitten.index).padStart(4, "0") : "----");
 
-    return `${linkedKittenNumber} - ${cat.name || "Sem nome"} - ${formatDateForInput(cat.birthDate) || "-"} - ${formatMicrochip(cat.microchip)} - Vendido: ${cat.sold ? "SIM" : "NÃO"} - Entregue: ${cat.delivered ? "SIM" : "NÃO"}`;
+    return `${linkedKittenNumber} - ${cat.name || "Sem nome"} - ${formatDateForInput(cat.birthDate) || "-"} - ${formatMicrochip(cat.microchip)} - Vendido: ${cat.sold ? "SIM" : "NÃO"} - Entregue: ${cat.delivered ? "SIM" : "NÃO"} - Padreador/Matriz: ${cat.breedingProspect ? "SIM" : "NÃO"}`;
   }
 
   function getKittenOrderValue(cat) {
@@ -175,6 +175,7 @@ function makeListLabel(cat) {
       currentOwnerId,
       delivered: req.body.delivered === "YES",
       sold: req.body.sold === "YES",
+      breedingProspect: req.body.breedingProspect === "YES",
       deceased: req.body.deceased === "YES",
       ownerId: existingKitten?.ownerId || req.session.userId,
       status: existingKitten?.status || "APROVADO",
@@ -219,8 +220,16 @@ function makeListLabel(cat) {
         users,
         selectedOwnerId,
         groupedKittens: {
-          notDelivered: kittenRows.filter((kitten) => !kitten.delivered),
-          delivered: kittenRows.filter((kitten) => kitten.delivered),
+          available: kittenRows.filter(
+            (kitten) => !kitten.sold && !kitten.delivered && !kitten.breedingProspect
+          ),
+          notDelivered: kittenRows.filter(
+            (kitten) => kitten.sold && !kitten.delivered && !kitten.breedingProspect
+          ),
+          breeders: kittenRows.filter((kitten) => kitten.breedingProspect),
+          deliveredSold: kittenRows.filter(
+            (kitten) => kitten.sold && kitten.delivered && !kitten.breedingProspect
+          ),
         },
       });
     }

@@ -136,6 +136,7 @@ model Cat {
   deceased         Boolean?          @default(false)
   kittenNumber     String?
   sold             Boolean?          @default(false)
+  breedingProspect Boolean?          @default(false)
   delivered        Boolean?          @default(false)
   currentOwnerId   Int?
   currentOwner     User?             @relation("CurrentKittenOwner", fields: [currentOwnerId], references: [id])

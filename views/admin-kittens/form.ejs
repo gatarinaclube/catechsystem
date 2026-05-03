@@ -82,7 +82,7 @@
               </div>
             </div>
 
-            <div class="grid-4" style="margin-top:12px; display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:16px;">
+            <div class="grid-4" style="margin-top:12px; display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:16px;">
               <div class="field">
                 <label class="field-label" for="pedigreeType">Tipo de Registro</label>
                 <select id="pedigreeType" name="pedigreeType">
@@ -148,6 +148,13 @@
                 <select id="sold" name="sold">
                   <option value="NO" <%= kitten?.sold ? "" : "selected" %>>NÃO</option>
                   <option value="YES" <%= kitten?.sold ? "selected" : "" %>>SIM</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="breedingProspect">Padreador/Matriz</label>
+                <select id="breedingProspect" name="breedingProspect">
+                  <option value="NO" <%= kitten?.breedingProspect ? "" : "selected" %>>NÃO</option>
+                  <option value="YES" <%= kitten?.breedingProspect ? "selected" : "" %>>SIM</option>
                 </select>
               </div>
               <div class="field">

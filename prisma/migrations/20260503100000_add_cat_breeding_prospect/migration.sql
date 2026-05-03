@@ -1,0 +1,2 @@
+ALTER TABLE "Cat"
+ADD COLUMN IF NOT EXISTS "breedingProspect" BOOLEAN DEFAULT false;

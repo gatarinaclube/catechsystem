@@ -46,11 +46,13 @@
         </div>
 
         <% const kittenGroups = [
-          { title: "Não Entregues", items: groupedKittens.notDelivered || [], color: "#16a34a" },
-          { title: "Entregues", items: groupedKittens.delivered || [], color: "#6b7280" },
+          { title: "Disponíveis", items: groupedKittens.available || [], color: "#16a34a" },
+          { title: "Não Entregues", items: groupedKittens.notDelivered || [], color: "#f59e0b" },
+          { title: "Padreadores/Matrizes", items: groupedKittens.breeders || [], color: "#7c3aed" },
+          { title: "Entregues/Vendidos", items: groupedKittens.deliveredSold || [], color: "#6b7280" },
         ]; %>
 
-        <% if (!kittenGroups[0].items.length && !kittenGroups[1].items.length) { %>
+        <% if (!kittenGroups.some(function(group) { return group.items.length; })) { %>
           <div class="content-card module-list-card">
             <div class="empty">Nenhum filhote cadastrado.</div>
           </div>
