@@ -201,10 +201,34 @@
           ].join("");
         }
 
-        function autosave(form) {
-          if (!form || form.dataset.submitting === "true") return;
+        async function autosave(form) {
+          if (!form) return;
+          if (form.dataset.submitting === "true") {
+            form.dataset.pendingSave = "true";
+            return;
+          }
+
           form.dataset.submitting = "true";
-          form.requestSubmit();
+          form.dataset.pendingSave = "false";
+
+          try {
+            const response = await fetch(form.action, {
+              method: "POST",
+              body: new FormData(form),
+              credentials: "same-origin",
+            });
+
+            if (!response.ok) {
+              throw new Error("Erro ao salvar vacinação");
+            }
+          } catch (error) {
+            console.error(error);
+          } finally {
+            form.dataset.submitting = "false";
+            if (form.dataset.pendingSave === "true") {
+              autosave(form);
+            }
+          }
         }
 
         document.querySelectorAll(".add-antirabic").forEach((button) => {
