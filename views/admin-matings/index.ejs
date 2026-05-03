@@ -14,8 +14,8 @@
           minmax(0, 0.85fr)
           minmax(0, 1fr)
           minmax(0, 0.7fr)
-          minmax(150px, 0.75fr)
-          minmax(170px, 1fr);
+          minmax(130px, 0.62fr)
+          minmax(190px, 1.08fr);
         gap: 10px;
         align-items: start;
         min-width: 0;
@@ -103,6 +103,9 @@
       .mating-male-field .field-label {
         display: block;
         margin-bottom: 4px;
+      }
+      .mating-dpp {
+        padding-left: 14px;
       }
       .mini-stack {
         display: flex;
@@ -257,6 +260,14 @@
                           <%- renderPedigreeNode(row.pedigree, "Gata", 5) %>
                         </ul>
                       </dialog>
+                    </div>
+
+                    <div class="mini-stack">
+                      <select name="status">
+                        <% groups.forEach(function(statusItem) { %>
+                          <option value="<%= statusItem.key %>" <%= (row.plan?.status || "PARA_ACASALAR") === statusItem.key ? "selected" : "" %>><%= statusItem.label %></option>
+                        <% }) %>
+                      </select>
                       <div class="mating-male-field">
                         <label class="field-label">Macho</label>
                         <select name="maleCatId">
@@ -266,14 +277,6 @@
                           <% }) %>
                         </select>
                       </div>
-                    </div>
-
-                    <div>
-                      <select name="status">
-                        <% groups.forEach(function(statusItem) { %>
-                          <option value="<%= statusItem.key %>" <%= (row.plan?.status || "PARA_ACASALAR") === statusItem.key ? "selected" : "" %>><%= statusItem.label %></option>
-                        <% }) %>
-                      </select>
                     </div>
 
                     <div class="mini-stack" data-history-box>
@@ -309,7 +312,7 @@
                       </div>
                     </div>
 
-                    <div class="mini-stack">
+                    <div class="mini-stack mating-dpp">
                       <div><strong><%= row.dppDate ? formatDate(row.dppDate) : "-" %></strong></div>
                       <div><%= row.gestationDays !== null ? row.gestationDays + " dias de gestação" : "-" %></div>
                     </div>

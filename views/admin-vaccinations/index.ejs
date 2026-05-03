@@ -172,7 +172,6 @@
                     <div class="mini-stack">
                       <div>Antirrábica: <strong><%= row.nextAntirabic ? formatDate(row.nextAntirabic) : "-" %></strong></div>
                       <div>Feline: <strong><%= row.nextFeline ? formatDate(row.nextFeline) : "-" %></strong></div>
-                      <button type="submit" class="btn btn-primary">Salvar</button>
                     </div>
                   </div>
                 </form>
@@ -200,6 +199,12 @@
             '<option value="">Tipo</option>',
             ...felineTypes.map((type) => `<option value="${type}">${type}</option>`),
           ].join("");
+        }
+
+        function autosave(form) {
+          if (!form || form.dataset.submitting === "true") return;
+          form.dataset.submitting = "true";
+          form.requestSubmit();
         }
 
         document.querySelectorAll(".add-antirabic").forEach((button) => {
@@ -268,7 +273,9 @@
 
         function bindDelete(button, addSelector, createEmptyRow) {
           button.addEventListener("click", () => {
+            const form = button.closest("form");
             moveAddButtonAfterDelete(button.closest(".inline-plus"), addSelector, createEmptyRow);
+            autosave(form);
           });
         }
 
@@ -285,6 +292,7 @@
               `;
               if (addButton) row.appendChild(addButton);
               bindDelete(row.querySelector(".delete-history-date"), ".add-antirabic", makeAntirabicEmptyRow);
+              autosave(row.closest("form"));
             });
           }
 
@@ -297,7 +305,7 @@
           const select = row.querySelector("select");
 
           function maybeFreeze() {
-            if (!input?.value && !select?.value) return;
+            if (!input?.value || !select?.value) return;
             const addButton = row.querySelector(".add-feline");
             row.innerHTML = `
               <input type="hidden" name="felineDates" value="${input?.value || ""}" />
@@ -308,6 +316,7 @@
             `;
             if (addButton) row.appendChild(addButton);
             bindDelete(row.querySelector(".delete-history-date"), ".add-feline", makeFelineEmptyRow);
+            autosave(row.closest("form"));
           }
 
           if (input) input.addEventListener("change", maybeFreeze);
