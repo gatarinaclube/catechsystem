@@ -9,7 +9,7 @@
     <style>
       .kitten-property-grid {
         display: grid;
-        grid-template-columns: minmax(220px, 1fr) 110px 110px 160px;
+        grid-template-columns: minmax(220px, 1fr) repeat(3, 160px);
         gap: 18px clamp(18px, 3vw, 48px);
         align-items: start;
         margin-top: 12px;
@@ -32,6 +32,22 @@
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 12px 16px;
         margin-top: 12px;
+      }
+      .cep-lookup-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .cep-lookup-row input {
+        min-width: 0;
+        flex: 1;
+      }
+      .cep-lookup-button {
+        flex: 0 0 40px;
+        width: 40px;
+        height: 38px;
+        padding: 0;
+        font-size: 16px;
       }
       @media (max-width: 1000px) {
         .kitten-property-grid,
@@ -224,7 +240,10 @@
               </div>
               <div class="field">
                 <label class="field-label" for="newOwnerCep">CEP</label>
-                <input id="newOwnerCep" name="newOwnerCep" type="text" value="<%= newOwnerInfo.cep || '' %>" />
+                <div class="cep-lookup-row">
+                  <input id="newOwnerCep" name="newOwnerCep" type="text" value="<%= newOwnerInfo.cep || '' %>" />
+                  <button type="button" class="btn cep-lookup-button" id="cepLookupButton" title="Buscar CEP" aria-label="Buscar CEP">&#128269;</button>
+                </div>
               </div>
               <div class="field">
                 <label class="field-label" for="newOwnerCity">Cidade</label>
@@ -297,6 +316,7 @@
       const ownerInfoBox = document.getElementById("ownerInfoBox");
       const newOwnerFields = document.getElementById("newOwnerFields");
       const newOwnerCep = document.getElementById("newOwnerCep");
+      const cepLookupButton = document.getElementById("cepLookupButton");
       const newOwnerCity = document.getElementById("newOwnerCity");
       const newOwnerStreet = document.getElementById("newOwnerStreet");
       const newOwnerNeighborhood = document.getElementById("newOwnerNeighborhood");
@@ -384,6 +404,7 @@
       registeredOwnerMode.addEventListener("change", toggleOwnerField);
       ownerInfoLink.addEventListener("click", renderOwnerInfo);
       newOwnerCep.addEventListener("blur", lookupCep);
+      cepLookupButton.addEventListener("click", lookupCep);
       microchipInput.addEventListener("input", formatMicrochip);
       breedSelect.addEventListener("change", bindBreedToEms);
 

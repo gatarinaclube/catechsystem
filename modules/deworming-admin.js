@@ -160,6 +160,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         },
       });
 
+      if (req.get("X-Autosave") === "true") {
+        return res.sendStatus(204);
+      }
+
       res.redirect("/admin/deworming");
     }
   );
