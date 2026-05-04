@@ -89,21 +89,40 @@ function buildDisplayName(cat) {
 
 function classifyBreeder(cat) {
   const age = calculateAge(cat.birthDate);
-  const isBreeding = cat.neutered !== true && cat.deceased !== true;
+  const isKittenRecord = Boolean(cat.kittenNumber || cat.litterKitten);
 
-  if (cat.deceased === true || cat.neutered === true) {
+  if (isKittenRecord && cat.breedingProspect !== true) {
+    return null;
+  }
+
+  if (cat.deceased === true) {
     return "founders";
   }
 
-  if (isBreeding && age && age.totalMonths < 10) {
+  if (isKittenRecord && cat.breedingProspect === true) {
+    if (age && age.totalMonths < 10) {
+      return "new";
+    }
+    if (cat.gender === "M") return "sires";
+    if (cat.gender === "F") return "dams";
+    return "founders";
+  }
+
+  const isBreeding = cat.neutered !== true;
+
+  if (!isBreeding) {
+    return "founders";
+  }
+
+  if (age && age.totalMonths < 10) {
     return "new";
   }
 
-  if (isBreeding && cat.gender === "M") {
+  if (cat.gender === "M") {
     return "sires";
   }
 
-  if (isBreeding && cat.gender === "F") {
+  if (cat.gender === "F") {
     return "dams";
   }
 
@@ -322,6 +341,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         where: canViewAllData(req.session?.userRole) && selectedOwnerId
           ? { ownerId: selectedOwnerId }
           : ownerScope(req),
+        include: {
+          litterKitten: true,
+        },
         orderBy: { name: "asc" },
       });
 
@@ -340,7 +362,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           ageLabel: formatAge(age),
         };
 
-        groups[classifyBreeder(cat)].push(enrichedCat);
+        const group = classifyBreeder(cat);
+        if (group) {
+          groups[group].push(enrichedCat);
+        }
       });
 
       res.render("breeders/list", {
