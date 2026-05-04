@@ -240,3 +240,14 @@
     align-items: stretch;
   }
 }
+
+.history-add-row {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.history-add-row .btn {
+  min-width: 38px;
+  padding-left: 0;
+  padding-right: 0;
+}

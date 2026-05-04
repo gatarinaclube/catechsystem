@@ -152,7 +152,7 @@
 
                     <div class="mini-stack" data-history-box>
                       <% const historyRows = row.history && row.history.length ? row.history : [{ date: "", weight: "" }]; %>
-                      <% historyRows.forEach(function(item, idx) { %>
+                      <% historyRows.forEach(function(item) { %>
                         <div class="inline-plus" data-history-row>
                           <% if (item.date && item.weight) { %>
                             <input type="hidden" name="historyDates" value="<%= item.date %>" />
@@ -170,11 +170,11 @@
                               style="width:110px;"
                             />
                           <% } %>
-                          <% if (idx === historyRows.length - 1) { %>
-                            <button type="button" class="btn add-history">+</button>
-                          <% } %>
                         </div>
                       <% }) %>
+                      <div class="history-add-row">
+                        <button type="button" class="btn add-history">+</button>
+                      </div>
                     </div>
 
                     <div class="weighing-settings" data-weighing-settings>
@@ -263,39 +263,16 @@
             row.className = "inline-plus";
             row.dataset.historyRow = "";
             row.innerHTML = '<input type="date" name="historyDates" value="" /><input type="text" name="historyWeights" value="" placeholder="0,000 kg" style="width:110px;" />';
-            button.remove();
-            row.appendChild(button);
-            box.appendChild(row);
+            box.insertBefore(row, button.closest(".history-add-row"));
             bindHistoryRow(row);
           });
         });
 
-        function makeEmptyRow(addButton) {
-          const row = document.createElement("div");
-          row.className = "inline-plus";
-          row.dataset.historyRow = "";
-          row.innerHTML = '<input type="date" name="historyDates" value="" /><input type="text" name="historyWeights" value="" placeholder="0,000 kg" style="width:110px;" />';
-          row.appendChild(addButton);
-          bindHistoryRow(row);
-          return row;
-        }
-
         function bindDelete(button) {
           button.addEventListener("click", () => {
             const row = button.closest("[data-history-row]");
-            const box = button.closest("[data-history-box]");
             const form = button.closest("form");
-            const addButton = row.querySelector(".add-history");
             row.remove();
-
-            if (addButton && box && !box.querySelector(".add-history")) {
-              const rows = box.querySelectorAll("[data-history-row]");
-              if (rows.length) {
-                rows[rows.length - 1].appendChild(addButton);
-              } else {
-                box.appendChild(makeEmptyRow(addButton));
-              }
-            }
 
             autosave(form);
           });
@@ -307,7 +284,6 @@
 
           function maybeFreeze() {
             if (!dateInput?.value || !weightInput?.value) return;
-            const addButton = row.querySelector(".add-history");
             row.innerHTML = `
               <input type="hidden" name="historyDates" value="${dateInput.value}" />
               <input type="hidden" name="historyWeights" value="${weightInput.value}" />
@@ -315,7 +291,6 @@
               <span class="history-weight-display">${weightInput.value}</span>
               <button type="button" class="btn delete-history-date" title="Remover pesagem" aria-label="Remover pesagem">&#128465;</button>
             `;
-            if (addButton) row.appendChild(addButton);
             bindDelete(row.querySelector(".delete-history-date"));
             autosave(row.closest("form"));
           }

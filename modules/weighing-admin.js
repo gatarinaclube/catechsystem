@@ -151,6 +151,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         currentPath: req.path,
         categories: CATEGORY_META,
         grouped,
+        formatDate,
         formatWeight,
         weighingFrequencies: WEIGHING_FREQUENCIES,
         weighingPeriods: WEIGHING_PERIODS,
