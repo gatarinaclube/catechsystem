@@ -1,4 +1,5 @@
 const express = require("express");
+const { canViewAllData } = require("../utils/access");
 const {
   parseDate,
   formatDate,
@@ -70,12 +71,25 @@ function isUrgentRow(pkdefSource, prabfSource, nextEco) {
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
+  function ownerScope(req) {
+    return canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId };
+  }
+
+  async function ensureCatAccess(req, catId) {
+    const cat = await prisma.cat.findFirst({
+      where: { id: catId, ...ownerScope(req) },
+      select: { id: true },
+    });
+    return Boolean(cat);
+  }
+
   router.get(
     "/admin/exams",
     requireAuth,
     requirePermission("admin.exams"),
     async (req, res) => {
       const cats = await prisma.cat.findMany({
+        where: ownerScope(req),
         include: {
           examPlan: true,
         },
@@ -145,6 +159,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requirePermission("admin.exams"),
     async (req, res) => {
       const catId = Number(req.params.catId);
+      if (!(await ensureCatAccess(req, catId))) {
+        return res.status(403).send("Você não tem acesso a este gato.");
+      }
       const ecoDates = [].concat(req.body.ecoDates || []);
 
       const ecoHistory = ecoDates

@@ -113,6 +113,21 @@ body {
   border-color: var(--accent-soft);
 }
 
+.menu a.menu-disabled {
+  color: rgba(100, 116, 139, 0.42);
+  cursor: default;
+  pointer-events: none;
+}
+
+.menu a.menu-disabled .menu-icon {
+  opacity: 0.35;
+}
+
+.menu a.menu-disabled:hover {
+  background: transparent;
+  border-color: transparent;
+}
+
 .menu a.active {
   background: var(--accent);
   color: #ffffff;

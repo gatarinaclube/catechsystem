@@ -1,4 +1,5 @@
 const express = require("express");
+const { canViewAllData } = require("../utils/access");
 const {
   parseDate,
   formatDate,
@@ -71,12 +72,25 @@ function getDewormingState(nextDeworming) {
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
+  function ownerScope(req) {
+    return canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId };
+  }
+
+  async function ensureCatAccess(req, catId) {
+    const cat = await prisma.cat.findFirst({
+      where: { id: catId, ...ownerScope(req) },
+      select: { id: true },
+    });
+    return Boolean(cat);
+  }
+
   router.get(
     "/admin/deworming",
     requireAuth,
     requirePermission("admin.deworming"),
     async (req, res) => {
       const cats = await prisma.cat.findMany({
+        where: ownerScope(req),
         include: {
           mother: true,
           dewormingPlan: true,
@@ -139,6 +153,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requirePermission("admin.deworming"),
     async (req, res) => {
       const catId = Number(req.params.catId);
+      if (!(await ensureCatAccess(req, catId))) {
+        return res.status(403).send("Você não tem acesso a este gato.");
+      }
       const dates = [].concat(req.body.historyDates || []);
       const types = [].concat(req.body.historyTypes || []);
 

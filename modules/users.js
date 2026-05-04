@@ -24,15 +24,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     return { userId, role, isAdmin };
   }
 
-  // --------- LISTA DE USUÁRIOS (apenas ADMIN) ---------
+  // --------- LISTA DE USUÁRIOS ---------
   router.get("/users", requireAuth, requirePermission("admin.users"), async (req, res) => {
     const { userId, isAdmin } = getAuthInfo(req);
-
-    if (!isAdmin) {
-      return res
-        .status(403)
-        .send("Acesso restrito apenas para administradores.");
-    }
 
     try {
       // Usuário logado (para o sidebar)
@@ -42,6 +36,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       // Todos os usuários cadastrados
       const allUsers = await prisma.user.findMany({
+        where: isAdmin ? {} : { id: userId },
         orderBy: { name: "asc" },
       });
 
@@ -82,15 +77,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     }
   });
 
-  // --------- DETALHES DO USUÁRIO (apenas ADMIN) ---------
+  // --------- DETALHES DO USUÁRIO ---------
   router.get("/users/:id", requireAuth, requirePermission("admin.users"), async (req, res) => {
     const { userId, isAdmin } = getAuthInfo(req);
     const targetId = Number(req.params.id);
 
-    if (!isAdmin) {
-      return res
-        .status(403)
-        .send("Acesso restrito apenas para administradores.");
+    if (!isAdmin && targetId !== userId) {
+      return res.status(403).send("Você não tem acesso a este usuário.");
     }
 
     try {
@@ -127,13 +120,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
 // --------- ATUALIZAR DADOS + STATUS / OBSERVAÇÕES DO USUÁRIO ---------
 router.post("/users/:id", requireAuth, requirePermission("admin.users"), async (req, res) => {
-  const { isAdmin } = getAuthInfo(req);
+  const { userId, isAdmin } = getAuthInfo(req);
   const targetId = Number(req.params.id);
 
-  if (!isAdmin) {
-    return res
-      .status(403)
-      .send("Acesso restrito apenas para administradores.");
+  if (!isAdmin && targetId !== userId) {
+    return res.status(403).send("Você não pode editar este usuário.");
   }
 
   try {
@@ -165,6 +156,11 @@ router.post("/users/:id", requireAuth, requirePermission("admin.users"), async (
       finalStatus = "RESTRICOES";
     }
 
+    const existingUser = await prisma.user.findUnique({
+      where: { id: targetId },
+      select: { role: true, approvalStatus: true },
+    });
+
     await prisma.user.update({
       where: { id: targetId },
       data: {
@@ -178,9 +174,9 @@ router.post("/users/:id", requireAuth, requirePermission("admin.users"), async (
         country,
         phones,
         clubs,
-        role: normalizeRole(role) || ROLES.BASIC,
-        approvalStatus: finalStatus,
-        adminNotes: adminNotes || null,
+        role: isAdmin ? normalizeRole(role) || ROLES.BASIC : existingUser?.role || ROLES.PREMIUM,
+        approvalStatus: isAdmin ? finalStatus : existingUser?.approvalStatus || "DEFERIDO",
+        adminNotes: isAdmin ? adminNotes || null : undefined,
 
         // 🔹 SALVANDO GATIL
         hasFifeCattery: hasFifeCattery || "NO",
@@ -205,9 +201,7 @@ router.post(
     const targetId = Number(req.params.id);
 
     if (!isAdmin) {
-      return res
-        .status(403)
-        .send("Acesso restrito apenas para administradores.");
+      return res.status(403).send("Acesso restrito apenas para administradores.");
     }
 
     try {

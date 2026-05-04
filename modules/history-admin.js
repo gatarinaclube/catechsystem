@@ -1,4 +1,5 @@
 const express = require("express");
+const { canViewAllData } = require("../utils/access");
 const {
   parseDate,
   formatDate,
@@ -181,6 +182,18 @@ function formatExamHistory(plan) {
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
+  function ownerScope(req) {
+    return canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId };
+  }
+
+  async function ensureCatAccess(req, catId) {
+    const cat = await prisma.cat.findFirst({
+      where: { id: catId, ...ownerScope(req) },
+      select: { id: true },
+    });
+    return Boolean(cat);
+  }
+
   router.get(
     "/admin/history",
     requireAuth,
@@ -192,12 +205,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const cats = await prisma.cat.findMany({
         where: query
           ? {
+              ...ownerScope(req),
               OR: [
                 { name: { contains: query, mode: "insensitive" } },
                 ...(microchipQuery ? [{ microchip: { contains: microchipQuery } }] : []),
               ],
             }
-          : {},
+          : ownerScope(req),
         orderBy: [{ name: "asc" }],
       });
 
@@ -260,8 +274,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         return res.status(404).send("Gato não encontrado.");
       }
 
+      if (!(await ensureCatAccess(req, catId))) {
+        return res.status(403).send("Você não tem acesso a este histórico.");
+      }
+
       const linkedLitters = await prisma.litter.findMany({
         where: {
+          ...ownerScope(req),
           OR: [
             ...(cat.microchip ? [{ femaleMicrochip: cat.microchip }] : []),
             ...(cat.name ? [{ femaleName: cat.name }] : []),
@@ -364,6 +383,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requirePermission("admin.history"),
     async (req, res) => {
       const catId = Number(req.params.id);
+      if (!(await ensureCatAccess(req, catId))) {
+        return res.status(403).send("Você não pode editar este histórico.");
+      }
       await replaceSectionEntries(
         prisma,
         catId,
@@ -380,6 +402,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requirePermission("admin.history"),
     async (req, res) => {
       const catId = Number(req.params.id);
+      if (!(await ensureCatAccess(req, catId))) {
+        return res.status(403).send("Você não pode editar este histórico.");
+      }
       await replaceSectionEntries(
         prisma,
         catId,
@@ -396,6 +421,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requirePermission("admin.history"),
     async (req, res) => {
       const catId = Number(req.params.id);
+      if (!(await ensureCatAccess(req, catId))) {
+        return res.status(403).send("Você não pode editar este histórico.");
+      }
       await replaceSectionEntries(
         prisma,
         catId,

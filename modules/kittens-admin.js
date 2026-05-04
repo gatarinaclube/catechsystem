@@ -1,4 +1,5 @@
 const express = require("express");
+const { canViewAllData } = require("../utils/access");
 
 const BREEDS = [
   "ABY","SOM","ACL","ACS","BAL","SIA","BEN","BLH","BSH","BML","BOM","BUR",
@@ -52,26 +53,41 @@ function mergeLinkedKittenFields(cat) {
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
+  function ownerScope(req) {
+    return canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId };
+  }
+
+  async function ensureCatAccess(req, catId) {
+    const cat = await prisma.cat.findFirst({
+      where: { id: catId, ...ownerScope(req) },
+      select: { id: true },
+    });
+    return Boolean(cat);
+  }
+
   async function buildContext(req, kitten = null, error = null) {
+    const scopedOwner = ownerScope(req);
     const females = await prisma.cat.findMany({
-      where: { gender: "F" },
+      where: { ...scopedOwner, gender: "F" },
       orderBy: { name: "asc" },
     });
     const males = await prisma.cat.findMany({
-      where: { gender: "M" },
+      where: { ...scopedOwner, gender: "M" },
       orderBy: { name: "asc" },
     });
-    const users = await prisma.user.findMany({
-      orderBy: { name: "asc" },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phones: true,
-        city: true,
-        state: true,
-      },
-    });
+    const users = canViewAllData(req.session?.userRole)
+      ? await prisma.user.findMany({
+          orderBy: { name: "asc" },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phones: true,
+            city: true,
+            state: true,
+          },
+        })
+      : [];
 
     return {
       user: req.user,
@@ -218,17 +234,21 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requirePermission("admin.kittens"),
     async (req, res) => {
       const selectedOwnerId = req.query.ownerId ? Number(req.query.ownerId) : null;
-      const users = await prisma.user.findMany({
-        orderBy: { name: "asc" },
-        select: { id: true, name: true, email: true },
-      });
+      const users = canViewAllData(req.session?.userRole)
+        ? await prisma.user.findMany({
+            orderBy: { name: "asc" },
+            select: { id: true, name: true, email: true },
+          })
+        : [];
       const kittens = await prisma.cat.findMany({
         where: {
           OR: [
             { kittenNumber: { not: null } },
             { litterKitten: { isNot: null } },
           ],
-          ...(selectedOwnerId ? { ownerId: selectedOwnerId } : {}),
+          ...(canViewAllData(req.session?.userRole) && selectedOwnerId
+            ? { ownerId: selectedOwnerId }
+            : ownerScope(req)),
         },
         include: {
           litterKitten: true,
@@ -316,6 +336,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         return res.status(404).send("Filhote não encontrado.");
       }
 
+      if (!(await ensureCatAccess(req, kitten.id))) {
+        return res.status(403).send("Você não tem acesso a este filhote.");
+      }
+
       res.render("admin-kittens/form", {
         ...(await buildContext(req, mergeLinkedKittenFields(kitten))),
         formTitle: "Editar Filhote",
@@ -340,6 +364,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       if (!existingKitten) {
         return res.status(404).send("Filhote não encontrado.");
+      }
+
+      if (!(await ensureCatAccess(req, existingKitten.id))) {
+        return res.status(403).send("Você não pode editar este filhote.");
       }
 
       try {

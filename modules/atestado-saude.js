@@ -3,7 +3,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-module.exports = (requireAuth, requireAdmin) => {
+module.exports = (requireAuth, requireAdmin, requirePermission) => {
   const router = express.Router();
 
   const FILE_PATH = path.join(
@@ -14,7 +14,11 @@ module.exports = (requireAuth, requireAdmin) => {
   // ============================
   // USER → DOWNLOAD
   // ============================
-  router.get("/services/atestado-saude-reproducao", requireAuth, (req, res) => {
+  router.get(
+    "/services/atestado-saude-reproducao",
+    requireAuth,
+    requirePermission("services.downloads"),
+    (req, res) => {
     if (!fs.existsSync(FILE_PATH)) {
       return res.status(404).send("Arquivo não disponível.");
     }

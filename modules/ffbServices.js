@@ -1,6 +1,7 @@
 // modules/ffbServices.js
 const express = require("express");
 const { sendStatusEmail } = require("../utils/mailer");
+const { canViewAllData } = require("../utils/access");
 
 function escapeHtml(str) {
   return String(str || "")
@@ -15,6 +16,18 @@ function escapeHtml(str) {
 module.exports = (prisma, requireAuth, requireAdmin) => {
   const router = express.Router();
 
+  function serviceScope(req) {
+    return canViewAllData(req.session?.userRole) ? {} : { userId: req.session.userId };
+  }
+
+  async function ensureServiceAccess(req, serviceId) {
+    const service = await prisma.serviceRequest.findFirst({
+      where: { id: serviceId, ...serviceScope(req) },
+      select: { id: true },
+    });
+    return Boolean(service);
+  }
+
   // ============================================================
   // EDITAR serviço FFB (somente ADMIN) - GET
   // ============================================================
@@ -26,6 +39,10 @@ router.get(
     try {
 
       const serviceId = parseInt(req.params.id, 10);
+
+      if (!(await ensureServiceAccess(req, serviceId))) {
+        return res.status(403).send("Você não tem acesso a este serviço.");
+      }
 
       const service = await prisma.serviceRequest.findUnique({
   where: { id: serviceId },
@@ -130,6 +147,10 @@ router.post(
   async (req, res) => {
     try {
       const id = Number(req.params.id);
+
+      if (!(await ensureServiceAccess(req, id))) {
+        return res.status(403).send("Você não pode editar este serviço.");
+      }
 
       const service = await prisma.serviceRequest.findUnique({
         where: { id },
@@ -256,6 +277,10 @@ router.post(
         return res.status(400).send("Dados inválidos");
       }
 
+      if (!(await ensureServiceAccess(req, serviceId))) {
+        return res.status(403).send("Você não tem acesso a este serviço.");
+      }
+
       // 🔹 Buscar serviço + usuário (para e-mail)
       const service = await prisma.serviceRequest.findUnique({
         where: { id: serviceId },
@@ -356,6 +381,7 @@ router.get(
   async (req, res) => {
     try {
       const services = await prisma.serviceRequest.findMany({
+  where: serviceScope(req),
   orderBy: { createdAt: "desc" },
   include: {
     user: true,
@@ -427,6 +453,13 @@ router.post(
         return res.status(400).json({
           ok: false,
           error: "ID do serviço inválido.",
+        });
+      }
+
+      if (!(await ensureServiceAccess(req, serviceId))) {
+        return res.status(403).json({
+          ok: false,
+          error: "Você não tem acesso a este serviço.",
         });
       }
 

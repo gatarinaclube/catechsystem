@@ -18,30 +18,30 @@ const ROLE_LABELS = {
 
 const PERMISSIONS = {
   "dashboard.view": [ROLES.ADMIN, ROLES.PREMIUM, ROLES.MASTER, ROLES.BASIC],
-  "profile.self": [ROLES.PREMIUM, ROLES.MASTER, ROLES.BASIC],
+  "profile.self": [ROLES.ADMIN, ROLES.PREMIUM, ROLES.MASTER, ROLES.BASIC],
   "cats.manage": [ROLES.ADMIN, ROLES.PREMIUM, ROLES.MASTER, ROLES.BASIC],
   "cats.view.all": [ROLES.ADMIN],
-  "services.portal": [ROLES.ADMIN, ROLES.PREMIUM, ROLES.MASTER, ROLES.BASIC],
-  "services.my": [ROLES.ADMIN, ROLES.PREMIUM, ROLES.MASTER, ROLES.BASIC],
-  "services.downloads": [ROLES.ADMIN, ROLES.PREMIUM, ROLES.MASTER, ROLES.BASIC],
-  "service.litter": [ROLES.ADMIN, ROLES.PREMIUM, ROLES.MASTER, ROLES.BASIC],
-  "service.transfer": [ROLES.ADMIN, ROLES.PREMIUM, ROLES.MASTER, ROLES.BASIC],
+  "services.portal": [ROLES.ADMIN, ROLES.PREMIUM, ROLES.MASTER],
+  "services.my": [ROLES.ADMIN, ROLES.PREMIUM, ROLES.MASTER],
+  "services.downloads": [ROLES.ADMIN, ROLES.PREMIUM, ROLES.MASTER],
+  "service.litter": [ROLES.ADMIN, ROLES.PREMIUM, ROLES.MASTER],
+  "service.transfer": [ROLES.ADMIN, ROLES.PREMIUM, ROLES.MASTER],
   "service.secondCopy": [ROLES.ADMIN, ROLES.PREMIUM, ROLES.MASTER],
-  "service.titleHomologation": [ROLES.ADMIN, ROLES.PREMIUM],
-  "service.pedigreeHomologation": [ROLES.ADMIN, ROLES.PREMIUM],
-  "service.catteryRegistration": [ROLES.ADMIN, ROLES.PREMIUM],
-  "admin.users": [ROLES.ADMIN],
-  "admin.ffb": [ROLES.ADMIN],
-  "admin.settings": [ROLES.ADMIN],
-  "admin.breeders": [ROLES.ADMIN],
-  "admin.litters": [ROLES.ADMIN],
-  "admin.kittens": [ROLES.ADMIN],
-  "admin.matings": [ROLES.ADMIN],
-  "admin.vaccinations": [ROLES.ADMIN],
-  "admin.deworming": [ROLES.ADMIN],
-  "admin.weighing": [ROLES.ADMIN],
-  "admin.exams": [ROLES.ADMIN],
-  "admin.history": [ROLES.ADMIN],
+  "service.titleHomologation": [ROLES.ADMIN, ROLES.PREMIUM, ROLES.MASTER],
+  "service.pedigreeHomologation": [ROLES.ADMIN, ROLES.PREMIUM, ROLES.MASTER],
+  "service.catteryRegistration": [ROLES.ADMIN, ROLES.PREMIUM, ROLES.MASTER],
+  "admin.users": [ROLES.ADMIN, ROLES.PREMIUM],
+  "admin.ffb": [ROLES.ADMIN, ROLES.PREMIUM],
+  "admin.settings": [ROLES.ADMIN, ROLES.PREMIUM],
+  "admin.breeders": [ROLES.ADMIN, ROLES.PREMIUM],
+  "admin.litters": [ROLES.ADMIN, ROLES.PREMIUM],
+  "admin.kittens": [ROLES.ADMIN, ROLES.PREMIUM],
+  "admin.matings": [ROLES.ADMIN, ROLES.PREMIUM],
+  "admin.vaccinations": [ROLES.ADMIN, ROLES.PREMIUM],
+  "admin.deworming": [ROLES.ADMIN, ROLES.PREMIUM],
+  "admin.weighing": [ROLES.ADMIN, ROLES.PREMIUM],
+  "admin.exams": [ROLES.ADMIN, ROLES.PREMIUM],
+  "admin.history": [ROLES.ADMIN, ROLES.PREMIUM],
 };
 
 function normalizeRole(role) {
@@ -66,6 +66,10 @@ function isAdminRole(role) {
   return normalizeRole(role) === ROLES.ADMIN;
 }
 
+function canViewAllData(role) {
+  return isAdminRole(role);
+}
+
 function buildAccessContext(role) {
   const normalizedRole = normalizeRole(role);
 
@@ -73,6 +77,7 @@ function buildAccessContext(role) {
     role: normalizedRole,
     roleLabel: getRoleLabel(normalizedRole),
     isAdmin: isAdminRole(normalizedRole),
+    canViewAllData: canViewAllData(normalizedRole),
     canManageCats: userCan(normalizedRole, "cats.manage"),
     canViewAllCats: userCan(normalizedRole, "cats.view.all"),
     canAccessServices: userCan(normalizedRole, "services.portal"),
@@ -115,5 +120,6 @@ module.exports = {
   getRoleLabel,
   userCan,
   isAdminRole,
+  canViewAllData,
   buildAccessContext,
 };

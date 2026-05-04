@@ -1,4 +1,5 @@
 const express = require("express");
+const { canViewAllData } = require("../utils/access");
 const {
   addMonths,
   addDays,
@@ -125,18 +126,28 @@ function buildPedigreeNode(cat, depth = 4) {
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
-  async function loadOwnerFilter(selectedOwnerId) {
-    const users = await prisma.user.findMany({
-      orderBy: { name: "asc" },
-      select: { id: true, name: true, email: true },
-    });
+  function ownerScope(req) {
+    return canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId };
+  }
+
+  async function loadOwnerFilter(req, selectedOwnerId) {
+    const users = canViewAllData(req.session?.userRole)
+      ? await prisma.user.findMany({
+          orderBy: { name: "asc" },
+          select: { id: true, name: true, email: true },
+        })
+      : [];
 
     return { users, selectedOwnerId };
   }
 
-  async function buildRows(selectedOwnerId = null) {
+  async function buildRows(req, selectedOwnerId = null) {
+    const scopedOwner = canViewAllData(req.session?.userRole) && selectedOwnerId
+      ? { ownerId: selectedOwnerId }
+      : ownerScope(req);
     const females = await prisma.cat.findMany({
       where: {
+        ...scopedOwner,
         gender: "F",
         kittenNumber: null,
         ...(selectedOwnerId ? { ownerId: selectedOwnerId } : {}),
@@ -150,6 +161,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
     const males = await prisma.cat.findMany({
       where: {
+        ...ownerScope(req),
         gender: "M",
         kittenNumber: null,
       },
@@ -216,8 +228,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requirePermission("admin.matings"),
     async (req, res) => {
       const selectedOwnerId = req.query.ownerId ? Number(req.query.ownerId) : null;
-      const { users } = await loadOwnerFilter(selectedOwnerId);
-      const { grouped, males } = await buildRows(selectedOwnerId);
+      const { users } = await loadOwnerFilter(req, selectedOwnerId);
+      const { grouped, males } = await buildRows(req, selectedOwnerId);
 
       res.render("admin-matings/index", {
         user: req.user,
@@ -245,6 +257,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         where: { id: femaleCatId },
         select: { ownerId: true },
       });
+      if (!female || (!canViewAllData(req.session?.userRole) && female.ownerId !== req.session.userId)) {
+        return res.status(403).send("Você não tem acesso a esta gata.");
+      }
       const litterHistory = []
         .concat(req.body.litterHistoryDates || [])
         .map((value) => String(value || "").trim())

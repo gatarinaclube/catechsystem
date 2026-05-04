@@ -1,4 +1,5 @@
 const express = require("express");
+const { canViewAllData } = require("../utils/access");
 
 const BREEDS = [
   "ABY","SOM","ACL","ACS","BAL","SIA","BEN","BLH","BSH","BML","BOM","BUR",
@@ -54,6 +55,27 @@ function buildLitterLabel(litter) {
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
+  function ownerScope(req) {
+    return canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId };
+  }
+
+  async function ensureLitterAccess(req, litterId) {
+    const litter = await prisma.litter.findFirst({
+      where: { id: litterId, ...ownerScope(req) },
+      select: { id: true },
+    });
+    return Boolean(litter);
+  }
+
+  async function ensureCatAccess(req, catId) {
+    if (!catId) return true;
+    const cat = await prisma.cat.findFirst({
+      where: { id: catId, ...ownerScope(req) },
+      select: { id: true },
+    });
+    return Boolean(cat);
+  }
+
   async function getCatteryNameForUser(userId, litter = null) {
     const settingsRows = await prisma.$queryRaw`
       SELECT "catteryName"
@@ -76,8 +98,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     );
     const kittenNameMaxLength = getKittenNameMaxLength(catteryName);
 
+    const scopedOwner = ownerScope(req);
     const females = await prisma.cat.findMany({
       where: {
+        ...scopedOwner,
         gender: "F",
         neutered: false,
         OR: [{ deceased: false }, { deceased: null }],
@@ -87,6 +111,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
     const males = await prisma.cat.findMany({
       where: {
+        ...scopedOwner,
         gender: "M",
         neutered: false,
         OR: [{ deceased: false }, { deceased: null }],
@@ -326,12 +351,16 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requirePermission("admin.litters"),
     async (req, res) => {
       const selectedOwnerId = req.query.ownerId ? Number(req.query.ownerId) : null;
-      const users = await prisma.user.findMany({
-        orderBy: { name: "asc" },
-        select: { id: true, name: true, email: true },
-      });
+      const users = canViewAllData(req.session?.userRole)
+        ? await prisma.user.findMany({
+            orderBy: { name: "asc" },
+            select: { id: true, name: true, email: true },
+          })
+        : [];
       const litters = await prisma.litter.findMany({
-        where: selectedOwnerId ? { ownerId: selectedOwnerId } : {},
+        where: canViewAllData(req.session?.userRole) && selectedOwnerId
+          ? { ownerId: selectedOwnerId }
+          : ownerScope(req),
         orderBy: [{ litterNumber: "asc" }, { id: "asc" }],
       });
 
@@ -397,6 +426,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           historyNotes: req.body.historyNotes || null,
         };
 
+        if (
+          !(await ensureCatAccess(req, payload.femaleCatId)) ||
+          !(await ensureCatAccess(req, payload.maleCatId))
+        ) {
+          return res.status(403).send("Você não pode usar gatos de outro cadastro.");
+        }
+
         const litter = await prisma.$transaction(async (tx) =>
           persistLitter(tx, payload, null)
         );
@@ -434,6 +470,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         return res.status(404).send("Ninhada não encontrada.");
       }
 
+      if (!(await ensureLitterAccess(req, litter.id))) {
+        return res.status(403).send("Você não tem acesso a esta ninhada.");
+      }
+
       res.render("admin-litters/form", {
         ...(await buildFormContext(req, litter)),
         formTitle: "Editar Ninhada",
@@ -455,6 +495,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       if (!existingLitter) {
         return res.status(404).send("Ninhada não encontrada.");
+      }
+
+      if (!(await ensureLitterAccess(req, existingLitter.id))) {
+        return res.status(403).send("Você não pode editar esta ninhada.");
       }
 
       try {
@@ -489,6 +533,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           deadAfterBirthFemaleCount: Number(req.body.deadAfterBirthFemaleCount || 0),
           historyNotes: req.body.historyNotes || null,
         };
+
+        if (
+          !(await ensureCatAccess(req, payload.femaleCatId)) ||
+          !(await ensureCatAccess(req, payload.maleCatId))
+        ) {
+          return res.status(403).send("Você não pode usar gatos de outro cadastro.");
+        }
 
         await prisma.$transaction(async (tx) =>
           persistLitter(tx, payload, existingLitter)

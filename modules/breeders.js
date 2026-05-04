@@ -2,6 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const { canViewAllData } = require("../utils/access");
 
 const COUNTRIES = [
   "BR","AR","AT","BE","BG","BY","CA","CH","CL","CO","CY","CZ",
@@ -125,9 +126,23 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
   const upload = createUploadMiddleware();
 
+  function ownerScope(req) {
+    return canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId };
+  }
+
+  async function ensureCatAccess(req, catId) {
+    const cat = await prisma.cat.findFirst({
+      where: { id: catId, ...ownerScope(req) },
+      select: { id: true },
+    });
+    return Boolean(cat);
+  }
+
   async function buildFormContext(req, cat = null) {
+    const scopedOwner = ownerScope(req);
     const maleCats = await prisma.cat.findMany({
       where: {
+        ...scopedOwner,
         gender: "M",
         neutered: false,
         OR: [{ deceased: false }, { deceased: null }],
@@ -137,6 +152,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
     const femaleCats = await prisma.cat.findMany({
       where: {
+        ...scopedOwner,
         gender: "F",
         neutered: false,
         OR: [{ deceased: false }, { deceased: null }],
@@ -296,12 +312,16 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requirePermission("admin.breeders"),
     async (req, res) => {
       const selectedOwnerId = req.query.ownerId ? Number(req.query.ownerId) : null;
-      const users = await prisma.user.findMany({
-        orderBy: { name: "asc" },
-        select: { id: true, name: true, email: true },
-      });
+      const users = canViewAllData(req.session?.userRole)
+        ? await prisma.user.findMany({
+            orderBy: { name: "asc" },
+            select: { id: true, name: true, email: true },
+          })
+        : [];
       const cats = await prisma.cat.findMany({
-        where: selectedOwnerId ? { ownerId: selectedOwnerId } : {},
+        where: canViewAllData(req.session?.userRole) && selectedOwnerId
+          ? { ownerId: selectedOwnerId }
+          : ownerScope(req),
         orderBy: { name: "asc" },
       });
 
@@ -394,6 +414,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         return res.status(404).send("Reprodutor não encontrado.");
       }
 
+      if (!(await ensureCatAccess(req, cat.id))) {
+        return res.status(403).send("Você não tem acesso a este gato.");
+      }
+
       res.render("breeders/form", {
         ...(await buildFormContext(req, cat)),
         formTitle: "Editar Padreador/Matriz",
@@ -418,6 +442,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       if (!existingCat) {
         return res.status(404).send("Reprodutor não encontrado.");
+      }
+
+      if (!(await ensureCatAccess(req, existingCat.id))) {
+        return res.status(403).send("Você não pode editar este gato.");
       }
 
       try {

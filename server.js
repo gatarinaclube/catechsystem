@@ -12,6 +12,7 @@ const {
   ROLES,
   normalizeRole,
   isAdminRole,
+  canViewAllData,
   buildAccessContext,
   userCan,
 } = require("./utils/access");
@@ -429,7 +430,7 @@ app.post("/meus-dados", requireAuth, async (req, res) => {
 
 
 // ---------- SERVIÇOS (USUÁRIO LOGADO) ----------
-app.get("/services", requireAuth, async (req, res) => {
+app.get("/services", requireAuth, requirePermission("services.portal"), async (req, res) => {
   try {
     const user = req.user;
 
@@ -444,7 +445,7 @@ app.get("/services", requireAuth, async (req, res) => {
 });
 
 // ---------- MEUS SERVIÇOS (USUÁRIO LOGADO) ----------
-app.get("/my-services", requireAuth, async (req, res) => {
+app.get("/my-services", requireAuth, requirePermission("services.my"), async (req, res) => {
   try {
     const userId = req.session.userId;
 
@@ -527,7 +528,7 @@ for (const s of services) {
 
 // ---------- FORMULÁRIO AUTORIZAÇÃO REPRODUÇÃO PDF ----------
 
-app.get("/services/autorizacao-registro-ninhada", async (req, res) => {
+app.get("/services/autorizacao-registro-ninhada", requireAuth, requirePermission("services.downloads"), async (req, res) => {
   try {
     const pdfBuffer = await generateLitterAuthorizationPDF();
 
@@ -547,7 +548,7 @@ app.get("/services/autorizacao-registro-ninhada", async (req, res) => {
 
 // ---------- FORMULÁRIO TRANSFERÊNCIA DE PROPRIEDADE PDF ----------
 
-app.get("/services/autorizacao-transferencia-propriedade", async (req, res) => {
+app.get("/services/autorizacao-transferencia-propriedade", requireAuth, requirePermission("services.downloads"), async (req, res) => {
   try {
     const pdfBuffer = await generateTransferAuthorizationPDF();
 
@@ -698,7 +699,7 @@ app.use(pedigreeHomologation(prisma, requireAuth, requirePermission));
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 // DOWNLOAD: ATESTADO DE SAÚDE PARA REPRODUÇÃO
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-app.use(atestadoSaude(requireAuth, requireAdmin));
+app.use(atestadoSaude(requireAuth, requireAdmin, requirePermission));
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 //  MÓDULO: REGISTRO DE GATIL
@@ -710,7 +711,7 @@ app.use(catteryRegistration(prisma, requireAuth, requirePermission));
 const ffbServicesRouter = require("./modules/ffbServices")(
   prisma,
   requireAuth,
-  requireAdmin
+  requirePermission("admin.ffb")
 );
 app.use(ffbServicesRouter);
 
@@ -802,7 +803,7 @@ app.use(historyAdminRouter);
 // =====================================================
 // BUNDLE DE SERVIÇO FFB (PDF + Anexos) → ADMIN
 // =====================================================
-app.get("/ffb-services/:id/bundle", requireAuth, requireAdmin, async (req, res) => {
+app.get("/ffb-services/:id/bundle", requireAuth, requirePermission("admin.ffb"), async (req, res) => {
   try {
     const serviceId = parseInt(req.params.id, 10);
 
@@ -822,6 +823,10 @@ include: {
 
     if (!serviceWithStatus) {
   return res.status(404).send("Serviço não encontrado.");
+}
+
+if (!canViewAllData(req.session?.userRole) && serviceWithStatus.userId !== req.session.userId) {
+  return res.status(403).send("Você não tem acesso a este serviço.");
 }
 
 // --------------------------

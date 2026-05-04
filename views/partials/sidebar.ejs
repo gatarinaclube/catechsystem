@@ -29,170 +29,56 @@
     <div class="menu-title">Menu</div>
 
     <nav class="menu">
-      <!-- PÁGINA INICIAL -->
-      <a
-        href="/dashboard"
-        class="<%= (currentPath && currentPath.startsWith('/dashboard')) ? 'active' : '' %>"
+      <%
+        function renderMenuItem(item) {
+          const allowed = item.allowed !== false;
+          const active = allowed && currentPath && currentPath.startsWith(item.match);
+          const classes = [active ? "active" : "", allowed ? "" : "menu-disabled"].filter(Boolean).join(" ");
+      %>
+        <a
+          href="<%= allowed ? item.href : '#' %>"
+          class="<%= classes %>"
+          <%= allowed ? "" : 'aria-disabled="true" tabindex="-1"' %>
+        >
+          <span class="menu-icon"><%= item.icon %></span>
+          <span><%= item.label %></span>
+        </a>
+      <% } %>
+
+      <% [
+        { href: "/dashboard", match: "/dashboard", icon: "🏠", label: "Página inicial", allowed: true },
+        { href: "/cats", match: "/cats", icon: "🐾", label: (access && access.canViewAllCats) ? "Todos os gatos" : "Meus gatos", allowed: access && access.canManageCats },
+        { href: "/services", match: "/services", icon: "🧾", label: "Serviços", allowed: access && access.canAccessServices },
+        { href: "/ffb-services", match: "/ffb-services", icon: "🛠️", label: "Serviços FFB", allowed: access && access.canAccessFfbServices },
+        { href: "/users", match: "/users", icon: "👥", label: "Usuários", allowed: access && access.canManageUsers },
+        { href: "/settings", match: "/settings", icon: "⚙️", label: "Configurações", allowed: access && access.canAccessSettings },
+      ].forEach(renderMenuItem); %>
+
+      <div
+        style="
+          margin: 14px 0 8px;
+          padding-top: 12px;
+          border-top: 1px solid #f59e0b;
+          font-size: 11px;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #f59e0b;
+        "
       >
-        <span class="menu-icon">🏠</span>
-        <span>Página inicial</span>
-      </a>
+        Gestão do Gatil
+      </div>
 
-      <!-- Meus / Todos os gatos -->
-      <a
-        href="/cats"
-        class="<%= (currentPath && currentPath.startsWith('/cats')) ? 'active' : '' %>"
-      >
-        <span class="menu-icon">🐾</span>
-        <span>
-          <%= (access && access.canViewAllCats) ? "Todos os gatos" : "Meus gatos" %>
-        </span>
-      </a>
-
-      <!-- Serviços -->
-      <a
-        href="/services"
-        class="<%= (currentPath && currentPath.startsWith('/services')) ? 'active' : '' %>"
-      >
-        <span class="menu-icon">🧾</span>
-        <span>Serviços</span>
-      </a>
-
-      <!-- Serviços FFB (somente ADMIN) -->
-      <% if (access && access.canAccessFfbServices) { %>
-        <a
-          href="/ffb-services"
-          class="<%= (currentPath && currentPath.startsWith('/ffb-services')) ? 'active' : '' %>"
-        >
-          <span class="menu-icon">🛠️</span>
-          <span>Serviços FFB</span>
-        </a>
-      <% } %>
-
-      <!-- Usuários (somente ADMIN) -->
-      <% if (access && access.canManageUsers) { %>
-        <a
-          href="/users"
-          class="<%= (currentPath && currentPath.startsWith('/users')) ? 'active' : '' %>"
-        >
-          <span class="menu-icon">👥</span>
-          <span>Usuários</span>
-        </a>
-      <% } %>
-
-      <% if (access && access.canAccessSettings) { %>
-        <a
-          href="/settings"
-          class="<%= (currentPath && currentPath.startsWith('/settings')) ? 'active' : '' %>"
-        >
-          <span class="menu-icon">⚙️</span>
-          <span>Configurações</span>
-        </a>
-      <% } %>
-
-      <% if (access && access.canAccessBreeders) { %>
-        <div
-          style="
-            margin: 14px 0 8px;
-            padding-top: 12px;
-            border-top: 1px solid #f59e0b;
-            font-size: 11px;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: #f59e0b;
-          "
-        >
-          Gestão do Gatil
-        </div>
-        <a
-          href="/breeders"
-          class="<%= (currentPath && currentPath.startsWith('/breeders')) ? 'active' : '' %>"
-        >
-          <span class="menu-icon">🐱</span>
-          <span>Reprodutores</span>
-        </a>
-      <% } %>
-
-      <% if (access && access.canAccessLittersAdmin) { %>
-        <a
-          href="/admin/litters"
-          class="<%= (currentPath && currentPath.startsWith('/admin/litters')) ? 'active' : '' %>"
-        >
-          <span class="menu-icon">🐾</span>
-          <span>Ninhadas</span>
-        </a>
-      <% } %>
-
-      <% if (access && access.canAccessKittensAdmin) { %>
-        <a
-          href="/admin/kittens"
-          class="<%= (currentPath && currentPath.startsWith('/admin/kittens')) ? 'active' : '' %>"
-        >
-          <span class="menu-icon">🐣</span>
-          <span>Filhotes</span>
-        </a>
-      <% } %>
-
-      <% if (access && access.canAccessMatingsAdmin) { %>
-        <a
-          href="/admin/matings"
-          class="<%= (currentPath && currentPath.startsWith('/admin/matings')) ? 'active' : '' %>"
-        >
-          <span class="menu-icon">💞</span>
-          <span>Acasalamentos</span>
-        </a>
-      <% } %>
-
-      <% if (access && access.canAccessVaccinationsAdmin) { %>
-        <a
-          href="/admin/vaccinations"
-          class="<%= (currentPath && currentPath.startsWith('/admin/vaccinations')) ? 'active' : '' %>"
-        >
-          <span class="menu-icon">💉</span>
-          <span>Vacinação</span>
-        </a>
-      <% } %>
-
-      <% if (access && access.canAccessDewormingAdmin) { %>
-        <a
-          href="/admin/deworming"
-          class="<%= (currentPath && currentPath.startsWith('/admin/deworming')) ? 'active' : '' %>"
-        >
-          <span class="menu-icon">🧪</span>
-          <span>Vermifugação</span>
-        </a>
-      <% } %>
-
-      <% if (access && access.canAccessWeighingAdmin) { %>
-        <a
-          href="/admin/weighing"
-          class="<%= (currentPath && currentPath.startsWith('/admin/weighing')) ? 'active' : '' %>"
-        >
-          <span class="menu-icon">⚖️</span>
-          <span>Pesagem</span>
-        </a>
-      <% } %>
-
-      <% if (access && access.canAccessExamsAdmin) { %>
-        <a
-          href="/admin/exams"
-          class="<%= (currentPath && currentPath.startsWith('/admin/exams')) ? 'active' : '' %>"
-        >
-          <span class="menu-icon">🩺</span>
-          <span>Exames</span>
-        </a>
-      <% } %>
-
-      <% if (access && access.canAccessHistoryAdmin) { %>
-        <a
-          href="/admin/history"
-          class="<%= (currentPath && currentPath.startsWith('/admin/history')) ? 'active' : '' %>"
-        >
-          <span class="menu-icon">📚</span>
-          <span>Histórico</span>
-        </a>
-      <% } %>
-
+      <% [
+        { href: "/breeders", match: "/breeders", icon: "🐱", label: "Reprodutores", allowed: access && access.canAccessBreeders },
+        { href: "/admin/litters", match: "/admin/litters", icon: "🐾", label: "Ninhadas", allowed: access && access.canAccessLittersAdmin },
+        { href: "/admin/kittens", match: "/admin/kittens", icon: "🐣", label: "Filhotes", allowed: access && access.canAccessKittensAdmin },
+        { href: "/admin/matings", match: "/admin/matings", icon: "💞", label: "Acasalamentos", allowed: access && access.canAccessMatingsAdmin },
+        { href: "/admin/vaccinations", match: "/admin/vaccinations", icon: "💉", label: "Vacinação", allowed: access && access.canAccessVaccinationsAdmin },
+        { href: "/admin/deworming", match: "/admin/deworming", icon: "🧪", label: "Vermifugação", allowed: access && access.canAccessDewormingAdmin },
+        { href: "/admin/weighing", match: "/admin/weighing", icon: "⚖️", label: "Pesagem", allowed: access && access.canAccessWeighingAdmin },
+        { href: "/admin/exams", match: "/admin/exams", icon: "🩺", label: "Exames", allowed: access && access.canAccessExamsAdmin },
+        { href: "/admin/history", match: "/admin/history", icon: "📚", label: "Histórico", allowed: access && access.canAccessHistoryAdmin },
+      ].forEach(renderMenuItem); %>
     </nav>
   </div>
 
