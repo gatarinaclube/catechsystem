@@ -18,7 +18,7 @@
       }
       .kitten-list-actions {
         display: grid;
-        grid-template-columns: repeat(3, 118px);
+        grid-template-columns: repeat(3, 112px);
         gap: 10px;
         align-items: end;
       }
@@ -26,10 +26,44 @@
         margin-bottom: 3px;
         font-size: 10px;
       }
-      .kitten-quick-field select {
-        height: 34px;
-        padding: 5px 8px;
-        font-size: 13px;
+      .kitten-toggle {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        width: 48px;
+        height: 26px;
+      }
+      .kitten-toggle input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .kitten-toggle span {
+        width: 48px;
+        height: 26px;
+        border-radius: 999px;
+        background: #e5e7eb;
+        border: 1px solid var(--border-soft);
+        transition: background 0.16s ease, border-color 0.16s ease;
+      }
+      .kitten-toggle span::after {
+        content: "";
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #ffffff;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.22);
+        transition: transform 0.16s ease;
+      }
+      .kitten-toggle input:checked + span {
+        background: #16a34a;
+        border-color: #16a34a;
+      }
+      .kitten-toggle input:checked + span::after {
+        transform: translateX(22px);
       }
       @media (max-width: 900px) {
         .kitten-list-item {
@@ -115,24 +149,24 @@
                           <form method="post" action="/admin/kittens/<%= kitten.id %>/quick-status" class="kitten-list-actions" data-quick-kitten-status>
                             <div class="field kitten-quick-field">
                               <label class="field-label">Vendido</label>
-                              <select name="sold">
-                                <option value="NO" <%= kitten.sold ? "" : "selected" %>>NÃO</option>
-                                <option value="YES" <%= kitten.sold ? "selected" : "" %>>SIM</option>
-                              </select>
+                              <label class="kitten-toggle" title="Vendido">
+                                <input type="checkbox" name="sold" value="YES" <%= kitten.sold ? "checked" : "" %> />
+                                <span aria-hidden="true"></span>
+                              </label>
                             </div>
                             <div class="field kitten-quick-field">
                               <label class="field-label">Entregue</label>
-                              <select name="delivered">
-                                <option value="NO" <%= kitten.delivered ? "" : "selected" %>>NÃO</option>
-                                <option value="YES" <%= kitten.delivered ? "selected" : "" %>>SIM</option>
-                              </select>
+                              <label class="kitten-toggle" title="Entregue">
+                                <input type="checkbox" name="delivered" value="YES" <%= kitten.delivered ? "checked" : "" %> />
+                                <span aria-hidden="true"></span>
+                              </label>
                             </div>
                             <div class="field kitten-quick-field">
                               <label class="field-label">Padreador/Matriz</label>
-                              <select name="breedingProspect">
-                                <option value="NO" <%= kitten.breedingProspect ? "" : "selected" %>>NÃO</option>
-                                <option value="YES" <%= kitten.breedingProspect ? "selected" : "" %>>SIM</option>
-                              </select>
+                              <label class="kitten-toggle" title="Padreador/Matriz">
+                                <input type="checkbox" name="breedingProspect" value="YES" <%= kitten.breedingProspect ? "checked" : "" %> />
+                                <span aria-hidden="true"></span>
+                              </label>
                             </div>
                           </form>
                         </div>
@@ -161,8 +195,8 @@
         searchInput.addEventListener("change", syncOwnerId);
 
         document.querySelectorAll("[data-quick-kitten-status]").forEach((form) => {
-          form.querySelectorAll("select").forEach((select) => {
-            select.addEventListener("change", async () => {
+          form.querySelectorAll('input[type="checkbox"]').forEach((toggle) => {
+            toggle.addEventListener("change", async () => {
               try {
                 const response = await fetch(form.action, {
                   method: "POST",

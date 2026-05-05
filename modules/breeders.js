@@ -163,8 +163,6 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       where: {
         ...scopedOwner,
         gender: "M",
-        neutered: false,
-        OR: [{ deceased: false }, { deceased: null }],
       },
       orderBy: { name: "asc" },
     });
@@ -173,8 +171,6 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       where: {
         ...scopedOwner,
         gender: "F",
-        neutered: false,
-        OR: [{ deceased: false }, { deceased: null }],
       },
       orderBy: { name: "asc" },
     });
