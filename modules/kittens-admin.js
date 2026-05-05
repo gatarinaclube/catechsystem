@@ -137,7 +137,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       cat.litterKitten?.kittenNumber ||
       (cat.litterKitten?.index ? String(cat.litterKitten.index).padStart(4, "0") : "----");
 
-    return `${linkedKittenNumber} - ${cat.name || "Sem nome"} - ${formatDateForInput(cat.birthDate) || "-"} - ${formatMicrochip(cat.microchip)} - Vendido: ${cat.sold ? "SIM" : "NÃO"} - Entregue: ${cat.delivered ? "SIM" : "NÃO"} - Padreador/Matriz: ${cat.breedingProspect ? "SIM" : "NÃO"}`;
+    return `${linkedKittenNumber} - ${cat.name || "Sem nome"} - ${formatDateForInput(cat.birthDate) || "-"} - ${formatMicrochip(cat.microchip)}`;
   }
 
   function getKittenOrderValue(cat) {
@@ -296,6 +296,41 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         cancelPath: "/admin/kittens",
         historyPath: null,
       });
+    }
+  );
+
+  router.post(
+    "/admin/kittens/:id/quick-status",
+    requireAuth,
+    requirePermission("admin.kittens"),
+    async (req, res) => {
+      const existingKitten = await prisma.cat.findUnique({
+        where: { id: Number(req.params.id) },
+        select: { id: true },
+      });
+
+      if (!existingKitten) {
+        return res.status(404).send("Filhote não encontrado.");
+      }
+
+      if (!(await ensureCatAccess(req, existingKitten.id))) {
+        return res.status(403).send("Você não pode editar este filhote.");
+      }
+
+      await prisma.cat.update({
+        where: { id: existingKitten.id },
+        data: {
+          sold: req.body.sold === "YES",
+          delivered: req.body.delivered === "YES",
+          breedingProspect: req.body.breedingProspect === "YES",
+        },
+      });
+
+      if (req.get("X-Autosave") === "true") {
+        return res.sendStatus(204);
+      }
+
+      res.redirect("/admin/kittens");
     }
   );
 

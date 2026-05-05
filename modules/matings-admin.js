@@ -6,6 +6,7 @@ const {
   formatDate,
   formatDateInput,
   parseDate,
+  ageInMonths,
   buildDisplayName,
   classifyOperationalCat,
 } = require("../utils/cattery-admin");
@@ -18,13 +19,6 @@ const STATUS_GROUPS = [
   { key: "EM_DESENVOLVIMENTO", label: "Em Desenvolvimento" },
 ];
 
-function monthsBetween(a, b) {
-  let months =
-    (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
-  if (b.getDate() < a.getDate()) months -= 1;
-  return months;
-}
-
 function safeJsonParse(value, fallback = []) {
   if (!value) return fallback;
   try {
@@ -32,6 +26,12 @@ function safeJsonParse(value, fallback = []) {
   } catch {
     return fallback;
   }
+}
+
+function laterDate(a, b) {
+  if (!a) return b;
+  if (!b) return a;
+  return a > b ? a : b;
 }
 
 function computeNextCrossDate(femaleBirthDate, litterHistoryDates) {
@@ -53,22 +53,15 @@ function computeNextCrossDate(femaleBirthDate, litterHistoryDates) {
 
   if (recent.length === 2) {
     const [first, second] = recent;
-    if (monthsBetween(first, second) < 10) {
-      return addMonths(first, 10);
-    }
-    return addMonths(second, 4);
+    const candidate = addMonths(second, 4);
+    const twelveMonthLimit = addMonths(first, 10);
+    return laterDate(candidate, twelveMonthLimit);
   }
 
-  const [first, second, third] = recent;
-  let candidate =
-    monthsBetween(second, third) < 10 ? addMonths(second, 10) : addMonths(third, 4);
+  const [first, , third] = recent;
+  const candidate = addMonths(third, 4);
 
-  const oldestLimit = addMonths(first, 22);
-  if (candidate < oldestLimit) {
-    candidate = oldestLimit;
-  }
-
-  return candidate;
+  return laterDate(candidate, addMonths(first, 22));
 }
 
 function computeReferenceMatingDate(startDate, endDate) {
@@ -123,6 +116,29 @@ function buildPedigreeNode(cat, depth = 4) {
   };
 }
 
+function isFemaleAvailableForMatingModule(female) {
+  if (female.deceased === true || female.neutered === true) return false;
+  if (female.delivered === true) return false;
+  if ((female.kittenNumber || female.litterKitten) && female.breedingProspect !== true) {
+    return false;
+  }
+  return female.gender === "F";
+}
+
+function isDevelopingFemale(female) {
+  return ageInMonths(female.birthDate) < 10;
+}
+
+function isMaleAvailableForMatingModule(male) {
+  if (male.deceased === true || male.neutered === true) return false;
+  if (male.delivered === true) return false;
+  if ((male.kittenNumber || male.litterKitten) && male.breedingProspect !== true) {
+    return false;
+  }
+  if (ageInMonths(male.birthDate) < 10) return false;
+  return male.gender === "M";
+}
+
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
@@ -149,13 +165,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       where: {
         ...scopedOwner,
         gender: "F",
-        kittenNumber: null,
         ...(selectedOwnerId ? { ownerId: selectedOwnerId } : {}),
       },
       orderBy: { name: "asc" },
       include: {
         ...buildAncestorInclude(5),
         owner: true,
+        litterKitten: true,
       },
     });
 
@@ -163,10 +179,25 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       where: {
         ...ownerScope(req),
         gender: "M",
-        kittenNumber: null,
       },
       orderBy: { name: "asc" },
-      select: { id: true, name: true, titleBeforeName: true, titleAfterName: true, country: true, currentOwnerId: true, ownerId: true, neutered: true, deceased: true, kittenNumber: true, delivered: true, gender: true, birthDate: true },
+      select: {
+        id: true,
+        name: true,
+        titleBeforeName: true,
+        titleAfterName: true,
+        country: true,
+        currentOwnerId: true,
+        ownerId: true,
+        neutered: true,
+        deceased: true,
+        kittenNumber: true,
+        delivered: true,
+        gender: true,
+        birthDate: true,
+        breedingProspect: true,
+        litterKitten: { select: { id: true } },
+      },
     });
 
     const plans = await prisma.matingPlan.findMany({
@@ -180,14 +211,19 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const grouped = Object.fromEntries(STATUS_GROUPS.map((group) => [group.key, []]));
 
     females
-      .filter((female) => classifyOperationalCat(female) === "dams")
+      .filter((female) =>
+        isFemaleAvailableForMatingModule(female) &&
+        (classifyOperationalCat(female) === "dams" || isDevelopingFemale(female))
+      )
       .forEach((female) => {
       const plan = planMap.get(female.id);
       const litterHistory = safeJsonParse(plan?.litterHistoryJson);
       const nextCrossDate = computeNextCrossDate(female.birthDate, litterHistory);
       const dppDate = computeDpp(plan?.matingStartDate, plan?.matingEndDate);
       const gestationDays = computeGestationDays(plan?.matingStartDate, plan?.matingEndDate);
-      const status = plan?.status || "PARA_ACASALAR";
+      const status = isDevelopingFemale(female)
+        ? "EM_DESENVOLVIMENTO"
+        : plan?.status || "PARA_ACASALAR";
       const fatherName = female.father?.name || female.fatherName || "-";
       const motherName = female.mother?.name || female.motherName || "-";
 
@@ -195,13 +231,17 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       grouped[status].push({
         female,
         plan,
-        maleOptions: males.filter((male) => classifyOperationalCat(male) === "sires"),
+        maleOptions: males.filter((male) =>
+          classifyOperationalCat(male) === "sires" || isMaleAvailableForMatingModule(male)
+        ),
         litterHistory,
         nextCrossDate,
         dppDate,
         gestationDays,
         fatherName,
         motherName,
+        status,
+        birthDateLabel: formatDate(female.birthDate) || "-",
         femaleDisplayName: buildDisplayName(female),
         pedigree: buildPedigreeNode(female, 5),
       });

@@ -6,6 +6,41 @@
     <link rel="stylesheet" href="/css/theme.css" />
     <link rel="stylesheet" href="/css/layout.css" />
     <link rel="stylesheet" href="/css/cattery-admin.css" />
+    <style>
+      .kitten-list-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+      }
+      .kitten-list-main {
+        min-width: 0;
+      }
+      .kitten-list-actions {
+        display: grid;
+        grid-template-columns: repeat(3, 118px);
+        gap: 10px;
+        align-items: end;
+      }
+      .kitten-quick-field .field-label {
+        margin-bottom: 3px;
+        font-size: 10px;
+      }
+      .kitten-quick-field select {
+        height: 34px;
+        padding: 5px 8px;
+        font-size: 13px;
+      }
+      @media (max-width: 900px) {
+        .kitten-list-item {
+          align-items: stretch;
+          flex-direction: column;
+        }
+        .kitten-list-actions {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+    </style>
   </head>
   <body>
     <div class="shell">
@@ -73,8 +108,33 @@
                   <ul class="list">
                     <% group.items.forEach(function(kitten) { %>
                       <li class="item" style="border-left: 4px solid <%= kitten.deceased ? '#6b7280' : kitten.gender === 'F' ? '#db2777' : '#2563eb' %>;">
-                        <div>
-                          <a class="item-link" href="/admin/kittens/<%= kitten.id %>"><%= kitten.label %></a>
+                        <div class="kitten-list-item">
+                          <div class="kitten-list-main">
+                            <a class="item-link" href="/admin/kittens/<%= kitten.id %>"><%= kitten.label %></a>
+                          </div>
+                          <form method="post" action="/admin/kittens/<%= kitten.id %>/quick-status" class="kitten-list-actions" data-quick-kitten-status>
+                            <div class="field kitten-quick-field">
+                              <label class="field-label">Vendido</label>
+                              <select name="sold">
+                                <option value="NO" <%= kitten.sold ? "" : "selected" %>>NÃO</option>
+                                <option value="YES" <%= kitten.sold ? "selected" : "" %>>SIM</option>
+                              </select>
+                            </div>
+                            <div class="field kitten-quick-field">
+                              <label class="field-label">Entregue</label>
+                              <select name="delivered">
+                                <option value="NO" <%= kitten.delivered ? "" : "selected" %>>NÃO</option>
+                                <option value="YES" <%= kitten.delivered ? "selected" : "" %>>SIM</option>
+                              </select>
+                            </div>
+                            <div class="field kitten-quick-field">
+                              <label class="field-label">Padreador/Matriz</label>
+                              <select name="breedingProspect">
+                                <option value="NO" <%= kitten.breedingProspect ? "" : "selected" %>>NÃO</option>
+                                <option value="YES" <%= kitten.breedingProspect ? "selected" : "" %>>SIM</option>
+                              </select>
+                            </div>
+                          </form>
                         </div>
                       </li>
                     <% }) %>
@@ -99,6 +159,32 @@
 
         searchInput.addEventListener("input", syncOwnerId);
         searchInput.addEventListener("change", syncOwnerId);
+
+        document.querySelectorAll("[data-quick-kitten-status]").forEach((form) => {
+          form.querySelectorAll("select").forEach((select) => {
+            select.addEventListener("change", async () => {
+              try {
+                const response = await fetch(form.action, {
+                  method: "POST",
+                  body: new URLSearchParams(new FormData(form)),
+                  credentials: "same-origin",
+                  headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "X-Autosave": "true",
+                  },
+                });
+
+                if (!response.ok) {
+                  throw new Error("Erro ao atualizar filhote");
+                }
+
+                window.location.reload();
+              } catch (error) {
+                console.error(error);
+              }
+            });
+          });
+        });
       })();
     </script>
   </body>

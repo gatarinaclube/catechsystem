@@ -37,6 +37,12 @@
         line-height: 1.35;
         color: var(--text-muted);
       }
+      .birth-line {
+        margin-top: 4px;
+        font-size: 11px;
+        line-height: 1.35;
+        color: var(--text-muted);
+      }
       .parent-line span {
         display: block;
       }
@@ -246,6 +252,7 @@
                   <div class="mating-table">
                     <div>
                       <div class="item-title"><%= row.femaleDisplayName %></div>
+                      <div class="birth-line">Nascimento: <%= row.birthDateLabel %></div>
                       <div class="parent-line">
                         <span>Pai: <%= row.fatherName %></span>
                         <span>Mãe: <%= row.motherName %></span>
@@ -265,7 +272,7 @@
                     <div class="mini-stack">
                       <select name="status">
                         <% groups.forEach(function(statusItem) { %>
-                          <option value="<%= statusItem.key %>" <%= (row.plan?.status || "PARA_ACASALAR") === statusItem.key ? "selected" : "" %>><%= statusItem.label %></option>
+                          <option value="<%= statusItem.key %>" <%= row.status === statusItem.key ? "selected" : "" %>><%= statusItem.label %></option>
                         <% }) %>
                       </select>
                       <div class="mating-male-field">
