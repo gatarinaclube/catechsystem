@@ -133,6 +133,7 @@ model Cat {
   pedigreeFile     String?
   reproductionFile String?
   otherDocsFile    String?
+  examDocsJson     String?
   deceased         Boolean?          @default(false)
   kittenNumber     String?
   sold             Boolean?          @default(false)

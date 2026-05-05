@@ -33,7 +33,7 @@
           </div>
         <% } %>
 
-        <form method="post" action="<%= formAction %>">
+        <form method="post" action="<%= formAction %>" enctype="multipart/form-data">
           <div class="content-card" style="margin-bottom: 18px;">
             <div class="content-title">Informações do Gato</div>
 
@@ -202,6 +202,82 @@
                 </div>
               </div>
             </div>
+          </div>
+
+          <div class="content-card" style="margin-bottom: 18px;">
+            <div class="content-title">Documentos</div>
+            <div class="content-sub" style="margin-top: 4px;">
+              Envie arquivos em PDF. Limite por arquivo neste perfil: <strong><%= uploadLimit.label %></strong>.
+            </div>
+
+            <div class="grid-3" style="margin-top: 14px;">
+              <div class="field">
+                <div class="field-label">Pedigree atual</div>
+                <div class="field-value">
+                  <% if (cat?.pedigreeFile) { %>
+                    <a class="file-link" href="<%= cat.pedigreeFile %>" target="_blank">Ver arquivo</a>
+                  <% } else { %>
+                    -
+                  <% } %>
+                </div>
+                <label class="file-label" for="pedigreeFile">Novo arquivo PDF</label>
+                <input id="pedigreeFile" class="file-input" type="file" name="pedigreeFile" accept="application/pdf" />
+              </div>
+
+              <div class="field">
+                <div class="field-label">Atestado de reprodução atual</div>
+                <div class="field-value">
+                  <% if (cat?.reproductionFile) { %>
+                    <a class="file-link" href="<%= cat.reproductionFile %>" target="_blank">Ver arquivo</a>
+                  <% } else { %>
+                    -
+                  <% } %>
+                </div>
+                <label class="file-label" for="reproductionFile">Novo arquivo PDF</label>
+                <input id="reproductionFile" class="file-input" type="file" name="reproductionFile" accept="application/pdf" />
+              </div>
+
+              <div class="field">
+                <div class="field-label">Documentos extras atuais</div>
+                <div class="field-value">
+                  <% if (cat?.otherDocsFile) { %>
+                    <a class="file-link" href="<%= cat.otherDocsFile %>" target="_blank">Ver arquivo</a>
+                  <% } else { %>
+                    -
+                  <% } %>
+                </div>
+                <label class="file-label" for="otherDocsFile">Novo arquivo PDF</label>
+                <input id="otherDocsFile" class="file-input" type="file" name="otherDocsFile" accept="application/pdf" />
+              </div>
+            </div>
+
+            <% if (selectedExams && selectedExams.length) { %>
+              <hr style="margin: 18px 0; border:0; border-top:1px solid var(--border-soft);" />
+              <div class="content-title" style="font-size: 15px;">Exames</div>
+              <div class="grid-3" style="margin-top: 14px;">
+                <% selectedExams.forEach(function(exam) { %>
+                  <% const examKey = normalizeExamKey(exam); %>
+                  <div class="field">
+                    <div class="field-label"><%= exam %></div>
+                    <div class="field-value">
+                      <% if (examDocs && examDocs[examKey]) { %>
+                        <a class="file-link" href="<%= examDocs[examKey] %>" target="_blank">Ver arquivo</a>
+                      <% } else { %>
+                        -
+                      <% } %>
+                    </div>
+                    <label class="file-label" for="examDoc_<%= examKey %>">Novo arquivo PDF</label>
+                    <input
+                      id="examDoc_<%= examKey %>"
+                      class="file-input"
+                      type="file"
+                      name="examDoc_<%= examKey %>"
+                      accept="application/pdf"
+                    />
+                  </div>
+                <% }) %>
+              </div>
+            <% } %>
           </div>
 
           <div class="content-card">

@@ -2,7 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const { canViewAllData } = require("../utils/access");
+const { ROLES, canViewAllData, normalizeRole } = require("../utils/access");
 
 const COUNTRIES = [
   "BR","AR","AT","BE","BG","BY","CA","CH","CL","CO","CY","CZ",
@@ -18,6 +18,15 @@ const BREEDS = [
   "PEB","RAG","RUS","SBI","SIB","SNO","SOK","SPH","SRL","SRS","THA","TUA","TUV"
 ];
 
+const EXAM_OPTIONS = ["PKDef", "PKD", "PRA", "HCM - Genético", "HCM - Doppler"];
+
+const DOCUMENT_UPLOAD_LIMITS = {
+  [ROLES.BASIC]: { bytes: 300 * 1024, label: "300 KB" },
+  [ROLES.MASTER]: { bytes: 700 * 1024, label: "700 KB" },
+  [ROLES.PREMIUM]: { bytes: 2 * 1024 * 1024, label: "2 MB" },
+  [ROLES.ADMIN]: { bytes: 5 * 1024 * 1024, label: "5 MB" },
+};
+
 function createUploadMiddleware() {
   const diskRoot =
     process.env.UPLOADS_DIR || path.join(__dirname, "..", "public", "uploads");
@@ -31,12 +40,72 @@ function createUploadMiddleware() {
     destination: (req, file, cb) => cb(null, uploadDir),
     filename: (req, file, cb) => {
       const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      const ext = path.extname(file.originalname);
+      const ext = path.extname(file.originalname).toLowerCase();
       cb(null, uniqueSuffix + ext);
     },
   });
 
-  return multer({ storage });
+  return multer({
+    storage,
+    limits: { fileSize: DOCUMENT_UPLOAD_LIMITS[ROLES.ADMIN].bytes },
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype !== "application/pdf") {
+        return cb(new Error("Os documentos devem ser enviados exclusivamente em PDF."));
+      }
+      cb(null, true);
+    },
+  });
+}
+
+function safeJsonParse(value, fallback = {}) {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+function getUploadLimit(role) {
+  return DOCUMENT_UPLOAD_LIMITS[normalizeRole(role)] || DOCUMENT_UPLOAD_LIMITS[ROLES.BASIC];
+}
+
+function normalizeExamKey(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .toLowerCase();
+}
+
+function parseExamList(value) {
+  const parsed = safeJsonParse(value, []);
+  return Array.isArray(parsed)
+    ? parsed.filter((exam) => EXAM_OPTIONS.includes(exam))
+    : [];
+}
+
+function validateUploadedFiles(req) {
+  const limit = getUploadLimit(req.session?.userRole);
+  const oversized = (req.files || []).find((file) => file.size > limit.bytes);
+  if (!oversized) return;
+
+  const error = new Error(`O arquivo ${oversized.originalname} ultrapassa o limite de ${limit.label} do seu plano.`);
+  error.code = "UPLOAD_LIMIT";
+  throw error;
+}
+
+function removeUploadedFiles(files = []) {
+  files.forEach((file) => {
+    if (file?.path) {
+      fs.unlink(file.path, () => {});
+    }
+  });
+}
+
+function statusForError(err) {
+  return err.code === "DUPLICATE_MICROCHIP" || err.code === "UPLOAD_LIMIT" ? 400 : 500;
 }
 
 function normalizeMicrochip(microchip) {
@@ -145,6 +214,21 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
   const upload = createUploadMiddleware();
 
+  function handleUpload(req, res, next) {
+    upload.any()(req, res, (err) => {
+      if (err) {
+        const uploadError = new Error(
+          err.code === "LIMIT_FILE_SIZE"
+            ? `O arquivo ultrapassa o limite máximo de ${DOCUMENT_UPLOAD_LIMITS[ROLES.ADMIN].label}.`
+            : err.message || "Erro ao enviar documento."
+        );
+        uploadError.code = "UPLOAD_LIMIT";
+        req.uploadError = uploadError;
+      }
+      next();
+    });
+  }
+
   function ownerScope(req) {
     return canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId };
   }
@@ -186,6 +270,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         ? "YES"
         : "NO"
       : "NO";
+    const settingsRows = await prisma.$queryRaw`
+      SELECT "examsJson"
+      FROM "UserSettings"
+      WHERE "userId" = ${cat?.ownerId || req.session.userId}
+      LIMIT 1
+    `;
+    const selectedExams = parseExamList(settingsRows[0]?.examsJson);
 
     return {
       user: req.user,
@@ -198,6 +289,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       breedingValue,
       ownershipValue,
       deceasedValue,
+      uploadLimit: getUploadLimit(req.session?.userRole),
+      selectedExams,
+      examDocs: safeJsonParse(cat?.examDocsJson, {}),
+      normalizeExamKey,
       ageLabel: cat ? formatAge(calculateAge(cat.birthDate)) : "",
     };
   }
@@ -321,6 +416,41 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     };
   }
 
+  function applyUploadedDocuments(req, data, existingCat = null) {
+    if (req.uploadError) {
+      throw req.uploadError;
+    }
+
+    validateUploadedFiles(req);
+
+    const files = req.files || [];
+    const byField = new Map(files.map((file) => [file.fieldname, file]));
+    const filePath = (fieldName, fallback = null) => {
+      const file = byField.get(fieldName);
+      return file ? `/uploads/cats/${file.filename}` : fallback;
+    };
+
+    data.pedigreeFile = filePath("pedigreeFile", existingCat?.pedigreeFile || null);
+    data.reproductionFile = filePath(
+      "reproductionFile",
+      existingCat?.reproductionFile || null
+    );
+    data.otherDocsFile = filePath("otherDocsFile", existingCat?.otherDocsFile || null);
+
+    const examDocs = safeJsonParse(existingCat?.examDocsJson, {});
+    Object.keys(examDocs).forEach((key) => {
+      if (byField.has(`examDoc_${key}`)) delete examDocs[key];
+    });
+
+    for (const [fieldName, file] of byField.entries()) {
+      if (!fieldName.startsWith("examDoc_")) continue;
+      const key = fieldName.replace("examDoc_", "");
+      examDocs[key] = `/uploads/cats/${file.filename}`;
+    }
+
+    data.examDocsJson = JSON.stringify(examDocs);
+  }
+
   router.get(
     "/breeders",
     requireAuth,
@@ -395,15 +525,17 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     "/breeders",
     requireAuth,
     requirePermission("admin.breeders"),
-    upload.none(),
+    handleUpload,
     async (req, res) => {
       try {
         const data = await parseBreederPayload(req);
+        applyUploadedDocuments(req, data, null);
         const breeder = await prisma.cat.create({ data });
         res.redirect(`/breeders/${breeder.id}`);
       } catch (err) {
+        removeUploadedFiles(req.files);
         const cat = { ...req.body };
-        res.status(err.code === "DUPLICATE_MICROCHIP" ? 400 : 500).render(
+        res.status(statusForError(err)).render(
           "breeders/form",
           {
             ...(await buildFormContext(req, cat)),
@@ -413,7 +545,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             historyPath: null,
             cancelPath: "/breeders",
             error:
-              err.code === "DUPLICATE_MICROCHIP"
+              err.code === "DUPLICATE_MICROCHIP" || err.code === "UPLOAD_LIMIT"
                 ? err.message
                 : "Erro ao salvar o reprodutor.",
           }
@@ -455,7 +587,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     "/breeders/:id",
     requireAuth,
     requirePermission("admin.breeders"),
-    upload.none(),
+    handleUpload,
     async (req, res) => {
       const existingCat = await prisma.cat.findUnique({
         where: { id: Number(req.params.id) },
@@ -471,14 +603,16 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       try {
         const data = await parseBreederPayload(req, existingCat);
+        applyUploadedDocuments(req, data, existingCat);
         await prisma.cat.update({
           where: { id: existingCat.id },
           data,
         });
         res.redirect(`/breeders/${existingCat.id}`);
       } catch (err) {
+        removeUploadedFiles(req.files);
         const cat = { ...existingCat, ...req.body, id: existingCat.id };
-        res.status(err.code === "DUPLICATE_MICROCHIP" ? 400 : 500).render(
+        res.status(statusForError(err)).render(
           "breeders/form",
           {
             ...(await buildFormContext(req, cat)),
@@ -488,7 +622,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             historyPath: `/admin/history/${existingCat.id}`,
             cancelPath: "/breeders",
             error:
-              err.code === "DUPLICATE_MICROCHIP"
+              err.code === "DUPLICATE_MICROCHIP" || err.code === "UPLOAD_LIMIT"
                 ? err.message
                 : "Erro ao atualizar o reprodutor.",
           }
