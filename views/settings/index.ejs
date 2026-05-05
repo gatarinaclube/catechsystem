@@ -126,14 +126,18 @@
                 <input id="catteryName" name="catteryName" type="text" value="<%= settings.catteryName || '' %>" />
               </div>
               <div class="field">
-                <label class="field-label" for="veterinarian">Veterinário</label>
-                <input id="veterinarian" name="veterinarian" type="text" value="<%= settings.veterinarian || '' %>" />
+                <label class="field-label" for="catteryEmail">E-mail</label>
+                <input id="catteryEmail" name="catteryEmail" type="email" value="<%= settings.catteryEmail || '' %>" />
               </div>
             </div>
+          </div>
+
+          <div class="content-card" style="margin-bottom:18px;">
+            <div class="content-title">Dados do Veterinário</div>
             <div class="grid-3" style="margin-top:12px;">
               <div class="field">
-                <label class="field-label" for="veterinarianName">Nome do Veterinário</label>
-                <input id="veterinarianName" name="veterinarianName" type="text" value="<%= settings.veterinarianName || '' %>" />
+                <label class="field-label" for="veterinarian">Veterinário</label>
+                <input id="veterinarian" name="veterinarian" type="text" value="<%= settings.veterinarian || '' %>" />
               </div>
               <div class="field">
                 <label class="field-label" for="crmv">CRMV</label>
@@ -144,7 +148,7 @@
                 <input id="crmvUf" name="crmvUf" type="text" maxlength="2" value="<%= settings.crmvUf || '' %>" />
               </div>
             </div>
-            <div class="grid-2" style="margin-top:12px;">
+            <div class="grid-3" style="margin-top:12px;">
               <div class="field">
                 <label class="field-label" for="veterinarianAddress">Endereço</label>
                 <input id="veterinarianAddress" name="veterinarianAddress" type="text" value="<%= settings.veterinarianAddress || '' %>" />
@@ -152,6 +156,10 @@
               <div class="field">
                 <label class="field-label" for="veterinarianPhone">Telefone</label>
                 <input id="veterinarianPhone" name="veterinarianPhone" type="text" value="<%= settings.veterinarianPhone || '' %>" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="veterinarianEmail">E-mail</label>
+                <input id="veterinarianEmail" name="veterinarianEmail" type="email" value="<%= settings.veterinarianEmail || '' %>" />
               </div>
             </div>
             <div class="section-note">

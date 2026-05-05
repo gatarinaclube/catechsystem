@@ -156,6 +156,25 @@ function buildDisplayName(cat) {
     .join(" ");
 }
 
+function shouldShowCatteryPrefix(cat) {
+  return Boolean((cat.kittenNumber || cat.litterKitten) && cat.breedingProspect === true);
+}
+
+function buildBreederDisplayName(cat, catteryName = "") {
+  const displayName = buildDisplayName(cat);
+  const cleanCatteryName = String(catteryName || "").trim();
+
+  if (!shouldShowCatteryPrefix(cat) || !cleanCatteryName) {
+    return displayName;
+  }
+
+  if (displayName.toLowerCase().startsWith(`${cleanCatteryName.toLowerCase()} `)) {
+    return displayName;
+  }
+
+  return `${cleanCatteryName} ${displayName}`;
+}
+
 function classifyBreeder(cat) {
   const age = calculateAge(cat.birthDate);
   const isKittenRecord = Boolean(cat.kittenNumber || cat.litterKitten);
@@ -252,6 +271,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
   async function buildFormContext(req, cat = null) {
     const scopedOwner = ownerScope(req);
+    const ownerIdForSettings = cat?.ownerId || req.session.userId;
+    const ownerSettings = await prisma.userSettings.findUnique({
+      where: { userId: ownerIdForSettings },
+      select: { catteryName: true, examsJson: true },
+    });
     const maleCats = await prisma.cat.findMany({
       where: {
         ...scopedOwner,
@@ -285,21 +309,22 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         ? "YES"
         : "NO"
       : "NO";
-    const settingsRows = await prisma.$queryRaw`
-      SELECT "examsJson"
-      FROM "UserSettings"
-      WHERE "userId" = ${cat?.ownerId || req.session.userId}
-      LIMIT 1
-    `;
-    const selectedExams = parseExamList(settingsRows[0]?.examsJson);
+    const selectedExams = parseExamList(ownerSettings?.examsJson);
+    const catteryName = ownerSettings?.catteryName || "";
 
     return {
       user: req.user,
       currentPath: req.path,
       countries: COUNTRIES,
       breeds: BREEDS,
-      maleCats: maleCats.filter(canAppearAsParentOption),
-      femaleCats: femaleCats.filter(canAppearAsParentOption),
+      maleCats: maleCats.filter(canAppearAsParentOption).map((maleCat) => ({
+        ...maleCat,
+        displayName: buildBreederDisplayName(maleCat, catteryName),
+      })),
+      femaleCats: femaleCats.filter(canAppearAsParentOption).map((femaleCat) => ({
+        ...femaleCat,
+        displayName: buildBreederDisplayName(femaleCat, catteryName),
+      })),
       cat,
       breedingValue,
       ownershipValue,
@@ -487,6 +512,18 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         },
         orderBy: { name: "asc" },
       });
+      const ownerIds = Array.from(
+        new Set(cats.map((cat) => cat.ownerId).filter(Boolean))
+      );
+      const settings = ownerIds.length
+        ? await prisma.userSettings.findMany({
+            where: { userId: { in: ownerIds } },
+            select: { userId: true, catteryName: true },
+          })
+        : [];
+      const catteryNameByUserId = new Map(
+        settings.map((setting) => [setting.userId, setting.catteryName || ""])
+      );
 
       const groups = {
         sires: [],
@@ -499,7 +536,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         const age = calculateAge(cat.birthDate);
         const enrichedCat = {
           ...cat,
-          displayName: buildDisplayName(cat),
+          displayName: buildBreederDisplayName(
+            cat,
+            catteryNameByUserId.get(cat.ownerId) || ""
+          ),
           ageLabel: formatAge(age),
         };
 

@@ -149,7 +149,7 @@
                 <select name="fatherId" id="fatherId">
                   <option value="">Selecione um padreador</option>
                   <% maleCats.forEach(function(maleCat) { %>
-                    <option value="<%= maleCat.id %>" <%= Number(cat?.fatherId || cat?.fatherId) === maleCat.id ? "selected" : "" %>><%= maleCat.name %></option>
+                    <option value="<%= maleCat.id %>" <%= Number(cat?.fatherId || cat?.fatherId) === maleCat.id ? "selected" : "" %>><%= maleCat.displayName || maleCat.name %></option>
                   <% }) %>
                 </select>
                 <div style="margin-top:10px;">
@@ -178,7 +178,7 @@
                 <select name="motherId" id="motherId">
                   <option value="">Selecione uma matriz</option>
                   <% femaleCats.forEach(function(femaleCat) { %>
-                    <option value="<%= femaleCat.id %>" <%= Number(cat?.motherId || cat?.motherId) === femaleCat.id ? "selected" : "" %>><%= femaleCat.name %></option>
+                    <option value="<%= femaleCat.id %>" <%= Number(cat?.motherId || cat?.motherId) === femaleCat.id ? "selected" : "" %>><%= femaleCat.displayName || femaleCat.name %></option>
                   <% }) %>
                 </select>
                 <div style="margin-top:10px;">

@@ -67,12 +67,14 @@ model UserSettings {
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId          Int      @unique
   catteryName     String?
+  catteryEmail    String?
   veterinarian    String?
   veterinarianName String?
   crmv            String?
   crmvUf          String?
   veterinarianAddress String?
   veterinarianPhone String?
+  veterinarianEmail String?
   logoPath        String?
   membershipsJson String?
   breedsJson      String?
