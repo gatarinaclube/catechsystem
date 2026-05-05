@@ -18,20 +18,27 @@
       }
       .kitten-list-actions {
         display: grid;
-        grid-template-columns: repeat(3, 112px);
-        gap: 10px;
-        align-items: end;
+        grid-template-columns: repeat(3, max-content);
+        gap: 14px;
+        align-items: center;
+      }
+      .kitten-quick-field {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0;
       }
       .kitten-quick-field .field-label {
-        margin-bottom: 3px;
+        margin: 0;
         font-size: 10px;
+        white-space: nowrap;
       }
       .kitten-toggle {
         position: relative;
         display: inline-flex;
         align-items: center;
         width: 48px;
-        height: 26px;
+        height: 20px;
       }
       .kitten-toggle input {
         position: absolute;
@@ -40,7 +47,7 @@
       }
       .kitten-toggle span {
         width: 48px;
-        height: 26px;
+        height: 20px;
         border-radius: 999px;
         background: #e5e7eb;
         border: 1px solid var(--border-soft);
@@ -49,10 +56,10 @@
       .kitten-toggle span::after {
         content: "";
         position: absolute;
-        top: 4px;
+        top: 3px;
         left: 4px;
-        width: 18px;
-        height: 18px;
+        width: 14px;
+        height: 14px;
         border-radius: 50%;
         background: #ffffff;
         box-shadow: 0 1px 3px rgba(15, 23, 42, 0.22);
@@ -63,7 +70,7 @@
         border-color: #16a34a;
       }
       .kitten-toggle input:checked + span::after {
-        transform: translateX(22px);
+        transform: translateX(26px);
       }
       @media (max-width: 900px) {
         .kitten-list-item {
@@ -71,7 +78,7 @@
           flex-direction: column;
         }
         .kitten-list-actions {
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: repeat(3, max-content);
         }
       }
     </style>
@@ -147,22 +154,22 @@
                             <a class="item-link" href="/admin/kittens/<%= kitten.id %>"><%= kitten.label %></a>
                           </div>
                           <form method="post" action="/admin/kittens/<%= kitten.id %>/quick-status" class="kitten-list-actions" data-quick-kitten-status>
-                            <div class="field kitten-quick-field">
-                              <label class="field-label">Vendido</label>
+                            <div class="kitten-quick-field">
+                              <span class="field-label">Vendido:</span>
                               <label class="kitten-toggle" title="Vendido">
                                 <input type="checkbox" name="sold" value="YES" <%= kitten.sold ? "checked" : "" %> />
                                 <span aria-hidden="true"></span>
                               </label>
                             </div>
-                            <div class="field kitten-quick-field">
-                              <label class="field-label">Entregue</label>
+                            <div class="kitten-quick-field">
+                              <span class="field-label">Entregue:</span>
                               <label class="kitten-toggle" title="Entregue">
                                 <input type="checkbox" name="delivered" value="YES" <%= kitten.delivered ? "checked" : "" %> />
                                 <span aria-hidden="true"></span>
                               </label>
                             </div>
-                            <div class="field kitten-quick-field">
-                              <label class="field-label">Padreador/Matriz</label>
+                            <div class="kitten-quick-field">
+                              <span class="field-label">Padreador/Matriz:</span>
                               <label class="kitten-toggle" title="Padreador/Matriz">
                                 <input type="checkbox" name="breedingProspect" value="YES" <%= kitten.breedingProspect ? "checked" : "" %> />
                                 <span aria-hidden="true"></span>

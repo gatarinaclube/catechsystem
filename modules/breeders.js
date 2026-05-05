@@ -210,6 +210,15 @@ function mapBreedingValue(cat) {
   return cat.neutered === true ? "NOT_FOR_BREEDING" : "FOR_BREEDING";
 }
 
+function canAppearAsParentOption(cat) {
+  const isKittenFromLitter = Boolean(cat.kittenNumber || cat.litterKitten);
+  if (!isKittenFromLitter) return true;
+  if (cat.breedingProspect !== true) return false;
+
+  const age = calculateAge(cat.birthDate);
+  return Boolean(age && age.totalMonths >= 10);
+}
+
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
   const upload = createUploadMiddleware();
@@ -248,6 +257,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         ...scopedOwner,
         gender: "M",
       },
+      include: {
+        litterKitten: true,
+      },
       orderBy: { name: "asc" },
     });
 
@@ -255,6 +267,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       where: {
         ...scopedOwner,
         gender: "F",
+      },
+      include: {
+        litterKitten: true,
       },
       orderBy: { name: "asc" },
     });
@@ -283,8 +298,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       currentPath: req.path,
       countries: COUNTRIES,
       breeds: BREEDS,
-      maleCats,
-      femaleCats,
+      maleCats: maleCats.filter(canAppearAsParentOption),
+      femaleCats: femaleCats.filter(canAppearAsParentOption),
       cat,
       breedingValue,
       ownershipValue,
