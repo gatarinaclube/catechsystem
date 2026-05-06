@@ -418,7 +418,7 @@ limitedKittens.forEach((k, idx) => {
   let cx = tableLeft;
 
   // Nº
-  doc.text(k.index || idx + 1, cx, rowY, { width: colWidths.n });
+  doc.text(k.kittenNumber || k.index || idx + 1, cx, rowY, { width: colWidths.n });
   cx += colWidths.n;
 
   // Nome (gatil + filhote)

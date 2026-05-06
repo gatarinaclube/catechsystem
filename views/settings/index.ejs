@@ -145,7 +145,12 @@
               </div>
               <div class="field">
                 <label class="field-label" for="crmvUf">UF</label>
-                <input id="crmvUf" name="crmvUf" type="text" maxlength="2" value="<%= settings.crmvUf || '' %>" />
+                <select id="crmvUf" name="crmvUf">
+                  <option value="">UF</option>
+                  <% ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"].forEach(function(uf) { %>
+                    <option value="<%= uf %>" <%= settings.crmvUf === uf ? "selected" : "" %>><%= uf %></option>
+                  <% }) %>
+                </select>
               </div>
             </div>
             <div class="grid-3" style="margin-top:12px;">

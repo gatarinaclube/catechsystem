@@ -161,18 +161,25 @@ function shouldShowCatteryPrefix(cat) {
 }
 
 function buildBreederDisplayName(cat, catteryName = "") {
-  const displayName = buildDisplayName(cat);
   const cleanCatteryName = String(catteryName || "").trim();
+  const baseName = String(cat.name || "").trim();
+  const prefixedName =
+    cleanCatteryName &&
+    shouldShowCatteryPrefix(cat) &&
+    !baseName.toLowerCase().startsWith(`${cleanCatteryName.toLowerCase()} `)
+      ? `${cleanCatteryName} ${baseName}`
+      : baseName;
+  const displayName = [
+    cat.titleBeforeName,
+    cat.country ? `${cat.country}*` : null,
+    prefixedName,
+    cat.titleAfterName,
+  ].filter(Boolean).join(" ");
 
   if (!shouldShowCatteryPrefix(cat) || !cleanCatteryName) {
     return displayName;
   }
-
-  if (displayName.toLowerCase().startsWith(`${cleanCatteryName.toLowerCase()} `)) {
-    return displayName;
-  }
-
-  return `${cleanCatteryName} ${displayName}`;
+  return displayName;
 }
 
 function classifyBreeder(cat) {

@@ -12,6 +12,54 @@ function escapeHtml(str) {
     .replaceAll("'", "&#039;");
 }
 
+function cleanText(value) {
+  const text = typeof value === "string" ? value.trim() : "";
+  return text || null;
+}
+
+function parseDateInput(value) {
+  if (typeof value !== "string" || !value.trim()) {
+    return null;
+  }
+
+  const normalized = value.trim().slice(-10);
+  const [year, month, day] = normalized.split("-").map(Number);
+
+  if (!year || !month || !day) {
+    return null;
+  }
+
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+function parseOptionalInt(value) {
+  const number = Number.parseInt(value, 10);
+  return Number.isFinite(number) ? number : null;
+}
+
+function normalizeKittenRows(kittens) {
+  if (Array.isArray(kittens)) {
+    return kittens;
+  }
+
+  if (kittens && typeof kittens === "object") {
+    return Object.keys(kittens)
+      .sort((a, b) => Number(a) - Number(b))
+      .map((key) => kittens[key]);
+  }
+
+  return [];
+}
+
+function getLitterIdFromService(service) {
+  if (service?.litterId) {
+    return service.litterId;
+  }
+
+  const match = String(service?.description || "").match(/#(\d+)/);
+  return match ? Number(match[1]) : null;
+}
+
 
 module.exports = (prisma, requireAuth, requireAdmin) => {
   const router = express.Router();
@@ -89,11 +137,9 @@ router.get(
       let sire = null;
       let dam = null;
 
-      if (service.description) {
-        const match = service.description.match(/#(\d+)/);
-        if (match) {
-          const litterId = parseInt(match[1], 10);
+      const litterId = getLitterIdFromService(service);
 
+      if (litterId) {
           litter = await prisma.litter.findUnique({
             where: { id: litterId },
             include: {
@@ -116,7 +162,6 @@ router.get(
               });
             }
           }
-        }
       }
 
       res.render("ffb-services/edit", {
@@ -161,24 +206,16 @@ router.post(
         return res.status(404).send("Serviço não encontrado.");
       }
 
-      // ===============================
-// LEITURA DOS FILHOTES DO FORM
-// ===============================
-const kittens = req.body.kittens || [];
-
 // ===============================
 // BUSCAR NINHADA PELO ID
 // ===============================
 let litter = null;
+const litterId = getLitterIdFromService(service);
 
-if (service.description) {
-  const match = service.description.match(/#(\d+)/);
-  if (match) {
-    const litterId = Number(match[1]);
+if (litterId) {
     litter = await prisma.litter.findUnique({
       where: { id: litterId },
     });
-  }
 }
 
 
@@ -207,29 +244,146 @@ if (service.description) {
       }
 
       // =====================================
+      // MAPA DE NINHADA - DADOS GERAIS
+      // =====================================
+      const litterBirthDate = parseDateInput(req.body.litterBirthDate);
+      const litterCount = parseOptionalInt(req.body.litterCount);
+
+      if (litter) {
+        if (!cleanText(req.body.catteryName)) {
+          return res.status(400).send("Informe o nome do gatil.");
+        }
+
+        if (!litterBirthDate) {
+          return res.status(400).send("Informe a data de nascimento da ninhada.");
+        }
+
+        if (!Number.isInteger(litterCount) || litterCount < 1 || litterCount > 9) {
+          return res.status(400).send("Informe um número de filhotes entre 1 e 9.");
+        }
+
+        await prisma.litter.update({
+          where: { id: litter.id },
+          data: {
+            maleName: cleanText(req.body.maleName),
+            maleBreed: cleanText(req.body.maleBreed),
+            maleEms: cleanText(req.body.maleEms),
+            maleMicrochip: req.body.maleMicrochip
+              ? String(req.body.maleMicrochip).replace(/\D/g, "").slice(0, 15)
+              : null,
+            maleFfbLo: cleanText(req.body.maleFfbLo),
+            maleOwnership: req.body.maleOwnership === "NOT_OWNER" ? "NOT_OWNER" : "OWNER",
+            externalOwnerName: cleanText(req.body.externalOwnerName),
+            externalOwnerEmail: cleanText(req.body.externalOwnerEmail),
+            externalOwnerCpf: cleanText(req.body.externalOwnerCpf),
+            externalOwnerPhone: cleanText(req.body.externalOwnerPhone),
+            externalOwnerCattery: cleanText(req.body.externalOwnerCattery),
+            femaleName: cleanText(req.body.femaleName),
+            femaleBreed: cleanText(req.body.femaleBreed),
+            femaleEms: cleanText(req.body.femaleEms),
+            femaleMicrochip: req.body.femaleMicrochip
+              ? String(req.body.femaleMicrochip).replace(/\D/g, "").slice(0, 15)
+              : null,
+            femaleFfbLo: cleanText(req.body.femaleFfbLo),
+            catteryCountry: cleanText(req.body.litterCountry),
+            catteryName: cleanText(req.body.catteryName),
+            litterCount,
+            litterBirthDate,
+            historyNotes: cleanText(req.body.kittensGeneralObs),
+          },
+        });
+
+        const linkedKittens = await prisma.litterKitten.findMany({
+          where: {
+            litterId: litter.id,
+            kittenCatId: { not: null },
+          },
+          select: { kittenCatId: true },
+        });
+        const linkedCatIds = linkedKittens
+          .map((kitten) => kitten.kittenCatId)
+          .filter(Boolean);
+
+        if (linkedCatIds.length) {
+          await prisma.cat.updateMany({
+            where: { id: { in: linkedCatIds } },
+            data: { birthDate: litterBirthDate },
+          });
+        }
+      }
+
+      // =====================================
 // ATUALIZAR FILHOTES (EMS, RAÇA, ETC)
 // =====================================
-if (litter && Array.isArray(kittens)) {
-  for (let i = 0; i < kittens.length; i++) {
-    const k = kittens[i];
+const kittenRows = normalizeKittenRows(req.body.kittens);
+
+if (litter && kittenRows.length) {
+  for (let i = 0; i < kittenRows.length; i++) {
+    const k = kittenRows[i];
     if (!k) continue;
 
-    await prisma.litterKitten.updateMany({
+    if (!cleanText(k.kittenNumber)) {
+      return res.status(400).send(`Informe o número de pedigree do filhote ${i + 1}.`);
+    }
+
+    if (!cleanText(k.breed)) {
+      return res.status(400).send(`Informe a raça do filhote ${i + 1}.`);
+    }
+
+    if (!cleanText(k.emsEyes)) {
+      return res.status(400).send(`Informe a cor/EMS do filhote ${i + 1}.`);
+    }
+
+    if (!cleanText(k.sex)) {
+      return res.status(400).send(`Informe o sexo do filhote ${i + 1}.`);
+    }
+
+    const microchip = k.microchip
+      ? String(k.microchip).replace(/\D/g, "").slice(0, 15)
+      : null;
+
+    const updatedKitten = await prisma.litterKitten.updateMany({
       where: {
         litterId: litter.id,
         index: i + 1, // ⚠️ índice no banco começa em 1
       },
       data: {
-        name: k.name || null,
-        breed: k.breed || null,
-        emsEyes: k.emsEyes || null, // 🔥 AQUI ESTAVA O PROBLEMA
-        sex: k.sex || null,
-        microchip: k.microchip
-          ? k.microchip.replace(/\D/g, "").slice(0, 15)
-          : null,
+        kittenNumber: cleanText(k.kittenNumber),
+        name: cleanText(k.name),
+        breed: cleanText(k.breed),
+        emsEyes: cleanText(k.emsEyes),
+        sex: cleanText(k.sex),
+        microchip,
         breeding: k.breeding || null,
       },
     });
+
+    if (updatedKitten.count > 0) {
+      const litterKitten = await prisma.litterKitten.findFirst({
+        where: { litterId: litter.id, index: i + 1 },
+        select: { kittenCatId: true },
+      });
+
+      if (litterKitten?.kittenCatId) {
+        const catData = {
+          birthDate: litterBirthDate,
+          gender: cleanText(k.sex),
+          breed: cleanText(k.breed),
+          emsCode: cleanText(k.emsEyes),
+          microchip,
+          kittenNumber: cleanText(k.kittenNumber),
+        };
+
+        if (cleanText(k.name)) {
+          catData.name = cleanText(k.name);
+        }
+
+        await prisma.cat.update({
+          where: { id: litterKitten.kittenCatId },
+          data: catData,
+        });
+      }
+    }
   }
 }
 
@@ -241,6 +395,7 @@ if (litter && Array.isArray(kittens)) {
         data: {
           description: req.body.description,
           status: req.body.status,
+          ...(litter ? { litterId: litter.id } : {}),
         },
       });
 

@@ -29,6 +29,29 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+function cleanText(value) {
+  const text = typeof value === "string" ? value.trim() : "";
+  return text || null;
+}
+
+function hasKittenFormData(body, index) {
+  return [
+    `kitten${index}_kittenNumber`,
+    `kitten${index}_nameSuffix`,
+    `kitten${index}_ems`,
+    `kitten${index}_sex`,
+    `kitten${index}_microchip`,
+    `kitten${index}_breeding`,
+    `kitten${index}_breed`,
+  ].some((key) => cleanText(body[key]));
+}
+
+function requiredFieldError(message) {
+  const error = new Error(message);
+  error.status = 400;
+  return error;
+}
+
 
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
@@ -182,6 +205,18 @@ console.log("=======================");
       const litterCountInt =
         litterCount && litterCount !== "" ? parseInt(litterCount, 10) : null;
 
+      if (!cleanText(req.body.catteryName)) {
+        throw requiredFieldError("Informe o nome do gatil.");
+      }
+
+      if (!cleanText(litterBirthDate)) {
+        throw requiredFieldError("Informe a data de nascimento da ninhada.");
+      }
+
+      if (!Number.isInteger(litterCountInt) || litterCountInt < 1 || litterCountInt > 9) {
+        throw requiredFieldError("Informe um número de filhotes entre 1 e 9.");
+      }
+
       // Normalizar a data (ex.: veio "12025-10-10" -> usamos os últimos 10 chars)
       let litterBirthDateObj = null;
 if (litterBirthDate && litterBirthDate.trim() !== "") {
@@ -200,6 +235,7 @@ if (litterBirthDate && litterBirthDate.trim() !== "") {
       // kitten1_microchip, kitten1_breeding, ...
       const kittensData = [];
       for (let i = 1; i <= 9; i++) {
+        const kittenNumber = req.body[`kitten${i}_kittenNumber`];
         const nameSuffix = req.body[`kitten${i}_nameSuffix`]; // Nome sem o gatil
         const ems = req.body[`kitten${i}_ems`];
         const sex = req.body[`kitten${i}_sex`];
@@ -210,11 +246,37 @@ if (litterBirthDate && litterBirthDate.trim() !== "") {
         // const fullName = req.body[`kitten${i}_fullName`];
 
         const hasAnyValue =
+          (kittenNumber && kittenNumber.trim() !== "") ||
           (nameSuffix && nameSuffix.trim() !== "") ||
+          (breed && breed.trim() !== "") ||
           (ems && ems.trim() !== "") ||
           (sex && sex.trim() !== "") ||
           (mcRaw && mcRaw.trim() !== "") ||
           (breeding && breeding.trim() !== "");
+
+        if (i <= litterCountInt) {
+          if (!cleanText(kittenNumber)) {
+            throw requiredFieldError(`Informe o número de pedigree do filhote ${i}.`);
+          }
+
+          if (!cleanText(breed)) {
+            throw requiredFieldError(`Informe a raça do filhote ${i}.`);
+          }
+
+          if (!cleanText(ems)) {
+            throw requiredFieldError(`Informe a cor/EMS do filhote ${i}.`);
+          }
+
+          if (!cleanText(sex)) {
+            throw requiredFieldError(`Informe o sexo do filhote ${i}.`);
+          }
+        }
+
+        if (i > litterCountInt && hasKittenFormData(req.body, i)) {
+          throw requiredFieldError(
+            `Apague todas as informações do filhote ${i} antes de diminuir o número total de filhotes.`
+          );
+        }
 
         if (hasAnyValue) {
           const microchipDigits = mcRaw
@@ -223,6 +285,7 @@ if (litterBirthDate && litterBirthDate.trim() !== "") {
 
           kittensData.push({
             index: i,
+            kittenNumber: cleanText(kittenNumber),
             name: nameSuffix || null, // Nome (sem o gatil)
             breed: breed || null,
             emsEyes: ems || null,
@@ -309,6 +372,7 @@ console.log("DEBUG AUTH FILE:", authorizationFile);
       await prisma.serviceRequest.create({
         data: {
           userId,
+          litterId: litter.id,
           type: "Registro de Ninhada",
           description: `Registro de ninhada #${litter.id}`,
           status: "ENVIADO_GATARINA",
@@ -333,7 +397,9 @@ console.log("DEBUG AUTH FILE:", authorizationFile);
         console.error("PRISMA META:", err.meta);
       }
 
-      res.status(500).send("Erro ao salvar registro de ninhada");
+      res
+        .status(err.status || 500)
+        .send(err.status ? err.message : "Erro ao salvar registro de ninhada");
     }
 
 

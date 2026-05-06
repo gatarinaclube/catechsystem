@@ -342,6 +342,7 @@
     type="text"
     name="catteryName"
     maxlength="15"
+    required
     value="<%= litter ? (litter.catteryName || '') : '' %>"
   />
 </div>
@@ -352,8 +353,10 @@
   <label>Nº de filhotes</label>
   <input
     type="number"
-    min="0"
+    min="1"
+    max="9"
     name="litterCount"
+    required
     value="<%= litter ? (litter.litterCount || '') : '' %>"
   />
 </div>
@@ -364,6 +367,7 @@
       <input
         type="date"
         name="litterBirthDate"
+        required
         value="<%= litter && litter.litterBirthDate ? new Date(litter.litterBirthDate).toISOString().slice(0,10) : '' %>"
       />
     </div>
@@ -382,6 +386,7 @@
   <thead>
     <tr>
       <th>#</th>
+      <th>Nº pedigree</th>
       <th>Nome</th>
       <th>Raça</th>
       <th>EMS / Cor + Olhos</th>
@@ -395,6 +400,15 @@
     <% kittens.forEach(function(kitten, idx) { %>
       <tr>
         <td><%= idx + 1 %></td>
+
+        <td>
+          <input
+            type="text"
+            name="kittens[<%= idx %>][kittenNumber]"
+            required
+            value="<%= kitten.kittenNumber || '' %>"
+          />
+        </td>
 
         <!-- Nome -->
         <td>
@@ -410,6 +424,7 @@
   <select
     name="kittens[<%= idx %>][breed]"
     data-kitten-breed="<%= idx %>"
+    required
   >
     <option value="">Selecione...</option>
 
@@ -435,6 +450,7 @@
     name="kittens[<%= idx %>][emsEyes]"
     data-kitten-ems="<%= idx %>"
     data-current="<%= kitten.emsEyes || '' %>"
+    required
   >
     <option value="">Selecione uma raça primeiro...</option>
   </select>
@@ -442,7 +458,7 @@
 
         <!-- Sexo -->
 <td>
-  <select name="kittens[<%= idx %>][sex]">
+  <select name="kittens[<%= idx %>][sex]" required>
     <option value="">---</option>
     <option value="M" <%= kitten.sex === "M" ? "selected" : "" %>>Macho</option>
     <option value="F" <%= kitten.sex === "F" ? "selected" : "" %>>Fêmea</option>
@@ -482,7 +498,7 @@
 <div class="form-row" style="margin-top:10px;">
   <label>Observações gerais dos filhotes</label>
   <textarea name="kittensGeneralObs">
-    <%= litter?.kittensGeneralObs || '' %>
+    <%= litter?.historyNotes || '' %>
   </textarea>
 </div>
 
@@ -576,4 +592,3 @@
 
 </body>
 </html>
-

@@ -219,6 +219,7 @@
                     id="litterBirthDate"
                     type="date"
                     name="litterBirthDate"
+                    required
                   />
                 </div>
               </div>
@@ -231,6 +232,7 @@
                     type="text"
                     name="catteryName"
                     maxlength="15"
+                    required
                   />
                   <small style="font-size:11px; color:var(--text-muted);">
                     Máximo de 15 caracteres, incluindo espaços.
@@ -246,7 +248,10 @@
                     type="number"
                     name="litterCount"
                     value="1"
+                    min="1"
+                    max="9"
                     inputmode="numeric"
+                    required
                   />
                 </div>
               </div>
@@ -261,6 +266,19 @@
                 <div class="kitten-header">Filhote <%= i %></div>
 
                 <div class="kitten-row" data-index="<%= i %>">
+                  <div class="field">
+                    <label class="field-label" for="kitten<%= i %>_kittenNumber">
+                      Nº do pedigree
+                    </label>
+                    <input
+                      id="kitten<%= i %>_kittenNumber"
+                      type="text"
+                      name="kitten<%= i %>_kittenNumber"
+                      maxlength="20"
+                      data-required-when-visible="true"
+                    />
+                  </div>
+
                   <!-- Nome (gatil + sufixo, até 30 caracteres no total) -->
                   <div class="field">
                     <label class="field-label" for="kitten<%= i %>_nameSuffix">
@@ -272,10 +290,10 @@
                         id="kitten<%= i %>_nameSuffix"
                         type="text"
                         class="kitten-name-suffix"
-                        data-index="<%= i %>"
-                        name="kitten<%= i %>_nameSuffix"
-                        placeholder="Nome"
-                      />
+                      data-index="<%= i %>"
+                      name="kitten<%= i %>_nameSuffix"
+                      placeholder="Nome"
+                    />
                     </div>
 
                     <!-- Nome completo (gatil + sufixo) enviado no form -->
@@ -294,6 +312,7 @@
                       id="kitten<%= i %>_breed"
                       name="kitten<%= i %>_breed"
                       data-kitten-breed="<%= i %>"
+                      data-required-when-visible="true"
                     >
                       <option value="">Selecione...</option>
                       <option value="ABY">ABY</option>
@@ -358,6 +377,7 @@
                       id="kitten<%= i %>_ems"
                       name="kitten<%= i %>_ems"
                       data-kitten-ems="<%= i %>"
+                      data-required-when-visible="true"
                     >
                       <option value="">Selecione uma raça primeiro...</option>
                     </select>
@@ -366,7 +386,11 @@
                   <!-- Sexo -->
                   <div class="field">
                     <label class="field-label" for="kitten<%= i %>_sex">Sexo</label>
-                    <select id="kitten<%= i %>_sex" name="kitten<%= i %>_sex">
+                    <select
+                      id="kitten<%= i %>_sex"
+                      name="kitten<%= i %>_sex"
+                      data-required-when-visible="true"
+                    >
                       <option value="">Selecione...</option>
                       <option value="M">Macho</option>
                       <option value="F">Fêmea</option>
@@ -585,16 +609,55 @@ refreshMaleOwnership();
         // ---------- Controle de quantidade de filhotes ----------
         const litterCountInput = document.getElementById("litterCount");
         const kittenBlocks = document.querySelectorAll(".kitten-block");
+        let currentLitterCount = litterCountInput
+          ? parseInt(litterCountInput.value, 10) || 1
+          : 1;
+
+        function kittenBlockHasData(block) {
+          return Array.from(
+            block.querySelectorAll("input, select, textarea")
+          ).some((field) => {
+            if (field.type === "hidden") return false;
+            if (field.type === "checkbox" || field.type === "radio") {
+              return field.checked;
+            }
+            return Boolean((field.value || "").trim());
+          });
+        }
+
+        function hasFilledKittenAfter(targetCount) {
+          return Array.from(kittenBlocks).some((block) => {
+            const idx = parseInt(block.dataset.index, 10);
+            return idx > targetCount && kittenBlockHasData(block);
+          });
+        }
 
         function updateKittenRows() {
           let n = parseInt(litterCountInput.value, 10);
           if (isNaN(n) || n < 1) n = 1;
           if (n > 9) n = 9;
 
+          if (n < currentLitterCount && hasFilledKittenAfter(n)) {
+            alert(
+              "Para diminuir o número de filhotes, apague primeiro todas as informações dos filhotes que ficarão fora da quantidade informada."
+            );
+            litterCountInput.value = currentLitterCount;
+            n = currentLitterCount;
+          }
+
           kittenBlocks.forEach((block) => {
             const idx = parseInt(block.dataset.index, 10);
-            block.style.display = idx <= n ? "" : "none";
+            const isVisible = idx <= n;
+            block.style.display = isVisible ? "" : "none";
+            block
+              .querySelectorAll("[data-required-when-visible='true']")
+              .forEach((field) => {
+                field.required = isVisible;
+              });
           });
+
+          currentLitterCount = n;
+          litterCountInput.value = n;
         }
 
         if (litterCountInput) {
