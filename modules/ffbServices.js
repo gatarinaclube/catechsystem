@@ -322,10 +322,6 @@ if (litter && kittenRows.length) {
     const k = kittenRows[i];
     if (!k) continue;
 
-    if (!cleanText(k.kittenNumber)) {
-      return res.status(400).send(`Informe o número de pedigree do filhote ${i + 1}.`);
-    }
-
     if (!cleanText(k.breed)) {
       return res.status(400).send(`Informe a raça do filhote ${i + 1}.`);
     }
@@ -348,7 +344,6 @@ if (litter && kittenRows.length) {
         index: i + 1, // ⚠️ índice no banco começa em 1
       },
       data: {
-        kittenNumber: cleanText(k.kittenNumber),
         name: cleanText(k.name),
         breed: cleanText(k.breed),
         emsEyes: cleanText(k.emsEyes),
@@ -371,7 +366,6 @@ if (litter && kittenRows.length) {
           breed: cleanText(k.breed),
           emsCode: cleanText(k.emsEyes),
           microchip,
-          kittenNumber: cleanText(k.kittenNumber),
         };
 
         if (cleanText(k.name)) {

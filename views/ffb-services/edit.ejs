@@ -386,7 +386,6 @@
   <thead>
     <tr>
       <th>#</th>
-      <th>Nº pedigree</th>
       <th>Nome</th>
       <th>Raça</th>
       <th>EMS / Cor + Olhos</th>
@@ -400,15 +399,6 @@
     <% kittens.forEach(function(kitten, idx) { %>
       <tr>
         <td><%= idx + 1 %></td>
-
-        <td>
-          <input
-            type="text"
-            name="kittens[<%= idx %>][kittenNumber]"
-            required
-            value="<%= kitten.kittenNumber || '' %>"
-          />
-        </td>
 
         <!-- Nome -->
         <td>

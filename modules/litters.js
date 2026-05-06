@@ -36,7 +36,6 @@ function cleanText(value) {
 
 function hasKittenFormData(body, index) {
   return [
-    `kitten${index}_kittenNumber`,
     `kitten${index}_nameSuffix`,
     `kitten${index}_ems`,
     `kitten${index}_sex`,
@@ -235,7 +234,6 @@ if (litterBirthDate && litterBirthDate.trim() !== "") {
       // kitten1_microchip, kitten1_breeding, ...
       const kittensData = [];
       for (let i = 1; i <= 9; i++) {
-        const kittenNumber = req.body[`kitten${i}_kittenNumber`];
         const nameSuffix = req.body[`kitten${i}_nameSuffix`]; // Nome sem o gatil
         const ems = req.body[`kitten${i}_ems`];
         const sex = req.body[`kitten${i}_sex`];
@@ -246,7 +244,6 @@ if (litterBirthDate && litterBirthDate.trim() !== "") {
         // const fullName = req.body[`kitten${i}_fullName`];
 
         const hasAnyValue =
-          (kittenNumber && kittenNumber.trim() !== "") ||
           (nameSuffix && nameSuffix.trim() !== "") ||
           (breed && breed.trim() !== "") ||
           (ems && ems.trim() !== "") ||
@@ -255,10 +252,6 @@ if (litterBirthDate && litterBirthDate.trim() !== "") {
           (breeding && breeding.trim() !== "");
 
         if (i <= litterCountInt) {
-          if (!cleanText(kittenNumber)) {
-            throw requiredFieldError(`Informe o número de pedigree do filhote ${i}.`);
-          }
-
           if (!cleanText(breed)) {
             throw requiredFieldError(`Informe a raça do filhote ${i}.`);
           }
@@ -285,7 +278,6 @@ if (litterBirthDate && litterBirthDate.trim() !== "") {
 
           kittensData.push({
             index: i,
-            kittenNumber: cleanText(kittenNumber),
             name: nameSuffix || null, // Nome (sem o gatil)
             breed: breed || null,
             emsEyes: ems || null,
