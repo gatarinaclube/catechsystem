@@ -39,11 +39,24 @@ function formatDateForInput(date) {
   return `${day}/${month}/${parsed.getFullYear()}`;
 }
 
-function getFullCatName(cat) {
+function isCatFromLitter(cat) {
+  return Boolean(cat.kittenNumber || cat.litterKitten);
+}
+
+function getFullCatName(cat, catteryName = "") {
+  const cleanCatteryName = String(catteryName || "").trim();
+  const baseName = String(cat.name || "").trim();
+  const displayBaseName =
+    cleanCatteryName &&
+    isCatFromLitter(cat) &&
+    !baseName.toLowerCase().startsWith(`${cleanCatteryName.toLowerCase()} `)
+      ? `${cleanCatteryName} ${baseName}`
+      : baseName;
+
   return [
     cat.titleBeforeName,
     cat.country ? `${cat.country}*` : null,
-    cat.name,
+    displayBaseName,
     cat.titleAfterName,
   ].filter(Boolean).join(" ");
 }
@@ -103,8 +116,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       where: {
         ...scopedOwner,
         gender: "F",
-        neutered: false,
-        OR: [{ deceased: false }, { deceased: null }],
+      },
+      include: {
+        litterKitten: true,
       },
       orderBy: { name: "asc" },
     });
@@ -113,11 +127,25 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       where: {
         ...scopedOwner,
         gender: "M",
-        neutered: false,
-        OR: [{ deceased: false }, { deceased: null }],
+      },
+      include: {
+        litterKitten: true,
       },
       orderBy: { name: "asc" },
     });
+
+    const catOwnerIds = Array.from(
+      new Set([...females, ...males].map((cat) => cat.ownerId).filter(Boolean))
+    );
+    const settingsRows = catOwnerIds.length
+      ? await prisma.userSettings.findMany({
+          where: { userId: { in: catOwnerIds } },
+          select: { userId: true, catteryName: true },
+        })
+      : [];
+    const catteryNameByUserId = new Map(
+      settingsRows.map((settings) => [settings.userId, settings.catteryName || ""])
+    );
 
     const kittens = litter?.kittens?.length
       ? litter.kittens
@@ -126,8 +154,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     return {
       user: req.user,
       currentPath: req.path,
-      females,
-      males,
+      females: females.map((cat) => ({
+        ...cat,
+        displayName: getFullCatName(cat, catteryNameByUserId.get(cat.ownerId) || catteryName),
+      })),
+      males: males.map((cat) => ({
+        ...cat,
+        displayName: getFullCatName(cat, catteryNameByUserId.get(cat.ownerId) || catteryName),
+      })),
       breeds: BREEDS,
       litter,
       kittens,

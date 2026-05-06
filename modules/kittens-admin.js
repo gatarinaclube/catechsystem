@@ -270,14 +270,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         selectedOwnerId,
         groupedKittens: {
           available: kittenRows.filter(
-            (kitten) => !kitten.sold && !kitten.delivered && !kitten.breedingProspect
+            (kitten) => !kitten.deceased && !kitten.sold && !kitten.delivered && !kitten.breedingProspect
           ),
           notDelivered: kittenRows.filter(
-            (kitten) => kitten.sold && !kitten.delivered && !kitten.breedingProspect
+            (kitten) => !kitten.deceased && kitten.sold && !kitten.delivered && !kitten.breedingProspect
           ),
-          breeders: kittenRows.filter((kitten) => kitten.breedingProspect),
+          breeders: kittenRows.filter((kitten) => !kitten.deceased && kitten.breedingProspect),
           deliveredSold: kittenRows.filter(
-            (kitten) => kitten.sold && kitten.delivered && !kitten.breedingProspect
+            (kitten) => kitten.deceased || (kitten.sold && kitten.delivered && !kitten.breedingProspect)
           ),
         },
       });

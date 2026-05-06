@@ -144,7 +144,7 @@
                 <select id="femaleCatId" name="femaleCatId">
                   <option value="">Selecione...</option>
                   <% females.forEach(function(cat) { %>
-                    <option value="<%= cat.id %>" <%= String(litter?.femaleCatId || '') === String(cat.id) || litter?.femaleName === cat.name ? "selected" : "" %>><%= cat.name %></option>
+                    <option value="<%= cat.id %>" <%= String(litter?.femaleCatId || '') === String(cat.id) || litter?.femaleName === cat.name ? "selected" : "" %>><%= cat.displayName || cat.name %></option>
                   <% }) %>
                 </select>
               </div>
@@ -153,7 +153,7 @@
                 <select id="maleCatId" name="maleCatId">
                   <option value="">Selecione...</option>
                   <% males.forEach(function(cat) { %>
-                    <option value="<%= cat.id %>" <%= String(litter?.maleCatId || '') === String(cat.id) || litter?.maleName === cat.name ? "selected" : "" %>><%= cat.name %></option>
+                    <option value="<%= cat.id %>" <%= String(litter?.maleCatId || '') === String(cat.id) || litter?.maleName === cat.name ? "selected" : "" %>><%= cat.displayName || cat.name %></option>
                   <% }) %>
                 </select>
               </div>
