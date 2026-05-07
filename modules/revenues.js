@@ -1,4 +1,5 @@
 const express = require("express");
+const { canViewAllData } = require("../utils/access");
 
 const PAYMENT_ACCOUNTS = [
   "PIX - Sicoob",
@@ -83,12 +84,19 @@ function mapRevenueForForm(revenue = null) {
 module.exports = (prisma) => {
   const router = express.Router();
 
-  async function loadContext(revenue = null) {
+  function ownerScope(req) {
+    if (canViewAllData(req.session?.userRole)) return {};
+    return { ownerId: req.session?.userId || null };
+  }
+
+  async function loadContext(req, revenue = null) {
     const clients = await prisma.revenueClient.findMany({
+      where: ownerScope(req),
       orderBy: { fullName: "asc" },
     });
     const kittens = await prisma.cat.findMany({
       where: {
+        ...ownerScope(req),
         OR: [{ kittenNumber: { not: null } }, { litterKitten: { isNot: null } }],
         deceased: false,
         sold: false,
@@ -99,7 +107,7 @@ module.exports = (prisma) => {
       orderBy: [{ kittenNumber: "asc" }, { name: "asc" }],
     });
     const customAccounts = await prisma.quickLaunchOption.findMany({
-      where: { type: "REVENUE_ACCOUNT" },
+      where: { ...ownerScope(req), type: "REVENUE_ACCOUNT" },
       orderBy: { name: "asc" },
     });
     const paymentAccounts = Array.from(
@@ -146,7 +154,7 @@ module.exports = (prisma) => {
 
   async function renderForm(req, res, extra = {}) {
     res.status(extra.status || 200).render("revenues/index", {
-      ...(await loadContext(extra.revenue)),
+      ...(await loadContext(req, extra.revenue)),
       formAction: extra.revenue?.id ? `/receitas/${extra.revenue.id}` : "/receitas",
       success: extra.success || false,
       error: extra.error || null,
@@ -162,8 +170,8 @@ module.exports = (prisma) => {
   router.post("/receitas", async (req, res) => {
     try {
       const kitten = req.body.kittenId
-        ? await prisma.cat.findUnique({
-            where: { id: Number(req.body.kittenId) },
+        ? await prisma.cat.findFirst({
+            where: { id: Number(req.body.kittenId), ...ownerScope(req) },
             include: { litterKitten: true },
           })
         : null;
@@ -189,6 +197,7 @@ module.exports = (prisma) => {
 
   router.get("/receitas/lista", async (req, res) => {
     const revenues = await prisma.revenueEntry.findMany({
+      where: ownerScope(req),
       include: { client: true },
       orderBy: { createdAt: "desc" },
       take: 200,
@@ -211,6 +220,7 @@ module.exports = (prisma) => {
     try {
       await prisma.revenueClient.create({
         data: {
+          ownerId: req.session?.userId || null,
           fullName: req.body.fullName,
           document: req.body.document || null,
           cep: req.body.cep || null,
@@ -230,9 +240,9 @@ module.exports = (prisma) => {
     }
   });
 
-  async function renderAccountOptions(res, extra = {}) {
+  async function renderAccountOptions(req, res, extra = {}) {
     const accounts = await prisma.quickLaunchOption.findMany({
-      where: { type: "REVENUE_ACCOUNT" },
+      where: { ...ownerScope(req), type: "REVENUE_ACCOUNT" },
       orderBy: { name: "asc" },
     });
 
@@ -245,24 +255,31 @@ module.exports = (prisma) => {
   }
 
   router.get("/receitas/contas", async (req, res) => {
-    await renderAccountOptions(res, { success: req.query.ok === "1" });
+    await renderAccountOptions(req, res, { success: req.query.ok === "1" });
   });
 
   router.post("/receitas/contas", async (req, res) => {
     const name = String(req.body.name || "").trim();
     if (name) {
-      await prisma.quickLaunchOption.upsert({
-        where: { type_name: { type: "REVENUE_ACCOUNT", name } },
-        update: {},
-        create: { type: "REVENUE_ACCOUNT", name },
+      const ownerId = req.session?.userId || null;
+      const existing = await prisma.quickLaunchOption.findFirst({
+        where: { type: "REVENUE_ACCOUNT", ownerId, name },
+        select: { id: true },
       });
+      if (!existing) {
+        await prisma.quickLaunchOption.create({
+          data: { type: "REVENUE_ACCOUNT", ownerId, name },
+        });
+      }
     }
     res.redirect("/receitas/contas?ok=1");
   });
 
   router.post("/receitas/contas/:id/update", async (req, res) => {
     const id = Number(req.params.id);
-    const account = await prisma.quickLaunchOption.findUnique({ where: { id } });
+    const account = await prisma.quickLaunchOption.findFirst({
+      where: { id, ...ownerScope(req) },
+    });
     const name = String(req.body.name || "").trim();
 
     if (!account || account.type !== "REVENUE_ACCOUNT") {
@@ -278,7 +295,9 @@ module.exports = (prisma) => {
 
   router.post("/receitas/contas/:id/delete", async (req, res) => {
     const id = Number(req.params.id);
-    const account = await prisma.quickLaunchOption.findUnique({ where: { id } });
+    const account = await prisma.quickLaunchOption.findFirst({
+      where: { id, ...ownerScope(req) },
+    });
 
     if (!account || account.type !== "REVENUE_ACCOUNT") {
       return res.status(404).send("Conta não encontrada.");
@@ -289,16 +308,16 @@ module.exports = (prisma) => {
   });
 
   router.get("/receitas/:id", async (req, res) => {
-    const revenue = await prisma.revenueEntry.findUnique({
-      where: { id: Number(req.params.id) },
+    const revenue = await prisma.revenueEntry.findFirst({
+      where: { id: Number(req.params.id), ...ownerScope(req) },
     });
     if (!revenue) return res.status(404).send("Receita não encontrada.");
     await renderForm(req, res, { revenue });
   });
 
   router.post("/receitas/:id", async (req, res) => {
-    const existing = await prisma.revenueEntry.findUnique({
-      where: { id: Number(req.params.id) },
+    const existing = await prisma.revenueEntry.findFirst({
+      where: { id: Number(req.params.id), ...ownerScope(req) },
     });
     if (!existing) return res.status(404).send("Receita não encontrada.");
 

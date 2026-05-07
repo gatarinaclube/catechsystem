@@ -2,6 +2,7 @@ const express = require("express");
 const fs = require("fs");
 const multer = require("multer");
 const path = require("path");
+const { canViewAllData } = require("../utils/access");
 
 const DEFAULT_CATEGORIES = [
   "Alimentação",
@@ -151,8 +152,16 @@ module.exports = (prisma) => {
   const router = express.Router();
   const upload = createUpload();
 
-  async function loadOptions() {
-    const rows = await prisma.quickLaunchOption.findMany({ orderBy: { name: "asc" } });
+  function ownerScope(req) {
+    if (canViewAllData(req.session?.userRole)) return {};
+    return { ownerId: req.session?.userId || null };
+  }
+
+  async function loadOptions(req) {
+    const rows = await prisma.quickLaunchOption.findMany({
+      where: ownerScope(req),
+      orderBy: { name: "asc" },
+    });
 
     return {
       categories: mergeOptions(DEFAULT_CATEGORIES, rows.filter((row) => row.type === "CATEGORY")),
@@ -185,7 +194,7 @@ module.exports = (prisma) => {
   }
 
   async function renderExpenseForm(res, req, extra = {}) {
-    const options = await loadOptions();
+    const options = await loadOptions(req);
     res.status(extra.status || 200).render("quick-launch/index", {
       ...options,
       expense: mapExpenseForForm(extra.expense),
@@ -225,6 +234,7 @@ module.exports = (prisma) => {
 
   router.get("/despesas/lista", async (req, res) => {
     const expenses = await prisma.quickLaunchEntry.findMany({
+      where: ownerScope(req),
       orderBy: [{ competenceDate: "desc" }, { createdAt: "desc" }],
       take: 200,
     });
@@ -243,7 +253,10 @@ module.exports = (prisma) => {
 
   router.get("/despesas/opcoes", async (req, res) => {
     const options = await prisma.quickLaunchOption.findMany({
-      where: { type: { in: ["CATEGORY", "SUPPLIER", "PAYMENT"] } },
+      where: {
+        ...ownerScope(req),
+        type: { in: ["CATEGORY", "SUPPLIER", "PAYMENT"] },
+      },
       orderBy: [{ type: "asc" }, { name: "asc" }],
     });
     const labels = {
@@ -278,18 +291,26 @@ module.exports = (prisma) => {
       });
     }
 
-    await prisma.quickLaunchOption.upsert({
-      where: { type_name: { type: optionType, name } },
-      update: {},
-      create: { type: optionType, name },
+    const ownerId = req.session?.userId || null;
+    const existing = await prisma.quickLaunchOption.findFirst({
+      where: { type: optionType, ownerId, name },
+      select: { id: true },
     });
+
+    if (!existing) {
+      await prisma.quickLaunchOption.create({
+        data: { type: optionType, ownerId, name },
+      });
+    }
 
     res.redirect("/despesas/opcoes?ok=1");
   });
 
   router.post("/despesas/opcoes/:id/update", async (req, res) => {
     const id = Number(req.params.id);
-    const option = await prisma.quickLaunchOption.findUnique({ where: { id } });
+    const option = await prisma.quickLaunchOption.findFirst({
+      where: { id, ...ownerScope(req) },
+    });
     const name = String(req.body.name || "").trim();
 
     if (!option || !["CATEGORY", "SUPPLIER", "PAYMENT"].includes(option.type)) {
@@ -305,7 +326,9 @@ module.exports = (prisma) => {
 
   router.post("/despesas/opcoes/:id/delete", async (req, res) => {
     const id = Number(req.params.id);
-    const option = await prisma.quickLaunchOption.findUnique({ where: { id } });
+    const option = await prisma.quickLaunchOption.findFirst({
+      where: { id, ...ownerScope(req) },
+    });
 
     if (!option || !["CATEGORY", "SUPPLIER", "PAYMENT"].includes(option.type)) {
       return res.status(404).send("Opção não encontrada.");
@@ -316,16 +339,16 @@ module.exports = (prisma) => {
   });
 
   router.get("/despesas/:id", async (req, res) => {
-    const expense = await prisma.quickLaunchEntry.findUnique({
-      where: { id: Number(req.params.id) },
+    const expense = await prisma.quickLaunchEntry.findFirst({
+      where: { id: Number(req.params.id), ...ownerScope(req) },
     });
     if (!expense) return res.status(404).send("Despesa não encontrada.");
     await renderExpenseForm(res, req, { expense });
   });
 
   router.post("/despesas/:id", upload.single("receipt"), async (req, res) => {
-    const existing = await prisma.quickLaunchEntry.findUnique({
-      where: { id: Number(req.params.id) },
+    const existing = await prisma.quickLaunchEntry.findFirst({
+      where: { id: Number(req.params.id), ...ownerScope(req) },
     });
     if (!existing) return res.status(404).send("Despesa não encontrada.");
 
@@ -347,8 +370,8 @@ module.exports = (prisma) => {
 
   router.post("/despesas/:id/delete", async (req, res) => {
     const id = Number(req.params.id);
-    const existing = await prisma.quickLaunchEntry.findUnique({
-      where: { id },
+    const existing = await prisma.quickLaunchEntry.findFirst({
+      where: { id, ...ownerScope(req) },
       select: { id: true },
     });
 

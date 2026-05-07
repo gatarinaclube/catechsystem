@@ -61,6 +61,8 @@ model User {
   serviceRequests ServiceRequest[]
   settings        UserSettings?
   quickLaunchEntries QuickLaunchEntry[]
+  quickLaunchOptions QuickLaunchOption[]
+  revenueClients RevenueClient[]
   revenueEntries RevenueEntry[]
 }
 
@@ -95,7 +97,7 @@ model QuickLaunchEntry {
   paymentMode   String?
   installments  Int?
   supplier      String
-  receiptPath   String
+  receiptPath   String?
   note          String?
   competenceDate DateTime
   createdAt     DateTime @default(now())
@@ -103,15 +105,19 @@ model QuickLaunchEntry {
 
 model QuickLaunchOption {
   id        Int      @id @default(autoincrement())
+  owner     User?    @relation(fields: [ownerId], references: [id])
+  ownerId   Int?
   type      String
   name      String
   createdAt DateTime @default(now())
 
-  @@unique([type, name])
+  @@unique([type, ownerId, name])
 }
 
 model RevenueClient {
   id           Int      @id @default(autoincrement())
+  owner        User?    @relation(fields: [ownerId], references: [id])
+  ownerId      Int?
   fullName     String
   document     String?
   cep          String?

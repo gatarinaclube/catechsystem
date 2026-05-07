@@ -165,7 +165,6 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       where: {
         ...scopedOwner,
         gender: "F",
-        ...(selectedOwnerId ? { ownerId: selectedOwnerId } : {}),
       },
       orderBy: { name: "asc" },
       include: {
@@ -300,6 +299,20 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       if (!female || (!canViewAllData(req.session?.userRole) && female.ownerId !== req.session.userId)) {
         return res.status(403).send("Você não tem acesso a esta gata.");
       }
+      const maleCatId = req.body.maleCatId ? Number(req.body.maleCatId) : null;
+      if (maleCatId) {
+        const male = await prisma.cat.findFirst({
+          where: {
+            id: maleCatId,
+            ...(canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId }),
+          },
+          select: { id: true },
+        });
+
+        if (!male) {
+          return res.status(403).send("Você não tem acesso a este macho.");
+        }
+      }
       const litterHistory = []
         .concat(req.body.litterHistoryDates || [])
         .map((value) => String(value || "").trim())
@@ -308,7 +321,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const payload = {
         ownerId: female?.ownerId || null,
         femaleCatId,
-        maleCatId: req.body.maleCatId ? Number(req.body.maleCatId) : null,
+        maleCatId,
         status: req.body.status || "PARA_ACASALAR",
         consanguinityJson: JSON.stringify([]),
         litterHistoryJson: JSON.stringify(litterHistory),
