@@ -64,6 +64,7 @@ model User {
   quickLaunchOptions QuickLaunchOption[]
   revenueClients RevenueClient[]
   revenueEntries RevenueEntry[]
+  passwordResetTokens PasswordResetToken[]
 }
 
 model UserSettings {
@@ -85,6 +86,16 @@ model UserSettings {
   examsJson       String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
 }
 
 model QuickLaunchEntry {

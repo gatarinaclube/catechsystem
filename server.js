@@ -3,6 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const session = require("express-session");
 const path = require("path");
+const crypto = require("crypto");
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
 const PDFDocument = require("pdfkit");
@@ -16,6 +17,7 @@ const {
   buildAccessContext,
   userCan,
 } = require("./utils/access");
+const { sendStatusEmail } = require("./utils/mailer");
 const { generateLitterAdminBundle, generateLitterUserPDF } = require("./modules/pdf/litterPdf");
 const { generateTransferPDF } = require("./modules/pdf/transferPdf");
 const { generateLitterAuthorizationPDF } = require("./modules/pdf/litterAuthorizationPdf");
@@ -125,6 +127,25 @@ function requirePermission(permission) {
   };
 }
 
+function buildAbsoluteUrl(req, pathValue) {
+  const baseUrl = (process.env.APP_URL || "").replace(/\/$/, "");
+  if (baseUrl) return `${baseUrl}${pathValue}`;
+  return `${req.protocol}://${req.get("host")}${pathValue}`;
+}
+
+function hashResetToken(token) {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 app.use(async (req, res, next) => {
   try {
     const sessionRole = normalizeRole(req.session?.userRole);
@@ -176,7 +197,8 @@ app.get("/login", (req, res) => {
 });
 
 app.post("/login", async (req, res) => {
-  const { email, password } = req.body;
+  const email = String(req.body.email || "").trim().toLowerCase();
+  const { password } = req.body;
 
   try {
     const user = await prisma.user.findUnique({
@@ -210,6 +232,158 @@ app.post("/login", async (req, res) => {
   }
 });
 
+app.get("/forgot-password", (req, res) => {
+  res.render("forgot-password", {
+    error: null,
+    success: null,
+  });
+});
+
+app.post("/forgot-password", async (req, res) => {
+  const email = String(req.body.email || "").trim().toLowerCase();
+  const genericSuccess =
+    "Se este e-mail estiver cadastrado, enviaremos um link para redefinir sua senha.";
+
+  try {
+    const user = email
+      ? await prisma.user.findUnique({ where: { email } })
+      : null;
+
+    if (user) {
+      const token = crypto.randomBytes(32).toString("hex");
+      const tokenHash = hashResetToken(token);
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+      await prisma.passwordResetToken.create({
+        data: {
+          userId: user.id,
+          tokenHash,
+          expiresAt,
+        },
+      });
+
+      const resetUrl = buildAbsoluteUrl(req, `/reset-password/${token}`);
+
+      await sendStatusEmail({
+        to: user.email,
+        subject: "Redefinição de senha - CaTech System",
+        html: `
+          <p>Olá, ${escapeHtml(user.name || "associado")}.</p>
+          <p>Recebemos uma solicitação para redefinir sua senha no CaTech System.</p>
+          <p><a href="${resetUrl}">Clique aqui para criar uma nova senha</a>.</p>
+          <p>Este link é válido por 1 hora. Se você não solicitou a redefinição, ignore este e-mail.</p>
+        `,
+      });
+    }
+
+    return res.render("forgot-password", {
+      error: null,
+      success: genericSuccess,
+    });
+  } catch (err) {
+    console.error("Erro ao solicitar redefinição de senha:", err);
+    return res.status(500).render("forgot-password", {
+      error: "Não foi possível enviar o e-mail de redefinição agora.",
+      success: null,
+    });
+  }
+});
+
+app.get("/reset-password/:token", async (req, res) => {
+  const tokenHash = hashResetToken(req.params.token || "");
+
+  try {
+    const resetToken = await prisma.passwordResetToken.findUnique({
+      where: { tokenHash },
+    });
+
+    if (!resetToken || resetToken.usedAt || resetToken.expiresAt < new Date()) {
+      return res.status(400).render("reset-password", {
+        token: null,
+        error: "Este link expirou ou já foi utilizado.",
+        success: null,
+      });
+    }
+
+    return res.render("reset-password", {
+      token: req.params.token,
+      error: null,
+      success: null,
+    });
+  } catch (err) {
+    console.error("Erro ao abrir redefinição de senha:", err);
+    return res.status(500).send("Erro ao abrir redefinição de senha.");
+  }
+});
+
+app.post("/reset-password/:token", async (req, res) => {
+  const { password, confirmPassword } = req.body;
+  const tokenHash = hashResetToken(req.params.token || "");
+
+  try {
+    if (!password || password.length < 6) {
+      return res.status(400).render("reset-password", {
+        token: req.params.token,
+        error: "Informe uma senha com pelo menos 6 caracteres.",
+        success: null,
+      });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).render("reset-password", {
+        token: req.params.token,
+        error: "As senhas não conferem.",
+        success: null,
+      });
+    }
+
+    const resetToken = await prisma.passwordResetToken.findUnique({
+      where: { tokenHash },
+    });
+
+    if (!resetToken || resetToken.usedAt || resetToken.expiresAt < new Date()) {
+      return res.status(400).render("reset-password", {
+        token: null,
+        error: "Este link expirou ou já foi utilizado.",
+        success: null,
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: resetToken.userId },
+        data: { password: passwordHash },
+      }),
+      prisma.passwordResetToken.update({
+        where: { id: resetToken.id },
+        data: { usedAt: new Date() },
+      }),
+      prisma.passwordResetToken.deleteMany({
+        where: {
+          userId: resetToken.userId,
+          usedAt: null,
+          id: { not: resetToken.id },
+        },
+      }),
+    ]);
+
+    return res.render("reset-password", {
+      token: null,
+      error: null,
+      success: "Senha redefinida com sucesso. Você já pode entrar com a nova senha.",
+    });
+  } catch (err) {
+    console.error("Erro ao redefinir senha:", err);
+    return res.status(500).render("reset-password", {
+      token: req.params.token,
+      error: "Não foi possível redefinir a senha agora.",
+      success: null,
+    });
+  }
+});
+
 // ---------- CADASTRO DE USUÁRIO ----------
 app.get("/register", (req, res) => {
   res.render("register", { error: null });
@@ -233,10 +407,11 @@ const {
   hasFifeCattery,
   fifeCatteryName
 } = req.body;
+  const normalizedEmail = String(email || "").trim().toLowerCase();
 
 
   try {
-    if (!name || !email || !password || !confirmPassword) {
+    if (!name || !normalizedEmail || !password || !confirmPassword) {
       return res.render("register", {
         error: "Preencha pelo menos Nome, E-mail e Senha.",
       });
@@ -246,7 +421,7 @@ const {
       return res.render("register", { error: "As senhas não conferem." });
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (existing) {
       return res.render("register", { error: "E-mail já cadastrado." });
     }
@@ -269,7 +444,7 @@ await prisma.user.create({
     state,
     country,
     phones,
-    email,
+    email: normalizedEmail,
     cpf,
     password: passwordHash,
     role: ROLES.BASIC,
@@ -408,6 +583,11 @@ app.post("/meus-dados", requireAuth, async (req, res) => {
       phones,
       email,
     } = req.body;
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      return res.status(400).send("Informe um e-mail válido.");
+    }
 
     await prisma.user.update({
       where: { id: req.session.userId },
@@ -420,13 +600,16 @@ app.post("/meus-dados", requireAuth, async (req, res) => {
         state,
         cep,
         phones,
-        email,
+        email: normalizedEmail,
       },
     });
 
     res.redirect("/meus-dados");
   } catch (err) {
     console.error("Erro ao salvar Meus Dados:", err);
+    if (err.code === "P2002") {
+      return res.status(400).send("Este e-mail já está sendo usado por outro usuário.");
+    }
     res.status(500).send("Erro ao salvar dados");
   }
 });

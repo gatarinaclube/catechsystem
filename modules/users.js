@@ -154,6 +154,7 @@ router.post("/users/:id", requireAuth, requirePermission("admin.users"), async (
       hasFifeCattery,
       fifeCatteryName,
     } = req.body;
+    const normalizedEmail = String(email || "").trim().toLowerCase();
 
     // Normaliza status para os 3 valores definidos
     let finalStatus = "INDEFERIDO";
@@ -168,11 +169,22 @@ router.post("/users/:id", requireAuth, requirePermission("admin.users"), async (
       select: { role: true, approvalStatus: true },
     });
 
+    const emailOwner = normalizedEmail
+      ? await prisma.user.findUnique({
+          where: { email: normalizedEmail },
+          select: { id: true },
+        })
+      : null;
+
+    if (emailOwner && emailOwner.id !== targetId) {
+      return res.status(400).send("Este e-mail já está sendo usado por outro usuário.");
+    }
+
     await prisma.user.update({
       where: { id: targetId },
       data: {
         name,
-        email,
+        email: normalizedEmail,
         cpf,
         address,
         city,
@@ -195,6 +207,9 @@ router.post("/users/:id", requireAuth, requirePermission("admin.users"), async (
     res.redirect(`/users/${targetId}`);
   } catch (err) {
     console.error("Erro ao atualizar usuário:", err);
+    if (err.code === "P2002") {
+      return res.status(400).send("Este e-mail já está sendo usado por outro usuário.");
+    }
     res.status(500).send("Erro ao atualizar usuário");
   }
 });
