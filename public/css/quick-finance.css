@@ -126,6 +126,16 @@ input[type="file"] {
   text-decoration: none;
 }
 
+.quick-icon-button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+  padding: 0;
+}
+
 .back-link {
   display: inline-block;
   margin-top: 14px;
@@ -168,6 +178,14 @@ input[type="file"] {
 .small-button {
   width: 44px;
   min-width: 44px;
+}
+
+.quick-inline-panel {
+  margin-top: 12px;
+}
+
+.quick-inline-panel[hidden] {
+  display: none;
 }
 
 @media (min-width: 560px) {

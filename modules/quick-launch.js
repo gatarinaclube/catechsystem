@@ -194,6 +194,7 @@ module.exports = (prisma) => {
       formAction: extra.expense?.id ? `/despesas/${extra.expense.id}` : "/despesas",
       success: extra.success || false,
       error: extra.error || null,
+      homePath: req.session?.userId ? "/dashboard" : "/login",
       currentPath: "/despesas",
     });
   }
@@ -301,6 +302,19 @@ module.exports = (prisma) => {
         expense: { ...existing, ...req.body },
       });
     }
+  });
+
+  router.post("/despesas/:id/delete", async (req, res) => {
+    const id = Number(req.params.id);
+    const existing = await prisma.quickLaunchEntry.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!existing) return res.status(404).send("Despesa não encontrada.");
+
+    await prisma.quickLaunchEntry.delete({ where: { id } });
+    res.redirect("/despesas/lista");
   });
 
   return router;

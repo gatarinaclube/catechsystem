@@ -144,18 +144,19 @@ module.exports = (prisma) => {
     };
   }
 
-  async function renderForm(res, extra = {}) {
+  async function renderForm(req, res, extra = {}) {
     res.status(extra.status || 200).render("revenues/index", {
       ...(await loadContext(extra.revenue)),
       formAction: extra.revenue?.id ? `/receitas/${extra.revenue.id}` : "/receitas",
       success: extra.success || false,
       error: extra.error || null,
+      homePath: req.session?.userId ? "/dashboard" : "/login",
       currentPath: "/receitas",
     });
   }
 
   router.get("/receitas", async (req, res) => {
-    await renderForm(res, { success: req.query.ok === "1" });
+    await renderForm(req, res, { success: req.query.ok === "1" });
   });
 
   router.post("/receitas", async (req, res) => {
@@ -179,7 +180,7 @@ module.exports = (prisma) => {
       });
       res.redirect("/receitas?ok=1");
     } catch (err) {
-      await renderForm(res, {
+      await renderForm(req, res, {
         status: 400,
         error: err.message || "Erro ao salvar receita.",
       });
@@ -246,7 +247,7 @@ module.exports = (prisma) => {
       where: { id: Number(req.params.id) },
     });
     if (!revenue) return res.status(404).send("Receita não encontrada.");
-    await renderForm(res, { revenue });
+    await renderForm(req, res, { revenue });
   });
 
   router.post("/receitas/:id", async (req, res) => {

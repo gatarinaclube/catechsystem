@@ -100,8 +100,14 @@
       </form>
 
       <footer class="quick-footer">
+        <a class="quick-options-link" href="<%= homePath %>" title="Página inicial">⌂</a>
         <a class="quick-options-link" href="/despesas/opcoes" title="Categorias, fornecedores e pagamentos">⚙</a>
         <a class="quick-options-link" href="/despesas/lista" title="Despesas lançadas">☰</a>
+        <% if (expense.id) { %>
+          <form method="post" action="/despesas/<%= expense.id %>/delete" onsubmit="return confirm('Excluir esta despesa?');">
+            <button type="submit" class="quick-options-link quick-icon-button" title="Excluir despesa">🗑</button>
+          </form>
+        <% } %>
       </footer>
     </main>
     <script>

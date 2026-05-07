@@ -99,17 +99,19 @@
         <button type="submit" class="btn">Salvar receita</button>
       </form>
 
-      <form class="quick-card" style="margin-top:12px;" method="post" action="/receitas/contas">
+      <footer class="quick-footer">
+        <a class="quick-options-link" href="<%= homePath %>" title="Página inicial">⌂</a>
+        <button type="button" class="quick-options-link quick-icon-button" id="accountToggle" title="Nova conta de pagamento">⚙</button>
+        <a class="quick-options-link" href="/receitas/lista" title="Receitas registradas">☰</a>
+      </footer>
+
+      <form class="quick-card quick-inline-panel" id="accountPanel" method="post" action="/receitas/contas">
         <div class="field">
           <label for="newAccount">Nova conta de pagamento</label>
-          <input id="newAccount" name="name" placeholder="Nova conta de pagamento" />
+          <input id="newAccount" name="name" placeholder="PIX - Banco" />
         </div>
         <button type="submit" class="btn">Salvar conta</button>
       </form>
-
-      <footer class="quick-footer">
-        <a class="quick-options-link" href="/receitas/lista" title="Receitas registradas">☰</a>
-      </footer>
     </main>
     <script>
       const parcels = <%- JSON.stringify(revenue.parcels || []) %>;
@@ -121,6 +123,8 @@
       const kittenSelect = document.getElementById("kittenId");
       const kittenLabel = document.getElementById("kittenLabel");
       const lockFirstParcelDate = <%= revenue.id ? 'true' : 'false' %>;
+      const accountToggle = document.getElementById("accountToggle");
+      const accountPanel = document.getElementById("accountPanel");
 
       function moneyToNumber(value) {
         return Number(String(value || "").replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", ".")) || 0;
@@ -165,9 +169,13 @@
       transportAmount.addEventListener("input", refreshTotal);
       installments.addEventListener("change", renderParcels);
       kittenSelect.addEventListener("change", syncKittenLabel);
+      accountToggle.addEventListener("click", () => {
+        accountPanel.hidden = !accountPanel.hidden;
+      });
       refreshTotal();
       renderParcels();
       syncKittenLabel();
+      accountPanel.hidden = true;
     </script>
   </body>
 </html>
