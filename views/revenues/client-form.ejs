@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Novo Cliente</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/quick-finance.css" />
+  </head>
+  <body>
+    <main class="quick-shell">
+      <header class="quick-header">
+        <h1 class="quick-title">Novo Cliente</h1>
+      </header>
+
+      <form class="quick-card" method="post" action="/receitas/clientes/novo">
+        <% if (error) { %><div class="message message-error"><%= error %></div><% } %>
+
+        <div class="field">
+          <label for="fullName">Nome Completo</label>
+          <input id="fullName" name="fullName" required autofocus />
+        </div>
+        <div class="field">
+          <label for="document">CPF/RG/Passaporte</label>
+          <input id="document" name="document" />
+        </div>
+        <div class="inline-action-row">
+          <div class="field">
+            <label for="cep">CEP</label>
+            <input id="cep" name="cep" />
+          </div>
+          <button type="button" class="btn small-button" id="cepLookup">+</button>
+        </div>
+        <div class="field"><label for="street">Rua</label><input id="street" name="street" /></div>
+        <div class="field"><label for="neighborhood">Bairro</label><input id="neighborhood" name="neighborhood" /></div>
+        <div class="field"><label for="city">Cidade</label><input id="city" name="city" /></div>
+        <div class="field"><label for="state">Estado</label><input id="state" name="state" /></div>
+        <div class="field"><label for="country">País</label><input id="country" name="country" value="Brasil" /></div>
+
+        <button type="submit" class="btn">Salvar cliente</button>
+      </form>
+
+      <a class="back-link" href="/receitas">Voltar</a>
+    </main>
+    <script>
+      document.getElementById("cepLookup").addEventListener("click", async () => {
+        const cep = document.getElementById("cep").value.replace(/\D/g, "");
+        if (cep.length !== 8) return;
+        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const data = await response.json();
+        if (data.erro) return;
+        document.getElementById("street").value = data.logradouro || "";
+        document.getElementById("neighborhood").value = data.bairro || "";
+        document.getElementById("city").value = data.localidade || "";
+        document.getElementById("state").value = data.uf || "";
+        document.getElementById("country").value = "Brasil";
+      });
+    </script>
+  </body>
+</html>

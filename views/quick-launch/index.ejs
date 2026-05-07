@@ -3,134 +3,20 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Lançamento Rápido - CaTech</title>
+    <title>Despesas - CaTech</title>
     <link rel="stylesheet" href="/css/theme.css" />
-    <style>
-      * {
-        box-sizing: border-box;
-      }
-      body {
-        margin: 0;
-        min-height: 100vh;
-        background: #f3f4f6;
-        color: #1f2937;
-        font-family: Arial, sans-serif;
-      }
-      .quick-shell {
-        width: min(520px, 100%);
-        margin: 0 auto;
-        padding: 18px 14px 28px;
-      }
-      .quick-header {
-        padding: 12px 2px 18px;
-      }
-      .quick-title {
-        margin: 0;
-        font-size: 24px;
-        line-height: 1.15;
-      }
-      .quick-subtitle {
-        margin-top: 6px;
-        color: #6b7280;
-        font-size: 13px;
-      }
-      .quick-card {
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        padding: 16px;
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
-      }
-      .field {
-        margin-bottom: 13px;
-      }
-      label {
-        display: block;
-        margin-bottom: 5px;
-        color: #6b7280;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-      input,
-      select,
-      textarea {
-        width: 100%;
-        min-height: 44px;
-        border: 1px solid #d1d5db;
-        border-radius: 8px;
-        padding: 10px 12px;
-        font: inherit;
-        color: #111827;
-        background: #ffffff;
-      }
-      textarea {
-        min-height: 78px;
-        resize: vertical;
-      }
-      input[type="file"] {
-        padding: 9px;
-      }
-      .quick-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 0;
-      }
-      .btn {
-        width: 100%;
-        min-height: 48px;
-        border: 0;
-        border-radius: 8px;
-        background: #111827;
-        color: #ffffff;
-        font-weight: 700;
-        cursor: pointer;
-      }
-      .message {
-        margin-bottom: 12px;
-        padding: 10px 12px;
-        border-radius: 8px;
-        font-size: 13px;
-      }
-      .message-success {
-        background: #ecfdf5;
-        color: #047857;
-        border: 1px solid #a7f3d0;
-      }
-      .message-error {
-        background: #fef2f2;
-        color: #b91c1c;
-        border: 1px solid #fecaca;
-      }
-      .quick-footer {
-        display: flex;
-        justify-content: center;
-        padding: 14px 0 0;
-      }
-      .quick-options-link {
-        color: #9ca3af;
-        font-size: 22px;
-        text-decoration: none;
-      }
-      @media (min-width: 560px) {
-        .quick-grid {
-          grid-template-columns: 1fr 1fr;
-          gap: 12px;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="/css/quick-finance.css" />
   </head>
   <body>
     <main class="quick-shell">
       <header class="quick-header">
-        <h1 class="quick-title">Lançamento Rápido</h1>
+        <h1 class="quick-title">Despesas</h1>
         <div class="quick-subtitle">Registro simples de despesas do gatil.</div>
       </header>
 
-      <form class="quick-card" method="post" action="/lancamento" enctype="multipart/form-data">
+      <form class="quick-card" method="post" action="<%= formAction %>" enctype="multipart/form-data">
         <% if (success) { %>
-          <div class="message message-success">Lançamento salvo.</div>
+          <div class="message message-success">Despesa salva.</div>
         <% } %>
         <% if (error) { %>
           <div class="message message-error"><%= error %></div>
@@ -139,12 +25,12 @@
         <div class="quick-grid">
           <div class="field">
             <label for="amount">Valor</label>
-            <input id="amount" name="amount" inputmode="decimal" placeholder="R$ 0,00" required autofocus />
+            <input id="amount" name="amount" inputmode="decimal" placeholder="R$ 0,00" value="<%= expense.amount || '' %>" required autofocus />
           </div>
 
           <div class="field">
             <label for="competenceDate">Competência</label>
-            <input id="competenceDate" name="competenceDate" type="date" value="<%= today %>" />
+            <input id="competenceDate" name="competenceDate" type="date" value="<%= expense.competenceDate %>" />
           </div>
         </div>
 
@@ -153,7 +39,7 @@
           <select id="category" name="category" required>
             <option value="">Selecione...</option>
             <% categories.forEach(function(item) { %>
-              <option value="<%= item %>"><%= item %></option>
+              <option value="<%= item %>" <%= expense.category === item ? 'selected' : '' %>><%= item %></option>
             <% }) %>
           </select>
         </div>
@@ -163,9 +49,28 @@
           <select id="paymentMethod" name="paymentMethod" required>
             <option value="">Selecione...</option>
             <% paymentMethods.forEach(function(item) { %>
-              <option value="<%= item %>"><%= item %></option>
+              <option value="<%= item %>" <%= expense.paymentMethod === item ? 'selected' : '' %>><%= item %></option>
             <% }) %>
           </select>
+        </div>
+
+        <div id="creditFields" class="quick-grid">
+          <div class="field">
+            <label for="paymentMode">Crédito</label>
+            <select id="paymentMode" name="paymentMode">
+              <option value="">Selecione...</option>
+              <option value="À vista" <%= expense.paymentMode === 'À vista' ? 'selected' : '' %>>À vista</option>
+              <option value="Parcelado" <%= expense.paymentMode === 'Parcelado' ? 'selected' : '' %>>Parcelado</option>
+            </select>
+          </div>
+          <div class="field" id="installmentsField">
+            <label for="installments">Parcelas</label>
+            <select id="installments" name="installments">
+              <% for (let i = 1; i <= 12; i++) { %>
+                <option value="<%= i %>" <%= String(expense.installments || '1') === String(i) ? 'selected' : '' %>><%= i %>x</option>
+              <% } %>
+            </select>
+          </div>
         </div>
 
         <div class="field">
@@ -173,27 +78,49 @@
           <select id="supplier" name="supplier" required>
             <option value="">Selecione...</option>
             <% suppliers.forEach(function(item) { %>
-              <option value="<%= item %>"><%= item %></option>
+              <option value="<%= item %>" <%= expense.supplier === item ? 'selected' : '' %>><%= item %></option>
             <% }) %>
           </select>
         </div>
 
         <div class="field">
           <label for="receipt">Foto/Comprovante</label>
-          <input id="receipt" name="receipt" type="file" accept="image/*,application/pdf" capture="environment" required />
+          <input id="receipt" name="receipt" type="file" accept="image/*,application/pdf" capture="environment" <%= expense.receiptPath ? '' : 'required' %> />
+          <% if (expense.receiptPath) { %>
+            <small>Comprovante já anexado. Envie outro arquivo apenas se desejar substituir.</small>
+          <% } %>
         </div>
 
         <div class="field">
           <label for="note">Observação</label>
-          <textarea id="note" name="note" placeholder="Vacina filhotes ninhada B"></textarea>
+          <textarea id="note" name="note" placeholder="Vacina filhotes ninhada B"><%= expense.note || '' %></textarea>
         </div>
 
-        <button type="submit" class="btn">Salvar lançamento</button>
+        <button type="submit" class="btn">Salvar despesa</button>
       </form>
 
       <footer class="quick-footer">
-        <a class="quick-options-link" href="/lancamento/opcoes" title="Categorias e fornecedores">⚙</a>
+        <a class="quick-options-link" href="/despesas/opcoes" title="Categorias, fornecedores e pagamentos">⚙</a>
+        <a class="quick-options-link" href="/despesas/lista" title="Despesas lançadas">☰</a>
       </footer>
     </main>
+    <script>
+      const paymentMethod = document.getElementById("paymentMethod");
+      const paymentMode = document.getElementById("paymentMode");
+      const creditFields = document.getElementById("creditFields");
+      const installmentsField = document.getElementById("installmentsField");
+
+      function refreshCreditFields() {
+        const isCredit = (paymentMethod.value || "").toLowerCase().includes("crédito");
+        creditFields.style.display = isCredit ? "grid" : "none";
+        paymentMode.required = isCredit;
+        if (!isCredit) paymentMode.value = "";
+        installmentsField.style.display = paymentMode.value === "Parcelado" ? "block" : "none";
+      }
+
+      paymentMethod.addEventListener("change", refreshCreditFields);
+      paymentMode.addEventListener("change", refreshCreditFields);
+      refreshCreditFields();
+    </script>
   </body>
 </html>

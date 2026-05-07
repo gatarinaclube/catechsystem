@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Receitas - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/quick-finance.css" />
+  </head>
+  <body>
+    <main class="quick-shell">
+      <header class="quick-header">
+        <h1 class="quick-title">Receitas</h1>
+        <div class="quick-subtitle">Registro de receitas de filhotes.</div>
+      </header>
+
+      <form class="quick-card" method="post" action="<%= formAction %>">
+        <% if (success) { %><div class="message message-success">Receita salva.</div><% } %>
+        <% if (error) { %><div class="message message-error"><%= error %></div><% } %>
+
+        <div class="inline-action-row">
+          <div class="field">
+            <label for="clientId">Cliente</label>
+            <select id="clientId" name="clientId" required>
+              <option value="">Selecione...</option>
+              <% clients.forEach(function(client) { %>
+                <option value="<%= client.id %>" <%= String(revenue.clientId || '') === String(client.id) ? 'selected' : '' %>>
+                  <%= client.fullName %><%= client.document ? ' - ' + client.document : '' %>
+                </option>
+              <% }) %>
+            </select>
+          </div>
+          <a class="btn small-button" href="/receitas/clientes/novo">+</a>
+        </div>
+
+        <div class="field">
+          <label for="kittenId">Filhote</label>
+          <select id="kittenId" name="kittenId" required>
+            <% if (revenue.kittenId && revenue.kittenLabel) { %>
+              <option value="<%= revenue.kittenId %>" selected><%= revenue.kittenLabel %></option>
+            <% } else { %>
+              <option value="">Selecione...</option>
+            <% } %>
+            <% kittens.forEach(function(kitten) { %>
+              <option value="<%= kitten.id %>" data-label="<%= kitten.label %>" <%= String(revenue.kittenId || '') === String(kitten.id) ? 'selected' : '' %>><%= kitten.label %></option>
+            <% }) %>
+          </select>
+          <input type="hidden" id="kittenLabel" name="kittenLabel" value="<%= revenue.kittenLabel || '' %>" />
+        </div>
+
+        <div class="quick-grid">
+          <div class="field">
+            <label for="invoiceNumber">Nota fiscal</label>
+            <input id="invoiceNumber" name="invoiceNumber" value="<%= revenue.invoiceNumber || '' %>" />
+          </div>
+          <div class="field">
+            <label for="invoiceDate">Data emissão NF</label>
+            <input id="invoiceDate" name="invoiceDate" type="date" value="<%= revenue.invoiceDate || '' %>" />
+          </div>
+        </div>
+
+        <div class="quick-grid">
+          <div class="field">
+            <label for="catAmount">Valor do Gato</label>
+            <input id="catAmount" name="catAmount" inputmode="decimal" value="<%= revenue.catAmount || '' %>" required />
+          </div>
+          <div class="field">
+            <label for="transportAmount">Valor do Transporte</label>
+            <input id="transportAmount" name="transportAmount" inputmode="decimal" value="<%= revenue.transportAmount || '' %>" />
+          </div>
+        </div>
+
+        <div class="quick-grid">
+          <div class="field">
+            <label for="totalAmount">Total</label>
+            <input id="totalAmount" value="<%= revenue.totalAmount || '' %>" readonly />
+          </div>
+          <div class="field">
+            <label for="installments">Número de Parcelas</label>
+            <select id="installments" name="installments">
+              <% for (let i = 1; i <= 10; i++) { %>
+                <option value="<%= i %>" <%= String(revenue.installments || '1') === String(i) ? 'selected' : '' %>><%= i %></option>
+              <% } %>
+            </select>
+          </div>
+        </div>
+
+        <div id="parcelFields"></div>
+
+        <div class="field">
+          <label for="paymentAccount">Conta de pagamento</label>
+          <select id="paymentAccount" name="paymentAccount" required>
+            <% paymentAccounts.forEach(function(account) { %>
+              <option value="<%= account %>" <%= revenue.paymentAccount === account ? 'selected' : '' %>><%= account %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <button type="submit" class="btn">Salvar receita</button>
+      </form>
+
+      <form class="quick-card" style="margin-top:12px;" method="post" action="/receitas/contas">
+        <div class="field">
+          <label for="newAccount">Nova conta de pagamento</label>
+          <input id="newAccount" name="name" placeholder="Nova conta de pagamento" />
+        </div>
+        <button type="submit" class="btn">Salvar conta</button>
+      </form>
+
+      <footer class="quick-footer">
+        <a class="quick-options-link" href="/receitas/lista" title="Receitas registradas">☰</a>
+      </footer>
+    </main>
+    <script>
+      const parcels = <%- JSON.stringify(revenue.parcels || []) %>;
+      const installments = document.getElementById("installments");
+      const parcelFields = document.getElementById("parcelFields");
+      const catAmount = document.getElementById("catAmount");
+      const transportAmount = document.getElementById("transportAmount");
+      const totalAmount = document.getElementById("totalAmount");
+      const kittenSelect = document.getElementById("kittenId");
+      const kittenLabel = document.getElementById("kittenLabel");
+      const lockFirstParcelDate = <%= revenue.id ? 'true' : 'false' %>;
+
+      function moneyToNumber(value) {
+        return Number(String(value || "").replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", ".")) || 0;
+      }
+
+      function numberToMoney(value) {
+        return value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+
+      function refreshTotal() {
+        totalAmount.value = numberToMoney(moneyToNumber(catAmount.value) + moneyToNumber(transportAmount.value));
+      }
+
+      function renderParcels() {
+        const count = Number(installments.value || 1);
+        parcelFields.innerHTML = "";
+        for (let i = 1; i <= count; i++) {
+          const saved = parcels.find((item) => Number(item.number) === i) || {};
+          const dateLabel = i === 1 ? "Data de pagamento da primeira parcela" : `Data de vencimento da ${i}ª parcela`;
+          const amountLabel = i === 1 ? "Valor da primeira Parcela" : `Valor da ${i}ª Parcela`;
+          parcelFields.insertAdjacentHTML("beforeend", `
+            <div class="quick-grid">
+              <div class="field">
+                <label>${amountLabel}</label>
+                <input name="parcel${i}Amount" inputmode="decimal" value="${saved.amountCents ? numberToMoney(saved.amountCents / 100) : ""}">
+              </div>
+              <div class="field">
+                <label>${dateLabel}</label>
+                <input name="parcel${i}Date" type="date" value="${saved.date || ""}" ${lockFirstParcelDate && i === 1 ? "readonly" : ""}>
+              </div>
+            </div>
+          `);
+        }
+      }
+
+      function syncKittenLabel() {
+        const option = kittenSelect.options[kittenSelect.selectedIndex];
+        if (option) kittenLabel.value = option.dataset.label || option.textContent.trim();
+      }
+
+      catAmount.addEventListener("input", refreshTotal);
+      transportAmount.addEventListener("input", refreshTotal);
+      installments.addEventListener("change", renderParcels);
+      kittenSelect.addEventListener("change", syncKittenLabel);
+      refreshTotal();
+      renderParcels();
+      syncKittenLabel();
+    </script>
+  </body>
+</html>

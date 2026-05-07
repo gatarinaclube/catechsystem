@@ -34,16 +34,14 @@ const DEFAULT_SUPPLIERS = [
   "Clínica Unidade Animal",
 ];
 
-const PAYMENT_METHODS = [
+const DEFAULT_PAYMENT_METHODS = [
   "PIX - SICOOB Conta",
   "Crédito - SICOOB",
   "Dinheiro",
 ];
 
 function ensureDir(dir) {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
 function todayForInput() {
@@ -61,15 +59,23 @@ function parseAmountToCents(value) {
   return Number.isFinite(number) ? Math.round(number * 100) : null;
 }
 
+function formatAmount(cents) {
+  if (cents === null || cents === undefined) return "";
+  return (Number(cents) / 100).toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 function parseDateInput(value) {
   const dateText = String(value || todayForInput()).slice(0, 10);
   const [year, month, day] = dateText.split("-").map(Number);
+  return year && month && day ? new Date(Date.UTC(year, month - 1, day)) : new Date();
+}
 
-  if (!year || !month || !day) {
-    return new Date();
-  }
-
-  return new Date(Date.UTC(year, month - 1, day));
+function formatDateInput(date) {
+  if (!date) return todayForInput();
+  return new Date(date).toISOString().slice(0, 10);
 }
 
 function mergeOptions(defaults, rows) {
@@ -90,7 +96,7 @@ function createUpload() {
       filename: (req, file, cb) => {
         const ext = path.extname(file.originalname || "").toLowerCase();
         const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-        cb(null, `lancamento-${unique}${ext}`);
+        cb(null, `despesa-${unique}${ext}`);
       },
     }),
     limits: { fileSize: 10 * 1024 * 1024 },
@@ -103,14 +109,44 @@ function createUpload() {
         "image/heic",
         "image/heif",
       ];
-
-      if (allowed.includes(file.mimetype)) {
-        return cb(null, true);
-      }
-
-      cb(new Error("Envie uma foto, imagem ou PDF como comprovante."));
+      cb(allowed.includes(file.mimetype) ? null : new Error("Envie uma foto, imagem ou PDF como comprovante."), allowed.includes(file.mimetype));
     },
   });
+}
+
+function buildExpenseFormData(body, file, existingReceipt = null) {
+  const amountCents = parseAmountToCents(body.amount);
+  const category = String(body.category || "").trim();
+  const paymentMethod = String(body.paymentMethod || "").trim();
+  const supplier = String(body.supplier || "").trim();
+  const paymentMode = paymentMethod.toLowerCase().includes("crédito")
+    ? String(body.paymentMode || "").trim()
+    : null;
+  const installments =
+    paymentMode === "Parcelado"
+      ? Math.min(12, Math.max(1, Number.parseInt(body.installments || "1", 10)))
+      : null;
+
+  if (!amountCents || amountCents <= 0) throw new Error("Informe um valor válido.");
+  if (!category || !paymentMethod || !supplier) {
+    throw new Error("Preencha categoria, forma de pagamento e fornecedor.");
+  }
+  if (paymentMethod.toLowerCase().includes("crédito") && !paymentMode) {
+    throw new Error("Informe se o crédito é à vista ou parcelado.");
+  }
+  if (!file && !existingReceipt) throw new Error("Anexe uma foto ou comprovante.");
+
+  return {
+    amountCents,
+    category,
+    paymentMethod,
+    paymentMode,
+    installments,
+    supplier,
+    receiptPath: file ? `/uploads/quick-launch/${file.filename}` : existingReceipt,
+    note: body.note || null,
+    competenceDate: parseDateInput(body.competenceDate),
+  };
 }
 
 module.exports = (prisma) => {
@@ -118,118 +154,153 @@ module.exports = (prisma) => {
   const upload = createUpload();
 
   async function loadOptions() {
-    const rows = await prisma.quickLaunchOption.findMany({
-      orderBy: { name: "asc" },
-    });
+    const rows = await prisma.quickLaunchOption.findMany({ orderBy: { name: "asc" } });
 
     return {
-      categories: mergeOptions(
-        DEFAULT_CATEGORIES,
-        rows.filter((row) => row.type === "CATEGORY")
-      ),
-      suppliers: mergeOptions(
-        DEFAULT_SUPPLIERS,
-        rows.filter((row) => row.type === "SUPPLIER")
-      ),
+      categories: mergeOptions(DEFAULT_CATEGORIES, rows.filter((row) => row.type === "CATEGORY")),
+      suppliers: mergeOptions(DEFAULT_SUPPLIERS, rows.filter((row) => row.type === "SUPPLIER")),
+      paymentMethods: mergeOptions(DEFAULT_PAYMENT_METHODS, rows.filter((row) => row.type === "PAYMENT")),
     };
   }
 
-  router.get("/lancamento", async (req, res) => {
-    const options = await loadOptions();
+  function mapExpenseForForm(expense = null) {
+    if (!expense) {
+      return {
+        amount: "",
+        category: "",
+        paymentMethod: "",
+        paymentMode: "",
+        installments: "1",
+        supplier: "",
+        receiptPath: "",
+        note: "",
+        competenceDate: todayForInput(),
+      };
+    }
 
-    res.render("quick-launch/index", {
+    return {
+      ...expense,
+      amount: formatAmount(expense.amountCents),
+      competenceDate: formatDateInput(expense.competenceDate),
+      installments: expense.installments || "1",
+    };
+  }
+
+  async function renderExpenseForm(res, req, extra = {}) {
+    const options = await loadOptions();
+    res.status(extra.status || 200).render("quick-launch/index", {
       ...options,
-      paymentMethods: PAYMENT_METHODS,
-      today: todayForInput(),
-      success: req.query.ok === "1",
-      error: null,
-      currentPath: "/lancamento",
+      expense: mapExpenseForForm(extra.expense),
+      formAction: extra.expense?.id ? `/despesas/${extra.expense.id}` : "/despesas",
+      success: extra.success || false,
+      error: extra.error || null,
+      currentPath: "/despesas",
     });
+  }
+
+  router.get("/lancamento", (req, res) => res.redirect("/despesas"));
+  router.get("/lancamento/opcoes", (req, res) => res.redirect("/despesas/opcoes"));
+
+  router.get("/despesas", async (req, res) => {
+    await renderExpenseForm(res, req, { success: req.query.ok === "1" });
   });
 
-  router.post("/lancamento", upload.single("receipt"), async (req, res) => {
-    const options = await loadOptions();
-
+  router.post("/despesas", upload.single("receipt"), async (req, res) => {
     try {
-      const amountCents = parseAmountToCents(req.body.amount);
-      const category = String(req.body.category || "").trim();
-      const paymentMethod = String(req.body.paymentMethod || "").trim();
-      const supplier = String(req.body.supplier || "").trim();
-
-      if (!amountCents || amountCents <= 0) {
-        throw new Error("Informe um valor válido.");
-      }
-
-      if (!category || !paymentMethod || !supplier) {
-        throw new Error("Preencha categoria, forma de pagamento e fornecedor.");
-      }
-
-      if (!req.file) {
-        throw new Error("Anexe uma foto ou comprovante.");
-      }
-
+      const data = buildExpenseFormData(req.body, req.file);
       await prisma.quickLaunchEntry.create({
         data: {
           ownerId: req.session?.userId || null,
-          amountCents,
-          category,
-          paymentMethod,
-          supplier,
-          receiptPath: `/uploads/quick-launch/${req.file.filename}`,
-          note: req.body.note || null,
-          competenceDate: parseDateInput(req.body.competenceDate),
+          ...data,
         },
       });
-
-      res.redirect("/lancamento?ok=1");
+      res.redirect("/despesas?ok=1");
     } catch (err) {
-      res.status(400).render("quick-launch/index", {
-        ...options,
-        paymentMethods: PAYMENT_METHODS,
-        today: req.body.competenceDate || todayForInput(),
-        success: false,
-        error: err.message || "Erro ao salvar lançamento.",
-        currentPath: "/lancamento",
+      await renderExpenseForm(res, req, {
+        status: 400,
+        error: err.message || "Erro ao salvar despesa.",
+        expense: { ...req.body, amountCents: parseAmountToCents(req.body.amount) },
       });
     }
   });
 
-  router.get("/lancamento/opcoes", async (req, res) => {
-    res.render("quick-launch/options", {
-      success: req.query.ok === "1",
-      error: null,
-      currentPath: "/lancamento",
+  router.get("/despesas/lista", async (req, res) => {
+    const expenses = await prisma.quickLaunchEntry.findMany({
+      orderBy: [{ competenceDate: "desc" }, { createdAt: "desc" }],
+      take: 200,
+    });
+
+    res.render("quick-launch/list", {
+      expenses: expenses.map((expense) => ({
+        ...expense,
+        amountLabel: formatAmount(expense.amountCents),
+        dateLabel: new Date(expense.competenceDate).toLocaleDateString("pt-BR", {
+          timeZone: "America/Sao_Paulo",
+        }),
+      })),
+      currentPath: "/despesas",
     });
   });
 
-  router.post("/lancamento/opcoes", async (req, res) => {
-    const optionType =
-      req.body.type === "SUPPLIER" ? "SUPPLIER" : "CATEGORY";
+  router.get("/despesas/opcoes", async (req, res) => {
+    res.render("quick-launch/options", {
+      success: req.query.ok === "1",
+      error: null,
+      currentPath: "/despesas",
+    });
+  });
+
+  router.post("/despesas/opcoes", async (req, res) => {
+    const optionType = ["SUPPLIER", "PAYMENT"].includes(req.body.type)
+      ? req.body.type
+      : "CATEGORY";
     const name = String(req.body.name || "").trim();
 
     if (!name) {
       return res.status(400).render("quick-launch/options", {
         success: false,
         error: "Informe o nome da opção.",
-        currentPath: "/lancamento",
+        currentPath: "/despesas",
       });
     }
 
     await prisma.quickLaunchOption.upsert({
-      where: {
-        type_name: {
-          type: optionType,
-          name,
-        },
-      },
+      where: { type_name: { type: optionType, name } },
       update: {},
-      create: {
-        type: optionType,
-        name,
-      },
+      create: { type: optionType, name },
     });
 
-    res.redirect("/lancamento/opcoes?ok=1");
+    res.redirect("/despesas/opcoes?ok=1");
+  });
+
+  router.get("/despesas/:id", async (req, res) => {
+    const expense = await prisma.quickLaunchEntry.findUnique({
+      where: { id: Number(req.params.id) },
+    });
+    if (!expense) return res.status(404).send("Despesa não encontrada.");
+    await renderExpenseForm(res, req, { expense });
+  });
+
+  router.post("/despesas/:id", upload.single("receipt"), async (req, res) => {
+    const existing = await prisma.quickLaunchEntry.findUnique({
+      where: { id: Number(req.params.id) },
+    });
+    if (!existing) return res.status(404).send("Despesa não encontrada.");
+
+    try {
+      const data = buildExpenseFormData(req.body, req.file, existing.receiptPath);
+      await prisma.quickLaunchEntry.update({
+        where: { id: existing.id },
+        data,
+      });
+      res.redirect("/despesas/lista");
+    } catch (err) {
+      await renderExpenseForm(res, req, {
+        status: 400,
+        error: err.message || "Erro ao atualizar despesa.",
+        expense: { ...existing, ...req.body },
+      });
+    }
   });
 
   return router;

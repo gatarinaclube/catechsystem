@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Receitas Registradas</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/quick-finance.css" />
+  </head>
+  <body>
+    <main class="quick-shell">
+      <header class="quick-header">
+        <h1 class="quick-title">Receitas Registradas</h1>
+      </header>
+
+      <div class="quick-card">
+        <% if (!revenues.length) { %>
+          <div class="empty">Nenhuma receita registrada.</div>
+        <% } else { %>
+          <ul class="quick-list">
+            <% revenues.forEach(function(revenue) { %>
+              <li>
+                <a href="/receitas/<%= revenue.id %>">
+                  <strong><%= revenue.kittenLabel || '-' %></strong>
+                  <span><%= revenue.client ? revenue.client.fullName : '-' %></span>
+                </a>
+              </li>
+            <% }) %>
+          </ul>
+        <% } %>
+      </div>
+
+      <a class="back-link" href="/receitas">Voltar</a>
+    </main>
+  </body>
+</html>

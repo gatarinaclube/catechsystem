@@ -117,7 +117,9 @@
       </div>
 
       <% [
-        { href: "/lancamento", match: "/lancamento", icon: "⚡", label: "Lançamento Rápido", allowed: access && access.canAccessQuickLaunch },
+        { href: "/receitas", match: "/receitas", icon: "💰", label: "Receitas", allowed: access && access.canAccessRevenues },
+        { href: "/despesas", match: "/despesas", icon: "⚡", label: "Despesas", allowed: access && access.canAccessQuickLaunch },
+        { href: "/reports", match: "/reports", icon: "📊", label: "Relatórios", allowed: access && access.canAccessReports },
       ].forEach(renderMenuItem); %>
     </nav>
   </div>

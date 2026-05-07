@@ -61,6 +61,7 @@ model User {
   serviceRequests ServiceRequest[]
   settings        UserSettings?
   quickLaunchEntries QuickLaunchEntry[]
+  revenueEntries RevenueEntry[]
 }
 
 model UserSettings {
@@ -91,6 +92,8 @@ model QuickLaunchEntry {
   amountCents   Int
   category      String
   paymentMethod String
+  paymentMode   String?
+  installments  Int?
   supplier      String
   receiptPath   String
   note          String?
@@ -105,6 +108,40 @@ model QuickLaunchOption {
   createdAt DateTime @default(now())
 
   @@unique([type, name])
+}
+
+model RevenueClient {
+  id           Int      @id @default(autoincrement())
+  fullName     String
+  document     String?
+  cep          String?
+  street       String?
+  neighborhood String?
+  city         String?
+  state        String?
+  country      String?
+  createdAt    DateTime @default(now())
+  revenues     RevenueEntry[]
+}
+
+model RevenueEntry {
+  id                 Int      @id @default(autoincrement())
+  owner              User?    @relation(fields: [ownerId], references: [id])
+  ownerId            Int?
+  client             RevenueClient? @relation(fields: [clientId], references: [id])
+  clientId           Int?
+  kitten             Cat?     @relation("RevenueKitten", fields: [kittenId], references: [id])
+  kittenId           Int?
+  kittenLabel        String?
+  invoiceNumber      String?
+  invoiceDate        DateTime?
+  catAmountCents     Int      @default(0)
+  transportAmountCents Int    @default(0)
+  totalAmountCents   Int      @default(0)
+  installments       Int      @default(1)
+  paymentAccount     String
+  parcelDataJson     String?
+  createdAt          DateTime @default(now())
 }
 
 model Cat {
@@ -171,6 +208,7 @@ model Cat {
   historyNotes     String?
   matingPlansAsFemale MatingPlan[]   @relation("MatingFemale")
   matingPlansAsMale   MatingPlan[]   @relation("MatingMale")
+  revenueEntries      RevenueEntry[]  @relation("RevenueKitten")
 
   createdAt        DateTime          @default(now())
   transferRequests TransferRequest[]

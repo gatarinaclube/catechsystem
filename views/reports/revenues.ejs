@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Receitas - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+    <style>
+      .report-filter-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px;
+        align-items: end;
+      }
+      .report-summary {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .report-total {
+        font-size: 18px;
+        font-weight: 700;
+      }
+      .report-table-wrap {
+        overflow-x: auto;
+      }
+      .report-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 760px;
+      }
+      .report-table th,
+      .report-table td {
+        border-bottom: 1px solid var(--border-soft);
+        padding: 10px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+      .report-table th {
+        color: var(--text-muted);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .report-table .amount {
+        text-align: right;
+        white-space: nowrap;
+      }
+      @media (max-width: 1100px) {
+        .report-filter-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 680px) {
+        .report-filter-grid {
+          grid-template-columns: 1fr;
+        }
+        .report-summary {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Receitas</h2>
+            <div class="welcome-sub">Relatório de receitas registradas.</div>
+          </div>
+          <div class="actions">
+            <a href="/reports" class="btn">Voltar</a>
+            <a href="/reports/revenues/pdf?<%= pdfQuery %>" class="btn btn-primary">Download PDF</a>
+          </div>
+        </div>
+
+        <div class="content-card module-panel">
+          <form method="get" action="/reports/revenues" class="report-filter-grid">
+            <div class="field">
+              <label class="field-label" for="periodType">Período</label>
+              <select id="periodType" name="periodType">
+                <option value="month" <%= filters.periodType === 'month' ? 'selected' : '' %>>Mês</option>
+                <option value="custom" <%= filters.periodType === 'custom' ? 'selected' : '' %>>Personalizado</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label" for="month">Mês</label>
+              <input id="month" name="month" type="month" value="<%= filters.month %>" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="startDate">Data inicial</label>
+              <input id="startDate" name="startDate" type="date" value="<%= filters.startDateInput %>" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="endDate">Data final</label>
+              <input id="endDate" name="endDate" type="date" value="<%= filters.endDateInput %>" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="paymentMethod">Conta</label>
+              <select id="paymentMethod" name="paymentMethod">
+                <% paymentFilters.forEach(function(option) { %>
+                  <option value="<%= option.value %>" <%= filters.paymentMethod === option.value ? 'selected' : '' %>><%= option.label %></option>
+                <% }) %>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+            <a href="/reports/revenues" class="btn">Limpar</a>
+          </form>
+        </div>
+
+        <div class="content-card">
+          <div class="report-summary">
+            <div>
+              <div class="content-title">Receitas encontradas</div>
+              <div class="content-sub"><%= rows.length %> lançamento(s) no período selecionado.</div>
+            </div>
+            <div class="report-total"><%= totalLabel %></div>
+          </div>
+
+          <% if (!rows.length) { %>
+            <div class="empty">Nenhuma receita encontrada.</div>
+          <% } else { %>
+            <div class="report-table-wrap">
+              <table class="report-table">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Filhote</th>
+                    <th>Cliente</th>
+                    <th>Conta</th>
+                    <th>Nota fiscal</th>
+                    <th class="amount">Valor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% rows.forEach(function(row) { %>
+                    <tr>
+                      <td><%= row.dateLabel %></td>
+                      <td><%= row.kittenLabel || '-' %></td>
+                      <td><%= row.clientLabel || '-' %></td>
+                      <td><%= row.paymentAccount || '-' %></td>
+                      <td><%= row.invoiceNumber || '-' %></td>
+                      <td class="amount"><%= row.amountLabel %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

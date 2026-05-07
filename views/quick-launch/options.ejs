@@ -3,102 +3,17 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Opções - Lançamento Rápido</title>
+    <title>Opções - Despesas</title>
     <link rel="stylesheet" href="/css/theme.css" />
-    <style>
-      * {
-        box-sizing: border-box;
-      }
-      body {
-        margin: 0;
-        min-height: 100vh;
-        background: #f3f4f6;
-        color: #1f2937;
-        font-family: Arial, sans-serif;
-      }
-      .quick-shell {
-        width: min(520px, 100%);
-        margin: 0 auto;
-        padding: 18px 14px 28px;
-      }
-      .quick-header {
-        padding: 12px 2px 18px;
-      }
-      .quick-title {
-        margin: 0;
-        font-size: 24px;
-        line-height: 1.15;
-      }
-      .quick-card {
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        padding: 16px;
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
-      }
-      .field {
-        margin-bottom: 13px;
-      }
-      label {
-        display: block;
-        margin-bottom: 5px;
-        color: #6b7280;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-      input,
-      select {
-        width: 100%;
-        min-height: 44px;
-        border: 1px solid #d1d5db;
-        border-radius: 8px;
-        padding: 10px 12px;
-        font: inherit;
-        background: #ffffff;
-      }
-      .btn {
-        width: 100%;
-        min-height: 48px;
-        border: 0;
-        border-radius: 8px;
-        background: #111827;
-        color: #ffffff;
-        font-weight: 700;
-        cursor: pointer;
-      }
-      .message {
-        margin-bottom: 12px;
-        padding: 10px 12px;
-        border-radius: 8px;
-        font-size: 13px;
-      }
-      .message-success {
-        background: #ecfdf5;
-        color: #047857;
-        border: 1px solid #a7f3d0;
-      }
-      .message-error {
-        background: #fef2f2;
-        color: #b91c1c;
-        border: 1px solid #fecaca;
-      }
-      .back-link {
-        display: inline-block;
-        margin-top: 14px;
-        color: #6b7280;
-        text-decoration: none;
-      }
-    </style>
+    <link rel="stylesheet" href="/css/quick-finance.css" />
   </head>
   <body>
     <main class="quick-shell">
       <header class="quick-header">
-        <h1 class="quick-title">Categorias e Fornecedores</h1>
+        <h1 class="quick-title">Opções de Despesas</h1>
       </header>
 
-      <form class="quick-card" method="post" action="/lancamento/opcoes">
+      <form class="quick-card" method="post" action="/despesas/opcoes">
         <% if (success) { %>
           <div class="message message-success">Opção salva.</div>
         <% } %>
@@ -111,6 +26,7 @@
           <select id="type" name="type" required>
             <option value="CATEGORY">Nova Categoria</option>
             <option value="SUPPLIER">Novo Fornecedor</option>
+            <option value="PAYMENT">Nova Forma de Pagamento</option>
           </select>
         </div>
 
@@ -122,7 +38,7 @@
         <button type="submit" class="btn">Salvar opção</button>
       </form>
 
-      <a class="back-link" href="/lancamento">Voltar</a>
+      <a class="back-link" href="/despesas">Voltar</a>
     </main>
   </body>
 </html>

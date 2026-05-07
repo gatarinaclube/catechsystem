@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Despesas Lançadas</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/quick-finance.css" />
+  </head>
+  <body>
+    <main class="quick-shell">
+      <header class="quick-header">
+        <h1 class="quick-title">Despesas Lançadas</h1>
+      </header>
+
+      <div class="quick-card">
+        <% if (!expenses.length) { %>
+          <div class="empty">Nenhuma despesa lançada.</div>
+        <% } else { %>
+          <ul class="quick-list">
+            <% expenses.forEach(function(expense) { %>
+              <li>
+                <a href="/despesas/<%= expense.id %>">
+                  <strong><%= expense.dateLabel %></strong>
+                  <span><%= expense.amountLabel %> - <%= expense.supplier || '-' %></span>
+                </a>
+              </li>
+            <% }) %>
+          </ul>
+        <% } %>
+      </div>
+
+      <a class="back-link" href="/despesas">Voltar</a>
+    </main>
+  </body>
+</html>
