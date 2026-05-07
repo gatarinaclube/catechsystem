@@ -68,6 +68,18 @@
         Gestão do Gatil
       </div>
 
+      <div
+        style="
+          margin: 8px 0 6px;
+          font-size: 10px;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #9ca3af;
+        "
+      >
+        Operacional
+      </div>
+
       <% [
         { href: "/breeders", match: "/breeders", icon: "🐱", label: "Reprodutores", allowed: access && access.canAccessBreeders },
         { href: "/admin/litters", match: "/admin/litters", icon: "🐾", label: "Ninhadas", allowed: access && access.canAccessLittersAdmin },
@@ -78,6 +90,34 @@
         { href: "/admin/weighing", match: "/admin/weighing", icon: "⚖️", label: "Pesagem", allowed: access && access.canAccessWeighingAdmin },
         { href: "/admin/exams", match: "/admin/exams", icon: "🩺", label: "Exames", allowed: access && access.canAccessExamsAdmin },
         { href: "/admin/history", match: "/admin/history", icon: "📚", label: "Histórico", allowed: access && access.canAccessHistoryAdmin },
+      ].forEach(renderMenuItem); %>
+
+      <div
+        style="
+          margin: 12px 0 6px;
+          font-size: 10px;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #9ca3af;
+        "
+      >
+        Tático
+      </div>
+
+      <div
+        style="
+          margin: 12px 0 6px;
+          font-size: 10px;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #9ca3af;
+        "
+      >
+        Estratégico
+      </div>
+
+      <% [
+        { href: "/lancamento", match: "/lancamento", icon: "⚡", label: "Lançamento Rápido", allowed: access && access.canAccessQuickLaunch },
       ].forEach(renderMenuItem); %>
     </nav>
   </div>

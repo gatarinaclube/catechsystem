@@ -42,6 +42,7 @@ const PERMISSIONS = {
   "admin.weighing": [ROLES.ADMIN, ROLES.PREMIUM],
   "admin.exams": [ROLES.ADMIN, ROLES.PREMIUM],
   "admin.history": [ROLES.ADMIN, ROLES.PREMIUM],
+  "admin.quickLaunch": [ROLES.ADMIN, ROLES.PREMIUM],
 };
 
 function normalizeRole(role) {
@@ -94,6 +95,7 @@ function buildAccessContext(role) {
     canAccessWeighingAdmin: userCan(normalizedRole, "admin.weighing"),
     canAccessExamsAdmin: userCan(normalizedRole, "admin.exams"),
     canAccessHistoryAdmin: userCan(normalizedRole, "admin.history"),
+    canAccessQuickLaunch: userCan(normalizedRole, "admin.quickLaunch"),
     canUseLitterService: userCan(normalizedRole, "service.litter"),
     canUseTransferService: userCan(normalizedRole, "service.transfer"),
     canUseSecondCopyService: userCan(normalizedRole, "service.secondCopy"),

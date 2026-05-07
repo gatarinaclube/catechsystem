@@ -34,6 +34,7 @@ const dewormingAdminRouterFactory = require("./modules/deworming-admin");
 const weighingAdminRouterFactory = require("./modules/weighing-admin");
 const examsAdminRouterFactory = require("./modules/exams-admin");
 const historyAdminRouterFactory = require("./modules/history-admin");
+const quickLaunchRouterFactory = require("./modules/quick-launch");
 const {generateTitleHomologationPDF,} = require("./modules/pdf/titleHomologationPdf");
 const {generatePedigreeHomologationPDF,} = require("./modules/pdf/pedigreeHomologationPdf");
 const { generateCatteryRegistrationPDF } = require("./modules/pdf/catteryRegistrationPdf");
@@ -793,6 +794,9 @@ const historyAdminRouter = historyAdminRouterFactory(
   requirePermission
 );
 app.use(historyAdminRouter);
+
+const quickLaunchRouter = quickLaunchRouterFactory(prisma);
+app.use(quickLaunchRouter);
 
 
 

@@ -60,6 +60,7 @@ model User {
   matings         MatingPlan[]
   serviceRequests ServiceRequest[]
   settings        UserSettings?
+  quickLaunchEntries QuickLaunchEntry[]
 }
 
 model UserSettings {
@@ -81,6 +82,29 @@ model UserSettings {
   examsJson       String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model QuickLaunchEntry {
+  id            Int      @id @default(autoincrement())
+  owner         User?    @relation(fields: [ownerId], references: [id])
+  ownerId       Int?
+  amountCents   Int
+  category      String
+  paymentMethod String
+  supplier      String
+  receiptPath   String
+  note          String?
+  competenceDate DateTime
+  createdAt     DateTime @default(now())
+}
+
+model QuickLaunchOption {
+  id        Int      @id @default(autoincrement())
+  type      String
+  name      String
+  createdAt DateTime @default(now())
+
+  @@unique([type, name])
 }
 
 model Cat {

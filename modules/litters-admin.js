@@ -43,6 +43,14 @@ function isCatFromLitter(cat) {
   return Boolean(cat.kittenNumber || cat.litterKitten);
 }
 
+function canAppearAsLitterParent(cat) {
+  if (!isCatFromLitter(cat)) {
+    return true;
+  }
+
+  return cat.breedingProspect === true;
+}
+
 function getFullCatName(cat, catteryName = "") {
   const cleanCatteryName = String(catteryName || "").trim();
   const baseName = String(cat.name || "").trim();
@@ -154,11 +162,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     return {
       user: req.user,
       currentPath: req.path,
-      females: females.map((cat) => ({
+      females: females.filter(canAppearAsLitterParent).map((cat) => ({
         ...cat,
         displayName: getFullCatName(cat, catteryNameByUserId.get(cat.ownerId) || catteryName),
       })),
-      males: males.map((cat) => ({
+      males: males.filter(canAppearAsLitterParent).map((cat) => ({
         ...cat,
         displayName: getFullCatName(cat, catteryNameByUserId.get(cat.ownerId) || catteryName),
       })),

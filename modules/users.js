@@ -40,9 +40,19 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         orderBy: { name: "asc" },
       });
 
-      const activeUsers = [];
-      const newUsers = [];
-      const inactiveUsers = [];
+      const userGroups = [
+        { key: "admin", title: getRoleLabel(ROLES.ADMIN), users: [] },
+        { key: "premium", title: getRoleLabel(ROLES.PREMIUM), users: [] },
+        { key: "master", title: getRoleLabel(ROLES.MASTER), users: [] },
+        { key: "basic", title: getRoleLabel(ROLES.BASIC), users: [] },
+        { key: "inactive", title: "Inativo", users: [] },
+      ];
+      const groupByRole = new Map(
+        userGroups
+          .filter((group) => group.key !== "inactive")
+          .map((group) => [group.key.toUpperCase(), group])
+      );
+      const inactiveGroup = userGroups.find((group) => group.key === "inactive");
 
       allUsers.forEach((u) => {
         const normalizedRole = normalizeRole(u.role);
@@ -53,20 +63,17 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         };
         const status = u.approvalStatus || "INDEFERIDO";
 
-        if (status === "DEFERIDO") {
-          activeUsers.push(userWithRole);
-        } else if (status === "RESTRICOES") {
-          inactiveUsers.push(userWithRole);
+        if (status === "RESTRICOES") {
+          inactiveGroup.users.push(userWithRole);
         } else {
-          newUsers.push(userWithRole);
+          const group = groupByRole.get(normalizedRole) || groupByRole.get(ROLES.BASIC);
+          group.users.push(userWithRole);
         }
       });
 
       res.render("users/list", {
         user: currentUser,
-        activeUsers,
-        newUsers,
-        inactiveUsers,
+        userGroups,
         roleOptions,
         approvalOptions,
         currentPath: req.path,
