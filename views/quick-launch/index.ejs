@@ -85,7 +85,7 @@
 
         <div class="field">
           <label for="receipt">Foto/Comprovante</label>
-          <input id="receipt" name="receipt" type="file" accept="image/*,application/pdf" capture="environment" <%= expense.receiptPath ? '' : 'required' %> />
+          <input id="receipt" name="receipt" type="file" accept="image/*,application/pdf" capture="environment" />
           <% if (expense.receiptPath) { %>
             <small>Comprovante já anexado. Envie outro arquivo apenas se desejar substituir.</small>
           <% } %>

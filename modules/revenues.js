@@ -230,6 +230,24 @@ module.exports = (prisma) => {
     }
   });
 
+  async function renderAccountOptions(res, extra = {}) {
+    const accounts = await prisma.quickLaunchOption.findMany({
+      where: { type: "REVENUE_ACCOUNT" },
+      orderBy: { name: "asc" },
+    });
+
+    res.status(extra.status || 200).render("revenues/account-options", {
+      accounts,
+      success: extra.success || false,
+      error: extra.error || null,
+      currentPath: "/receitas",
+    });
+  }
+
+  router.get("/receitas/contas", async (req, res) => {
+    await renderAccountOptions(res, { success: req.query.ok === "1" });
+  });
+
   router.post("/receitas/contas", async (req, res) => {
     const name = String(req.body.name || "").trim();
     if (name) {
@@ -239,7 +257,35 @@ module.exports = (prisma) => {
         create: { type: "REVENUE_ACCOUNT", name },
       });
     }
-    res.redirect("/receitas");
+    res.redirect("/receitas/contas?ok=1");
+  });
+
+  router.post("/receitas/contas/:id/update", async (req, res) => {
+    const id = Number(req.params.id);
+    const account = await prisma.quickLaunchOption.findUnique({ where: { id } });
+    const name = String(req.body.name || "").trim();
+
+    if (!account || account.type !== "REVENUE_ACCOUNT") {
+      return res.status(404).send("Conta não encontrada.");
+    }
+
+    if (name) {
+      await prisma.quickLaunchOption.update({ where: { id }, data: { name } });
+    }
+
+    res.redirect("/receitas/contas?ok=1");
+  });
+
+  router.post("/receitas/contas/:id/delete", async (req, res) => {
+    const id = Number(req.params.id);
+    const account = await prisma.quickLaunchOption.findUnique({ where: { id } });
+
+    if (!account || account.type !== "REVENUE_ACCOUNT") {
+      return res.status(404).send("Conta não encontrada.");
+    }
+
+    await prisma.quickLaunchOption.delete({ where: { id } });
+    res.redirect("/receitas/contas?ok=1");
   });
 
   router.get("/receitas/:id", async (req, res) => {

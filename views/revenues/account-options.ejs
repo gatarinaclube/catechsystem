@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Contas - Receitas</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/quick-finance.css" />
+  </head>
+  <body>
+    <main class="quick-shell">
+      <header class="quick-header">
+        <h1 class="quick-title">Contas de Pagamento</h1>
+      </header>
+
+      <form class="quick-card" method="post" action="/receitas/contas">
+        <% if (success) { %><div class="message message-success">Conta salva.</div><% } %>
+        <% if (error) { %><div class="message message-error"><%= error %></div><% } %>
+
+        <div class="field">
+          <label for="name">Nova conta de pagamento</label>
+          <input id="name" name="name" placeholder="PIX - Banco" required autofocus />
+        </div>
+        <button type="submit" class="btn">Salvar conta</button>
+      </form>
+
+      <div class="quick-card" style="margin-top:12px;">
+        <% if (!accounts.length) { %>
+          <div class="empty">Nenhuma conta adicional cadastrada.</div>
+        <% } else { %>
+          <% accounts.forEach(function(account) { %>
+            <div class="quick-option-row">
+              <form method="post" action="/receitas/contas/<%= account.id %>/update">
+                <div class="quick-option-type">Conta</div>
+                <input name="name" value="<%= account.name %>" required />
+                <button type="submit" class="btn small-button" title="Salvar">✓</button>
+              </form>
+              <form method="post" action="/receitas/contas/<%= account.id %>/delete" onsubmit="return confirm('Excluir esta conta?');">
+                <button type="submit" class="btn small-button" title="Excluir">🗑</button>
+              </form>
+            </div>
+          <% }) %>
+        <% } %>
+      </div>
+
+      <a class="back-link" href="/receitas">Voltar</a>
+    </main>
+  </body>
+</html>

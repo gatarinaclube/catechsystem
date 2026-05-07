@@ -134,8 +134,6 @@ function buildExpenseFormData(body, file, existingReceipt = null) {
   if (paymentMethod.toLowerCase().includes("crédito") && !paymentMode) {
     throw new Error("Informe se o crédito é à vista ou parcelado.");
   }
-  if (!file && !existingReceipt) throw new Error("Anexe uma foto ou comprovante.");
-
   return {
     amountCents,
     category,
@@ -244,9 +242,23 @@ module.exports = (prisma) => {
   });
 
   router.get("/despesas/opcoes", async (req, res) => {
+    const options = await prisma.quickLaunchOption.findMany({
+      where: { type: { in: ["CATEGORY", "SUPPLIER", "PAYMENT"] } },
+      orderBy: [{ type: "asc" }, { name: "asc" }],
+    });
+    const labels = {
+      CATEGORY: "Categoria",
+      SUPPLIER: "Fornecedor",
+      PAYMENT: "Pagamento",
+    };
+
     res.render("quick-launch/options", {
       success: req.query.ok === "1",
       error: null,
+      options: options.map((option) => ({
+        ...option,
+        typeLabel: labels[option.type] || option.type,
+      })),
       currentPath: "/despesas",
     });
   });
@@ -261,6 +273,7 @@ module.exports = (prisma) => {
       return res.status(400).render("quick-launch/options", {
         success: false,
         error: "Informe o nome da opção.",
+        options: [],
         currentPath: "/despesas",
       });
     }
@@ -271,6 +284,34 @@ module.exports = (prisma) => {
       create: { type: optionType, name },
     });
 
+    res.redirect("/despesas/opcoes?ok=1");
+  });
+
+  router.post("/despesas/opcoes/:id/update", async (req, res) => {
+    const id = Number(req.params.id);
+    const option = await prisma.quickLaunchOption.findUnique({ where: { id } });
+    const name = String(req.body.name || "").trim();
+
+    if (!option || !["CATEGORY", "SUPPLIER", "PAYMENT"].includes(option.type)) {
+      return res.status(404).send("Opção não encontrada.");
+    }
+
+    if (name) {
+      await prisma.quickLaunchOption.update({ where: { id }, data: { name } });
+    }
+
+    res.redirect("/despesas/opcoes?ok=1");
+  });
+
+  router.post("/despesas/opcoes/:id/delete", async (req, res) => {
+    const id = Number(req.params.id);
+    const option = await prisma.quickLaunchOption.findUnique({ where: { id } });
+
+    if (!option || !["CATEGORY", "SUPPLIER", "PAYMENT"].includes(option.type)) {
+      return res.status(404).send("Opção não encontrada.");
+    }
+
+    await prisma.quickLaunchOption.delete({ where: { id } });
     res.redirect("/despesas/opcoes?ok=1");
   });
 

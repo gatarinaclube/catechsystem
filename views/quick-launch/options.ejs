@@ -14,12 +14,8 @@
       </header>
 
       <form class="quick-card" method="post" action="/despesas/opcoes">
-        <% if (success) { %>
-          <div class="message message-success">Opção salva.</div>
-        <% } %>
-        <% if (error) { %>
-          <div class="message message-error"><%= error %></div>
-        <% } %>
+        <% if (success) { %><div class="message message-success">Opção salva.</div><% } %>
+        <% if (error) { %><div class="message message-error"><%= error %></div><% } %>
 
         <div class="field">
           <label for="type">Tipo</label>
@@ -37,6 +33,25 @@
 
         <button type="submit" class="btn">Salvar opção</button>
       </form>
+
+      <div class="quick-card" style="margin-top:12px;">
+        <% if (!options.length) { %>
+          <div class="empty">Nenhuma opção adicional cadastrada.</div>
+        <% } else { %>
+          <% options.forEach(function(option) { %>
+            <div class="quick-option-row">
+              <form method="post" action="/despesas/opcoes/<%= option.id %>/update">
+                <div class="quick-option-type"><%= option.typeLabel %></div>
+                <input name="name" value="<%= option.name %>" required />
+                <button type="submit" class="btn small-button" title="Salvar">✓</button>
+              </form>
+              <form method="post" action="/despesas/opcoes/<%= option.id %>/delete" onsubmit="return confirm('Excluir esta opção?');">
+                <button type="submit" class="btn small-button" title="Excluir">🗑</button>
+              </form>
+            </div>
+          <% }) %>
+        <% } %>
+      </div>
 
       <a class="back-link" href="/despesas">Voltar</a>
     </main>
