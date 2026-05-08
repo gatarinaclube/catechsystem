@@ -1051,7 +1051,6 @@ async function getExpenseOptionUsage(option) {
 
 async function renderExpenseOptionsDirect(req, res, extra = {}) {
   const selectedType = normalizeExpenseOptionType(req.query.type || req.body.type);
-  await ensureExpenseDefaultOptions(selectedType);
 
   const options = await prisma.quickLaunchOption.findMany({
     where: { type: selectedType, ownerId: null },
@@ -1070,19 +1069,31 @@ async function renderExpenseOptionsDirect(req, res, extra = {}) {
     (type) =>
       `<option value="${type}" ${selectedType === type ? "selected" : ""}>${EXPENSE_OPTION_LABELS[type]}</option>`
   ).join("");
-  const rowsHtml = rows.map((option) => `
+  const displayRows = rows.length
+    ? rows
+    : (EXPENSE_DEFAULT_OPTIONS[selectedType] || []).map((name) => ({
+        id: null,
+        name,
+        usageCount: null,
+        readOnly: true,
+      }));
+  const rowsHtml = displayRows.map((option) => `
     <div class="quick-option-row">
-      <form method="post" action="/despesas/opcoes/${option.id}/update">
+      <form method="post" action="${option.id ? `/despesas/opcoes/${option.id}/update` : "#"}">
         <input name="name" value="${escapeHtml(option.name)}" required />
-        <div class="quick-option-usage">${option.usageCount} uso${option.usageCount === 1 ? "" : "s"}</div>
-        <button type="submit" class="btn small-button" title="Salvar">✓</button>
+        <div class="quick-option-usage">${
+          option.usageCount === null || option.usageCount === undefined
+            ? "padrão"
+            : `${option.usageCount} uso${option.usageCount === 1 ? "" : "s"}`
+        }</div>
+        <button type="submit" class="btn small-button" title="Salvar" ${option.readOnly ? "disabled" : ""}>✓</button>
       </form>
-      <form method="post" action="/despesas/opcoes/${option.id}/delete" onsubmit="return confirm('Excluir esta opção?');">
+      <form method="post" action="${option.id ? `/despesas/opcoes/${option.id}/delete` : "#"}" onsubmit="return confirm('Excluir esta opção?');">
         <button
           type="submit"
           class="btn small-button danger-button"
           title="${option.usageCount > 0 ? "Não é possível excluir opção em uso" : "Excluir"}"
-          ${option.usageCount > 0 ? "disabled" : ""}
+          ${option.readOnly || option.usageCount > 0 ? "disabled" : ""}
         >🗑</button>
       </form>
     </div>
@@ -1137,7 +1148,56 @@ app.get("/despesas/opcoes", async (req, res) => {
     await renderExpenseOptionsDirect(req, res, { success: req.query.ok === "1" });
   } catch (err) {
     console.error("Erro na rota direta de opções de despesas:", err);
-    res.status(500).send("Erro ao carregar opções de despesas.");
+    const selectedType = normalizeExpenseOptionType(req.query.type || req.body.type);
+    const typeOptionsHtml = EXPENSE_OPTION_TYPES.map(
+      (type) =>
+        `<option value="${type}" ${selectedType === type ? "selected" : ""}>${EXPENSE_OPTION_LABELS[type]}</option>`
+    ).join("");
+    const rowsHtml = (EXPENSE_DEFAULT_OPTIONS[selectedType] || []).map((name) => `
+      <div class="quick-option-row">
+        <input value="${escapeHtml(name)}" disabled />
+        <div class="quick-option-usage">padrão</div>
+        <button class="btn small-button" disabled>✓</button>
+        <button class="btn small-button danger-button" disabled>🗑</button>
+      </div>
+    `).join("");
+
+    res.status(200).send(`<!DOCTYPE html>
+      <html lang="pt-BR">
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>Opções - Despesas</title>
+          <link rel="stylesheet" href="/css/theme.css" />
+          <link rel="stylesheet" href="/css/quick-finance.css" />
+        </head>
+        <body>
+          <main class="quick-shell">
+            <header class="quick-header">
+              <h1 class="quick-title">Opções de Despesas</h1>
+            </header>
+            <div class="quick-card">
+              <div class="message message-error">
+                Não foi possível carregar as opções salvas. Exibindo opções padrão.
+              </div>
+              <div class="field">
+                <label for="type">Tipo</label>
+                <select id="type" name="type">${typeOptionsHtml}</select>
+              </div>
+            </div>
+            <div class="quick-card" style="margin-top:12px;">
+              <div class="quick-option-heading">Editar ${EXPENSE_OPTION_LABELS[selectedType].toLowerCase()}</div>
+              ${rowsHtml}
+            </div>
+            <a class="back-link" href="/despesas">Voltar</a>
+          </main>
+          <script>
+            document.getElementById("type")?.addEventListener("change", function () {
+              window.location.href = "/despesas/opcoes?type=" + encodeURIComponent(this.value);
+            });
+          </script>
+        </body>
+      </html>`);
   }
 });
 
