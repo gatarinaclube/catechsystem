@@ -84,6 +84,55 @@ const UPLOADS_ROOT =
 // Serve /uploads/... a partir do local correto
 app.use("/uploads", express.static(UPLOADS_ROOT));
 
+app.get("/despesas/opcoes", (req, res) => {
+  res.status(200).send(`<!DOCTYPE html>
+    <html lang="pt-BR">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Opções - Despesas</title>
+        <link rel="stylesheet" href="/css/theme.css" />
+        <link rel="stylesheet" href="/css/quick-finance.css" />
+      </head>
+      <body>
+        <main class="quick-shell">
+          <header class="quick-header">
+            <h1 class="quick-title">Opções de Despesas</h1>
+            <div class="quick-subtitle">Modo seguro v2</div>
+          </header>
+          <div class="quick-card">
+            <div class="message message-error">
+              Edição temporariamente indisponível. Exibindo opções padrão.
+            </div>
+          </div>
+          <div class="quick-card" style="margin-top:12px;">
+            <div class="quick-option-heading">Categorias padrão</div>
+            ${[
+              "Alimentação",
+              "Combustível",
+              "Hotelaria",
+              "Veterinário",
+              "Exposição/Competição",
+              "Publicidade",
+              "Equipamentos",
+              "Manutenção",
+              "Serviços",
+              "Outros",
+            ].map((name) => `
+              <div class="quick-option-row">
+                <input value="${name}" disabled />
+                <div class="quick-option-usage">padrão</div>
+                <button class="btn small-button" disabled>✓</button>
+                <button class="btn small-button danger-button" disabled>🗑</button>
+              </div>
+            `).join("")}
+          </div>
+          <a class="back-link" href="/despesas">Voltar</a>
+        </main>
+      </body>
+    </html>`);
+});
+
 
 
 // ---------- VIEW ENGINE ----------
