@@ -532,17 +532,12 @@ module.exports = (prisma) => {
   });
 
   router.get("/despesas/opcoes", async (req, res) => {
-    try {
-      await renderOptionsPage(req, res);
-    } catch (err) {
-      console.error("Erro ao carregar opções de despesas:", err);
-      const selectedType = normalizeOptionType(req.query.type || req.body.type);
-      renderOptionsFallback(
-        res,
-        selectedType,
-        "Não foi possível carregar as opções salvas. Exibindo opções padrão."
-      );
-    }
+    const selectedType = normalizeOptionType(req.query.type || req.body.type);
+    renderOptionsFallback(
+      res,
+      selectedType,
+      "Edição temporariamente indisponível. Exibindo opções padrão."
+    );
   });
 
   router.post("/despesas/opcoes", async (req, res) => {
