@@ -645,17 +645,23 @@ module.exports = (prisma) => {
     res.redirect(`/despesas/opcoes?type=${option.type}&ok=1`);
   });
 
-  router.get("/despesas/:id", async (req, res) => {
+  router.get("/despesas/:id", async (req, res, next) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return next();
+
     const expense = await prisma.quickLaunchEntry.findFirst({
-      where: { id: Number(req.params.id), ...ownerScope(req) },
+      where: { id, ...ownerScope(req) },
     });
     if (!expense) return res.status(404).send("Despesa não encontrada.");
     await renderExpenseForm(res, req, { expense });
   });
 
-  router.post("/despesas/:id", upload.single("receipt"), async (req, res) => {
+  router.post("/despesas/:id", upload.single("receipt"), async (req, res, next) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return next();
+
     const existing = await prisma.quickLaunchEntry.findFirst({
-      where: { id: Number(req.params.id), ...ownerScope(req) },
+      where: { id, ...ownerScope(req) },
     });
     if (!existing) return res.status(404).send("Despesa não encontrada.");
 
@@ -675,8 +681,10 @@ module.exports = (prisma) => {
     }
   });
 
-  router.post("/despesas/:id/delete", async (req, res) => {
+  router.post("/despesas/:id/delete", async (req, res, next) => {
     const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return next();
+
     const existing = await prisma.quickLaunchEntry.findFirst({
       where: { id, ...ownerScope(req) },
       select: { id: true },
