@@ -980,8 +980,115 @@ const historyAdminRouter = historyAdminRouterFactory(
 );
 app.use(historyAdminRouter);
 
-app.get("/despesas/opcoes", (req, res) => {
-  res.status(200).send(`<!DOCTYPE html>
+const EXPENSE_OPTION_TYPES = ["CATEGORY", "SUPPLIER", "PAYMENT"];
+const EXPENSE_OPTION_LABELS = {
+  CATEGORY: "Categoria",
+  SUPPLIER: "Fornecedor",
+  PAYMENT: "Forma de Pagamento",
+};
+const EXPENSE_OPTION_FIELDS = {
+  CATEGORY: "category",
+  SUPPLIER: "supplier",
+  PAYMENT: "paymentMethod",
+};
+const EXPENSE_DEFAULT_OPTIONS = {
+  CATEGORY: [
+    "Alimentação",
+    "Combustível",
+    "Hotelaria",
+    "Veterinário",
+    "Exposição/Competição",
+    "Publicidade",
+    "Equipamentos",
+    "Manutenção",
+    "Reparo/Conserto em Geral",
+    "Reparo/Conserto em Estrutura Física",
+    "Construção",
+    "Veículo",
+    "Material de Expediente",
+    "Insumos em Geral",
+    "Transporte",
+    "Taxas",
+    "Impostos",
+    "Contabilidade",
+    "Serviços",
+    "Aquisição de Padreadores/Matrizes",
+    "Outros",
+  ],
+  SUPPLIER: ["Cobasi", "Petlove", "Farmácia Reino Animal", "Clínica Unidade Animal"],
+  PAYMENT: ["PIX - SICOOB Conta", "Crédito - SICOOB", "Dinheiro"],
+};
+
+function normalizeExpenseOptionType(value) {
+  return EXPENSE_OPTION_TYPES.includes(value) ? value : "CATEGORY";
+}
+
+async function ensureExpenseDefaultOptions(type) {
+  for (const name of EXPENSE_DEFAULT_OPTIONS[type] || []) {
+    const existing = await prisma.quickLaunchOption.findFirst({
+      where: { type, ownerId: null, name },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      try {
+        await prisma.quickLaunchOption.create({
+          data: { type, ownerId: null, name },
+        });
+      } catch (err) {
+        if (err.code !== "P2002") throw err;
+      }
+    }
+  }
+}
+
+async function getExpenseOptionUsage(option) {
+  const field = EXPENSE_OPTION_FIELDS[option.type] || "category";
+  return prisma.quickLaunchEntry.count({
+    where: { [field]: option.name },
+  });
+}
+
+async function renderExpenseOptionsDirect(req, res, extra = {}) {
+  const selectedType = normalizeExpenseOptionType(req.query.type || req.body.type);
+  await ensureExpenseDefaultOptions(selectedType);
+
+  const options = await prisma.quickLaunchOption.findMany({
+    where: { type: selectedType, ownerId: null },
+    orderBy: { name: "asc" },
+  });
+  const rows = [];
+
+  for (const option of options) {
+    rows.push({
+      ...option,
+      usageCount: await getExpenseOptionUsage(option),
+    });
+  }
+
+  const typeOptionsHtml = EXPENSE_OPTION_TYPES.map(
+    (type) =>
+      `<option value="${type}" ${selectedType === type ? "selected" : ""}>${EXPENSE_OPTION_LABELS[type]}</option>`
+  ).join("");
+  const rowsHtml = rows.map((option) => `
+    <div class="quick-option-row">
+      <form method="post" action="/despesas/opcoes/${option.id}/update">
+        <input name="name" value="${escapeHtml(option.name)}" required />
+        <div class="quick-option-usage">${option.usageCount} uso${option.usageCount === 1 ? "" : "s"}</div>
+        <button type="submit" class="btn small-button" title="Salvar">✓</button>
+      </form>
+      <form method="post" action="/despesas/opcoes/${option.id}/delete" onsubmit="return confirm('Excluir esta opção?');">
+        <button
+          type="submit"
+          class="btn small-button danger-button"
+          title="${option.usageCount > 0 ? "Não é possível excluir opção em uso" : "Excluir"}"
+          ${option.usageCount > 0 ? "disabled" : ""}
+        >🗑</button>
+      </form>
+    </div>
+  `).join("");
+
+  res.status(extra.status || 200).send(`<!DOCTYPE html>
     <html lang="pt-BR">
       <head>
         <meta charset="utf-8" />
@@ -995,46 +1102,150 @@ app.get("/despesas/opcoes", (req, res) => {
           <header class="quick-header">
             <h1 class="quick-title">Opções de Despesas</h1>
           </header>
-          <div class="quick-card">
-            <div class="message message-error">
-              Edição temporariamente indisponível. Exibindo opções padrão.
-            </div>
+          <form class="quick-card" method="post" action="/despesas/opcoes">
+            ${extra.success ? '<div class="message message-success">Opção salva.</div>' : ""}
+            ${extra.error ? `<div class="message message-error">${escapeHtml(extra.error)}</div>` : ""}
             <div class="field">
-              <label>Tipo</label>
-              <select disabled>
-                <option>Categoria</option>
+              <label for="type">Tipo</label>
+              <select id="type" name="type" required>
+                ${typeOptionsHtml}
               </select>
             </div>
-          </div>
+            <div class="field">
+              <label for="name">Nova opção</label>
+              <input id="name" name="name" required />
+            </div>
+            <button type="submit" class="btn">Salvar opção</button>
+          </form>
           <div class="quick-card" style="margin-top:12px;">
-            <div class="quick-option-heading">Categorias padrão</div>
-            ${[
-              "Alimentação",
-              "Combustível",
-              "Hotelaria",
-              "Veterinário",
-              "Exposição/Competição",
-              "Publicidade",
-              "Equipamentos",
-              "Manutenção",
-              "Serviços",
-              "Outros",
-            ]
-              .map(
-                (name) => `
-                  <div class="quick-option-row">
-                    <input value="${name}" disabled />
-                    <div class="quick-option-usage">padrão</div>
-                    <button class="btn small-button" disabled>✓</button>
-                    <button class="btn small-button danger-button" disabled>🗑</button>
-                  </div>`
-              )
-              .join("")}
+            <div class="quick-option-heading">Editar ${EXPENSE_OPTION_LABELS[selectedType].toLowerCase()}</div>
+            ${rowsHtml || '<div class="empty">Nenhuma opção cadastrada.</div>'}
           </div>
           <a class="back-link" href="/despesas">Voltar</a>
         </main>
+        <script>
+          document.getElementById("type")?.addEventListener("change", function () {
+            window.location.href = "/despesas/opcoes?type=" + encodeURIComponent(this.value);
+          });
+        </script>
       </body>
     </html>`);
+}
+
+app.get("/despesas/opcoes", async (req, res) => {
+  try {
+    await renderExpenseOptionsDirect(req, res, { success: req.query.ok === "1" });
+  } catch (err) {
+    console.error("Erro na rota direta de opções de despesas:", err);
+    res.status(500).send("Erro ao carregar opções de despesas.");
+  }
+});
+
+app.post("/despesas/opcoes", async (req, res) => {
+  const type = normalizeExpenseOptionType(req.body.type);
+  const name = String(req.body.name || "").trim();
+
+  try {
+    if (!name) {
+      return renderExpenseOptionsDirect(req, res, {
+        status: 400,
+        error: "Informe o nome da opção.",
+      });
+    }
+
+    const existing = await prisma.quickLaunchOption.findFirst({
+      where: { type, ownerId: null, name },
+      select: { id: true },
+    });
+
+    if (existing) {
+      return renderExpenseOptionsDirect(req, res, {
+        status: 400,
+        error: "Esta opção já existe para o tipo selecionado.",
+      });
+    }
+
+    await prisma.quickLaunchOption.create({
+      data: { type, ownerId: null, name },
+    });
+    res.redirect(`/despesas/opcoes?type=${type}&ok=1`);
+  } catch (err) {
+    console.error("Erro ao salvar opção de despesa:", err);
+    res.status(500).send("Erro ao salvar opção de despesa.");
+  }
+});
+
+app.post("/despesas/opcoes/:id/update", async (req, res) => {
+  const id = Number(req.params.id);
+  const name = String(req.body.name || "").trim();
+
+  try {
+    const option = await prisma.quickLaunchOption.findFirst({
+      where: { id, ownerId: null },
+    });
+
+    if (!option || !EXPENSE_OPTION_TYPES.includes(option.type)) {
+      return res.status(404).send("Opção não encontrada.");
+    }
+
+    const duplicate = await prisma.quickLaunchOption.findFirst({
+      where: {
+        type: option.type,
+        ownerId: null,
+        name,
+        NOT: { id },
+      },
+      select: { id: true },
+    });
+
+    if (duplicate) {
+      return renderExpenseOptionsDirect(req, res, {
+        status: 400,
+        error: "Já existe uma opção com este nome.",
+      });
+    }
+
+    const field = EXPENSE_OPTION_FIELDS[option.type] || "category";
+    await prisma.$transaction([
+      prisma.quickLaunchOption.update({ where: { id }, data: { name } }),
+      prisma.quickLaunchEntry.updateMany({
+        where: { [field]: option.name },
+        data: { [field]: name },
+      }),
+    ]);
+    res.redirect(`/despesas/opcoes?type=${option.type}&ok=1`);
+  } catch (err) {
+    console.error("Erro ao atualizar opção de despesa:", err);
+    res.status(500).send("Erro ao atualizar opção de despesa.");
+  }
+});
+
+app.post("/despesas/opcoes/:id/delete", async (req, res) => {
+  const id = Number(req.params.id);
+
+  try {
+    const option = await prisma.quickLaunchOption.findFirst({
+      where: { id, ownerId: null },
+    });
+
+    if (!option || !EXPENSE_OPTION_TYPES.includes(option.type)) {
+      return res.status(404).send("Opção não encontrada.");
+    }
+
+    const usageCount = await getExpenseOptionUsage(option);
+    if (usageCount > 0) {
+      return renderExpenseOptionsDirect(req, res, {
+        status: 400,
+        error: "Esta opção já está sendo usada em despesas cadastradas e não pode ser excluída.",
+      });
+    }
+
+    await prisma.quickLaunchOption.delete({ where: { id } });
+    res.redirect(`/despesas/opcoes?type=${option.type}&ok=1`);
+  } catch (err) {
+    console.error("Erro ao excluir opção de despesa:", err);
+    res.status(500).send("Erro ao excluir opção de despesa.");
+  }
 });
 
 const quickLaunchRouter = quickLaunchRouterFactory(prisma);
