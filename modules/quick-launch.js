@@ -50,6 +50,15 @@ function formatDateInput(date) {
   return new Date(date).toISOString().slice(0, 10);
 }
 
+function formatDateOnlyLabel(date) {
+  if (!date) return "-";
+  const value = new Date(date);
+  const day = String(value.getUTCDate()).padStart(2, "0");
+  const month = String(value.getUTCMonth() + 1).padStart(2, "0");
+  const year = value.getUTCFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 function createUpload() {
   const uploadsRoot =
     process.env.UPLOADS_DIR || path.join(__dirname, "..", "public", "uploads");
@@ -363,9 +372,7 @@ module.exports = (prisma) => {
       expenses: expenses.map((expense) => ({
         ...expense,
         amountLabel: formatAmount(expense.amountCents),
-        dateLabel: new Date(expense.competenceDate).toLocaleDateString("pt-BR", {
-          timeZone: "America/Sao_Paulo",
-        }),
+        dateLabel: formatDateOnlyLabel(expense.competenceDate),
       })),
       currentPath: "/despesas",
     });

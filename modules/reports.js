@@ -49,6 +49,15 @@ function formatDateLabel(date) {
   });
 }
 
+function formatDateOnlyLabel(date) {
+  if (!date) return "-";
+  const value = new Date(date);
+  const day = String(value.getUTCDate()).padStart(2, "0");
+  const month = String(value.getUTCMonth() + 1).padStart(2, "0");
+  const year = value.getUTCFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 function formatCurrency(cents) {
   return (Number(cents || 0) / 100).toLocaleString("pt-BR", {
     style: "currency",
@@ -164,7 +173,7 @@ function buildQueryString(filters, forcePdf = false) {
 function mapExpenseRows(expenses) {
   return expenses.map((expense) => ({
     ...expense,
-    dateLabel: formatDateLabel(expense.competenceDate),
+    dateLabel: formatDateOnlyLabel(expense.competenceDate),
     amountLabel: formatCurrency(expense.amountCents),
   }));
 }
@@ -189,7 +198,7 @@ function renderExpensesPdf(res, rows, filters, totalLabel) {
   doc.font("Helvetica-Bold").fontSize(18).text("Relatório de Despesas");
   doc.moveDown(0.4);
   doc.font("Helvetica").fontSize(10).text(
-    `Período: ${formatDateLabel(filters.startDate)} a ${formatDateLabel(filters.endDate)}`
+    `Período: ${formatDateOnlyLabel(filters.startDate)} a ${formatDateOnlyLabel(filters.endDate)}`
   );
   doc.text(`Forma de pagamento: ${paymentFilterLabel(filters.paymentMethod)}`);
   doc.text(`Total: ${totalLabel}`);
@@ -216,7 +225,13 @@ function renderExpensesPdf(res, rows, filters, totalLabel) {
   y += 20;
 
   rows.forEach((row) => {
-    if (y > 735) {
+    const note = String(row.note || "").trim();
+    const noteHeight = note
+      ? doc.heightOfString(`Obs.: ${note}`, { width: 430 }) + 6
+      : 0;
+    const rowHeight = 22 + noteHeight;
+
+    if (y + rowHeight > 735) {
       doc.addPage();
       y = 40;
       drawHeader(y);
@@ -232,7 +247,16 @@ function renderExpensesPdf(res, rows, filters, totalLabel) {
       width: columns[4].width,
       align: "right",
     });
-    y += 22;
+
+    if (note) {
+      doc
+        .font("Helvetica")
+        .fontSize(7)
+        .fillColor("#6b7280")
+        .text(`Obs.: ${note}`, columns[1].x, y + 11, { width: 430 });
+    }
+
+    y += rowHeight;
   });
 
   if (!rows.length) {
