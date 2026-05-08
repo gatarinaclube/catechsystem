@@ -92,18 +92,6 @@ function formatDateInput(date) {
   return new Date(date).toISOString().slice(0, 10);
 }
 
-function fallbackManagedOptions(type) {
-  return (DEFAULT_OPTION_SETS[type] || []).map((name, index) => ({
-    id: `fallback-${type}-${index}`,
-    type,
-    name,
-    ownerId: null,
-    typeLabel: OPTION_LABELS[type] || type,
-    usageCount: null,
-    readOnly: true,
-  }));
-}
-
 function createUpload() {
   const uploadsRoot =
     process.env.UPLOADS_DIR || path.join(__dirname, "..", "public", "uploads");
@@ -385,71 +373,6 @@ module.exports = (prisma) => {
     });
   }
 
-  function renderOptionsFallback(res, selectedType, errorMessage) {
-    const typeOptions = OPTION_TYPES.map((value) => ({
-      value,
-      label: OPTION_LABELS[value],
-    }));
-    const options = fallbackManagedOptions(selectedType);
-    const typeLinks = typeOptions
-      .map(
-        (option) =>
-          `<option value="${option.value}" ${
-            selectedType === option.value ? "selected" : ""
-          }>${option.label}</option>`
-      )
-      .join("");
-    const rows = options
-      .map(
-        (option) => `
-          <div class="quick-option-row">
-            <input value="${option.name}" disabled />
-            <div class="quick-option-usage">padrão</div>
-            <button class="btn small-button" disabled>✓</button>
-            <button class="btn small-button danger-button" disabled>🗑</button>
-          </div>
-        `
-      )
-      .join("");
-
-    res.status(200).send(`<!DOCTYPE html>
-      <html lang="pt-BR">
-        <head>
-          <meta charset="utf-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <title>Opções - Despesas</title>
-          <link rel="stylesheet" href="/css/theme.css" />
-          <link rel="stylesheet" href="/css/quick-finance.css" />
-        </head>
-        <body>
-          <main class="quick-shell">
-            <header class="quick-header">
-              <h1 class="quick-title">Opções de Despesas</h1>
-            </header>
-            <div class="quick-card">
-              <div class="message message-error">${errorMessage}</div>
-              <div class="field">
-                <label for="type">Tipo</label>
-                <select id="type" name="type">${typeLinks}</select>
-              </div>
-            </div>
-            <div class="quick-card" style="margin-top:12px;">
-              <div class="quick-option-heading">Editar ${
-                OPTION_LABELS[selectedType]
-              }</div>
-              ${rows}
-            </div>
-            <a class="back-link" href="/despesas">Voltar</a>
-          </main>
-          <script>
-            document.getElementById("type")?.addEventListener("change", function () {
-              window.location.href = "/despesas/opcoes?type=" + encodeURIComponent(this.value);
-            });
-          </script>
-        </body>
-      </html>`);
-  }
-
   function mapExpenseForForm(expense = null) {
     if (!expense) {
       return {
@@ -532,12 +455,12 @@ module.exports = (prisma) => {
   });
 
   router.get("/despesas/opcoes", async (req, res) => {
-    const selectedType = normalizeOptionType(req.query.type || req.body.type);
-    renderOptionsFallback(
-      res,
-      selectedType,
-      "Edição temporariamente indisponível. Exibindo opções padrão."
-    );
+    try {
+      await renderOptionsPage(req, res);
+    } catch (err) {
+      console.error("Erro ao carregar opções de despesas:", err);
+      res.status(500).send("Erro ao carregar opções de despesas.");
+    }
   });
 
   router.post("/despesas/opcoes", async (req, res) => {

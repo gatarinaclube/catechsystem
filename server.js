@@ -85,52 +85,7 @@ const UPLOADS_ROOT =
 app.use("/uploads", express.static(UPLOADS_ROOT));
 
 app.get("/despesas/opcoes-safe", (req, res) => {
-  res.status(200).send(`<!DOCTYPE html>
-    <html lang="pt-BR">
-      <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Opções - Despesas</title>
-        <link rel="stylesheet" href="/css/theme.css" />
-        <link rel="stylesheet" href="/css/quick-finance.css" />
-      </head>
-      <body>
-        <main class="quick-shell">
-          <header class="quick-header">
-            <h1 class="quick-title">Opções de Despesas</h1>
-            <div class="quick-subtitle">Modo seguro v2</div>
-          </header>
-          <div class="quick-card">
-            <div class="message message-error">
-              Edição temporariamente indisponível. Exibindo opções padrão.
-            </div>
-          </div>
-          <div class="quick-card" style="margin-top:12px;">
-            <div class="quick-option-heading">Categorias padrão</div>
-            ${[
-              "Alimentação",
-              "Combustível",
-              "Hotelaria",
-              "Veterinário",
-              "Exposição/Competição",
-              "Publicidade",
-              "Equipamentos",
-              "Manutenção",
-              "Serviços",
-              "Outros",
-            ].map((name) => `
-              <div class="quick-option-row">
-                <input value="${name}" disabled />
-                <div class="quick-option-usage">padrão</div>
-                <button class="btn small-button" disabled>✓</button>
-                <button class="btn small-button danger-button" disabled>🗑</button>
-              </div>
-            `).join("")}
-          </div>
-          <a class="back-link" href="/despesas">Voltar</a>
-        </main>
-      </body>
-    </html>`);
+  res.redirect(303, "/despesas/opcoes");
 });
 
 app.get("/despesas/opcoes", async (req, res) => {
@@ -138,7 +93,10 @@ app.get("/despesas/opcoes", async (req, res) => {
     await renderExpenseOptionsDirect(req, res, { success: req.query.ok === "1" });
   } catch (err) {
     console.error("Erro ao carregar opções editáveis de despesas:", err);
-    res.redirect("/despesas/opcoes-safe");
+    await renderExpenseOptionsDirect(req, res, {
+      error: "Não foi possível carregar as opções salvas. Você ainda pode tentar cadastrar uma nova opção.",
+      options: [],
+    });
   }
 });
 
@@ -1049,34 +1007,6 @@ const EXPENSE_OPTION_FIELDS = {
   SUPPLIER: "supplier",
   PAYMENT: "paymentMethod",
 };
-const EXPENSE_DEFAULT_OPTIONS = {
-  CATEGORY: [
-    "Alimentação",
-    "Combustível",
-    "Hotelaria",
-    "Veterinário",
-    "Exposição/Competição",
-    "Publicidade",
-    "Equipamentos",
-    "Manutenção",
-    "Reparo/Conserto em Geral",
-    "Reparo/Conserto em Estrutura Física",
-    "Construção",
-    "Veículo",
-    "Material de Expediente",
-    "Insumos em Geral",
-    "Transporte",
-    "Taxas",
-    "Impostos",
-    "Contabilidade",
-    "Serviços",
-    "Aquisição de Padreadores/Matrizes",
-    "Outros",
-  ],
-  SUPPLIER: ["Cobasi", "Petlove", "Farmácia Reino Animal", "Clínica Unidade Animal"],
-  PAYMENT: ["PIX - SICOOB Conta", "Crédito - SICOOB", "Dinheiro"],
-};
-
 function normalizeExpenseOptionType(value) {
   return EXPENSE_OPTION_TYPES.includes(value) ? value : "CATEGORY";
 }
@@ -1133,7 +1063,9 @@ async function getExpenseOptionUsage(option) {
 async function renderExpenseOptionsDirect(req, res, extra = {}) {
   const selectedType = normalizeExpenseOptionType(req.query.type || req.body.type);
 
-  const options = await listExpenseOptions(selectedType);
+  const options = Array.isArray(extra.options)
+    ? extra.options
+    : await listExpenseOptions(selectedType);
   const rows = [];
 
   for (const option of options) {
@@ -1147,31 +1079,23 @@ async function renderExpenseOptionsDirect(req, res, extra = {}) {
     (type) =>
       `<option value="${type}" ${selectedType === type ? "selected" : ""}>${EXPENSE_OPTION_LABELS[type]}</option>`
   ).join("");
-  const displayRows = rows.length
-    ? rows
-    : (EXPENSE_DEFAULT_OPTIONS[selectedType] || []).map((name) => ({
-        id: null,
-        name,
-        usageCount: null,
-        readOnly: true,
-      }));
-  const rowsHtml = displayRows.map((option) => `
+  const rowsHtml = rows.map((option) => `
     <div class="quick-option-row">
       <form method="post" action="${option.id ? `/despesas/opcoes/${option.id}/update` : "#"}">
         <input name="name" value="${escapeHtml(option.name)}" required />
         <div class="quick-option-usage">${
           option.usageCount === null || option.usageCount === undefined
-            ? "padrão"
+            ? "sem uso"
             : `${option.usageCount} uso${option.usageCount === 1 ? "" : "s"}`
         }</div>
-        <button type="submit" class="btn small-button" title="Salvar" ${option.readOnly ? "disabled" : ""}>✓</button>
+        <button type="submit" class="btn small-button" title="Salvar">✓</button>
       </form>
       <form method="post" action="${option.id ? `/despesas/opcoes/${option.id}/delete` : "#"}" onsubmit="return confirm('Excluir esta opção?');">
         <button
           type="submit"
           class="btn small-button danger-button"
           title="${option.usageCount > 0 ? "Não é possível excluir opção em uso" : "Excluir"}"
-          ${option.readOnly || option.usageCount > 0 ? "disabled" : ""}
+          ${option.usageCount > 0 ? "disabled" : ""}
         >🗑</button>
       </form>
     </div>
