@@ -48,16 +48,25 @@
               <form method="post" action="/despesas/opcoes/<%= option.id %>/update">
                 <input name="name" value="<%= option.name %>" required />
                 <div class="quick-option-usage">
-                  <%= option.usageCount %> uso<%= option.usageCount === 1 ? "" : "s" %>
+                  <% if (option.usageCount === null || option.usageCount === undefined) { %>
+                    padrão
+                  <% } else { %>
+                    <%= option.usageCount %> uso<%= option.usageCount === 1 ? "" : "s" %>
+                  <% } %>
                 </div>
-                <button type="submit" class="btn small-button" title="Salvar">✓</button>
+                <button
+                  type="submit"
+                  class="btn small-button"
+                  title="<%= option.readOnly ? 'Indisponível no modo padrão' : 'Salvar' %>"
+                  <%= option.readOnly ? "disabled" : "" %>
+                >✓</button>
               </form>
               <form method="post" action="/despesas/opcoes/<%= option.id %>/delete" onsubmit="return confirm('Excluir esta opção?');">
                 <button
                   type="submit"
                   class="btn small-button danger-button"
-                  title="<%= option.usageCount > 0 ? 'Não é possível excluir opção em uso' : 'Excluir' %>"
-                  <%= option.usageCount > 0 ? "disabled" : "" %>
+                  title="<%= option.readOnly ? 'Indisponível no modo padrão' : (option.usageCount > 0 ? 'Não é possível excluir opção em uso' : 'Excluir') %>"
+                  <%= option.readOnly || option.usageCount > 0 ? "disabled" : "" %>
                 >🗑</button>
               </form>
             </div>

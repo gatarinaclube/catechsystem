@@ -92,6 +92,18 @@ function formatDateInput(date) {
   return new Date(date).toISOString().slice(0, 10);
 }
 
+function fallbackManagedOptions(type) {
+  return (DEFAULT_OPTION_SETS[type] || []).map((name, index) => ({
+    id: `fallback-${type}-${index}`,
+    type,
+    name,
+    ownerId: null,
+    typeLabel: OPTION_LABELS[type] || type,
+    usageCount: null,
+    readOnly: true,
+  }));
+}
+
 function createUpload() {
   const uploadsRoot =
     process.env.UPLOADS_DIR || path.join(__dirname, "..", "public", "uploads");
@@ -199,16 +211,22 @@ module.exports = (prisma) => {
         const sameName = await rawFindOptionByName(req, type, name);
 
         if (!sameName) {
-          if (hasOptionOwner) {
-            await prisma.$executeRaw`
-              INSERT INTO "QuickLaunchOption" ("type", "ownerId", "name")
-              VALUES (${type}, ${ownerId}, ${name})
-            `;
-          } else {
-            await prisma.$executeRaw`
-              INSERT INTO "QuickLaunchOption" ("type", "name")
-              VALUES (${type}, ${name})
-            `;
+          try {
+            if (hasOptionOwner) {
+              await prisma.$executeRaw`
+                INSERT INTO "QuickLaunchOption" ("type", "ownerId", "name")
+                VALUES (${type}, ${ownerId}, ${name})
+              `;
+            } else {
+              await prisma.$executeRaw`
+                INSERT INTO "QuickLaunchOption" ("type", "name")
+                VALUES (${type}, ${name})
+              `;
+            }
+          } catch (err) {
+            if (err.code !== "P2002" && err.code !== "23505") {
+              throw err;
+            }
           }
         }
       }
@@ -445,7 +463,19 @@ module.exports = (prisma) => {
       await renderOptionsPage(req, res);
     } catch (err) {
       console.error("Erro ao carregar opções de despesas:", err);
-      res.status(500).send("Erro ao carregar opções de despesas.");
+      const selectedType = normalizeOptionType(req.query.type || req.body.type);
+      res.status(200).render("quick-launch/options", {
+        success: false,
+        error: "Não foi possível carregar as opções salvas. Exibindo opções padrão.",
+        options: fallbackManagedOptions(selectedType),
+        selectedType,
+        typeLabel: OPTION_LABELS[selectedType],
+        typeOptions: OPTION_TYPES.map((value) => ({
+          value,
+          label: OPTION_LABELS[value],
+        })),
+        currentPath: "/despesas",
+      });
     }
   });
 
