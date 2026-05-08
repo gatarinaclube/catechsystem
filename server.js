@@ -4,7 +4,7 @@ const express = require("express");
 const session = require("express-session");
 const path = require("path");
 const crypto = require("crypto");
-const { PrismaClient } = require("@prisma/client");
+const { PrismaClient, Prisma } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
 const PDFDocument = require("pdfkit");
 const fs = require("fs");
@@ -1081,39 +1081,59 @@ function normalizeExpenseOptionType(value) {
   return EXPENSE_OPTION_TYPES.includes(value) ? value : "CATEGORY";
 }
 
-async function ensureExpenseDefaultOptions(type) {
-  for (const name of EXPENSE_DEFAULT_OPTIONS[type] || []) {
-    const existing = await prisma.quickLaunchOption.findFirst({
-      where: { type, ownerId: null, name },
-      select: { id: true },
-    });
+function expenseOptionFieldSql(type) {
+  return Prisma.raw(`"${EXPENSE_OPTION_FIELDS[type] || "category"}"`);
+}
 
-    if (!existing) {
-      try {
-        await prisma.quickLaunchOption.create({
-          data: { type, ownerId: null, name },
-        });
-      } catch (err) {
-        if (err.code !== "P2002") throw err;
-      }
-    }
-  }
+async function listExpenseOptions(type) {
+  return prisma.$queryRaw`
+    SELECT "id", "type", "name"
+    FROM "QuickLaunchOption"
+    WHERE "type" = ${type}
+      AND "ownerId" IS NULL
+    ORDER BY "name" ASC
+  `;
+}
+
+async function findExpenseOptionById(id) {
+  const rows = await prisma.$queryRaw`
+    SELECT "id", "type", "name"
+    FROM "QuickLaunchOption"
+    WHERE "id" = ${id}
+      AND "ownerId" IS NULL
+    LIMIT 1
+  `;
+  return rows[0] || null;
+}
+
+async function findExpenseOptionByName(type, name, excludeId = null) {
+  const exclude = excludeId ? Prisma.sql`AND "id" <> ${excludeId}` : Prisma.empty;
+  const rows = await prisma.$queryRaw`
+    SELECT "id", "type", "name"
+    FROM "QuickLaunchOption"
+    WHERE "type" = ${type}
+      AND "ownerId" IS NULL
+      AND "name" = ${name}
+      ${exclude}
+    LIMIT 1
+  `;
+  return rows[0] || null;
 }
 
 async function getExpenseOptionUsage(option) {
-  const field = EXPENSE_OPTION_FIELDS[option.type] || "category";
-  return prisma.quickLaunchEntry.count({
-    where: { [field]: option.name },
-  });
+  const field = expenseOptionFieldSql(option.type);
+  const rows = await prisma.$queryRaw`
+    SELECT COUNT(*)::integer AS "count"
+    FROM "QuickLaunchEntry"
+    WHERE ${field} = ${option.name}
+  `;
+  return Number(rows[0]?.count || 0);
 }
 
 async function renderExpenseOptionsDirect(req, res, extra = {}) {
   const selectedType = normalizeExpenseOptionType(req.query.type || req.body.type);
 
-  const options = await prisma.quickLaunchOption.findMany({
-    where: { type: selectedType, ownerId: null },
-    orderBy: { name: "asc" },
-  });
+  const options = await listExpenseOptions(selectedType);
   const rows = [];
 
   for (const option of options) {
@@ -1201,64 +1221,6 @@ async function renderExpenseOptionsDirect(req, res, extra = {}) {
     </html>`);
 }
 
-app.get("/despesas/opcoes", async (req, res) => {
-  try {
-    await renderExpenseOptionsDirect(req, res, { success: req.query.ok === "1" });
-  } catch (err) {
-    console.error("Erro na rota direta de opções de despesas:", err);
-    const selectedType = normalizeExpenseOptionType(req.query.type || req.body.type);
-    const typeOptionsHtml = EXPENSE_OPTION_TYPES.map(
-      (type) =>
-        `<option value="${type}" ${selectedType === type ? "selected" : ""}>${EXPENSE_OPTION_LABELS[type]}</option>`
-    ).join("");
-    const rowsHtml = (EXPENSE_DEFAULT_OPTIONS[selectedType] || []).map((name) => `
-      <div class="quick-option-row">
-        <input value="${escapeHtml(name)}" disabled />
-        <div class="quick-option-usage">padrão</div>
-        <button class="btn small-button" disabled>✓</button>
-        <button class="btn small-button danger-button" disabled>🗑</button>
-      </div>
-    `).join("");
-
-    res.status(200).send(`<!DOCTYPE html>
-      <html lang="pt-BR">
-        <head>
-          <meta charset="utf-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <title>Opções - Despesas</title>
-          <link rel="stylesheet" href="/css/theme.css" />
-          <link rel="stylesheet" href="/css/quick-finance.css" />
-        </head>
-        <body>
-          <main class="quick-shell">
-            <header class="quick-header">
-              <h1 class="quick-title">Opções de Despesas</h1>
-            </header>
-            <div class="quick-card">
-              <div class="message message-error">
-                Não foi possível carregar as opções salvas. Exibindo opções padrão.
-              </div>
-              <div class="field">
-                <label for="type">Tipo</label>
-                <select id="type" name="type">${typeOptionsHtml}</select>
-              </div>
-            </div>
-            <div class="quick-card" style="margin-top:12px;">
-              <div class="quick-option-heading">Editar ${EXPENSE_OPTION_LABELS[selectedType].toLowerCase()}</div>
-              ${rowsHtml}
-            </div>
-            <a class="back-link" href="/despesas">Voltar</a>
-          </main>
-          <script>
-            document.getElementById("type")?.addEventListener("change", function () {
-              window.location.href = "/despesas/opcoes?type=" + encodeURIComponent(this.value);
-            });
-          </script>
-        </body>
-      </html>`);
-  }
-});
-
 app.post("/despesas/opcoes", async (req, res) => {
   const type = normalizeExpenseOptionType(req.body.type);
   const name = String(req.body.name || "").trim();
@@ -1271,10 +1233,7 @@ app.post("/despesas/opcoes", async (req, res) => {
       });
     }
 
-    const existing = await prisma.quickLaunchOption.findFirst({
-      where: { type, ownerId: null, name },
-      select: { id: true },
-    });
+    const existing = await findExpenseOptionByName(type, name);
 
     if (existing) {
       return renderExpenseOptionsDirect(req, res, {
@@ -1283,9 +1242,10 @@ app.post("/despesas/opcoes", async (req, res) => {
       });
     }
 
-    await prisma.quickLaunchOption.create({
-      data: { type, ownerId: null, name },
-    });
+    await prisma.$executeRaw`
+      INSERT INTO "QuickLaunchOption" ("type", "ownerId", "name")
+      VALUES (${type}, NULL, ${name})
+    `;
     res.redirect(`/despesas/opcoes?type=${type}&ok=1`);
   } catch (err) {
     console.error("Erro ao salvar opção de despesa:", err);
@@ -1298,23 +1258,13 @@ app.post("/despesas/opcoes/:id/update", async (req, res) => {
   const name = String(req.body.name || "").trim();
 
   try {
-    const option = await prisma.quickLaunchOption.findFirst({
-      where: { id, ownerId: null },
-    });
+    const option = await findExpenseOptionById(id);
 
     if (!option || !EXPENSE_OPTION_TYPES.includes(option.type)) {
       return res.status(404).send("Opção não encontrada.");
     }
 
-    const duplicate = await prisma.quickLaunchOption.findFirst({
-      where: {
-        type: option.type,
-        ownerId: null,
-        name,
-        NOT: { id },
-      },
-      select: { id: true },
-    });
+    const duplicate = await findExpenseOptionByName(option.type, name, id);
 
     if (duplicate) {
       return renderExpenseOptionsDirect(req, res, {
@@ -1323,14 +1273,20 @@ app.post("/despesas/opcoes/:id/update", async (req, res) => {
       });
     }
 
-    const field = EXPENSE_OPTION_FIELDS[option.type] || "category";
-    await prisma.$transaction([
-      prisma.quickLaunchOption.update({ where: { id }, data: { name } }),
-      prisma.quickLaunchEntry.updateMany({
-        where: { [field]: option.name },
-        data: { [field]: name },
-      }),
-    ]);
+    const field = expenseOptionFieldSql(option.type);
+    await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`
+        UPDATE "QuickLaunchOption"
+        SET "name" = ${name}
+        WHERE "id" = ${id}
+          AND "ownerId" IS NULL
+      `;
+      await tx.$executeRaw`
+        UPDATE "QuickLaunchEntry"
+        SET ${field} = ${name}
+        WHERE ${field} = ${option.name}
+      `;
+    });
     res.redirect(`/despesas/opcoes?type=${option.type}&ok=1`);
   } catch (err) {
     console.error("Erro ao atualizar opção de despesa:", err);
@@ -1342,9 +1298,7 @@ app.post("/despesas/opcoes/:id/delete", async (req, res) => {
   const id = Number(req.params.id);
 
   try {
-    const option = await prisma.quickLaunchOption.findFirst({
-      where: { id, ownerId: null },
-    });
+    const option = await findExpenseOptionById(id);
 
     if (!option || !EXPENSE_OPTION_TYPES.includes(option.type)) {
       return res.status(404).send("Opção não encontrada.");
@@ -1358,7 +1312,11 @@ app.post("/despesas/opcoes/:id/delete", async (req, res) => {
       });
     }
 
-    await prisma.quickLaunchOption.delete({ where: { id } });
+    await prisma.$executeRaw`
+      DELETE FROM "QuickLaunchOption"
+      WHERE "id" = ${id}
+        AND "ownerId" IS NULL
+    `;
     res.redirect(`/despesas/opcoes?type=${option.type}&ok=1`);
   } catch (err) {
     console.error("Erro ao excluir opção de despesa:", err);
