@@ -84,7 +84,7 @@ const UPLOADS_ROOT =
 // Serve /uploads/... a partir do local correto
 app.use("/uploads", express.static(UPLOADS_ROOT));
 
-app.get("/despesas/opcoes", (req, res) => {
+app.get("/despesas/opcoes-safe", (req, res) => {
   res.status(200).send(`<!DOCTYPE html>
     <html lang="pt-BR">
       <head>
@@ -131,6 +131,15 @@ app.get("/despesas/opcoes", (req, res) => {
         </main>
       </body>
     </html>`);
+});
+
+app.get("/despesas/opcoes", async (req, res) => {
+  try {
+    await renderExpenseOptionsDirect(req, res, { success: req.query.ok === "1" });
+  } catch (err) {
+    console.error("Erro ao carregar opções editáveis de despesas:", err);
+    res.redirect("/despesas/opcoes-safe");
+  }
 });
 
 
