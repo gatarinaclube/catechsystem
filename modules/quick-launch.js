@@ -215,6 +215,10 @@ module.exports = (prisma) => {
     }
   }
 
+  function selectedOwnerScope(req) {
+    return { ownerId: optionOwnerId(req) };
+  }
+
   function optionUsageWhere(req, option) {
     const fieldByType = {
       CATEGORY: "category",
@@ -223,7 +227,7 @@ module.exports = (prisma) => {
     };
 
     return {
-      ...ownerScope(req),
+      ...selectedOwnerScope(req),
       [fieldByType[option.type]]: option.name,
     };
   }
@@ -243,7 +247,7 @@ module.exports = (prisma) => {
   async function loadOptions(req) {
     await ensureDefaultOptions(req);
     const rows = await prisma.quickLaunchOption.findMany({
-      where: { ...ownerScope(req), disabledAt: null },
+      where: { ...selectedOwnerScope(req), disabledAt: null },
       orderBy: { name: "asc" },
     });
 
@@ -259,7 +263,7 @@ module.exports = (prisma) => {
 
     const options = await prisma.quickLaunchOption.findMany({
       where: {
-        ...ownerScope(req),
+        ...selectedOwnerScope(req),
         type: selectedType,
         disabledAt: null,
       },
@@ -378,7 +382,12 @@ module.exports = (prisma) => {
   });
 
   router.get("/despesas/opcoes", async (req, res) => {
-    await renderOptionsPage(req, res);
+    try {
+      await renderOptionsPage(req, res);
+    } catch (err) {
+      console.error("Erro ao carregar opções de despesas:", err);
+      res.status(500).send("Erro ao carregar opções de despesas.");
+    }
   });
 
   router.post("/despesas/opcoes", async (req, res) => {
@@ -427,7 +436,7 @@ module.exports = (prisma) => {
   router.post("/despesas/opcoes/:id/update", async (req, res) => {
     const id = Number(req.params.id);
     const option = await prisma.quickLaunchOption.findFirst({
-      where: { id, ...ownerScope(req) },
+      where: { id, ...selectedOwnerScope(req) },
     });
     const name = String(req.body.name || "").trim();
 
@@ -438,7 +447,7 @@ module.exports = (prisma) => {
     if (name) {
       const duplicate = await prisma.quickLaunchOption.findFirst({
         where: {
-          ...ownerScope(req),
+          ...selectedOwnerScope(req),
           type: option.type,
           name,
           NOT: { id },
@@ -468,7 +477,7 @@ module.exports = (prisma) => {
   router.post("/despesas/opcoes/:id/delete", async (req, res) => {
     const id = Number(req.params.id);
     const option = await prisma.quickLaunchOption.findFirst({
-      where: { id, ...ownerScope(req) },
+      where: { id, ...selectedOwnerScope(req) },
     });
 
     if (!option || !OPTION_TYPES.includes(option.type) || option.disabledAt) {
