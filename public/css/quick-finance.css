@@ -167,7 +167,7 @@ input[type="file"] {
 
 .quick-option-row {
   display: grid;
-  grid-template-columns: 120px minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) 72px auto auto;
   gap: 8px;
   align-items: center;
   padding: 10px 0;
@@ -190,8 +190,33 @@ input[type="file"] {
   text-transform: uppercase;
 }
 
+.quick-option-heading {
+  margin-bottom: 8px;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.quick-option-usage {
+  color: #6b7280;
+  font-size: 12px;
+  text-align: right;
+}
+
 .quick-option-row .small-button {
   min-height: 44px;
+}
+
+.danger-button {
+  background: #9f1239;
+}
+
+.danger-button:disabled {
+  background: #d1d5db;
+  color: #6b7280;
+  cursor: not-allowed;
 }
 
 .inline-action-row {

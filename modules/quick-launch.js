@@ -41,6 +41,18 @@ const DEFAULT_PAYMENT_METHODS = [
   "Dinheiro",
 ];
 
+const OPTION_TYPES = ["CATEGORY", "SUPPLIER", "PAYMENT"];
+const OPTION_LABELS = {
+  CATEGORY: "Categoria",
+  SUPPLIER: "Fornecedor",
+  PAYMENT: "Forma de Pagamento",
+};
+const DEFAULT_OPTION_SETS = {
+  CATEGORY: DEFAULT_CATEGORIES,
+  SUPPLIER: DEFAULT_SUPPLIERS,
+  PAYMENT: DEFAULT_PAYMENT_METHODS,
+};
+
 function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
@@ -77,12 +89,6 @@ function parseDateInput(value) {
 function formatDateInput(date) {
   if (!date) return todayForInput();
   return new Date(date).toISOString().slice(0, 10);
-}
-
-function mergeOptions(defaults, rows) {
-  return Array.from(
-    new Set([...defaults, ...rows.map((row) => row.name).filter(Boolean)])
-  ).sort((a, b) => a.localeCompare(b, "pt-BR"));
 }
 
 function createUpload() {
@@ -157,17 +163,137 @@ module.exports = (prisma) => {
     return { ownerId: req.session?.userId || null };
   }
 
+  function optionOwnerId(req) {
+    return req.session?.userId || null;
+  }
+
+  function normalizeOptionType(value) {
+    return OPTION_TYPES.includes(value) ? value : "CATEGORY";
+  }
+
+  function defaultKeyFor(type, name) {
+    return `${type}:${String(name || "").trim().toLowerCase()}`;
+  }
+
+  async function ensureDefaultOptions(req) {
+    const ownerId = optionOwnerId(req);
+
+    for (const [type, names] of Object.entries(DEFAULT_OPTION_SETS)) {
+      for (const name of names) {
+        const existing = await prisma.quickLaunchOption.findFirst({
+          where: {
+            type,
+            ownerId,
+            defaultKey: defaultKeyFor(type, name),
+          },
+          select: { id: true },
+        });
+
+        if (!existing) {
+          const sameName = await prisma.quickLaunchOption.findFirst({
+            where: { type, ownerId, name, disabledAt: null },
+            select: { id: true, defaultKey: true },
+          });
+
+          if (!sameName) {
+            await prisma.quickLaunchOption.create({
+              data: {
+                type,
+                ownerId,
+                defaultKey: defaultKeyFor(type, name),
+                name,
+              },
+            });
+          } else if (!sameName.defaultKey) {
+            await prisma.quickLaunchOption.update({
+              where: { id: sameName.id },
+              data: { defaultKey: defaultKeyFor(type, name) },
+            });
+          }
+        }
+      }
+    }
+  }
+
+  function optionUsageWhere(req, option) {
+    const fieldByType = {
+      CATEGORY: "category",
+      SUPPLIER: "supplier",
+      PAYMENT: "paymentMethod",
+    };
+
+    return {
+      ...ownerScope(req),
+      [fieldByType[option.type]]: option.name,
+    };
+  }
+
+  async function getOptionUsage(req, option) {
+    return prisma.quickLaunchEntry.count({
+      where: optionUsageWhere(req, option),
+    });
+  }
+
+  function updateExpenseFieldForType(type, name) {
+    if (type === "SUPPLIER") return { supplier: name };
+    if (type === "PAYMENT") return { paymentMethod: name };
+    return { category: name };
+  }
+
   async function loadOptions(req) {
+    await ensureDefaultOptions(req);
     const rows = await prisma.quickLaunchOption.findMany({
-      where: ownerScope(req),
+      where: { ...ownerScope(req), disabledAt: null },
       orderBy: { name: "asc" },
     });
 
     return {
-      categories: mergeOptions(DEFAULT_CATEGORIES, rows.filter((row) => row.type === "CATEGORY")),
-      suppliers: mergeOptions(DEFAULT_SUPPLIERS, rows.filter((row) => row.type === "SUPPLIER")),
-      paymentMethods: mergeOptions(DEFAULT_PAYMENT_METHODS, rows.filter((row) => row.type === "PAYMENT")),
+      categories: rows.filter((row) => row.type === "CATEGORY").map((row) => row.name),
+      suppliers: rows.filter((row) => row.type === "SUPPLIER").map((row) => row.name),
+      paymentMethods: rows.filter((row) => row.type === "PAYMENT").map((row) => row.name),
     };
+  }
+
+  async function loadManagedOptions(req, selectedType) {
+    await ensureDefaultOptions(req);
+
+    const options = await prisma.quickLaunchOption.findMany({
+      where: {
+        ...ownerScope(req),
+        type: selectedType,
+        disabledAt: null,
+      },
+      orderBy: { name: "asc" },
+    });
+    const optionsWithUsage = [];
+
+    for (const option of options) {
+      optionsWithUsage.push({
+        ...option,
+        typeLabel: OPTION_LABELS[option.type] || option.type,
+        usageCount: await getOptionUsage(req, option),
+      });
+    }
+
+    return optionsWithUsage;
+  }
+
+  async function renderOptionsPage(req, res, extra = {}) {
+    const selectedType = normalizeOptionType(req.query.type || req.body.type);
+    const options = await loadManagedOptions(req, selectedType);
+
+    res.status(extra.status || 200).render("quick-launch/options", {
+      success: extra.success ?? req.query.ok === "1",
+      error: extra.error || null,
+      options,
+      selectedType,
+      typeLabel: OPTION_LABELS[selectedType],
+      typeOptions: OPTION_TYPES.map((value) => ({
+        value,
+        label: OPTION_LABELS[value],
+      })),
+      currentPath: "/despesas",
+    });
   }
 
   function mapExpenseForForm(expense = null) {
@@ -252,58 +378,50 @@ module.exports = (prisma) => {
   });
 
   router.get("/despesas/opcoes", async (req, res) => {
-    const options = await prisma.quickLaunchOption.findMany({
-      where: {
-        ...ownerScope(req),
-        type: { in: ["CATEGORY", "SUPPLIER", "PAYMENT"] },
-      },
-      orderBy: [{ type: "asc" }, { name: "asc" }],
-    });
-    const labels = {
-      CATEGORY: "Categoria",
-      SUPPLIER: "Fornecedor",
-      PAYMENT: "Pagamento",
-    };
-
-    res.render("quick-launch/options", {
-      success: req.query.ok === "1",
-      error: null,
-      options: options.map((option) => ({
-        ...option,
-        typeLabel: labels[option.type] || option.type,
-      })),
-      currentPath: "/despesas",
-    });
+    await renderOptionsPage(req, res);
   });
 
   router.post("/despesas/opcoes", async (req, res) => {
-    const optionType = ["SUPPLIER", "PAYMENT"].includes(req.body.type)
-      ? req.body.type
-      : "CATEGORY";
+    const optionType = normalizeOptionType(req.body.type);
     const name = String(req.body.name || "").trim();
 
     if (!name) {
-      return res.status(400).render("quick-launch/options", {
-        success: false,
+      return renderOptionsPage(req, res, {
+        status: 400,
         error: "Informe o nome da opção.",
-        options: [],
-        currentPath: "/despesas",
       });
     }
 
     const ownerId = req.session?.userId || null;
     const existing = await prisma.quickLaunchOption.findFirst({
-      where: { type: optionType, ownerId, name },
+      where: { type: optionType, ownerId, name, disabledAt: null },
       select: { id: true },
     });
 
-    if (!existing) {
+    if (existing) {
+      return renderOptionsPage(req, res, {
+        status: 400,
+        error: "Esta opção já existe para o tipo selecionado.",
+      });
+    }
+
+    const disabled = await prisma.quickLaunchOption.findFirst({
+      where: { type: optionType, ownerId, name, disabledAt: { not: null } },
+      select: { id: true },
+    });
+
+    if (disabled) {
+      await prisma.quickLaunchOption.update({
+        where: { id: disabled.id },
+        data: { disabledAt: null },
+      });
+    } else {
       await prisma.quickLaunchOption.create({
         data: { type: optionType, ownerId, name },
       });
     }
 
-    res.redirect("/despesas/opcoes?ok=1");
+    res.redirect(`/despesas/opcoes?type=${optionType}&ok=1`);
   });
 
   router.post("/despesas/opcoes/:id/update", async (req, res) => {
@@ -313,15 +431,38 @@ module.exports = (prisma) => {
     });
     const name = String(req.body.name || "").trim();
 
-    if (!option || !["CATEGORY", "SUPPLIER", "PAYMENT"].includes(option.type)) {
+    if (!option || !OPTION_TYPES.includes(option.type) || option.disabledAt) {
       return res.status(404).send("Opção não encontrada.");
     }
 
     if (name) {
-      await prisma.quickLaunchOption.update({ where: { id }, data: { name } });
+      const duplicate = await prisma.quickLaunchOption.findFirst({
+        where: {
+          ...ownerScope(req),
+          type: option.type,
+          name,
+          NOT: { id },
+        },
+        select: { id: true },
+      });
+
+      if (duplicate) {
+        return renderOptionsPage(req, res, {
+          status: 400,
+          error: "Já existe uma opção com este nome.",
+        });
+      }
+
+      await prisma.$transaction([
+        prisma.quickLaunchOption.update({ where: { id }, data: { name } }),
+        prisma.quickLaunchEntry.updateMany({
+          where: optionUsageWhere(req, option),
+          data: updateExpenseFieldForType(option.type, name),
+        }),
+      ]);
     }
 
-    res.redirect("/despesas/opcoes?ok=1");
+    res.redirect(`/despesas/opcoes?type=${option.type}&ok=1`);
   });
 
   router.post("/despesas/opcoes/:id/delete", async (req, res) => {
@@ -330,12 +471,23 @@ module.exports = (prisma) => {
       where: { id, ...ownerScope(req) },
     });
 
-    if (!option || !["CATEGORY", "SUPPLIER", "PAYMENT"].includes(option.type)) {
+    if (!option || !OPTION_TYPES.includes(option.type) || option.disabledAt) {
       return res.status(404).send("Opção não encontrada.");
     }
 
-    await prisma.quickLaunchOption.delete({ where: { id } });
-    res.redirect("/despesas/opcoes?ok=1");
+    const usageCount = await getOptionUsage(req, option);
+    if (usageCount > 0) {
+      return renderOptionsPage(req, res, {
+        status: 400,
+        error: "Esta opção já está sendo usada em despesas cadastradas e não pode ser excluída.",
+      });
+    }
+
+    await prisma.quickLaunchOption.update({
+      where: { id },
+      data: { disabledAt: new Date() },
+    });
+    res.redirect(`/despesas/opcoes?type=${option.type}&ok=1`);
   });
 
   router.get("/despesas/:id", async (req, res) => {

@@ -20,14 +20,16 @@
         <div class="field">
           <label for="type">Tipo</label>
           <select id="type" name="type" required>
-            <option value="CATEGORY">Nova Categoria</option>
-            <option value="SUPPLIER">Novo Fornecedor</option>
-            <option value="PAYMENT">Nova Forma de Pagamento</option>
+            <% typeOptions.forEach(function(option) { %>
+              <option value="<%= option.value %>" <%= selectedType === option.value ? "selected" : "" %>>
+                <%= option.label %>
+              </option>
+            <% }) %>
           </select>
         </div>
 
         <div class="field">
-          <label for="name">Nome</label>
+          <label for="name">Nova opção</label>
           <input id="name" name="name" required autofocus />
         </div>
 
@@ -35,18 +37,28 @@
       </form>
 
       <div class="quick-card" style="margin-top:12px;">
+        <div class="quick-option-heading">
+          Editar <%= typeLabel.toLowerCase() %>
+        </div>
         <% if (!options.length) { %>
-          <div class="empty">Nenhuma opção adicional cadastrada.</div>
+          <div class="empty">Nenhuma opção cadastrada para este tipo.</div>
         <% } else { %>
           <% options.forEach(function(option) { %>
             <div class="quick-option-row">
               <form method="post" action="/despesas/opcoes/<%= option.id %>/update">
-                <div class="quick-option-type"><%= option.typeLabel %></div>
                 <input name="name" value="<%= option.name %>" required />
+                <div class="quick-option-usage">
+                  <%= option.usageCount %> uso<%= option.usageCount === 1 ? "" : "s" %>
+                </div>
                 <button type="submit" class="btn small-button" title="Salvar">✓</button>
               </form>
               <form method="post" action="/despesas/opcoes/<%= option.id %>/delete" onsubmit="return confirm('Excluir esta opção?');">
-                <button type="submit" class="btn small-button" title="Excluir">🗑</button>
+                <button
+                  type="submit"
+                  class="btn small-button danger-button"
+                  title="<%= option.usageCount > 0 ? 'Não é possível excluir opção em uso' : 'Excluir' %>"
+                  <%= option.usageCount > 0 ? "disabled" : "" %>
+                >🗑</button>
               </form>
             </div>
           <% }) %>
@@ -55,5 +67,10 @@
 
       <a class="back-link" href="/despesas">Voltar</a>
     </main>
+    <script>
+      document.getElementById("type")?.addEventListener("change", function () {
+        window.location.href = `/despesas/opcoes?type=${encodeURIComponent(this.value)}`;
+      });
+    </script>
   </body>
 </html>

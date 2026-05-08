@@ -119,7 +119,9 @@ model QuickLaunchOption {
   owner     User?    @relation(fields: [ownerId], references: [id])
   ownerId   Int?
   type      String
+  defaultKey String?
   name      String
+  disabledAt DateTime?
   createdAt DateTime @default(now())
 
   @@unique([type, ownerId, name])
