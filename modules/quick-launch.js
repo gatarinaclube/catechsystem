@@ -166,7 +166,7 @@ module.exports = (prisma) => {
   }
 
   function optionOwnerId(req) {
-    return req.session?.userId || null;
+    return null;
   }
 
   async function hasColumn(tableName, columnName) {
