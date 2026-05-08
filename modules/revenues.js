@@ -225,10 +225,14 @@ module.exports = (prisma) => {
           document: req.body.document || null,
           cep: req.body.cep || null,
           street: req.body.street || null,
+          number: req.body.number || null,
+          complement: req.body.complement || null,
           neighborhood: req.body.neighborhood || null,
           city: req.body.city || null,
           state: req.body.state || null,
           country: req.body.country || null,
+          email: req.body.email || null,
+          phone: req.body.phone || null,
         },
       });
       res.redirect("/receitas");

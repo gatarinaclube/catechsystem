@@ -24,18 +24,57 @@
           <label for="document">CPF/RG/Passaporte</label>
           <input id="document" name="document" />
         </div>
+        <div class="quick-grid">
+          <div class="field">
+            <label for="email">E-mail</label>
+            <input id="email" name="email" type="email" />
+          </div>
+          <div class="field">
+            <label for="phone">Telefone</label>
+            <input id="phone" name="phone" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="country">País</label>
+          <select id="country" name="country">
+            <option value="Brasil" selected>Brasil</option>
+            <option value="Outro País">Outro País</option>
+          </select>
+        </div>
+
         <div class="inline-action-row">
           <div class="field">
             <label for="cep">CEP</label>
             <input id="cep" name="cep" />
           </div>
-          <button type="button" class="btn small-button" id="cepLookup">+</button>
+          <button type="button" class="btn small-button" id="cepLookup" title="Buscar CEP">⌕</button>
         </div>
-        <div class="field"><label for="street">Rua</label><input id="street" name="street" /></div>
+        <div id="cepStatus" class="quick-hint" aria-live="polite"></div>
+
+        <div class="quick-grid">
+          <div class="field"><label for="street">Rua</label><input id="street" name="street" /></div>
+          <div class="field"><label for="number">Número</label><input id="number" name="number" /></div>
+        </div>
+        <div class="field"><label for="complement">Complemento</label><input id="complement" name="complement" /></div>
         <div class="field"><label for="neighborhood">Bairro</label><input id="neighborhood" name="neighborhood" /></div>
-        <div class="field"><label for="city">Cidade</label><input id="city" name="city" /></div>
-        <div class="field"><label for="state">Estado</label><input id="state" name="state" /></div>
-        <div class="field"><label for="country">País</label><input id="country" name="country" value="Brasil" /></div>
+
+        <input id="state" name="state" type="hidden" value="AC" />
+        <div class="quick-grid">
+          <div class="field" id="stateBrazilField">
+            <label for="stateBrazil">Estado</label>
+            <select id="stateBrazil"></select>
+          </div>
+          <div class="field" id="stateOtherField" hidden>
+            <label for="stateOther">Estado</label>
+            <input id="stateOther" />
+          </div>
+          <div class="field">
+            <label for="city">Cidade</label>
+            <input id="city" name="city" list="cityOptions" />
+            <datalist id="cityOptions"></datalist>
+          </div>
+        </div>
 
         <button type="submit" class="btn">Salvar cliente</button>
       </form>
@@ -43,18 +82,123 @@
       <a class="back-link" href="/receitas">Voltar</a>
     </main>
     <script>
+      const states = [
+        ["AC", "Acre"], ["AL", "Alagoas"], ["AP", "Amapá"], ["AM", "Amazonas"],
+        ["BA", "Bahia"], ["CE", "Ceará"], ["DF", "Distrito Federal"], ["ES", "Espírito Santo"],
+        ["GO", "Goiás"], ["MA", "Maranhão"], ["MT", "Mato Grosso"], ["MS", "Mato Grosso do Sul"],
+        ["MG", "Minas Gerais"], ["PA", "Pará"], ["PB", "Paraíba"], ["PR", "Paraná"],
+        ["PE", "Pernambuco"], ["PI", "Piauí"], ["RJ", "Rio de Janeiro"], ["RN", "Rio Grande do Norte"],
+        ["RS", "Rio Grande do Sul"], ["RO", "Rondônia"], ["RR", "Roraima"], ["SC", "Santa Catarina"],
+        ["SP", "São Paulo"], ["SE", "Sergipe"], ["TO", "Tocantins"]
+      ];
+
+      const country = document.getElementById("country");
+      const stateHidden = document.getElementById("state");
+      const stateBrazil = document.getElementById("stateBrazil");
+      const stateOther = document.getElementById("stateOther");
+      const stateBrazilField = document.getElementById("stateBrazilField");
+      const stateOtherField = document.getElementById("stateOtherField");
+      const city = document.getElementById("city");
+      const cityOptions = document.getElementById("cityOptions");
+      const cepStatus = document.getElementById("cepStatus");
+      const cityCache = {};
+
+      stateBrazil.innerHTML = states
+        .map(([uf, name]) => `<option value="${uf}">${uf} - ${name}</option>`)
+        .join("");
+
+      function setStatus(message) {
+        cepStatus.textContent = message || "";
+      }
+
+      function isBrazil() {
+        return country.value === "Brasil";
+      }
+
+      function syncState() {
+        stateHidden.value = isBrazil() ? stateBrazil.value : stateOther.value.trim();
+      }
+
+      async function loadCities(uf, selectedCity = "") {
+        cityOptions.innerHTML = "";
+        if (!isBrazil() || !uf) return;
+
+        try {
+          if (!cityCache[uf]) {
+            const response = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios?orderBy=nome`);
+            if (!response.ok) throw new Error("Erro ao carregar cidades.");
+            cityCache[uf] = await response.json();
+          }
+
+          cityOptions.innerHTML = cityCache[uf]
+            .map((item) => `<option value="${item.nome}"></option>`)
+            .join("");
+          if (selectedCity) city.value = selectedCity;
+        } catch (err) {
+          setStatus("Não foi possível carregar a lista de cidades. Você pode digitar manualmente.");
+        }
+      }
+
+      function refreshCountryMode() {
+        const brazil = isBrazil();
+        stateBrazilField.hidden = !brazil;
+        stateOtherField.hidden = brazil;
+        cityOptions.innerHTML = "";
+        syncState();
+        if (brazil) {
+          loadCities(stateBrazil.value);
+        }
+      }
+
+      country.addEventListener("change", () => {
+        city.value = "";
+        stateOther.value = "";
+        refreshCountryMode();
+      });
+
+      stateBrazil.addEventListener("change", () => {
+        city.value = "";
+        syncState();
+        loadCities(stateBrazil.value);
+      });
+      stateOther.addEventListener("input", syncState);
+
       document.getElementById("cepLookup").addEventListener("click", async () => {
         const cep = document.getElementById("cep").value.replace(/\D/g, "");
-        if (cep.length !== 8) return;
-        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-        const data = await response.json();
-        if (data.erro) return;
-        document.getElementById("street").value = data.logradouro || "";
-        document.getElementById("neighborhood").value = data.bairro || "";
-        document.getElementById("city").value = data.localidade || "";
-        document.getElementById("state").value = data.uf || "";
-        document.getElementById("country").value = "Brasil";
+        if (cep.length !== 8) {
+          setStatus("Informe um CEP brasileiro com 8 dígitos.");
+          return;
+        }
+
+        country.value = "Brasil";
+        refreshCountryMode();
+        setStatus("Buscando CEP...");
+
+        try {
+          const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+          if (!response.ok) throw new Error("Erro ao buscar CEP.");
+          const data = await response.json();
+          if (data.erro) {
+            setStatus("CEP não encontrado. Você pode preencher manualmente.");
+            return;
+          }
+
+          document.getElementById("street").value = data.logradouro || "";
+          document.getElementById("neighborhood").value = data.bairro || "";
+          if (data.uf) {
+            stateBrazil.value = data.uf;
+            syncState();
+            await loadCities(data.uf, data.localidade || "");
+          } else {
+            city.value = data.localidade || "";
+          }
+          setStatus("Endereço preenchido pelo CEP.");
+        } catch (err) {
+          setStatus("Não foi possível consultar o CEP agora. Você pode preencher manualmente.");
+        }
       });
+
+      refreshCountryMode();
     </script>
   </body>
 </html>

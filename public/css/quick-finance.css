@@ -113,6 +113,13 @@ input[type="file"] {
   border: 1px solid #fecaca;
 }
 
+.quick-hint {
+  min-height: 18px;
+  margin: -6px 0 12px;
+  color: #6b7280;
+  font-size: 12px;
+}
+
 .quick-footer {
   display: flex;
   justify-content: center;
