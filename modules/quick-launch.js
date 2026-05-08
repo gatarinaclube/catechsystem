@@ -171,45 +171,20 @@ module.exports = (prisma) => {
     return OPTION_TYPES.includes(value) ? value : "CATEGORY";
   }
 
-  function defaultKeyFor(type, name) {
-    return `${type}:${String(name || "").trim().toLowerCase()}`;
-  }
-
   async function ensureDefaultOptions(req) {
     const ownerId = optionOwnerId(req);
 
     for (const [type, names] of Object.entries(DEFAULT_OPTION_SETS)) {
       for (const name of names) {
-        const existing = await prisma.quickLaunchOption.findFirst({
-          where: {
-            type,
-            ownerId,
-            defaultKey: defaultKeyFor(type, name),
-          },
+        const sameName = await prisma.quickLaunchOption.findFirst({
+          where: { type, ownerId, name },
           select: { id: true },
         });
 
-        if (!existing) {
-          const sameName = await prisma.quickLaunchOption.findFirst({
-            where: { type, ownerId, name, disabledAt: null },
-            select: { id: true, defaultKey: true },
+        if (!sameName) {
+          await prisma.quickLaunchOption.create({
+            data: { type, ownerId, name },
           });
-
-          if (!sameName) {
-            await prisma.quickLaunchOption.create({
-              data: {
-                type,
-                ownerId,
-                defaultKey: defaultKeyFor(type, name),
-                name,
-              },
-            });
-          } else if (!sameName.defaultKey) {
-            await prisma.quickLaunchOption.update({
-              where: { id: sameName.id },
-              data: { defaultKey: defaultKeyFor(type, name) },
-            });
-          }
         }
       }
     }
@@ -247,7 +222,8 @@ module.exports = (prisma) => {
   async function loadOptions(req) {
     await ensureDefaultOptions(req);
     const rows = await prisma.quickLaunchOption.findMany({
-      where: { ...selectedOwnerScope(req), disabledAt: null },
+      where: selectedOwnerScope(req),
+      select: { id: true, type: true, name: true, ownerId: true },
       orderBy: { name: "asc" },
     });
 
@@ -265,8 +241,8 @@ module.exports = (prisma) => {
       where: {
         ...selectedOwnerScope(req),
         type: selectedType,
-        disabledAt: null,
       },
+      select: { id: true, type: true, name: true, ownerId: true },
       orderBy: { name: "asc" },
     });
     const optionsWithUsage = [];
@@ -403,7 +379,7 @@ module.exports = (prisma) => {
 
     const ownerId = req.session?.userId || null;
     const existing = await prisma.quickLaunchOption.findFirst({
-      where: { type: optionType, ownerId, name, disabledAt: null },
+      where: { type: optionType, ownerId, name },
       select: { id: true },
     });
 
@@ -414,21 +390,9 @@ module.exports = (prisma) => {
       });
     }
 
-    const disabled = await prisma.quickLaunchOption.findFirst({
-      where: { type: optionType, ownerId, name, disabledAt: { not: null } },
-      select: { id: true },
+    await prisma.quickLaunchOption.create({
+      data: { type: optionType, ownerId, name },
     });
-
-    if (disabled) {
-      await prisma.quickLaunchOption.update({
-        where: { id: disabled.id },
-        data: { disabledAt: null },
-      });
-    } else {
-      await prisma.quickLaunchOption.create({
-        data: { type: optionType, ownerId, name },
-      });
-    }
 
     res.redirect(`/despesas/opcoes?type=${optionType}&ok=1`);
   });
@@ -440,7 +404,7 @@ module.exports = (prisma) => {
     });
     const name = String(req.body.name || "").trim();
 
-    if (!option || !OPTION_TYPES.includes(option.type) || option.disabledAt) {
+    if (!option || !OPTION_TYPES.includes(option.type)) {
       return res.status(404).send("Opção não encontrada.");
     }
 
@@ -480,7 +444,7 @@ module.exports = (prisma) => {
       where: { id, ...selectedOwnerScope(req) },
     });
 
-    if (!option || !OPTION_TYPES.includes(option.type) || option.disabledAt) {
+    if (!option || !OPTION_TYPES.includes(option.type)) {
       return res.status(404).send("Opção não encontrada.");
     }
 
@@ -492,10 +456,7 @@ module.exports = (prisma) => {
       });
     }
 
-    await prisma.quickLaunchOption.update({
-      where: { id },
-      data: { disabledAt: new Date() },
-    });
+    await prisma.quickLaunchOption.delete({ where: { id } });
     res.redirect(`/despesas/opcoes?type=${option.type}&ok=1`);
   });
 

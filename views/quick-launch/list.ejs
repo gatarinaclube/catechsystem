@@ -20,9 +20,12 @@
           <ul class="quick-list">
             <% expenses.forEach(function(expense) { %>
               <li>
-                <a href="/despesas/<%= expense.id %>">
-                  <strong><%= expense.dateLabel %></strong>
-                  <span><%= expense.amountLabel %> - <%= expense.supplier || '-' %></span>
+                <a class="quick-expense-row" href="/despesas/<%= expense.id %>">
+                  <span class="quick-expense-left">
+                    <strong><%= expense.dateLabel %></strong>
+                    <span><%= expense.amountLabel %></span>
+                  </span>
+                  <span class="quick-expense-supplier"><%= expense.supplier || '-' %></span>
                 </a>
               </li>
             <% }) %>

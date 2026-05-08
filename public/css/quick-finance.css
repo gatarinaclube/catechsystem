@@ -159,10 +159,31 @@ input[type="file"] {
 .quick-list a {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 12px;
   padding: 12px 0;
   color: #1f2937;
   text-decoration: none;
+}
+
+.quick-expense-left {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.quick-expense-left strong {
+  white-space: nowrap;
+}
+
+.quick-expense-supplier {
+  min-width: 0;
+  color: #4b5563;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .quick-option-row {
