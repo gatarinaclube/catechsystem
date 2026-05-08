@@ -348,7 +348,7 @@ module.exports = (prisma) => {
   }
 
   async function renderOptionsPage(req, res, extra = {}) {
-    const selectedType = normalizeOptionType(req.query.type || req.body.type);
+    const selectedType = normalizeOptionType(req.query.type || req.body?.type);
     const options = await loadManagedOptions(req, selectedType);
 
     const data = {

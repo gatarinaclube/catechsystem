@@ -1061,7 +1061,7 @@ async function getExpenseOptionUsage(option) {
 }
 
 async function renderExpenseOptionsDirect(req, res, extra = {}) {
-  const selectedType = normalizeExpenseOptionType(req.query.type || req.body.type);
+  const selectedType = normalizeExpenseOptionType(req.query.type || req.body?.type);
 
   const options = Array.isArray(extra.options)
     ? extra.options
