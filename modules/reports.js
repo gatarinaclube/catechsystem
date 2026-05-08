@@ -183,6 +183,10 @@ function parseParcelData(value) {
   }
 }
 
+function kittenNameOnly(label) {
+  return String(label || "-").replace(/^\s*[^-]+-\s*/, "") || "-";
+}
+
 function mapRevenueRows(revenues, filters) {
   const rows = [];
   const startTime = filters.startDate.getTime();
@@ -201,6 +205,7 @@ function mapRevenueRows(revenues, filters) {
       rows.push({
         ...revenue,
         parcelNumber: parcel.number,
+        parcelLabel: `${parcel.number || "-"} / ${revenue.installments || "-"}`,
         paidDateTime: paidTime,
         dateLabel: formatDateOnlyLabel(paidDate),
         amountLabel: formatCurrency(parcel.amountCents),
@@ -321,10 +326,11 @@ function renderRevenuesPdf(res, rows, filters, totalLabel) {
 
   const columns = [
     { label: "Data", x: 40, width: 62 },
-    { label: "Filhote", x: 108, width: 130 },
-    { label: "Cliente", x: 242, width: 125 },
-    { label: "Conta", x: 371, width: 90 },
-    { label: "Valor", x: 465, width: 62 },
+    { label: "Filhote", x: 108, width: 118 },
+    { label: "Parcela", x: 230, width: 46 },
+    { label: "Cliente", x: 280, width: 104 },
+    { label: "Conta", x: 388, width: 76 },
+    { label: "Valor", x: 468, width: 59 },
   ];
 
   function drawHeader(y) {
@@ -356,10 +362,11 @@ function renderRevenuesPdf(res, rows, filters, totalLabel) {
 
     doc.font("Helvetica").fontSize(8).fillColor("#111827");
     doc.text(row.dateLabel, columns[0].x, y, { width: columns[0].width });
-    doc.text(row.kittenLabel || "-", columns[1].x, y, { width: columns[1].width });
-    doc.text(row.clientLabel, columns[2].x, y, { width: columns[2].width });
-    doc.text(row.paymentAccount || "-", columns[3].x, y, { width: columns[3].width });
-    doc.text(row.amountLabel, columns[4].x, y, { width: columns[4].width, align: "right" });
+    doc.text(kittenNameOnly(row.kittenLabel), columns[1].x, y, { width: columns[1].width });
+    doc.text(row.parcelLabel || "-", columns[2].x, y, { width: columns[2].width });
+    doc.text(row.clientLabel, columns[3].x, y, { width: columns[3].width });
+    doc.text(row.paymentAccount || "-", columns[4].x, y, { width: columns[4].width });
+    doc.text(row.amountLabel, columns[5].x, y, { width: columns[5].width, align: "right" });
     y += rowHeight;
   });
 

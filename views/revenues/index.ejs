@@ -142,21 +142,25 @@
           const dateLabel = i === 1 ? "Data de pagamento da primeira parcela" : `Data de vencimento da ${i}ª parcela`;
           const amountLabel = i === 1 ? "Valor da primeira Parcela" : `Valor da ${i}ª Parcela`;
           parcelFields.insertAdjacentHTML("beforeend", `
-            <div class="quick-grid">
-              <div class="field">
-                <label>${amountLabel}</label>
-                <input name="parcel${i}Amount" inputmode="decimal" value="${saved.amountCents ? numberToMoney(saved.amountCents / 100) : ""}">
-              </div>
-              <div class="field">
-                <label>${dateLabel}</label>
-                <input name="parcel${i}Date" type="date" value="${saved.date || ""}" ${lockFirstParcelDate && i === 1 ? "readonly" : ""}>
-              </div>
-              <div class="field">
-                <label>Pago?</label>
-                <select name="parcel${i}Paid">
-                  <option value="NO" ${saved.paid ? "" : "selected"}>Não</option>
-                  <option value="YES" ${saved.paid ? "selected" : ""}>Sim</option>
-                </select>
+            <div class="parcel-card">
+              <div class="quick-grid">
+                <div class="field">
+                  <label>${amountLabel}</label>
+                  <input name="parcel${i}Amount" inputmode="decimal" value="${saved.amountCents ? numberToMoney(saved.amountCents / 100) : ""}">
+                </div>
+                <div class="field">
+                  <label>${dateLabel}</label>
+                  <input name="parcel${i}Date" type="date" value="${saved.date || ""}" ${lockFirstParcelDate && i === 1 ? "readonly" : ""}>
+                </div>
+                <div class="field">
+                  <div class="paid-toggle-row">
+                    <label class="paid-toggle-label">Pago</label>
+                    <label class="paid-toggle" title="Pago">
+                      <input type="checkbox" name="parcel${i}Paid" value="YES" ${saved.paid ? "checked" : ""}>
+                      <span></span>
+                    </label>
+                  </div>
+                </div>
               </div>
             </div>
           `);

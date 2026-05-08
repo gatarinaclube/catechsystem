@@ -13,9 +13,17 @@
         <h1 class="quick-title">Receitas Registradas</h1>
       </header>
 
+      <form class="quick-card quick-filter-card" method="get" action="/receitas/lista">
+        <div class="field">
+          <label for="month">Mês</label>
+          <input id="month" name="month" type="month" value="<%= month %>" />
+        </div>
+        <button type="submit" class="btn">Filtrar</button>
+      </form>
+
       <div class="quick-card">
         <% if (!revenues.length) { %>
-          <div class="empty">Nenhuma receita registrada.</div>
+          <div class="empty">Nenhuma receita registrada neste mês.</div>
         <% } else { %>
           <ul class="quick-list">
             <% revenues.forEach(function(revenue) { %>
@@ -27,6 +35,16 @@
               </li>
             <% }) %>
           </ul>
+        <% } %>
+      </div>
+
+      <div class="quick-pagination">
+        <% if (hasPreviousPage) { %>
+          <a class="btn" href="/receitas/lista?month=<%= month %>&page=<%= page - 1 %>">Anterior</a>
+        <% } %>
+        <span>Página <%= page %> de <%= totalPages %></span>
+        <% if (hasNextPage) { %>
+          <a class="btn" href="/receitas/lista?month=<%= month %>&page=<%= page + 1 %>">Próxima</a>
         <% } %>
       </div>
 

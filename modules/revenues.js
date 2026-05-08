@@ -41,6 +41,21 @@ function formatDateInput(date) {
   return date ? new Date(date).toISOString().slice(0, 10) : "";
 }
 
+function monthRange(monthValue) {
+  const fallback = todayForInput().slice(0, 7);
+  const month = /^\d{4}-\d{2}$/.test(monthValue || "") ? monthValue : fallback;
+  const [year, monthNumber] = month.split("-").map(Number);
+  const start = new Date(Date.UTC(year, monthNumber - 1, 1));
+  const end = new Date(Date.UTC(year, monthNumber, 1));
+  return { month, start, end };
+}
+
+function paginationData(query) {
+  const page = Math.max(1, Number.parseInt(query.page || "1", 10) || 1);
+  const pageSize = 20;
+  return { page, pageSize, skip: (page - 1) * pageSize };
+}
+
 function safeJsonParse(value, fallback = []) {
   if (!value) return fallback;
   try {
@@ -220,15 +235,31 @@ module.exports = (prisma) => {
   });
 
   router.get("/receitas/lista", async (req, res) => {
+    const { month, start, end } = monthRange(req.query.month);
+    const { page, pageSize, skip } = paginationData(req.query);
+    const where = {
+      ...ownerScope(req),
+      createdAt: {
+        gte: start,
+        lt: end,
+      },
+    };
+    const totalCount = await prisma.revenueEntry.count({ where });
     const revenues = await prisma.revenueEntry.findMany({
-      where: ownerScope(req),
+      where,
       include: { client: true },
       orderBy: { createdAt: "desc" },
-      take: 200,
+      skip,
+      take: pageSize,
     });
 
     res.render("revenues/list", {
       revenues,
+      month,
+      page,
+      totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
+      hasPreviousPage: page > 1,
+      hasNextPage: page * pageSize < totalCount,
       currentPath: "/receitas",
     });
   });

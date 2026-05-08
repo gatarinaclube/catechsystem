@@ -70,6 +70,21 @@ function formatDateOnlyLabel(date) {
   return `${day}/${month}/${year}`;
 }
 
+function monthRange(monthValue) {
+  const fallback = todayForInput().slice(0, 7);
+  const month = /^\d{4}-\d{2}$/.test(monthValue || "") ? monthValue : fallback;
+  const [year, monthNumber] = month.split("-").map(Number);
+  const start = new Date(Date.UTC(year, monthNumber - 1, 1));
+  const end = new Date(Date.UTC(year, monthNumber, 1));
+  return { month, start, end };
+}
+
+function paginationData(query) {
+  const page = Math.max(1, Number.parseInt(query.page || "1", 10) || 1);
+  const pageSize = 20;
+  return { page, pageSize, skip: (page - 1) * pageSize };
+}
+
 function createUpload() {
   const uploadsRoot =
     process.env.UPLOADS_DIR || path.join(__dirname, "..", "public", "uploads");
@@ -422,10 +437,21 @@ module.exports = (prisma) => {
   });
 
   router.get("/despesas/lista", async (req, res) => {
+    const { month, start, end } = monthRange(req.query.month);
+    const { page, pageSize, skip } = paginationData(req.query);
+    const where = {
+      ...ownerScope(req),
+      competenceDate: {
+        gte: start,
+        lt: end,
+      },
+    };
+    const totalCount = await prisma.quickLaunchEntry.count({ where });
     const expenses = await prisma.quickLaunchEntry.findMany({
-      where: ownerScope(req),
+      where,
       orderBy: [{ competenceDate: "desc" }, { createdAt: "desc" }],
-      take: 200,
+      skip,
+      take: pageSize,
     });
 
     res.render("quick-launch/list", {
@@ -434,6 +460,11 @@ module.exports = (prisma) => {
         amountLabel: formatAmount(expense.amountCents),
         dateLabel: formatDateOnlyLabel(expense.competenceDate),
       })),
+      month,
+      page,
+      totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
+      hasPreviousPage: page > 1,
+      hasNextPage: page * pageSize < totalCount,
       currentPath: "/despesas",
     });
   });
