@@ -5,53 +5,11 @@ const path = require("path");
 const { Prisma } = require("@prisma/client");
 const { canViewAllData } = require("../utils/access");
 
-const DEFAULT_CATEGORIES = [
-  "Alimentação",
-  "Combustível",
-  "Hotelaria",
-  "Veterinário",
-  "Exposição/Competição",
-  "Publicidade",
-  "Equipamentos",
-  "Manutenção",
-  "Reparo/Conserto em Geral",
-  "Reparo/Conserto em Estrutura Física",
-  "Construção",
-  "Veículo",
-  "Material de Expediente",
-  "Insumos em Geral",
-  "Transporte",
-  "Taxas",
-  "Impostos",
-  "Contabilidade",
-  "Serviços",
-  "Aquisição de Padreadores/Matrizes",
-  "Outros",
-];
-
-const DEFAULT_SUPPLIERS = [
-  "Cobasi",
-  "Petlove",
-  "Farmácia Reino Animal",
-  "Clínica Unidade Animal",
-];
-
-const DEFAULT_PAYMENT_METHODS = [
-  "PIX - SICOOB Conta",
-  "Crédito - SICOOB",
-  "Dinheiro",
-];
-
 const OPTION_TYPES = ["CATEGORY", "SUPPLIER", "PAYMENT"];
 const OPTION_LABELS = {
   CATEGORY: "Categoria",
   SUPPLIER: "Fornecedor",
   PAYMENT: "Forma de Pagamento",
-};
-const DEFAULT_OPTION_SETS = {
-  CATEGORY: DEFAULT_CATEGORIES,
-  SUPPLIER: DEFAULT_SUPPLIERS,
-  PAYMENT: DEFAULT_PAYMENT_METHODS,
 };
 
 function ensureDir(dir) {
@@ -190,40 +148,9 @@ module.exports = (prisma) => {
     return OPTION_TYPES.includes(value) ? value : "CATEGORY";
   }
 
-  async function ensureDefaultOptions(req) {
-    const ownerId = optionOwnerId(req);
-    const hasOptionOwner = await hasColumn("QuickLaunchOption", "ownerId");
-
-    for (const [type, names] of Object.entries(DEFAULT_OPTION_SETS)) {
-      for (const name of names) {
-        const sameName = await rawFindOptionByName(req, type, name);
-
-        if (!sameName) {
-          try {
-            if (hasOptionOwner) {
-              await prisma.$executeRaw`
-                INSERT INTO "QuickLaunchOption" ("type", "ownerId", "name")
-                VALUES (${type}, ${ownerId}, ${name})
-              `;
-            } else {
-              await prisma.$executeRaw`
-                INSERT INTO "QuickLaunchOption" ("type", "name")
-                VALUES (${type}, ${name})
-              `;
-            }
-          } catch (err) {
-            if (err.code !== "P2002" && err.code !== "23505") {
-              throw err;
-            }
-          }
-        }
-      }
-    }
-  }
-
-  function mergeOptionNames(defaults, rows) {
+  function optionNames(rows) {
     return Array.from(
-      new Set([...defaults, ...rows.map((row) => row.name).filter(Boolean)])
+      new Set(rows.map((row) => row.name).filter(Boolean))
     ).sort((a, b) => a.localeCompare(b, "pt-BR"));
   }
 
@@ -316,23 +243,13 @@ module.exports = (prisma) => {
     const rows = await rawListOptions(req);
 
     return {
-      categories: mergeOptionNames(
-        DEFAULT_CATEGORIES,
-        rows.filter((row) => row.type === "CATEGORY")
-      ),
-      suppliers: mergeOptionNames(
-        DEFAULT_SUPPLIERS,
-        rows.filter((row) => row.type === "SUPPLIER")
-      ),
-      paymentMethods: mergeOptionNames(
-        DEFAULT_PAYMENT_METHODS,
-        rows.filter((row) => row.type === "PAYMENT")
-      ),
+      categories: optionNames(rows.filter((row) => row.type === "CATEGORY")),
+      suppliers: optionNames(rows.filter((row) => row.type === "SUPPLIER")),
+      paymentMethods: optionNames(rows.filter((row) => row.type === "PAYMENT")),
     };
   }
 
   async function loadManagedOptions(req, selectedType) {
-    await ensureDefaultOptions(req);
     const options = await rawListOptions(req, selectedType);
     const optionsWithUsage = [];
 
