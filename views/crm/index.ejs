@@ -30,7 +30,9 @@
               <% clients.forEach(function(client) { %>
                 <li class="item">
                   <div>
-                    <div class="item-link"><%= client.fullName || "Cliente sem nome" %></div>
+                    <a class="item-link" href="/crm/clientes/<%= client.id %>">
+                      <%= client.fullName || "Cliente sem nome" %>
+                    </a>
                     <div class="item-sub">
                       <%= client.document || "Sem documento" %>
                       <% if (client.city || client.state) { %>

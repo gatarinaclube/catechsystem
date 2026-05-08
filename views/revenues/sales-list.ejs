@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vendas</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/quick-finance.css" />
+  </head>
+  <body>
+    <main class="quick-shell">
+      <header class="quick-header">
+        <h1 class="quick-title">Vendas</h1>
+        <div class="quick-subtitle">Receitas registradas para acompanhamento de pagamentos.</div>
+      </header>
+
+      <div class="quick-card">
+        <% if (!revenues.length) { %>
+          <div class="empty">Nenhuma venda registrada.</div>
+        <% } else { %>
+          <ul class="quick-list">
+            <% revenues.forEach(function(revenue) { %>
+              <li>
+                <a href="/vendas/<%= revenue.id %>">
+                  <strong><%= revenue.kittenLabel || '-' %></strong>
+                  <span><%= revenue.client ? revenue.client.fullName : '-' %></span>
+                </a>
+              </li>
+            <% }) %>
+          </ul>
+        <% } %>
+      </div>
+
+      <footer class="quick-footer">
+        <a class="quick-options-link" href="/dashboard" title="Página inicial">⌂</a>
+        <a class="quick-options-link" href="/receitas" title="Nova venda">＋</a>
+      </footer>
+    </main>
+  </body>
+</html>

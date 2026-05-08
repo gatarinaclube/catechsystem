@@ -18,48 +18,48 @@
 
         <div class="field">
           <label for="fullName">Nome Completo</label>
-          <input id="fullName" name="fullName" required autofocus />
+          <input id="fullName" name="fullName" value="<%= client && client.fullName ? client.fullName : '' %>" required autofocus />
         </div>
         <div class="field">
           <label for="document">CPF/RG/Passaporte</label>
-          <input id="document" name="document" />
+          <input id="document" name="document" value="<%= client && client.document ? client.document : '' %>" />
         </div>
         <div class="quick-grid">
           <div class="field">
             <label for="email">E-mail</label>
-            <input id="email" name="email" type="email" />
+            <input id="email" name="email" type="email" value="<%= client && client.email ? client.email : '' %>" />
           </div>
           <div class="field">
             <label for="phone">Telefone</label>
-            <input id="phone" name="phone" />
+            <input id="phone" name="phone" value="<%= client && client.phone ? client.phone : '' %>" />
           </div>
         </div>
 
         <div class="field">
           <label for="country">País</label>
           <select id="country" name="country">
-            <option value="Brasil" selected>Brasil</option>
-            <option value="Outro País">Outro País</option>
+            <option value="Brasil" <%= !client || !client.country || client.country === 'Brasil' ? 'selected' : '' %>>Brasil</option>
+            <option value="Outro País" <%= client && client.country && client.country !== 'Brasil' ? 'selected' : '' %>>Outro País</option>
           </select>
         </div>
 
         <div class="inline-action-row">
           <div class="field">
             <label for="cep">CEP</label>
-            <input id="cep" name="cep" />
+            <input id="cep" name="cep" value="<%= client && client.cep ? client.cep : '' %>" />
           </div>
           <button type="button" class="btn small-button" id="cepLookup" title="Buscar CEP">⌕</button>
         </div>
         <div id="cepStatus" class="quick-hint" aria-live="polite"></div>
 
         <div class="quick-grid">
-          <div class="field"><label for="street">Rua</label><input id="street" name="street" /></div>
-          <div class="field"><label for="number">Número</label><input id="number" name="number" /></div>
+          <div class="field"><label for="street">Rua</label><input id="street" name="street" value="<%= client && client.street ? client.street : '' %>" /></div>
+          <div class="field"><label for="number">Número</label><input id="number" name="number" value="<%= client && client.number ? client.number : '' %>" /></div>
         </div>
-        <div class="field"><label for="complement">Complemento</label><input id="complement" name="complement" /></div>
-        <div class="field"><label for="neighborhood">Bairro</label><input id="neighborhood" name="neighborhood" /></div>
+        <div class="field"><label for="complement">Complemento</label><input id="complement" name="complement" value="<%= client && client.complement ? client.complement : '' %>" /></div>
+        <div class="field"><label for="neighborhood">Bairro</label><input id="neighborhood" name="neighborhood" value="<%= client && client.neighborhood ? client.neighborhood : '' %>" /></div>
 
-        <input id="state" name="state" type="hidden" value="AC" />
+        <input id="state" name="state" type="hidden" value="<%= client && client.state ? client.state : 'AC' %>" />
         <div class="quick-grid">
           <div class="field" id="stateBrazilField">
             <label for="stateBrazil">Estado</label>
@@ -67,11 +67,11 @@
           </div>
           <div class="field" id="stateOtherField" hidden>
             <label for="stateOther">Estado</label>
-            <input id="stateOther" />
+            <input id="stateOther" value="<%= client && client.state ? client.state : '' %>" />
           </div>
           <div class="field">
             <label for="city">Cidade</label>
-            <input id="city" name="city" list="cityOptions" />
+            <input id="city" name="city" list="cityOptions" value="<%= client && client.city ? client.city : '' %>" />
             <datalist id="cityOptions"></datalist>
           </div>
         </div>
@@ -102,6 +102,8 @@
       const cityOptions = document.getElementById("cityOptions");
       const cepStatus = document.getElementById("cepStatus");
       const cityCache = {};
+      const initialState = stateHidden.value || "AC";
+      const initialCity = city.value || "";
 
       stateBrazil.innerHTML = states
         .map(([uf, name]) => `<option value="${uf}">${uf} - ${name}</option>`)
@@ -146,7 +148,7 @@
         cityOptions.innerHTML = "";
         syncState();
         if (brazil) {
-          loadCities(stateBrazil.value);
+          loadCities(stateBrazil.value, initialCity);
         }
       }
 
@@ -198,6 +200,11 @@
         }
       });
 
+      if (isBrazil()) {
+        stateBrazil.value = states.some(([uf]) => uf === initialState) ? initialState : "AC";
+      } else {
+        stateOther.value = initialState;
+      }
       refreshCountryMode();
     </script>
   </body>

@@ -41,8 +41,14 @@
             <% } else { %>
               <option value="">Selecione...</option>
             <% } %>
-            <% kittens.forEach(function(kitten) { %>
-              <option value="<%= kitten.id %>" data-label="<%= kitten.label %>" <%= String(revenue.kittenId || '') === String(kitten.id) ? 'selected' : '' %>><%= kitten.label %></option>
+            <% kittenGroups.forEach(function(group) { %>
+              <% if (group.kittens && group.kittens.length) { %>
+                <optgroup label="<%= group.label %>">
+                  <% group.kittens.forEach(function(kitten) { %>
+                    <option value="<%= kitten.id %>" data-label="<%= kitten.label %>" <%= String(revenue.kittenId || '') === String(kitten.id) ? 'selected' : '' %>><%= kitten.label %></option>
+                  <% }) %>
+                </optgroup>
+              <% } %>
             <% }) %>
           </select>
           <input type="hidden" id="kittenLabel" name="kittenLabel" value="<%= revenue.kittenLabel || '' %>" />
@@ -144,6 +150,13 @@
               <div class="field">
                 <label>${dateLabel}</label>
                 <input name="parcel${i}Date" type="date" value="${saved.date || ""}" ${lockFirstParcelDate && i === 1 ? "readonly" : ""}>
+              </div>
+              <div class="field">
+                <label>Pago?</label>
+                <select name="parcel${i}Paid">
+                  <option value="NO" ${saved.paid ? "" : "selected"}>Não</option>
+                  <option value="YES" ${saved.paid ? "selected" : ""}>Sim</option>
+                </select>
               </div>
             </div>
           `);

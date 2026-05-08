@@ -109,7 +109,6 @@ module.exports = (prisma) => {
         ...ownerScope(req),
         OR: [{ kittenNumber: { not: null } }, { litterKitten: { isNot: null } }],
         deceased: false,
-        sold: false,
         delivered: false,
         breedingProspect: false,
       },
@@ -126,7 +125,20 @@ module.exports = (prisma) => {
 
     return {
       clients,
-      kittens: kittens.map((cat) => ({ ...cat, label: buildKittenLabel(cat) })),
+      kittenGroups: [
+        {
+          label: "Disponíveis",
+          kittens: kittens
+            .filter((cat) => !cat.sold)
+            .map((cat) => ({ ...cat, label: buildKittenLabel(cat) })),
+        },
+        {
+          label: "Não Entregues",
+          kittens: kittens
+            .filter((cat) => cat.sold)
+            .map((cat) => ({ ...cat, label: buildKittenLabel(cat) })),
+        },
+      ],
       paymentAccounts,
       revenue: mapRevenueForForm(revenue),
     };
@@ -144,6 +156,7 @@ module.exports = (prisma) => {
         number: i,
         amountCents: parseAmountToCents(body[`parcel${i}Amount`]),
         date: body[`parcel${i}Date`] || "",
+        paid: body[`parcel${i}Paid`] === "YES",
       });
     }
 
@@ -165,7 +178,8 @@ module.exports = (prisma) => {
   async function renderForm(req, res, extra = {}) {
     res.status(extra.status || 200).render("revenues/index", {
       ...(await loadContext(req, extra.revenue)),
-      formAction: extra.revenue?.id ? `/receitas/${extra.revenue.id}` : "/receitas",
+      formAction: extra.formAction || (extra.revenue?.id ? `/receitas/${extra.revenue.id}` : "/receitas"),
+      backPath: extra.backPath || "/receitas",
       success: extra.success || false,
       error: extra.error || null,
       homePath: req.session?.userId ? "/dashboard" : "/login",
@@ -219,11 +233,51 @@ module.exports = (prisma) => {
     });
   });
 
+  router.get("/vendas", async (req, res) => {
+    const revenues = await prisma.revenueEntry.findMany({
+      where: ownerScope(req),
+      include: { client: true },
+      orderBy: { createdAt: "desc" },
+      take: 200,
+    });
+
+    res.render("revenues/sales-list", {
+      revenues,
+      currentPath: "/vendas",
+    });
+  });
+
+  router.get("/vendas/:id", async (req, res) => {
+    const revenue = await prisma.revenueEntry.findFirst({
+      where: { id: Number(req.params.id), ...ownerScope(req) },
+    });
+    if (!revenue) return res.status(404).send("Venda não encontrada.");
+    await renderForm(req, res, {
+      revenue,
+      formAction: `/vendas/${revenue.id}`,
+      backPath: "/vendas",
+    });
+  });
+
+  router.post("/vendas/:id", async (req, res) => {
+    const existing = await prisma.revenueEntry.findFirst({
+      where: { id: Number(req.params.id), ...ownerScope(req) },
+    });
+    if (!existing) return res.status(404).send("Venda não encontrada.");
+
+    await prisma.revenueEntry.update({
+      where: { id: existing.id },
+      data: buildRevenueData(req.body, existing),
+    });
+    res.redirect("/vendas");
+  });
+
   router.get("/receitas/clientes/novo", async (req, res) => {
     res.render("revenues/client-form", {
       title: "Novo Cliente",
       formAction: "/receitas/clientes/novo",
       backPath: "/receitas",
+      client: null,
       error: null,
       currentPath: "/receitas",
     });
@@ -254,6 +308,7 @@ module.exports = (prisma) => {
         title: "Novo Cliente",
         formAction: "/receitas/clientes/novo",
         backPath: "/receitas",
+        client: req.body,
         error: err.message || "Erro ao salvar cliente.",
         currentPath: "/receitas",
       });

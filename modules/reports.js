@@ -136,10 +136,6 @@ function buildExpenseWhere(req, filters) {
 function buildRevenueWhere(req, filters) {
   const where = {
     ...(canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId }),
-    createdAt: {
-      gte: filters.startDate,
-      lt: addDays(filters.endDate, 1),
-    },
   };
 
   if (filters.paymentMethod) {
@@ -178,13 +174,46 @@ function mapExpenseRows(expenses) {
   }));
 }
 
-function mapRevenueRows(revenues) {
-  return revenues.map((revenue) => ({
-    ...revenue,
-    dateLabel: formatDateLabel(revenue.createdAt),
-    amountLabel: formatCurrency(revenue.totalAmountCents),
-    clientLabel: revenue.client?.fullName || "-",
-  }));
+function parseParcelData(value) {
+  if (!value) return [];
+  try {
+    return JSON.parse(value);
+  } catch {
+    return [];
+  }
+}
+
+function mapRevenueRows(revenues, filters) {
+  const rows = [];
+  const startTime = filters.startDate.getTime();
+  const endTime = addDays(filters.endDate, 1).getTime();
+
+  revenues.forEach((revenue) => {
+    parseParcelData(revenue.parcelDataJson).forEach((parcel) => {
+      if (!parcel.paid || !parcel.date) return;
+
+      const paidDate = parseDateInput(parcel.date, null);
+      if (!paidDate) return;
+
+      const paidTime = paidDate.getTime();
+      if (paidTime < startTime || paidTime >= endTime) return;
+
+      rows.push({
+        ...revenue,
+        parcelNumber: parcel.number,
+        paidDateTime: paidTime,
+        dateLabel: formatDateOnlyLabel(paidDate),
+        amountLabel: formatCurrency(parcel.amountCents),
+        amountCents: parcel.amountCents || 0,
+        clientLabel: revenue.client?.fullName || "-",
+      });
+    });
+  });
+
+  return rows.sort((a, b) => {
+    const dateCompare = b.paidDateTime - a.paidDateTime;
+    return dateCompare || Number(b.id) - Number(a.id);
+  });
 }
 
 function renderExpensesPdf(res, rows, filters, totalLabel) {
@@ -308,13 +337,22 @@ function renderRevenuesPdf(res, rows, filters, totalLabel) {
   drawHeader(y);
   y += 20;
 
-  rows.forEach((row) => {
-    if (y > 735) {
+  rows.forEach((row, index) => {
+    const rowHeight = 22;
+
+    if (y + rowHeight > 735) {
       doc.addPage();
       y = 40;
       drawHeader(y);
       y += 20;
     }
+
+    if (index % 2 === 0) {
+      doc.rect(40, y - 4, 515, rowHeight).fill("#f9fafb");
+    }
+
+    doc.strokeColor("#e5e7eb").lineWidth(0.4);
+    doc.moveTo(40, y + rowHeight - 5).lineTo(555, y + rowHeight - 5).stroke();
 
     doc.font("Helvetica").fontSize(8).fillColor("#111827");
     doc.text(row.dateLabel, columns[0].x, y, { width: columns[0].width });
@@ -322,7 +360,7 @@ function renderRevenuesPdf(res, rows, filters, totalLabel) {
     doc.text(row.clientLabel, columns[2].x, y, { width: columns[2].width });
     doc.text(row.paymentAccount || "-", columns[3].x, y, { width: columns[3].width });
     doc.text(row.amountLabel, columns[4].x, y, { width: columns[4].width, align: "right" });
-    y += 22;
+    y += rowHeight;
   });
 
   if (!rows.length) doc.font("Helvetica").fontSize(10).text("Nenhuma receita encontrada.", 40, y);
@@ -403,9 +441,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         include: { client: true },
         orderBy: [{ createdAt: "desc" }],
       });
-      const rows = mapRevenueRows(revenues);
-      const totalCents = revenues.reduce(
-        (sum, revenue) => sum + revenue.totalAmountCents,
+      const rows = mapRevenueRows(revenues, filters);
+      const totalCents = rows.reduce(
+        (sum, row) => sum + row.amountCents,
         0
       );
 
@@ -432,9 +470,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         include: { client: true },
         orderBy: [{ createdAt: "desc" }],
       });
-      const rows = mapRevenueRows(revenues);
-      const totalCents = revenues.reduce(
-        (sum, revenue) => sum + revenue.totalAmountCents,
+      const rows = mapRevenueRows(revenues, filters);
+      const totalCents = rows.reduce(
+        (sum, row) => sum + row.amountCents,
         0
       );
 

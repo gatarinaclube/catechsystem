@@ -106,6 +106,7 @@
 
       <% [
         { href: "/crm", match: "/crm", icon: "🤝", label: "CRM", allowed: access && access.canAccessCrm },
+        { href: "/vendas", match: "/vendas", icon: "🧾", label: "Vendas", allowed: access && access.canAccessSales },
       ].forEach(renderMenuItem); %>
 
       <div

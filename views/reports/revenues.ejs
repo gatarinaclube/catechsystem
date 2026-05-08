@@ -143,7 +143,11 @@
                   <% rows.forEach(function(row) { %>
                     <tr>
                       <td><%= row.dateLabel %></td>
-                      <td><%= row.kittenLabel || '-' %></td>
+                      <td>
+                        <a class="item-link" href="/receitas/<%= row.id %>">
+                          <%= row.kittenLabel || '-' %>
+                        </a>
+                      </td>
                       <td><%= row.clientLabel || '-' %></td>
                       <td><%= row.paymentAccount || '-' %></td>
                       <td><%= row.invoiceNumber || '-' %></td>
