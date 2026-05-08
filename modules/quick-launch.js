@@ -363,7 +363,7 @@ module.exports = (prisma) => {
     const selectedType = normalizeOptionType(req.query.type || req.body.type);
     const options = await loadManagedOptions(req, selectedType);
 
-    res.status(extra.status || 200).render("quick-launch/options", {
+    const data = {
       success: extra.success ?? req.query.ok === "1",
       error: extra.error || null,
       options,
@@ -374,7 +374,80 @@ module.exports = (prisma) => {
         label: OPTION_LABELS[value],
       })),
       currentPath: "/despesas",
+    };
+
+    return new Promise((resolve, reject) => {
+      res.render("quick-launch/options", data, (err, html) => {
+        if (err) return reject(err);
+        res.status(extra.status || 200).send(html);
+        resolve();
+      });
     });
+  }
+
+  function renderOptionsFallback(res, selectedType, errorMessage) {
+    const typeOptions = OPTION_TYPES.map((value) => ({
+      value,
+      label: OPTION_LABELS[value],
+    }));
+    const options = fallbackManagedOptions(selectedType);
+    const typeLinks = typeOptions
+      .map(
+        (option) =>
+          `<option value="${option.value}" ${
+            selectedType === option.value ? "selected" : ""
+          }>${option.label}</option>`
+      )
+      .join("");
+    const rows = options
+      .map(
+        (option) => `
+          <div class="quick-option-row">
+            <input value="${option.name}" disabled />
+            <div class="quick-option-usage">padrão</div>
+            <button class="btn small-button" disabled>✓</button>
+            <button class="btn small-button danger-button" disabled>🗑</button>
+          </div>
+        `
+      )
+      .join("");
+
+    res.status(200).send(`<!DOCTYPE html>
+      <html lang="pt-BR">
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>Opções - Despesas</title>
+          <link rel="stylesheet" href="/css/theme.css" />
+          <link rel="stylesheet" href="/css/quick-finance.css" />
+        </head>
+        <body>
+          <main class="quick-shell">
+            <header class="quick-header">
+              <h1 class="quick-title">Opções de Despesas</h1>
+            </header>
+            <div class="quick-card">
+              <div class="message message-error">${errorMessage}</div>
+              <div class="field">
+                <label for="type">Tipo</label>
+                <select id="type" name="type">${typeLinks}</select>
+              </div>
+            </div>
+            <div class="quick-card" style="margin-top:12px;">
+              <div class="quick-option-heading">Editar ${
+                OPTION_LABELS[selectedType]
+              }</div>
+              ${rows}
+            </div>
+            <a class="back-link" href="/despesas">Voltar</a>
+          </main>
+          <script>
+            document.getElementById("type")?.addEventListener("change", function () {
+              window.location.href = "/despesas/opcoes?type=" + encodeURIComponent(this.value);
+            });
+          </script>
+        </body>
+      </html>`);
   }
 
   function mapExpenseForForm(expense = null) {
@@ -464,18 +537,11 @@ module.exports = (prisma) => {
     } catch (err) {
       console.error("Erro ao carregar opções de despesas:", err);
       const selectedType = normalizeOptionType(req.query.type || req.body.type);
-      res.status(200).render("quick-launch/options", {
-        success: false,
-        error: "Não foi possível carregar as opções salvas. Exibindo opções padrão.",
-        options: fallbackManagedOptions(selectedType),
+      renderOptionsFallback(
+        res,
         selectedType,
-        typeLabel: OPTION_LABELS[selectedType],
-        typeOptions: OPTION_TYPES.map((value) => ({
-          value,
-          label: OPTION_LABELS[value],
-        })),
-        currentPath: "/despesas",
-      });
+        "Não foi possível carregar as opções salvas. Exibindo opções padrão."
+      );
     }
   });
 
