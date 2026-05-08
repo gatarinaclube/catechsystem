@@ -44,6 +44,7 @@ const PERMISSIONS = {
   "admin.history": [ROLES.ADMIN, ROLES.PREMIUM],
   "admin.quickLaunch": [ROLES.ADMIN, ROLES.PREMIUM],
   "admin.revenues": [ROLES.ADMIN, ROLES.PREMIUM],
+  "admin.crm": [ROLES.ADMIN, ROLES.PREMIUM],
   "admin.reports": [ROLES.ADMIN, ROLES.PREMIUM],
 };
 
@@ -99,6 +100,7 @@ function buildAccessContext(role) {
     canAccessHistoryAdmin: userCan(normalizedRole, "admin.history"),
     canAccessQuickLaunch: userCan(normalizedRole, "admin.quickLaunch"),
     canAccessRevenues: userCan(normalizedRole, "admin.revenues"),
+    canAccessCrm: userCan(normalizedRole, "admin.crm"),
     canAccessReports: userCan(normalizedRole, "admin.reports"),
     canUseLitterService: userCan(normalizedRole, "service.litter"),
     canUseTransferService: userCan(normalizedRole, "service.transfer"),

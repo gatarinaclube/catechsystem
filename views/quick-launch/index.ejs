@@ -111,10 +111,25 @@
       </footer>
     </main>
     <script>
+      const amount = document.getElementById("amount");
       const paymentMethod = document.getElementById("paymentMethod");
       const paymentMode = document.getElementById("paymentMode");
       const creditFields = document.getElementById("creditFields");
       const installmentsField = document.getElementById("installmentsField");
+
+      function formatMoneyInput(input) {
+        const digits = String(input.value || "").replace(/\D/g, "");
+        if (!digits) {
+          input.value = "";
+          return;
+        }
+
+        const cents = Number.parseInt(digits, 10);
+        input.value = (cents / 100).toLocaleString("pt-BR", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+      }
 
       function refreshCreditFields() {
         const isCredit = (paymentMethod.value || "").toLowerCase().includes("crédito");
@@ -124,8 +139,11 @@
         installmentsField.style.display = paymentMode.value === "Parcelado" ? "block" : "none";
       }
 
+      amount.addEventListener("input", () => formatMoneyInput(amount));
+      amount.addEventListener("blur", () => formatMoneyInput(amount));
       paymentMethod.addEventListener("change", refreshCreditFields);
       paymentMode.addEventListener("change", refreshCreditFields);
+      formatMoneyInput(amount);
       refreshCreditFields();
     </script>
   </body>

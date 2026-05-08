@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>CRM - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">CRM</h2>
+            <div class="welcome-sub">Clientes cadastrados nas receitas e no CRM.</div>
+          </div>
+          <div class="actions">
+            <a href="/crm/clientes/novo" class="btn btn-primary">Novo Cliente</a>
+          </div>
+        </div>
+
+        <div class="content-card module-list-card">
+          <% if (!clients.length) { %>
+            <div class="empty">Nenhum cliente cadastrado.</div>
+          <% } else { %>
+            <ul class="list">
+              <% clients.forEach(function(client) { %>
+                <li class="item">
+                  <div>
+                    <div class="item-link"><%= client.fullName || "Cliente sem nome" %></div>
+                    <div class="item-sub">
+                      <%= client.document || "Sem documento" %>
+                      <% if (client.city || client.state) { %>
+                        · <%= [client.city, client.state].filter(Boolean).join(" - ") %>
+                      <% } %>
+                    </div>
+                  </div>
+                </li>
+              <% }) %>
+            </ul>
+          <% } %>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

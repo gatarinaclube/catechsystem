@@ -104,6 +104,10 @@
         Tático
       </div>
 
+      <% [
+        { href: "/crm", match: "/crm", icon: "🤝", label: "CRM", allowed: access && access.canAccessCrm },
+      ].forEach(renderMenuItem); %>
+
       <div
         style="
           margin: 12px 0 6px;

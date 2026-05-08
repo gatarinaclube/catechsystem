@@ -89,9 +89,19 @@ module.exports = (prisma) => {
     return { ownerId: req.session?.userId || null };
   }
 
+  function clientScope(req) {
+    if (canViewAllData(req.session?.userRole)) return {};
+    return {
+      OR: [
+        { ownerId: req.session?.userId || null },
+        { ownerId: null },
+      ],
+    };
+  }
+
   async function loadContext(req, revenue = null) {
     const clients = await prisma.revenueClient.findMany({
-      where: ownerScope(req),
+      where: clientScope(req),
       orderBy: { fullName: "asc" },
     });
     const kittens = await prisma.cat.findMany({
@@ -211,6 +221,9 @@ module.exports = (prisma) => {
 
   router.get("/receitas/clientes/novo", async (req, res) => {
     res.render("revenues/client-form", {
+      title: "Novo Cliente",
+      formAction: "/receitas/clientes/novo",
+      backPath: "/receitas",
       error: null,
       currentPath: "/receitas",
     });
@@ -238,6 +251,9 @@ module.exports = (prisma) => {
       res.redirect("/receitas");
     } catch (err) {
       res.status(400).render("revenues/client-form", {
+        title: "Novo Cliente",
+        formAction: "/receitas/clientes/novo",
+        backPath: "/receitas",
         error: err.message || "Erro ao salvar cliente.",
         currentPath: "/receitas",
       });

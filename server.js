@@ -39,6 +39,7 @@ const historyAdminRouterFactory = require("./modules/history-admin");
 const quickLaunchRouterFactory = require("./modules/quick-launch");
 const reportsRouterFactory = require("./modules/reports");
 const revenuesRouterFactory = require("./modules/revenues");
+const crmRouterFactory = require("./modules/crm");
 const {generateTitleHomologationPDF,} = require("./modules/pdf/titleHomologationPdf");
 const {generatePedigreeHomologationPDF,} = require("./modules/pdf/pedigreeHomologationPdf");
 const { generateCatteryRegistrationPDF } = require("./modules/pdf/catteryRegistrationPdf");
@@ -1253,6 +1254,9 @@ app.use(quickLaunchRouter);
 
 const revenuesRouter = revenuesRouterFactory(prisma);
 app.use(revenuesRouter);
+
+const crmRouter = crmRouterFactory(prisma, requireAuth, requirePermission);
+app.use(crmRouter);
 
 const reportsRouter = reportsRouterFactory(
   prisma,

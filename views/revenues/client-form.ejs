@@ -3,17 +3,17 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Novo Cliente</title>
+    <title><%= title || "Novo Cliente" %></title>
     <link rel="stylesheet" href="/css/theme.css" />
     <link rel="stylesheet" href="/css/quick-finance.css" />
   </head>
   <body>
     <main class="quick-shell">
       <header class="quick-header">
-        <h1 class="quick-title">Novo Cliente</h1>
+        <h1 class="quick-title"><%= title || "Novo Cliente" %></h1>
       </header>
 
-      <form class="quick-card" method="post" action="/receitas/clientes/novo">
+      <form class="quick-card" method="post" action="<%= formAction || '/receitas/clientes/novo' %>">
         <% if (error) { %><div class="message message-error"><%= error %></div><% } %>
 
         <div class="field">
@@ -79,7 +79,7 @@
         <button type="submit" class="btn">Salvar cliente</button>
       </form>
 
-      <a class="back-link" href="/receitas">Voltar</a>
+      <a class="back-link" href="<%= backPath || '/receitas' %>">Voltar</a>
     </main>
     <script>
       const states = [

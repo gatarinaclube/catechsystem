@@ -23,12 +23,23 @@ function todayForInput() {
 }
 
 function parseAmountToCents(value) {
-  const normalized = String(value || "")
-    .replace(/[^\d,.-]/g, "")
-    .replace(/\./g, "")
-    .replace(",", ".");
-  const number = Number(normalized);
-  return Number.isFinite(number) ? Math.round(number * 100) : null;
+  const raw = String(value || "").replace(/[^\d,.-]/g, "").trim();
+  if (!raw) return null;
+
+  const lastComma = raw.lastIndexOf(",");
+  const lastDot = raw.lastIndexOf(".");
+  const decimalIndex = Math.max(lastComma, lastDot);
+
+  if (decimalIndex >= 0) {
+    const integerPart = raw.slice(0, decimalIndex).replace(/\D/g, "");
+    const decimalPart = raw.slice(decimalIndex + 1).replace(/\D/g, "").slice(0, 2);
+    const centsText = `${integerPart || "0"}${decimalPart.padEnd(2, "0")}`;
+    const cents = Number.parseInt(centsText, 10);
+    return Number.isFinite(cents) ? cents : null;
+  }
+
+  const cents = Number.parseInt(raw.replace(/\D/g, ""), 10) * 100;
+  return Number.isFinite(cents) ? cents : null;
 }
 
 function formatAmount(cents) {
