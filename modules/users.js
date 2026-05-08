@@ -1,4 +1,5 @@
 // modules/users.js
+const crypto = require("crypto");
 const express = require("express");
 const { ROLES, getRoleLabel, normalizeRole, isAdminRole } = require("../utils/access");
 
@@ -22,6 +23,32 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const role = normalizeRole(req.session?.userRole);
     const isAdmin = isAdminRole(role);
     return { userId, role, isAdmin };
+  }
+
+  function buildAbsoluteUrl(req, path) {
+    const host = req.get("host");
+    const protocol = req.get("x-forwarded-proto") || req.protocol || "https";
+    return `${protocol}://${host}${path}`;
+  }
+
+  async function ensureExpensePublicToken(user) {
+    if (user.expensePublicToken) return user.expensePublicToken;
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const token = crypto.randomBytes(24).toString("hex");
+
+      try {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { expensePublicToken: token },
+        });
+        return token;
+      } catch (err) {
+        if (err.code !== "P2002") throw err;
+      }
+    }
+
+    throw new Error("Não foi possível gerar o link público de despesas.");
   }
 
   // --------- LISTA DE USUÁRIOS ---------
@@ -98,13 +125,16 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         where: { id: userId },
       });
 
-      const userDetail = await prisma.user.findUnique({
+      let userDetail = await prisma.user.findUnique({
         where: { id: targetId },
       });
 
       if (!userDetail) {
         return res.status(404).send("Usuário não encontrado.");
       }
+
+      const expensePublicToken = await ensureExpensePublicToken(userDetail);
+      userDetail = { ...userDetail, expensePublicToken };
 
       const logs = []; // por enquanto vazio
 
@@ -115,6 +145,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           role: normalizeRole(userDetail.role),
           roleLabel: getRoleLabel(userDetail.role),
         },
+        expensePublicLink: buildAbsoluteUrl(req, `/despesas/u/${expensePublicToken}`),
         logs,
         roleOptions,
         currentPath: req.path,

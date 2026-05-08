@@ -327,7 +327,7 @@ module.exports = (prisma) => {
     res.status(extra.status || 200).render("quick-launch/index", {
       ...options,
       expense: mapExpenseForForm(extra.expense),
-      formAction: extra.expense?.id ? `/despesas/${extra.expense.id}` : "/despesas",
+      formAction: extra.formAction || (extra.expense?.id ? `/despesas/${extra.expense.id}` : "/despesas"),
       success: extra.success || false,
       error: extra.error || null,
       homePath: req.session?.userId ? "/dashboard" : "/login",
@@ -335,8 +335,57 @@ module.exports = (prisma) => {
     });
   }
 
+  async function findPublicExpenseUser(token) {
+    const cleanToken = String(token || "").trim();
+    if (!/^[a-f0-9]{48}$/i.test(cleanToken)) return null;
+
+    return prisma.user.findFirst({
+      where: {
+        expensePublicToken: cleanToken,
+        approvalStatus: { not: "RESTRICOES" },
+      },
+      select: { id: true },
+    });
+  }
+
+  async function renderPublicExpenseForm(req, res, user, extra = {}) {
+    await renderExpenseForm(res, req, {
+      ...extra,
+      formAction: `/despesas/u/${req.params.token}`,
+    });
+  }
+
   router.get("/lancamento", (req, res) => res.redirect("/despesas"));
   router.get("/lancamento/opcoes", (req, res) => res.redirect("/despesas/opcoes"));
+
+  router.get("/despesas/u/:token", async (req, res) => {
+    const user = await findPublicExpenseUser(req.params.token);
+    if (!user) return res.status(404).send("Link de lançamento não encontrado.");
+
+    await renderPublicExpenseForm(req, res, user, { success: req.query.ok === "1" });
+  });
+
+  router.post("/despesas/u/:token", upload.single("receipt"), async (req, res) => {
+    const user = await findPublicExpenseUser(req.params.token);
+    if (!user) return res.status(404).send("Link de lançamento não encontrado.");
+
+    try {
+      const data = buildExpenseFormData(req.body, req.file);
+      await prisma.quickLaunchEntry.create({
+        data: {
+          ownerId: user.id,
+          ...data,
+        },
+      });
+      res.redirect(`/despesas/u/${req.params.token}?ok=1`);
+    } catch (err) {
+      await renderPublicExpenseForm(req, res, user, {
+        status: 400,
+        error: err.message || "Erro ao salvar despesa.",
+        expense: { ...req.body, amountCents: parseAmountToCents(req.body.amount) },
+      });
+    }
+  });
 
   router.get("/despesas", async (req, res) => {
     await renderExpenseForm(res, req, { success: req.query.ok === "1" });

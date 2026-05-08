@@ -39,6 +39,7 @@ model User {
   country  String?
   phones   String?
   email    String  @unique
+  expensePublicToken String? @unique
   cpf      String?
   password String
   role     UserRole @default(BASIC)

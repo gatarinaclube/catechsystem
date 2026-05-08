@@ -224,7 +224,7 @@ function renderExpensesPdf(res, rows, filters, totalLabel) {
   drawHeader(y);
   y += 20;
 
-  rows.forEach((row) => {
+  rows.forEach((row, index) => {
     const note = String(row.note || "").trim();
     const noteHeight = note
       ? doc.heightOfString(`Obs.: ${note}`, { width: 430 }) + 6
@@ -237,6 +237,13 @@ function renderExpensesPdf(res, rows, filters, totalLabel) {
       drawHeader(y);
       y += 20;
     }
+
+    if (index % 2 === 0) {
+      doc.rect(40, y - 4, 515, rowHeight).fill("#f9fafb");
+    }
+
+    doc.strokeColor("#e5e7eb").lineWidth(0.4);
+    doc.moveTo(40, y + rowHeight - 5).lineTo(555, y + rowHeight - 5).stroke();
 
     doc.font("Helvetica").fontSize(8).fillColor("#111827");
     doc.text(row.dateLabel, columns[0].x, y, { width: columns[0].width });

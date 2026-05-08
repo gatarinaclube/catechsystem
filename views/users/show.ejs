@@ -222,6 +222,21 @@
                   <%= new Date(userDetail.createdAt).toLocaleString('pt-BR') %>
                 </p>
               <% } %>
+
+              <div class="field" style="margin-top:14px;">
+                <label class="field-label" for="expensePublicLink">
+                  Link individual para lançamento de despesas
+                </label>
+                <input
+                  id="expensePublicLink"
+                  type="text"
+                  value="<%= expensePublicLink || '' %>"
+                  readonly
+                />
+                <small style="font-size:11px; color:var(--text-muted);">
+                  Este link pode ser usado sem login e registra as despesas diretamente para este usuário.
+                </small>
+              </div>
             </section>
 
             <!-- CONTROLE DE APROVAÇÃO -->
