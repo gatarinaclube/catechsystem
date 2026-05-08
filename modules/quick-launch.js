@@ -190,6 +190,12 @@ module.exports = (prisma) => {
     }
   }
 
+  function mergeOptionNames(defaults, rows) {
+    return Array.from(
+      new Set([...defaults, ...rows.map((row) => row.name).filter(Boolean)])
+    ).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }
+
   function selectedOwnerScope(req) {
     return { ownerId: optionOwnerId(req) };
   }
@@ -220,7 +226,6 @@ module.exports = (prisma) => {
   }
 
   async function loadOptions(req) {
-    await ensureDefaultOptions(req);
     const rows = await prisma.quickLaunchOption.findMany({
       where: selectedOwnerScope(req),
       select: { id: true, type: true, name: true, ownerId: true },
@@ -228,15 +233,22 @@ module.exports = (prisma) => {
     });
 
     return {
-      categories: rows.filter((row) => row.type === "CATEGORY").map((row) => row.name),
-      suppliers: rows.filter((row) => row.type === "SUPPLIER").map((row) => row.name),
-      paymentMethods: rows.filter((row) => row.type === "PAYMENT").map((row) => row.name),
+      categories: mergeOptionNames(
+        DEFAULT_CATEGORIES,
+        rows.filter((row) => row.type === "CATEGORY")
+      ),
+      suppliers: mergeOptionNames(
+        DEFAULT_SUPPLIERS,
+        rows.filter((row) => row.type === "SUPPLIER")
+      ),
+      paymentMethods: mergeOptionNames(
+        DEFAULT_PAYMENT_METHODS,
+        rows.filter((row) => row.type === "PAYMENT")
+      ),
     };
   }
 
   async function loadManagedOptions(req, selectedType) {
-    await ensureDefaultOptions(req);
-
     const options = await prisma.quickLaunchOption.findMany({
       where: {
         ...selectedOwnerScope(req),
