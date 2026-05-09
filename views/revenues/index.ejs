@@ -68,11 +68,11 @@
         <div class="quick-grid">
           <div class="field">
             <label for="catAmount">Valor do Gato</label>
-            <input id="catAmount" name="catAmount" inputmode="decimal" value="<%= revenue.catAmount || '' %>" required />
+            <input id="catAmount" class="money-input" name="catAmount" inputmode="decimal" placeholder="0,00" value="<%= revenue.catAmount || '' %>" required />
           </div>
           <div class="field">
             <label for="transportAmount">Valor do Transporte</label>
-            <input id="transportAmount" name="transportAmount" inputmode="decimal" value="<%= revenue.transportAmount || '' %>" />
+            <input id="transportAmount" class="money-input" name="transportAmount" inputmode="decimal" placeholder="0,00" value="<%= revenue.transportAmount || '' %>" />
           </div>
         </div>
 
@@ -94,12 +94,18 @@
         <div id="parcelFields"></div>
 
         <div class="field">
-          <label for="paymentAccount">Conta de pagamento</label>
-          <select id="paymentAccount" name="paymentAccount" required>
+          <label for="paymentAccount">Conta de Pagamento</label>
+          <select id="paymentAccount" name="paymentAccount">
+            <option value="" <%= !revenue.paymentAccount ? 'selected' : '' %>>Selecione...</option>
             <% paymentAccounts.forEach(function(account) { %>
               <option value="<%= account %>" <%= revenue.paymentAccount === account ? 'selected' : '' %>><%= account %></option>
             <% }) %>
           </select>
+        </div>
+
+        <div class="field">
+          <label for="note">Observação</label>
+          <textarea id="note" name="note" placeholder="Observações sobre a venda ou pagamento"><%= revenue.note || '' %></textarea>
         </div>
 
         <button type="submit" class="btn">Salvar receita</button>
@@ -107,7 +113,7 @@
 
       <footer class="quick-footer">
         <a class="quick-options-link" href="<%= homePath %>" title="Página inicial">⌂</a>
-        <a class="quick-options-link" href="/receitas/contas" title="Contas de pagamento">⚙</a>
+        <a class="quick-options-link" href="/despesas/opcoes?type=PAYMENT" title="Contas de pagamento">⚙</a>
         <a class="quick-options-link" href="/receitas/lista" title="Receitas registradas">☰</a>
       </footer>
     </main>
@@ -122,8 +128,23 @@
       const kittenLabel = document.getElementById("kittenLabel");
       const lockFirstParcelDate = <%= revenue.id ? 'true' : 'false' %>;
 
+      function formatMoneyInput(input) {
+        const digits = String(input.value || "").replace(/\D/g, "");
+        if (!digits) {
+          input.value = "";
+          return;
+        }
+
+        const cents = Number.parseInt(digits, 10);
+        input.value = (cents / 100).toLocaleString("pt-BR", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+      }
+
       function moneyToNumber(value) {
-        return Number(String(value || "").replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", ".")) || 0;
+        const digits = String(value || "").replace(/\D/g, "");
+        return digits ? Number.parseInt(digits, 10) / 100 : 0;
       }
 
       function numberToMoney(value) {
@@ -146,7 +167,7 @@
               <div class="quick-grid">
                 <div class="field">
                   <label>${amountLabel}</label>
-                  <input name="parcel${i}Amount" inputmode="decimal" value="${saved.amountCents ? numberToMoney(saved.amountCents / 100) : ""}">
+                  <input class="money-input" name="parcel${i}Amount" inputmode="decimal" placeholder="0,00" value="${saved.amountCents ? numberToMoney(saved.amountCents / 100) : ""}">
                 </div>
                 <div class="field">
                   <label>${dateLabel}</label>
@@ -165,6 +186,7 @@
             </div>
           `);
         }
+        parcelFields.querySelectorAll(".money-input").forEach(formatMoneyInput);
       }
 
       function syncKittenLabel() {
@@ -172,10 +194,22 @@
         if (option) kittenLabel.value = option.dataset.label || option.textContent.trim();
       }
 
-      catAmount.addEventListener("input", refreshTotal);
-      transportAmount.addEventListener("input", refreshTotal);
+      [catAmount, transportAmount].forEach((input) => {
+        input.addEventListener("input", () => {
+          formatMoneyInput(input);
+          refreshTotal();
+        });
+        input.addEventListener("blur", () => {
+          formatMoneyInput(input);
+          refreshTotal();
+        });
+      });
+      parcelFields.addEventListener("input", (event) => {
+        if (event.target.classList.contains("money-input")) formatMoneyInput(event.target);
+      });
       installments.addEventListener("change", renderParcels);
       kittenSelect.addEventListener("change", syncKittenLabel);
+      [catAmount, transportAmount].forEach(formatMoneyInput);
       refreshTotal();
       renderParcels();
       syncKittenLabel();

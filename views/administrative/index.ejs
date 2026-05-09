@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Administrativo - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Administrativo</h2>
+            <div class="welcome-sub">Gestão financeira e administrativa do gatil.</div>
+          </div>
+          <div class="actions">
+            <a href="/dashboard" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <div class="content-card module-list-card">
+          <ul class="list">
+            <li class="item">
+              <div>
+                <a class="item-link" href="/administrativo/contas">Contas</a>
+                <div class="item-sub">Saldo, entradas, saídas e capital social por conta.</div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

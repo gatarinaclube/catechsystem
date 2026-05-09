@@ -40,6 +40,7 @@ const quickLaunchRouterFactory = require("./modules/quick-launch");
 const reportsRouterFactory = require("./modules/reports");
 const revenuesRouterFactory = require("./modules/revenues");
 const crmRouterFactory = require("./modules/crm");
+const administrativeRouterFactory = require("./modules/administrative");
 const {generateTitleHomologationPDF,} = require("./modules/pdf/titleHomologationPdf");
 const {generatePedigreeHomologationPDF,} = require("./modules/pdf/pedigreeHomologationPdf");
 const { generateCatteryRegistrationPDF } = require("./modules/pdf/catteryRegistrationPdf");
@@ -1001,7 +1002,7 @@ const EXPENSE_OPTION_TYPES = ["CATEGORY", "SUPPLIER", "PAYMENT"];
 const EXPENSE_OPTION_LABELS = {
   CATEGORY: "Categoria",
   SUPPLIER: "Fornecedor",
-  PAYMENT: "Forma de Pagamento",
+  PAYMENT: "Conta de Pagamento",
 };
 const EXPENSE_OPTION_FIELDS = {
   CATEGORY: "category",
@@ -1053,12 +1054,21 @@ async function findExpenseOptionByName(type, name, excludeId = null) {
 
 async function getExpenseOptionUsage(option) {
   const field = expenseOptionFieldSql(option.type);
-  const rows = await prisma.$queryRaw`
+  const expenseRows = await prisma.$queryRaw`
     SELECT COUNT(*)::integer AS "count"
     FROM "QuickLaunchEntry"
     WHERE ${field} = ${option.name}
   `;
-  return Number(rows[0]?.count || 0);
+  const expenseCount = Number(expenseRows[0]?.count || 0);
+
+  if (option.type !== "PAYMENT") return expenseCount;
+
+  const revenueRows = await prisma.$queryRaw`
+    SELECT COUNT(*)::integer AS "count"
+    FROM "RevenueEntry"
+    WHERE "paymentAccount" = ${option.name}
+  `;
+  return expenseCount + Number(revenueRows[0]?.count || 0);
 }
 
 async function renderExpenseOptionsDirect(req, res, extra = {}) {
@@ -1107,14 +1117,14 @@ async function renderExpenseOptionsDirect(req, res, extra = {}) {
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Opções - Despesas</title>
+        <title>Opções Financeiras</title>
         <link rel="stylesheet" href="/css/theme.css" />
         <link rel="stylesheet" href="/css/quick-finance.css" />
       </head>
       <body>
         <main class="quick-shell">
           <header class="quick-header">
-            <h1 class="quick-title">Opções de Despesas</h1>
+            <h1 class="quick-title">Opções Financeiras</h1>
           </header>
           <form class="quick-card" method="post" action="/despesas/opcoes">
             ${extra.success ? '<div class="message message-success">Opção salva.</div>' : ""}
@@ -1206,12 +1216,19 @@ app.post("/despesas/opcoes/:id/update", async (req, res) => {
         WHERE "id" = ${id}
           AND "ownerId" IS NULL
       `;
-      await tx.$executeRaw`
-        UPDATE "QuickLaunchEntry"
-        SET ${field} = ${name}
-        WHERE ${field} = ${option.name}
-      `;
-    });
+        await tx.$executeRaw`
+          UPDATE "QuickLaunchEntry"
+          SET ${field} = ${name}
+          WHERE ${field} = ${option.name}
+        `;
+        if (option.type === "PAYMENT") {
+          await tx.$executeRaw`
+            UPDATE "RevenueEntry"
+            SET "paymentAccount" = ${name}
+            WHERE "paymentAccount" = ${option.name}
+          `;
+        }
+      });
     res.redirect(`/despesas/opcoes?type=${option.type}&ok=1`);
   } catch (err) {
     console.error("Erro ao atualizar opção de despesa:", err);
@@ -1257,6 +1274,13 @@ app.use(revenuesRouter);
 
 const crmRouter = crmRouterFactory(prisma, requireAuth, requirePermission);
 app.use(crmRouter);
+
+const administrativeRouter = administrativeRouterFactory(
+  prisma,
+  requireAuth,
+  requirePermission
+);
+app.use(administrativeRouter);
 
 const reportsRouter = reportsRouterFactory(
   prisma,

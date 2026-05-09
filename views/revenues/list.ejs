@@ -23,14 +23,20 @@
 
       <div class="quick-card">
         <% if (!revenues.length) { %>
-          <div class="empty">Nenhuma receita registrada neste mês.</div>
+          <div class="empty">Nenhum pagamento registrado neste mês.</div>
         <% } else { %>
           <ul class="quick-list">
             <% revenues.forEach(function(revenue) { %>
               <li>
                 <a href="/receitas/<%= revenue.id %>">
-                  <strong><%= revenue.kittenLabel || '-' %></strong>
-                  <span><%= revenue.client ? revenue.client.fullName : '-' %></span>
+                  <span class="quick-expense-left">
+                    <strong><%= revenue.dateLabel %></strong>
+                    <span><%= revenue.amountLabel %></span>
+                  </span>
+                  <span class="quick-expense-supplier">
+                    <strong><%= revenue.kittenLabel || '-' %></strong>
+                    <span><%= revenue.clientLabel || '-' %> · Parcela <%= revenue.parcelLabel || '-' %></span>
+                  </span>
                 </a>
               </li>
             <% }) %>

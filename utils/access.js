@@ -47,6 +47,7 @@ const PERMISSIONS = {
   "admin.crm": [ROLES.ADMIN, ROLES.PREMIUM],
   "admin.sales": [ROLES.ADMIN, ROLES.PREMIUM],
   "admin.reports": [ROLES.ADMIN, ROLES.PREMIUM],
+  "admin.administrative": [ROLES.ADMIN, ROLES.PREMIUM],
 };
 
 function normalizeRole(role) {
@@ -104,6 +105,7 @@ function buildAccessContext(role) {
     canAccessCrm: userCan(normalizedRole, "admin.crm"),
     canAccessSales: userCan(normalizedRole, "admin.sales"),
     canAccessReports: userCan(normalizedRole, "admin.reports"),
+    canAccessAdministrative: userCan(normalizedRole, "admin.administrative"),
     canUseLitterService: userCan(normalizedRole, "service.litter"),
     canUseTransferService: userCan(normalizedRole, "service.transfer"),
     canUseSecondCopyService: userCan(normalizedRole, "service.secondCopy"),

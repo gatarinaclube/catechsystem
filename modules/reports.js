@@ -105,6 +105,7 @@ function buildExpenseFilters(query) {
     startDateInput: formatDateInput(startDate),
     endDateInput: formatDateInput(endDate),
     paymentMethod,
+    account: String(query.account || "").trim(),
   };
 }
 
@@ -130,6 +131,10 @@ function buildExpenseWhere(req, filters) {
     where.paymentMethod = { contains: keyword, mode: "insensitive" };
   }
 
+  if (filters.account) {
+    where.paymentMethod = filters.account;
+  }
+
   return where;
 }
 
@@ -147,6 +152,10 @@ function buildRevenueWhere(req, filters) {
     where.paymentAccount = { contains: keyword, mode: "insensitive" };
   }
 
+  if (filters.account) {
+    where.paymentAccount = filters.account;
+  }
+
   return where;
 }
 
@@ -157,6 +166,7 @@ function buildQueryString(filters, forcePdf = false) {
     startDate: filters.startDateInput,
     endDate: filters.endDateInput,
     paymentMethod: filters.paymentMethod,
+    account: filters.account || "",
   });
 
   if (forcePdf) {
@@ -201,6 +211,7 @@ function mapRevenueRows(revenues, filters) {
 
       const paidTime = paidDate.getTime();
       if (paidTime < startTime || paidTime >= endTime) return;
+      if (filters.account && revenue.paymentAccount !== filters.account) return;
 
       rows.push({
         ...revenue,
@@ -221,6 +232,50 @@ function mapRevenueRows(revenues, filters) {
   });
 }
 
+function mapCashFlowRows(expenses, revenueRows) {
+  const expenseRows = mapExpenseRows(expenses).map((expense) => ({
+    id: `expense-${expense.id}`,
+    dateTime: new Date(expense.competenceDate).getTime(),
+    dateLabel: expense.dateLabel,
+    typeLabel: "Saída",
+    account: expense.paymentMethod || "-",
+    description: [expense.category, expense.supplier].filter(Boolean).join(" · ") || "Despesa",
+    note: expense.note || "",
+    amountCents: -Number(expense.amountCents || 0),
+    amountLabel: `- ${formatCurrency(expense.amountCents)}`,
+  }));
+
+  const incomeRows = revenueRows.map((revenue) => ({
+    id: `revenue-${revenue.id}-${revenue.parcelNumber || ""}`,
+    dateTime: revenue.paidDateTime,
+    dateLabel: revenue.dateLabel,
+    typeLabel: "Entrada",
+    account: revenue.paymentAccount || "-",
+    description: [kittenNameOnly(revenue.kittenLabel), revenue.clientLabel].filter(Boolean).join(" · ") || "Receita",
+    note: revenue.note || "",
+    amountCents: Number(revenue.amountCents || 0),
+    amountLabel: formatCurrency(revenue.amountCents),
+  }));
+
+  return [...incomeRows, ...expenseRows].sort((a, b) => {
+    const dateCompare = b.dateTime - a.dateTime;
+    return dateCompare || String(b.id).localeCompare(String(a.id));
+  });
+}
+
+async function loadAccountOptions(prisma) {
+  const rows = await prisma.quickLaunchOption.findMany({
+    where: { type: "PAYMENT", disabledAt: null },
+    orderBy: { name: "asc" },
+    select: { name: true },
+  });
+  const names = Array.from(new Set(rows.map((row) => row.name).filter(Boolean)))
+    .sort((a, b) => a.localeCompare(b, "pt-BR"));
+  return [{ value: "", label: "Todas" }].concat(
+    names.map((name) => ({ value: name, label: name }))
+  );
+}
+
 function renderExpensesPdf(res, rows, filters, totalLabel) {
   const doc = new PDFDocument({ margin: 40, size: "A4" });
   const fileName = `relatorio-despesas-${filters.startDateInput}-${filters.endDateInput}.pdf`;
@@ -234,7 +289,7 @@ function renderExpensesPdf(res, rows, filters, totalLabel) {
   doc.font("Helvetica").fontSize(10).text(
     `Período: ${formatDateOnlyLabel(filters.startDate)} a ${formatDateOnlyLabel(filters.endDate)}`
   );
-  doc.text(`Forma de pagamento: ${paymentFilterLabel(filters.paymentMethod)}`);
+  doc.text(`Tipo: ${paymentFilterLabel(filters.paymentMethod)} | Conta: ${filters.account || "Todas"}`);
   doc.text(`Total: ${totalLabel}`);
   doc.moveDown(1);
 
@@ -242,7 +297,7 @@ function renderExpensesPdf(res, rows, filters, totalLabel) {
     { label: "Data", x: 40, width: 62 },
     { label: "Categoria", x: 108, width: 120 },
     { label: "Fornecedor", x: 232, width: 112 },
-    { label: "Pagamento", x: 348, width: 95 },
+    { label: "Conta", x: 348, width: 95 },
     { label: "Valor", x: 447, width: 80 },
   ];
 
@@ -318,18 +373,19 @@ function renderRevenuesPdf(res, rows, filters, totalLabel) {
   doc.font("Helvetica-Bold").fontSize(18).text("Relatório de Receitas");
   doc.moveDown(0.4);
   doc.font("Helvetica").fontSize(10).text(
-    `Período: ${formatDateLabel(filters.startDate)} a ${formatDateLabel(filters.endDate)}`
+    `Período: ${formatDateOnlyLabel(filters.startDate)} a ${formatDateOnlyLabel(filters.endDate)}`
   );
-  doc.text(`Forma de pagamento: ${paymentFilterLabel(filters.paymentMethod)}`);
+  doc.text(`Tipo: ${paymentFilterLabel(filters.paymentMethod)} | Conta: ${filters.account || "Todas"}`);
   doc.text(`Total: ${totalLabel}`);
   doc.moveDown(1);
 
   const columns = [
     { label: "Data", x: 40, width: 62 },
-    { label: "Filhote", x: 108, width: 118 },
-    { label: "Parcela", x: 230, width: 46 },
-    { label: "Cliente", x: 280, width: 104 },
-    { label: "Conta", x: 388, width: 76 },
+    { label: "Filhote", x: 108, width: 95 },
+    { label: "N da Nota", x: 207, width: 52 },
+    { label: "Parcela", x: 263, width: 42 },
+    { label: "Cliente", x: 309, width: 85 },
+    { label: "Conta", x: 398, width: 66 },
     { label: "Valor", x: 468, width: 59 },
   ];
 
@@ -344,7 +400,11 @@ function renderRevenuesPdf(res, rows, filters, totalLabel) {
   y += 20;
 
   rows.forEach((row, index) => {
-    const rowHeight = 22;
+    const note = String(row.note || "").trim();
+    const noteHeight = note
+      ? doc.heightOfString(`Obs.: ${note}`, { width: 419 }) + 6
+      : 0;
+    const rowHeight = 22 + noteHeight;
 
     if (y + rowHeight > 735) {
       doc.addPage();
@@ -363,14 +423,95 @@ function renderRevenuesPdf(res, rows, filters, totalLabel) {
     doc.font("Helvetica").fontSize(8).fillColor("#111827");
     doc.text(row.dateLabel, columns[0].x, y, { width: columns[0].width });
     doc.text(kittenNameOnly(row.kittenLabel), columns[1].x, y, { width: columns[1].width });
-    doc.text(row.parcelLabel || "-", columns[2].x, y, { width: columns[2].width });
-    doc.text(row.clientLabel, columns[3].x, y, { width: columns[3].width });
-    doc.text(row.paymentAccount || "-", columns[4].x, y, { width: columns[4].width });
-    doc.text(row.amountLabel, columns[5].x, y, { width: columns[5].width, align: "right" });
+    doc.text(row.invoiceNumber || "", columns[2].x, y, { width: columns[2].width });
+    doc.text(row.parcelLabel || "-", columns[3].x, y, { width: columns[3].width });
+    doc.text(row.clientLabel, columns[4].x, y, { width: columns[4].width });
+    doc.text(row.paymentAccount || "-", columns[5].x, y, { width: columns[5].width });
+    doc.text(row.amountLabel, columns[6].x, y, { width: columns[6].width, align: "right" });
+
+    if (note) {
+      doc
+        .font("Helvetica")
+        .fontSize(7)
+        .fillColor("#6b7280")
+        .text(`Obs.: ${note}`, columns[1].x, y + 11, { width: 419 });
+    }
+
     y += rowHeight;
   });
 
   if (!rows.length) doc.font("Helvetica").fontSize(10).text("Nenhuma receita encontrada.", 40, y);
+  doc.end();
+}
+
+function renderCashFlowPdf(res, rows, filters, totals) {
+  const doc = new PDFDocument({ margin: 40, size: "A4" });
+  const fileName = `relatorio-fluxo-caixa-${filters.startDateInput}-${filters.endDateInput}.pdf`;
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+  doc.pipe(res);
+
+  doc.font("Helvetica-Bold").fontSize(18).text("Relatório de Fluxo de Caixa");
+  doc.moveDown(0.4);
+  doc.font("Helvetica").fontSize(10).text(
+    `Período: ${formatDateOnlyLabel(filters.startDate)} a ${formatDateOnlyLabel(filters.endDate)}`
+  );
+  doc.text(`Conta: ${filters.account || "Todas"}`);
+  doc.text(`Entradas: ${totals.incomeLabel} | Saídas: ${totals.expenseLabel} | Saldo: ${totals.balanceLabel}`);
+  doc.moveDown(1);
+
+  const columns = [
+    { label: "Data", x: 40, width: 58 },
+    { label: "Tipo", x: 102, width: 54 },
+    { label: "Conta", x: 160, width: 95 },
+    { label: "Descrição", x: 259, width: 176 },
+    { label: "Valor", x: 439, width: 88 },
+  ];
+
+  function drawHeader(y) {
+    doc.font("Helvetica-Bold").fontSize(8);
+    columns.forEach((column) => doc.text(column.label, column.x, y, { width: column.width }));
+    doc.moveTo(40, y + 13).lineTo(555, y + 13).strokeColor("#d1d5db").stroke();
+  }
+
+  let y = doc.y;
+  drawHeader(y);
+  y += 20;
+
+  rows.forEach((row, index) => {
+    const note = String(row.note || "").trim();
+    const noteHeight = note ? doc.heightOfString(`Obs.: ${note}`, { width: 390 }) + 6 : 0;
+    const rowHeight = 22 + noteHeight;
+
+    if (y + rowHeight > 735) {
+      doc.addPage();
+      y = 40;
+      drawHeader(y);
+      y += 20;
+    }
+
+    if (index % 2 === 0) doc.rect(40, y - 4, 515, rowHeight).fill("#f9fafb");
+
+    doc.strokeColor("#e5e7eb").lineWidth(0.4);
+    doc.moveTo(40, y + rowHeight - 5).lineTo(555, y + rowHeight - 5).stroke();
+
+    doc.font("Helvetica").fontSize(8).fillColor("#111827");
+    doc.text(row.dateLabel, columns[0].x, y, { width: columns[0].width });
+    doc.text(row.typeLabel, columns[1].x, y, { width: columns[1].width });
+    doc.text(row.account || "-", columns[2].x, y, { width: columns[2].width });
+    doc.text(row.description || "-", columns[3].x, y, { width: columns[3].width });
+    doc.text(row.amountLabel, columns[4].x, y, { width: columns[4].width, align: "right" });
+
+    if (note) {
+      doc.font("Helvetica").fontSize(7).fillColor("#6b7280")
+        .text(`Obs.: ${note}`, columns[3].x, y + 11, { width: 390 });
+    }
+
+    y += rowHeight;
+  });
+
+  if (!rows.length) doc.font("Helvetica").fontSize(10).text("Nenhum lançamento encontrado.", 40, y);
   doc.end();
 }
 
@@ -411,6 +552,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         rows,
         filters,
         paymentFilters: PAYMENT_FILTERS,
+        accountOptions: await loadAccountOptions(prisma),
         totalLabel: formatCurrency(totalCents),
         pdfQuery: buildQueryString(filters, true),
       });
@@ -460,6 +602,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         rows,
         filters,
         paymentFilters: PAYMENT_FILTERS,
+        accountOptions: await loadAccountOptions(prisma),
         totalLabel: formatCurrency(totalCents),
         pdfQuery: buildQueryString(filters, true),
       });
@@ -484,6 +627,79 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       );
 
       renderRevenuesPdf(res, rows, filters, formatCurrency(totalCents));
+    }
+  );
+
+  router.get(
+    "/reports/cash-flow",
+    requireAuth,
+    requirePermission("admin.reports"),
+    async (req, res) => {
+      const filters = buildExpenseFilters(req.query);
+      const expenses = await prisma.quickLaunchEntry.findMany({
+        where: buildExpenseWhere(req, filters),
+        orderBy: [{ competenceDate: "desc" }, { createdAt: "desc" }],
+      });
+      const revenues = await prisma.revenueEntry.findMany({
+        where: buildRevenueWhere(req, filters),
+        include: { client: true },
+        orderBy: [{ createdAt: "desc" }],
+      });
+      const revenueRows = mapRevenueRows(revenues, filters);
+      const rows = mapCashFlowRows(expenses, revenueRows);
+      const incomeCents = rows
+        .filter((row) => row.amountCents > 0)
+        .reduce((sum, row) => sum + row.amountCents, 0);
+      const expenseCents = rows
+        .filter((row) => row.amountCents < 0)
+        .reduce((sum, row) => sum + Math.abs(row.amountCents), 0);
+      const balanceCents = incomeCents - expenseCents;
+
+      res.render("reports/cash-flow", {
+        user: req.user,
+        currentPath: "/reports",
+        rows,
+        filters,
+        paymentFilters: PAYMENT_FILTERS,
+        accountOptions: await loadAccountOptions(prisma),
+        incomeLabel: formatCurrency(incomeCents),
+        expenseLabel: formatCurrency(expenseCents),
+        balanceLabel: formatCurrency(balanceCents),
+        pdfQuery: buildQueryString(filters, true),
+      });
+    }
+  );
+
+  router.get(
+    "/reports/cash-flow/pdf",
+    requireAuth,
+    requirePermission("admin.reports"),
+    async (req, res) => {
+      const filters = buildExpenseFilters(req.query);
+      const expenses = await prisma.quickLaunchEntry.findMany({
+        where: buildExpenseWhere(req, filters),
+        orderBy: [{ competenceDate: "desc" }, { createdAt: "desc" }],
+      });
+      const revenues = await prisma.revenueEntry.findMany({
+        where: buildRevenueWhere(req, filters),
+        include: { client: true },
+        orderBy: [{ createdAt: "desc" }],
+      });
+      const revenueRows = mapRevenueRows(revenues, filters);
+      const rows = mapCashFlowRows(expenses, revenueRows);
+      const incomeCents = rows
+        .filter((row) => row.amountCents > 0)
+        .reduce((sum, row) => sum + row.amountCents, 0);
+      const expenseCents = rows
+        .filter((row) => row.amountCents < 0)
+        .reduce((sum, row) => sum + Math.abs(row.amountCents), 0);
+      const balanceCents = incomeCents - expenseCents;
+
+      renderCashFlowPdf(res, rows, filters, {
+        incomeLabel: formatCurrency(incomeCents),
+        expenseLabel: formatCurrency(expenseCents),
+        balanceLabel: formatCurrency(balanceCents),
+      });
     }
   );
 

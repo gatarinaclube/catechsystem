@@ -103,10 +103,18 @@
               <input id="endDate" name="endDate" type="date" value="<%= filters.endDateInput %>" />
             </div>
             <div class="field">
-              <label class="field-label" for="paymentMethod">Pagamento</label>
+              <label class="field-label" for="paymentMethod">Tipo</label>
               <select id="paymentMethod" name="paymentMethod">
                 <% paymentFilters.forEach(function(option) { %>
                   <option value="<%= option.value %>" <%= filters.paymentMethod === option.value ? 'selected' : '' %>><%= option.label %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label" for="account">Conta</label>
+              <select id="account" name="account">
+                <% accountOptions.forEach(function(option) { %>
+                  <option value="<%= option.value %>" <%= filters.account === option.value ? 'selected' : '' %>><%= option.label %></option>
                 <% }) %>
               </select>
             </div>
@@ -134,7 +142,7 @@
                     <th>Data</th>
                     <th>Categoria</th>
                     <th>Fornecedor</th>
-                    <th>Pagamento</th>
+                    <th>Conta</th>
                     <th>Observação</th>
                     <th class="amount">Valor</th>
                   </tr>

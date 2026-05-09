@@ -65,6 +65,7 @@ model User {
   quickLaunchOptions QuickLaunchOption[]
   revenueClients RevenueClient[]
   revenueEntries RevenueEntry[]
+  financialAccountSettings FinancialAccountSetting[]
   passwordResetTokens PasswordResetToken[]
 }
 
@@ -128,6 +129,21 @@ model QuickLaunchOption {
   @@unique([type, ownerId, name])
 }
 
+model FinancialAccountSetting {
+  id                   Int      @id @default(autoincrement())
+  owner                User?    @relation(fields: [ownerId], references: [id])
+  ownerId              Int?
+  accountName          String
+  initialBalanceCents  Int      @default(0)
+  capitalSocialEnabled Boolean  @default(false)
+  capitalSocialCents   Int      @default(0)
+  capitalEntriesJson   String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([ownerId, accountName])
+}
+
 model RevenueClient {
   id           Int      @id @default(autoincrement())
   owner        User?    @relation(fields: [ownerId], references: [id])
@@ -164,6 +180,7 @@ model RevenueEntry {
   totalAmountCents   Int      @default(0)
   installments       Int      @default(1)
   paymentAccount     String
+  note               String?
   parcelDataJson     String?
   createdAt          DateTime @default(now())
 }

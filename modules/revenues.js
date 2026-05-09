@@ -1,11 +1,7 @@
 const express = require("express");
 const { canViewAllData } = require("../utils/access");
 
-const PAYMENT_ACCOUNTS = [
-  "PIX - Sicoob",
-  "PIX - BB Edevar",
-  "PIX - BB Maíra",
-];
+const DEFAULT_PAYMENT_ACCOUNT = "";
 
 function todayForInput() {
   return new Date().toLocaleDateString("en-CA", {
@@ -14,12 +10,23 @@ function todayForInput() {
 }
 
 function parseAmountToCents(value) {
-  const normalized = String(value || "")
-    .replace(/[^\d,.-]/g, "")
-    .replace(/\./g, "")
-    .replace(",", ".");
-  const number = Number(normalized);
-  return Number.isFinite(number) ? Math.round(number * 100) : 0;
+  const raw = String(value || "").replace(/[^\d,.-]/g, "").trim();
+  if (!raw) return 0;
+
+  const lastComma = raw.lastIndexOf(",");
+  const lastDot = raw.lastIndexOf(".");
+  const decimalIndex = Math.max(lastComma, lastDot);
+
+  if (decimalIndex >= 0) {
+    const integerPart = raw.slice(0, decimalIndex).replace(/\D/g, "");
+    const decimalPart = raw.slice(decimalIndex + 1).replace(/\D/g, "").slice(0, 2);
+    const centsText = `${integerPart || "0"}${decimalPart.padEnd(2, "0")}`;
+    const cents = Number.parseInt(centsText, 10);
+    return Number.isFinite(cents) ? cents : 0;
+  }
+
+  const cents = Number.parseInt(raw.replace(/\D/g, ""), 10) * 100;
+  return Number.isFinite(cents) ? cents : 0;
 }
 
 function formatAmount(cents) {
@@ -39,6 +46,12 @@ function parseDateInput(value, allowBlank = false) {
 
 function formatDateInput(date) {
   return date ? new Date(date).toISOString().slice(0, 10) : "";
+}
+
+function formatDateOnlyLabel(date) {
+  return date
+    ? new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(new Date(date))
+    : "-";
 }
 
 function monthRange(monthValue) {
@@ -81,7 +94,8 @@ function mapRevenueForForm(revenue = null) {
       transportAmount: "",
       totalAmount: "",
       installments: "1",
-      paymentAccount: PAYMENT_ACCOUNTS[0],
+      paymentAccount: DEFAULT_PAYMENT_ACCOUNT,
+      note: "",
       parcels: [],
     };
   }
@@ -94,6 +108,37 @@ function mapRevenueForForm(revenue = null) {
     totalAmount: formatAmount(revenue.totalAmountCents),
     parcels: safeJsonParse(revenue.parcelDataJson),
   };
+}
+
+function mapPaidRevenueRows(revenues, start, end) {
+  const startTime = start.getTime();
+  const endTime = end.getTime();
+  const rows = [];
+
+  revenues.forEach((revenue) => {
+    safeJsonParse(revenue.parcelDataJson).forEach((parcel) => {
+      if (!parcel.paid || !parcel.date) return;
+      const paidDate = parseDateInput(parcel.date, true);
+      if (!paidDate) return;
+      const paidTime = paidDate.getTime();
+      if (paidTime < startTime || paidTime >= endTime) return;
+
+      rows.push({
+        id: revenue.id,
+        paidDateTime: paidTime,
+        dateLabel: formatDateOnlyLabel(paidDate),
+        kittenLabel: revenue.kittenLabel || "-",
+        clientLabel: revenue.client?.fullName || "-",
+        amountLabel: formatAmount(parcel.amountCents || 0),
+        parcelLabel: `${parcel.number || "-"} / ${revenue.installments || "-"}`,
+      });
+    });
+  });
+
+  return rows.sort((a, b) => {
+    const dateCompare = b.paidDateTime - a.paidDateTime;
+    return dateCompare || Number(b.id) - Number(a.id);
+  });
 }
 
 module.exports = (prisma) => {
@@ -130,13 +175,12 @@ module.exports = (prisma) => {
       include: { litterKitten: true },
       orderBy: [{ kittenNumber: "asc" }, { name: "asc" }],
     });
-    const customAccounts = await prisma.quickLaunchOption.findMany({
-      where: { ...ownerScope(req), type: "REVENUE_ACCOUNT" },
+    const accounts = await prisma.quickLaunchOption.findMany({
+      where: { type: "PAYMENT", disabledAt: null },
       orderBy: { name: "asc" },
     });
-    const paymentAccounts = Array.from(
-      new Set([...PAYMENT_ACCOUNTS, ...customAccounts.map((item) => item.name)])
-    );
+    const paymentAccounts = Array.from(new Set(accounts.map((item) => item.name).filter(Boolean)))
+      .sort((a, b) => a.localeCompare(b, "pt-BR"));
 
     return {
       clients,
@@ -185,7 +229,8 @@ module.exports = (prisma) => {
       transportAmountCents,
       totalAmountCents,
       installments,
-      paymentAccount: body.paymentAccount || PAYMENT_ACCOUNTS[0],
+      paymentAccount: body.paymentAccount || DEFAULT_PAYMENT_ACCOUNT,
+      note: body.note || null,
       parcelDataJson: JSON.stringify(parcels),
     };
   }
@@ -237,24 +282,17 @@ module.exports = (prisma) => {
   router.get("/receitas/lista", async (req, res) => {
     const { month, start, end } = monthRange(req.query.month);
     const { page, pageSize, skip } = paginationData(req.query);
-    const where = {
-      ...ownerScope(req),
-      createdAt: {
-        gte: start,
-        lt: end,
-      },
-    };
-    const totalCount = await prisma.revenueEntry.count({ where });
     const revenues = await prisma.revenueEntry.findMany({
-      where,
+      where: ownerScope(req),
       include: { client: true },
       orderBy: { createdAt: "desc" },
-      skip,
-      take: pageSize,
     });
+    const rows = mapPaidRevenueRows(revenues, start, end);
+    const totalCount = rows.length;
+    const pageRows = rows.slice(skip, skip + pageSize);
 
     res.render("revenues/list", {
-      revenues,
+      revenues: pageRows,
       month,
       page,
       totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
@@ -348,7 +386,7 @@ module.exports = (prisma) => {
 
   async function renderAccountOptions(req, res, extra = {}) {
     const accounts = await prisma.quickLaunchOption.findMany({
-      where: { ...ownerScope(req), type: "REVENUE_ACCOUNT" },
+      where: { type: "PAYMENT", disabledAt: null },
       orderBy: { name: "asc" },
     });
 
@@ -369,12 +407,12 @@ module.exports = (prisma) => {
     if (name) {
       const ownerId = req.session?.userId || null;
       const existing = await prisma.quickLaunchOption.findFirst({
-        where: { type: "REVENUE_ACCOUNT", ownerId, name },
+        where: { type: "PAYMENT", ownerId, name },
         select: { id: true },
       });
       if (!existing) {
         await prisma.quickLaunchOption.create({
-          data: { type: "REVENUE_ACCOUNT", ownerId, name },
+          data: { type: "PAYMENT", ownerId, name },
         });
       }
     }
@@ -388,7 +426,7 @@ module.exports = (prisma) => {
     });
     const name = String(req.body.name || "").trim();
 
-    if (!account || account.type !== "REVENUE_ACCOUNT") {
+    if (!account || account.type !== "PAYMENT") {
       return res.status(404).send("Conta não encontrada.");
     }
 
@@ -405,7 +443,7 @@ module.exports = (prisma) => {
       where: { id, ...ownerScope(req) },
     });
 
-    if (!account || account.type !== "REVENUE_ACCOUNT") {
+    if (!account || account.type !== "PAYMENT") {
       return res.status(404).send("Conta não encontrada.");
     }
 

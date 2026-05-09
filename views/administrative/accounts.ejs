@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Contas - Administrativo</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+    <link rel="stylesheet" href="/css/quick-finance.css" />
+    <style>
+      .account-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 14px;
+      }
+      .account-card {
+        border: 1px solid var(--border-soft);
+        border-radius: 8px;
+        padding: 16px;
+        background: #fff;
+      }
+      .account-metrics {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin: 12px 0;
+      }
+      .metric {
+        border: 1px solid var(--border-soft);
+        border-radius: 8px;
+        padding: 10px;
+      }
+      .metric span {
+        display: block;
+        color: var(--text-muted);
+        font-size: 11px;
+        margin-bottom: 4px;
+      }
+      .metric strong {
+        display: block;
+        font-size: 15px;
+      }
+      .account-form {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        align-items: end;
+      }
+      .capital-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .capital-extra {
+        display: none;
+      }
+      .capital-extra.is-visible {
+        display: block;
+      }
+      .capital-list {
+        margin-top: 8px;
+        color: var(--text-muted);
+        font-size: 12px;
+      }
+      @media (max-width: 760px) {
+        .account-metrics,
+        .account-form {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Contas</h2>
+            <div class="welcome-sub">Saldo, entradas, saídas e capital social.</div>
+          </div>
+          <div class="actions">
+            <a href="/administrativo" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <% if (success) { %>
+          <div class="content-card message message-success">Conta atualizada.</div>
+        <% } %>
+
+        <% if (!accounts.length) { %>
+          <div class="content-card empty">Nenhuma conta cadastrada em Despesas.</div>
+        <% } else { %>
+          <div class="account-grid">
+            <% accounts.forEach(function(account, index) { %>
+              <div class="account-card">
+                <h3 class="content-title"><%= account.accountName %></h3>
+
+                <div class="account-metrics">
+                  <div class="metric">
+                    <span>Saldo da conta</span>
+                    <strong><%= account.balanceLabel %></strong>
+                  </div>
+                  <div class="metric">
+                    <span>Entradas no mês</span>
+                    <strong><%= account.monthIncomeLabel %></strong>
+                  </div>
+                  <div class="metric">
+                    <span>Saídas no mês</span>
+                    <strong><%= account.monthExpenseLabel %></strong>
+                  </div>
+                </div>
+
+                <form method="post" action="/administrativo/contas" class="account-form">
+                  <input type="hidden" name="accountName" value="<%= account.accountName %>" />
+                  <div class="field">
+                    <label class="field-label">Saldo inicial</label>
+                    <input class="money-input" name="initialBalance" inputmode="decimal" value="<%= account.initialBalance %>" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label">Capital social</label>
+                    <div class="capital-row">
+                      <label class="paid-toggle" title="Capital social">
+                        <input
+                          class="capital-toggle"
+                          type="checkbox"
+                          name="capitalSocialEnabled"
+                          value="YES"
+                          data-target="capital-extra-<%= index %>"
+                          <%= account.capitalSocialEnabled ? 'checked' : '' %>
+                        />
+                        <span></span>
+                      </label>
+                      <input
+                        id="capital-extra-<%= index %>"
+                        class="money-input capital-extra <%= account.capitalSocialEnabled ? 'is-visible' : '' %>"
+                        name="capitalSocial"
+                        inputmode="decimal"
+                        value="<%= account.capitalSocial %>"
+                      />
+                    </div>
+                  </div>
+                  <button class="btn btn-primary" type="submit">Salvar</button>
+                </form>
+
+                <form method="post" action="/administrativo/contas/capital" class="account-form" style="margin-top:10px;">
+                  <input type="hidden" name="accountName" value="<%= account.accountName %>" />
+                  <div class="field">
+                    <label class="field-label">Data</label>
+                    <input name="capitalEntryDate" type="date" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label">Adicionar capital</label>
+                    <input class="money-input" name="capitalEntryAmount" inputmode="decimal" placeholder="0,00" />
+                  </div>
+                  <button class="btn" type="submit">+</button>
+                </form>
+
+                <% if (account.capitalEntries.length) { %>
+                  <div class="capital-list">
+                    <% account.capitalEntries.forEach(function(entry) { %>
+                      <div><%= entry.date %> · <%= entry.amountLabel %></div>
+                    <% }) %>
+                  </div>
+                <% } %>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </main>
+    </div>
+    <script>
+      function formatMoneyInput(input) {
+        const digits = String(input.value || "").replace(/\D/g, "");
+        if (!digits) {
+          input.value = "";
+          return;
+        }
+        const cents = Number.parseInt(digits, 10);
+        input.value = (cents / 100).toLocaleString("pt-BR", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+      }
+
+      document.querySelectorAll(".money-input").forEach((input) => {
+        input.addEventListener("input", () => formatMoneyInput(input));
+        input.addEventListener("blur", () => formatMoneyInput(input));
+        formatMoneyInput(input);
+      });
+
+      document.querySelectorAll(".capital-toggle").forEach((toggle) => {
+        const target = document.getElementById(toggle.dataset.target);
+        function refresh() {
+          target?.classList.toggle("is-visible", toggle.checked);
+        }
+        toggle.addEventListener("change", refresh);
+        refresh();
+      });
+    </script>
+  </body>
+</html>

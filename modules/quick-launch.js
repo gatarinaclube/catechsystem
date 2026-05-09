@@ -9,7 +9,7 @@ const OPTION_TYPES = ["CATEGORY", "SUPPLIER", "PAYMENT"];
 const OPTION_LABELS = {
   CATEGORY: "Categoria",
   SUPPLIER: "Fornecedor",
-  PAYMENT: "Forma de Pagamento",
+  PAYMENT: "Conta de Pagamento",
 };
 
 function ensureDir(dir) {
@@ -130,7 +130,7 @@ function buildExpenseFormData(body, file, existingReceipt = null) {
 
   if (!amountCents || amountCents <= 0) throw new Error("Informe um valor válido.");
   if (!category || !paymentMethod || !supplier) {
-    throw new Error("Preencha categoria, forma de pagamento e fornecedor.");
+    throw new Error("Preencha categoria, conta de pagamento e fornecedor.");
   }
   if (paymentMethod.toLowerCase().includes("crédito") && !paymentMode) {
     throw new Error("Informe se o crédito é à vista ou parcelado.");
