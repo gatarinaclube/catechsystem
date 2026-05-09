@@ -86,11 +86,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
   async function upsertSetting(req, accountName) {
     const ownerId = settingOwnerId(req);
-    return prisma.financialAccountSetting.upsert({
-      where: { ownerId_accountName: { ownerId, accountName } },
-      create: { ownerId, accountName },
-      update: {},
+    const existing = await prisma.financialAccountSetting.findFirst({
+      where: { ownerId, accountName },
     });
+    if (existing) return existing;
+    return prisma.financialAccountSetting.create({ data: { ownerId, accountName } });
   }
 
   async function buildAccountRows(req) {
@@ -104,23 +104,40 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       where: ownerScope(req),
       select: { paymentAccount: true, parcelDataJson: true },
     });
+    const transfers = await prisma.financialTransfer.findMany({
+      where: ownerScope(req),
+      select: { fromAccount: true, toAccount: true, amountCents: true, transferDate: true },
+    });
 
     const rows = [];
     for (const accountName of accounts) {
       const setting = await upsertSetting(req, accountName);
       const accountExpenses = expenses.filter((expense) => expense.paymentMethod === accountName);
       const allRevenueParcels = revenues
-        .filter((revenue) => revenue.paymentAccount === accountName)
-        .flatMap((revenue) => parseParcels(revenue.parcelDataJson));
+        .flatMap((revenue) => parseParcels(revenue.parcelDataJson).map((parcel) => ({
+          ...parcel,
+          paymentAccount: parcel.paymentAccount || revenue.paymentAccount || "",
+        })))
+        .filter((parcel) => parcel.paymentAccount === accountName);
+      const accountTransfersOut = transfers.filter((transfer) => transfer.fromAccount === accountName);
+      const accountTransfersIn = transfers.filter((transfer) => transfer.toAccount === accountName);
 
       const totalIncome = allRevenueParcels.reduce((sum, parcel) => sum + Number(parcel.amountCents || 0), 0);
       const totalExpenses = accountExpenses.reduce((sum, expense) => sum + Number(expense.amountCents || 0), 0);
+      const totalTransfersIn = accountTransfersIn.reduce((sum, transfer) => sum + Number(transfer.amountCents || 0), 0);
+      const totalTransfersOut = accountTransfersOut.reduce((sum, transfer) => sum + Number(transfer.amountCents || 0), 0);
       const monthIncome = allRevenueParcels.reduce((sum, parcel) => {
         const paidDate = parseDateInput(parcel.date);
         return monthContains(paidDate, start, end) ? sum + Number(parcel.amountCents || 0) : sum;
       }, 0);
       const monthExpenses = accountExpenses.reduce((sum, expense) => (
         monthContains(expense.competenceDate, start, end) ? sum + Number(expense.amountCents || 0) : sum
+      ), 0);
+      const monthTransfersIn = accountTransfersIn.reduce((sum, transfer) => (
+        monthContains(transfer.transferDate, start, end) ? sum + Number(transfer.amountCents || 0) : sum
+      ), 0);
+      const monthTransfersOut = accountTransfersOut.reduce((sum, transfer) => (
+        monthContains(transfer.transferDate, start, end) ? sum + Number(transfer.amountCents || 0) : sum
       ), 0);
 
       rows.push({
@@ -132,9 +149,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           ...entry,
           amountLabel: formatAmount(entry.amountCents),
         })),
-        balanceLabel: formatAmount(setting.initialBalanceCents + totalIncome - totalExpenses),
-        monthIncomeLabel: formatAmount(monthIncome),
-        monthExpenseLabel: formatAmount(monthExpenses),
+        balanceLabel: formatAmount(setting.initialBalanceCents + totalIncome + totalTransfersIn - totalExpenses - totalTransfersOut),
+        monthIncomeLabel: formatAmount(monthIncome + monthTransfersIn),
+        monthExpenseLabel: formatAmount(monthExpenses + monthTransfersOut),
       });
     }
     return rows;
@@ -175,19 +192,55 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       if (!accountName) return res.redirect("/administrativo/contas");
 
       const ownerId = settingOwnerId(req);
-      await prisma.financialAccountSetting.upsert({
-        where: { ownerId_accountName: { ownerId, accountName } },
-        create: {
-          ownerId,
-          accountName,
-          initialBalanceCents: parseAmountToCents(req.body.initialBalance),
-          capitalSocialEnabled: req.body.capitalSocialEnabled === "YES",
-          capitalSocialCents: parseAmountToCents(req.body.capitalSocial),
-        },
-        update: {
-          initialBalanceCents: parseAmountToCents(req.body.initialBalance),
-          capitalSocialEnabled: req.body.capitalSocialEnabled === "YES",
-          capitalSocialCents: parseAmountToCents(req.body.capitalSocial),
+      const existing = await prisma.financialAccountSetting.findFirst({
+        where: { ownerId, accountName },
+        select: { id: true },
+      });
+      const data = {
+        initialBalanceCents: parseAmountToCents(req.body.initialBalance),
+        capitalSocialEnabled: req.body.capitalSocialEnabled === "YES",
+        capitalSocialCents: parseAmountToCents(req.body.capitalSocial),
+      };
+      if (existing) {
+        await prisma.financialAccountSetting.update({
+          where: { id: existing.id },
+          data,
+        });
+      } else {
+        await prisma.financialAccountSetting.create({
+          data: {
+            ...data,
+            ownerId,
+            accountName,
+          },
+        });
+      }
+
+      res.redirect("/administrativo/contas?ok=1");
+    }
+  );
+
+  router.post(
+    "/administrativo/contas/transferencias",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    async (req, res) => {
+      const fromAccount = String(req.body.fromAccount || "").trim();
+      const toAccount = String(req.body.toAccount || "").trim();
+      const amountCents = parseAmountToCents(req.body.transferAmount);
+
+      if (!fromAccount || !toAccount || fromAccount === toAccount || amountCents <= 0) {
+        return res.redirect("/administrativo/contas");
+      }
+
+      await prisma.financialTransfer.create({
+        data: {
+          ownerId: req.session?.userId || null,
+          fromAccount,
+          toAccount,
+          amountCents,
+          transferDate: parseDateInput(req.body.transferDate),
+          note: req.body.transferNote || null,
         },
       });
 

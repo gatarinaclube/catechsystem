@@ -94,16 +94,6 @@
         <div id="parcelFields"></div>
 
         <div class="field">
-          <label for="paymentAccount">Conta de Pagamento</label>
-          <select id="paymentAccount" name="paymentAccount">
-            <option value="" <%= !revenue.paymentAccount ? 'selected' : '' %>>Selecione...</option>
-            <% paymentAccounts.forEach(function(account) { %>
-              <option value="<%= account %>" <%= revenue.paymentAccount === account ? 'selected' : '' %>><%= account %></option>
-            <% }) %>
-          </select>
-        </div>
-
-        <div class="field">
           <label for="note">Observação</label>
           <textarea id="note" name="note" placeholder="Observações sobre a venda ou pagamento"><%= revenue.note || '' %></textarea>
         </div>
@@ -119,6 +109,7 @@
     </main>
     <script>
       const parcels = <%- JSON.stringify(revenue.parcels || []) %>;
+      const paymentAccounts = <%- JSON.stringify(paymentAccounts || []) %>;
       const installments = document.getElementById("installments");
       const parcelFields = document.getElementById("parcelFields");
       const catAmount = document.getElementById("catAmount");
@@ -151,6 +142,14 @@
         return value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       }
 
+      function escapeHtml(value) {
+        return String(value || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
       function refreshTotal() {
         totalAmount.value = numberToMoney(moneyToNumber(catAmount.value) + moneyToNumber(transportAmount.value));
       }
@@ -162,6 +161,10 @@
           const saved = parcels.find((item) => Number(item.number) === i) || {};
           const dateLabel = i === 1 ? "Data de pagamento da primeira parcela" : `Data de vencimento da ${i}ª parcela`;
           const amountLabel = i === 1 ? "Valor da primeira Parcela" : `Valor da ${i}ª Parcela`;
+          const savedAccount = saved.paymentAccount || "";
+          const accountOptions = ['<option value="">Selecione...</option>'].concat(
+            paymentAccounts.map((account) => `<option value="${escapeHtml(account)}" ${savedAccount === account ? "selected" : ""}>${escapeHtml(account)}</option>`)
+          ).join("");
           parcelFields.insertAdjacentHTML("beforeend", `
             <div class="parcel-card">
               <div class="quick-grid">
@@ -172,6 +175,10 @@
                 <div class="field">
                   <label>${dateLabel}</label>
                   <input name="parcel${i}Date" type="date" value="${saved.date || ""}" ${lockFirstParcelDate && i === 1 ? "readonly" : ""}>
+                </div>
+                <div class="field">
+                  <label>Conta de Pagamento</label>
+                  <select name="parcel${i}PaymentAccount">${accountOptions}</select>
                 </div>
                 <div class="field">
                   <div class="paid-toggle-row">

@@ -129,6 +129,7 @@ function mapPaidRevenueRows(revenues, start, end) {
         dateLabel: formatDateOnlyLabel(paidDate),
         kittenLabel: revenue.kittenLabel || "-",
         clientLabel: revenue.client?.fullName || "-",
+        paymentAccount: parcel.paymentAccount || revenue.paymentAccount || "-",
         amountLabel: formatAmount(parcel.amountCents || 0),
         parcelLabel: `${parcel.number || "-"} / ${revenue.installments || "-"}`,
       });
@@ -216,6 +217,7 @@ module.exports = (prisma) => {
         amountCents: parseAmountToCents(body[`parcel${i}Amount`]),
         date: body[`parcel${i}Date`] || "",
         paid: body[`parcel${i}Paid`] === "YES",
+        paymentAccount: body[`parcel${i}PaymentAccount`] || body.paymentAccount || DEFAULT_PAYMENT_ACCOUNT,
       });
     }
 
@@ -229,7 +231,7 @@ module.exports = (prisma) => {
       transportAmountCents,
       totalAmountCents,
       installments,
-      paymentAccount: body.paymentAccount || DEFAULT_PAYMENT_ACCOUNT,
+      paymentAccount: DEFAULT_PAYMENT_ACCOUNT,
       note: body.note || null,
       parcelDataJson: JSON.stringify(parcels),
     };

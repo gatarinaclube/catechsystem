@@ -62,9 +62,19 @@
         color: var(--text-muted);
         font-size: 12px;
       }
+      .transfer-card {
+        margin-top: 16px;
+      }
+      .transfer-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 10px;
+        align-items: end;
+      }
       @media (max-width: 760px) {
         .account-metrics,
-        .account-form {
+        .account-form,
+        .transfer-grid {
           grid-template-columns: 1fr;
         }
       }
@@ -166,6 +176,44 @@
                 <% } %>
               </div>
             <% }) %>
+          </div>
+
+          <div class="content-card transfer-card">
+            <div class="content-title">Transferência entre contas</div>
+            <div class="content-sub">Registre movimentações internas sem criar receita ou despesa.</div>
+            <form method="post" action="/administrativo/contas/transferencias" class="transfer-grid" style="margin-top:12px;">
+              <div class="field">
+                <label class="field-label" for="fromAccount">Conta de saída</label>
+                <select id="fromAccount" name="fromAccount" required>
+                  <option value="">Selecione...</option>
+                  <% accounts.forEach(function(account) { %>
+                    <option value="<%= account.accountName %>"><%= account.accountName %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="toAccount">Conta de entrada</label>
+                <select id="toAccount" name="toAccount" required>
+                  <option value="">Selecione...</option>
+                  <% accounts.forEach(function(account) { %>
+                    <option value="<%= account.accountName %>"><%= account.accountName %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="transferAmount">Valor</label>
+                <input id="transferAmount" class="money-input" name="transferAmount" inputmode="decimal" placeholder="0,00" required />
+              </div>
+              <div class="field">
+                <label class="field-label" for="transferDate">Data</label>
+                <input id="transferDate" name="transferDate" type="date" required />
+              </div>
+              <div class="field">
+                <label class="field-label" for="transferNote">Observação</label>
+                <input id="transferNote" name="transferNote" />
+              </div>
+              <button class="btn btn-primary" type="submit">Registrar transferência</button>
+            </form>
           </div>
         <% } %>
       </main>

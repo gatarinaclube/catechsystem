@@ -66,6 +66,7 @@ model User {
   revenueClients RevenueClient[]
   revenueEntries RevenueEntry[]
   financialAccountSettings FinancialAccountSetting[]
+  financialTransfers FinancialTransfer[]
   passwordResetTokens PasswordResetToken[]
 }
 
@@ -142,6 +143,18 @@ model FinancialAccountSetting {
   updatedAt            DateTime @updatedAt
 
   @@unique([ownerId, accountName])
+}
+
+model FinancialTransfer {
+  id              Int      @id @default(autoincrement())
+  owner           User?    @relation(fields: [ownerId], references: [id])
+  ownerId         Int?
+  fromAccount     String
+  toAccount       String
+  amountCents     Int
+  transferDate    DateTime
+  note            String?
+  createdAt       DateTime @default(now())
 }
 
 model RevenueClient {

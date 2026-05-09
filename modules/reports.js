@@ -139,24 +139,18 @@ function buildExpenseWhere(req, filters) {
 }
 
 function buildRevenueWhere(req, filters) {
-  const where = {
+  return {
     ...(canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId }),
   };
+}
 
-  if (filters.paymentMethod) {
-    const keyword = filters.paymentMethod === "PIX"
-      ? "PIX"
-      : filters.paymentMethod === "CREDIT"
-        ? "Crédito"
-        : "Dinheiro";
-    where.paymentAccount = { contains: keyword, mode: "insensitive" };
-  }
-
-  if (filters.account) {
-    where.paymentAccount = filters.account;
-  }
-
-  return where;
+function paymentKeyword(filterValue) {
+  if (!filterValue) return "";
+  return filterValue === "PIX"
+    ? "PIX"
+    : filterValue === "CREDIT"
+      ? "Crédito"
+      : "Dinheiro";
 }
 
 function buildQueryString(filters, forcePdf = false) {
@@ -211,7 +205,10 @@ function mapRevenueRows(revenues, filters) {
 
       const paidTime = paidDate.getTime();
       if (paidTime < startTime || paidTime >= endTime) return;
-      if (filters.account && revenue.paymentAccount !== filters.account) return;
+      const paymentAccount = parcel.paymentAccount || revenue.paymentAccount || "";
+      if (filters.account && paymentAccount !== filters.account) return;
+      const keyword = paymentKeyword(filters.paymentMethod);
+      if (keyword && !paymentAccount.toLowerCase().includes(keyword.toLowerCase())) return;
 
       rows.push({
         ...revenue,
@@ -222,6 +219,7 @@ function mapRevenueRows(revenues, filters) {
         amountLabel: formatCurrency(parcel.amountCents),
         amountCents: parcel.amountCents || 0,
         clientLabel: revenue.client?.fullName || "-",
+        paymentAccount,
       });
     });
   });
@@ -232,7 +230,51 @@ function mapRevenueRows(revenues, filters) {
   });
 }
 
-function mapCashFlowRows(expenses, revenueRows) {
+function mapTransferRows(transfers, filters) {
+  const startTime = filters.startDate.getTime();
+  const endTime = addDays(filters.endDate, 1).getTime();
+  const keyword = paymentKeyword(filters.paymentMethod).toLowerCase();
+  const rows = [];
+
+  transfers.forEach((transfer) => {
+    const transferTime = new Date(transfer.transferDate).getTime();
+    if (transferTime < startTime || transferTime >= endTime) return;
+
+    if ((!filters.account || filters.account === transfer.toAccount) &&
+      (!keyword || transfer.toAccount.toLowerCase().includes(keyword))) {
+      rows.push({
+        id: `transfer-in-${transfer.id}`,
+        dateTime: transferTime,
+        dateLabel: formatDateOnlyLabel(transfer.transferDate),
+        typeLabel: "Transferência",
+        account: transfer.toAccount,
+        description: `Entrada de ${transfer.fromAccount}`,
+        note: transfer.note || "",
+        amountCents: Number(transfer.amountCents || 0),
+        amountLabel: formatCurrency(transfer.amountCents),
+      });
+    }
+
+    if ((!filters.account || filters.account === transfer.fromAccount) &&
+      (!keyword || transfer.fromAccount.toLowerCase().includes(keyword))) {
+      rows.push({
+        id: `transfer-out-${transfer.id}`,
+        dateTime: transferTime,
+        dateLabel: formatDateOnlyLabel(transfer.transferDate),
+        typeLabel: "Transferência",
+        account: transfer.fromAccount,
+        description: `Saída para ${transfer.toAccount}`,
+        note: transfer.note || "",
+        amountCents: -Number(transfer.amountCents || 0),
+        amountLabel: `- ${formatCurrency(transfer.amountCents)}`,
+      });
+    }
+  });
+
+  return rows;
+}
+
+function mapCashFlowRows(expenses, revenueRows, transfers, filters) {
   const expenseRows = mapExpenseRows(expenses).map((expense) => ({
     id: `expense-${expense.id}`,
     dateTime: new Date(expense.competenceDate).getTime(),
@@ -257,7 +299,7 @@ function mapCashFlowRows(expenses, revenueRows) {
     amountLabel: formatCurrency(revenue.amountCents),
   }));
 
-  return [...incomeRows, ...expenseRows].sort((a, b) => {
+  return [...incomeRows, ...expenseRows, ...mapTransferRows(transfers, filters)].sort((a, b) => {
     const dateCompare = b.dateTime - a.dateTime;
     return dateCompare || String(b.id).localeCompare(String(a.id));
   });
@@ -645,8 +687,12 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         include: { client: true },
         orderBy: [{ createdAt: "desc" }],
       });
+      const transfers = await prisma.financialTransfer.findMany({
+        where: canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId },
+        orderBy: [{ transferDate: "desc" }, { createdAt: "desc" }],
+      });
       const revenueRows = mapRevenueRows(revenues, filters);
-      const rows = mapCashFlowRows(expenses, revenueRows);
+      const rows = mapCashFlowRows(expenses, revenueRows, transfers, filters);
       const incomeCents = rows
         .filter((row) => row.amountCents > 0)
         .reduce((sum, row) => sum + row.amountCents, 0);
@@ -685,8 +731,12 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         include: { client: true },
         orderBy: [{ createdAt: "desc" }],
       });
+      const transfers = await prisma.financialTransfer.findMany({
+        where: canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId },
+        orderBy: [{ transferDate: "desc" }, { createdAt: "desc" }],
+      });
       const revenueRows = mapRevenueRows(revenues, filters);
-      const rows = mapCashFlowRows(expenses, revenueRows);
+      const rows = mapCashFlowRows(expenses, revenueRows, transfers, filters);
       const incomeCents = rows
         .filter((row) => row.amountCents > 0)
         .reduce((sum, row) => sum + row.amountCents, 0);
