@@ -19,6 +19,12 @@
         padding: 16px;
         background: #fff;
       }
+      .account-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
       .account-metrics {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -40,6 +46,44 @@
         display: block;
         font-size: 15px;
       }
+      .metric-balance {
+        background: #ecfdf5;
+        border-color: #a7f3d0;
+      }
+      .metric-balance strong {
+        color: #047857;
+      }
+      .metric-income {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+      }
+      .metric-income strong {
+        color: #1d4ed8;
+      }
+      .metric-expense {
+        background: #fef2f2;
+        border-color: #fecaca;
+      }
+      .metric-expense strong {
+        color: #b91c1c;
+      }
+      .account-settings-button {
+        border: 1px solid var(--border-soft);
+        border-radius: 8px;
+        background: #f9fafb;
+        cursor: pointer;
+        min-width: 38px;
+        min-height: 38px;
+      }
+      .account-settings {
+        display: none;
+        border-top: 1px solid var(--border-soft);
+        margin-top: 12px;
+        padding-top: 12px;
+      }
+      .account-settings.is-visible {
+        display: block;
+      }
       .account-form {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -57,11 +101,6 @@
       .capital-extra.is-visible {
         display: block;
       }
-      .capital-list {
-        margin-top: 8px;
-        color: var(--text-muted);
-        font-size: 12px;
-      }
       .transfer-card {
         margin-top: 16px;
       }
@@ -71,10 +110,30 @@
         gap: 10px;
         align-items: end;
       }
+      .transfer-history {
+        margin-top: 12px;
+      }
+      .transfer-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .transfer-item {
+        border: 1px solid var(--border-soft);
+        border-radius: 8px;
+        padding: 12px;
+      }
+      .transfer-edit-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr)) auto auto;
+        gap: 8px;
+        align-items: end;
+      }
       @media (max-width: 760px) {
         .account-metrics,
         .account-form,
-        .transfer-grid {
+        .transfer-grid,
+        .transfer-edit-grid {
           grid-template-columns: 1fr;
         }
       }
@@ -105,75 +164,64 @@
           <div class="account-grid">
             <% accounts.forEach(function(account, index) { %>
               <div class="account-card">
-                <h3 class="content-title"><%= account.accountName %></h3>
+                <div class="account-head">
+                  <h3 class="content-title"><%= account.accountName %></h3>
+                  <button
+                    class="account-settings-button"
+                    type="button"
+                    title="Configurações"
+                    data-target="account-settings-<%= index %>"
+                  >⚙</button>
+                </div>
 
                 <div class="account-metrics">
-                  <div class="metric">
+                  <div class="metric metric-balance">
                     <span>Saldo da conta</span>
                     <strong><%= account.balanceLabel %></strong>
                   </div>
-                  <div class="metric">
+                  <div class="metric metric-income">
                     <span>Entradas no mês</span>
                     <strong><%= account.monthIncomeLabel %></strong>
                   </div>
-                  <div class="metric">
+                  <div class="metric metric-expense">
                     <span>Saídas no mês</span>
                     <strong><%= account.monthExpenseLabel %></strong>
                   </div>
                 </div>
 
-                <form method="post" action="/administrativo/contas" class="account-form">
-                  <input type="hidden" name="accountName" value="<%= account.accountName %>" />
-                  <div class="field">
-                    <label class="field-label">Saldo inicial</label>
-                    <input class="money-input" name="initialBalance" inputmode="decimal" value="<%= account.initialBalance %>" />
-                  </div>
-                  <div class="field">
-                    <label class="field-label">Capital social</label>
-                    <div class="capital-row">
-                      <label class="paid-toggle" title="Capital social">
-                        <input
-                          class="capital-toggle"
-                          type="checkbox"
-                          name="capitalSocialEnabled"
-                          value="YES"
-                          data-target="capital-extra-<%= index %>"
-                          <%= account.capitalSocialEnabled ? 'checked' : '' %>
-                        />
-                        <span></span>
-                      </label>
-                      <input
-                        id="capital-extra-<%= index %>"
-                        class="money-input capital-extra <%= account.capitalSocialEnabled ? 'is-visible' : '' %>"
-                        name="capitalSocial"
-                        inputmode="decimal"
-                        value="<%= account.capitalSocial %>"
-                      />
+                <div id="account-settings-<%= index %>" class="account-settings">
+                  <form method="post" action="/administrativo/contas" class="account-form">
+                    <input type="hidden" name="accountName" value="<%= account.accountName %>" />
+                    <div class="field">
+                      <label class="field-label">Saldo inicial</label>
+                      <input class="money-input" name="initialBalance" inputmode="decimal" value="<%= account.initialBalance %>" />
                     </div>
-                  </div>
-                  <button class="btn btn-primary" type="submit">Salvar</button>
-                </form>
-
-                <form method="post" action="/administrativo/contas/capital" class="account-form" style="margin-top:10px;">
-                  <input type="hidden" name="accountName" value="<%= account.accountName %>" />
-                  <div class="field">
-                    <label class="field-label">Data</label>
-                    <input name="capitalEntryDate" type="date" />
-                  </div>
-                  <div class="field">
-                    <label class="field-label">Adicionar capital</label>
-                    <input class="money-input" name="capitalEntryAmount" inputmode="decimal" placeholder="0,00" />
-                  </div>
-                  <button class="btn" type="submit">+</button>
-                </form>
-
-                <% if (account.capitalEntries.length) { %>
-                  <div class="capital-list">
-                    <% account.capitalEntries.forEach(function(entry) { %>
-                      <div><%= entry.date %> · <%= entry.amountLabel %></div>
-                    <% }) %>
-                  </div>
-                <% } %>
+                    <div class="field">
+                      <label class="field-label">Capital social</label>
+                      <div class="capital-row">
+                        <label class="paid-toggle" title="Capital social">
+                          <input
+                            class="capital-toggle"
+                            type="checkbox"
+                            name="capitalSocialEnabled"
+                            value="YES"
+                            data-target="capital-extra-<%= index %>"
+                            <%= account.capitalSocialEnabled ? 'checked' : '' %>
+                          />
+                          <span></span>
+                        </label>
+                        <input
+                          id="capital-extra-<%= index %>"
+                          class="money-input capital-extra <%= account.capitalSocialEnabled ? 'is-visible' : '' %>"
+                          name="capitalSocial"
+                          inputmode="decimal"
+                          value="<%= account.capitalSocial %>"
+                        />
+                      </div>
+                    </div>
+                    <button class="btn btn-primary" type="submit">Salvar</button>
+                  </form>
+                </div>
               </div>
             <% }) %>
           </div>
@@ -214,6 +262,53 @@
               </div>
               <button class="btn btn-primary" type="submit">Registrar transferência</button>
             </form>
+            <details class="transfer-history">
+              <summary>Ver Transferências realizadas</summary>
+              <% if (!transfers.length) { %>
+                <div class="empty">Nenhuma transferência registrada.</div>
+              <% } else { %>
+                <div class="transfer-list">
+                  <% transfers.forEach(function(transfer) { %>
+                    <div class="transfer-item">
+                      <form method="post" action="/administrativo/contas/transferencias/<%= transfer.id %>/update" class="transfer-edit-grid">
+                        <div class="field">
+                          <label class="field-label">Saída</label>
+                          <select name="fromAccount" required>
+                            <% accounts.forEach(function(account) { %>
+                              <option value="<%= account.accountName %>" <%= transfer.fromAccount === account.accountName ? 'selected' : '' %>><%= account.accountName %></option>
+                            <% }) %>
+                          </select>
+                        </div>
+                        <div class="field">
+                          <label class="field-label">Entrada</label>
+                          <select name="toAccount" required>
+                            <% accounts.forEach(function(account) { %>
+                              <option value="<%= account.accountName %>" <%= transfer.toAccount === account.accountName ? 'selected' : '' %>><%= account.accountName %></option>
+                            <% }) %>
+                          </select>
+                        </div>
+                        <div class="field">
+                          <label class="field-label">Valor</label>
+                          <input class="money-input" name="transferAmount" inputmode="decimal" value="<%= transfer.amount %>" required />
+                        </div>
+                        <div class="field">
+                          <label class="field-label">Data</label>
+                          <input name="transferDate" type="date" value="<%= transfer.transferDateInput %>" required />
+                        </div>
+                        <div class="field">
+                          <label class="field-label">Observação</label>
+                          <input name="transferNote" value="<%= transfer.note || '' %>" />
+                        </div>
+                        <button class="btn btn-primary" type="submit">Salvar</button>
+                      </form>
+                      <form method="post" action="/administrativo/contas/transferencias/<%= transfer.id %>/delete" onsubmit="return confirm('Excluir esta transferência?');" style="margin-top:8px;">
+                        <button class="btn" type="submit">Excluir</button>
+                      </form>
+                    </div>
+                  <% }) %>
+                </div>
+              <% } %>
+            </details>
           </div>
         <% } %>
       </main>
@@ -245,6 +340,12 @@
         }
         toggle.addEventListener("change", refresh);
         refresh();
+      });
+
+      document.querySelectorAll(".account-settings-button").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.getElementById(button.dataset.target)?.classList.toggle("is-visible");
+        });
       });
     </script>
   </body>

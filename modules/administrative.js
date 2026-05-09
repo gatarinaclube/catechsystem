@@ -30,6 +30,19 @@ function formatAmount(cents) {
   });
 }
 
+function formatDateInput(date) {
+  return date ? new Date(date).toISOString().slice(0, 10) : todayForInput();
+}
+
+function formatDateLabel(date) {
+  if (!date) return "-";
+  const value = new Date(date);
+  const day = String(value.getUTCDate()).padStart(2, "0");
+  const month = String(value.getUTCMonth() + 1).padStart(2, "0");
+  const year = value.getUTCFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 function parseDateInput(value) {
   const text = String(value || todayForInput()).slice(0, 10);
   const [year, month, day] = text.split("-").map(Number);
@@ -105,7 +118,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       select: { paymentAccount: true, parcelDataJson: true },
     });
     const transfers = await prisma.financialTransfer.findMany({
-      where: ownerScope(req),
+      where: { ...ownerScope(req), deletedAt: null },
       select: { fromAccount: true, toAccount: true, amountCents: true, transferDate: true },
     });
 
@@ -145,16 +158,49 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         initialBalance: formatAmount(setting.initialBalanceCents),
         capitalSocialEnabled: setting.capitalSocialEnabled,
         capitalSocial: formatAmount(setting.capitalSocialCents),
-        capitalEntries: safeJsonParse(setting.capitalEntriesJson).map((entry) => ({
-          ...entry,
-          amountLabel: formatAmount(entry.amountCents),
-        })),
         balanceLabel: formatAmount(setting.initialBalanceCents + totalIncome + totalTransfersIn - totalExpenses - totalTransfersOut),
         monthIncomeLabel: formatAmount(monthIncome + monthTransfersIn),
         monthExpenseLabel: formatAmount(monthExpenses + monthTransfersOut),
       });
     }
     return rows;
+  }
+
+  async function loadTransferRows(req) {
+    const transfers = await prisma.financialTransfer.findMany({
+      where: { ...ownerScope(req), deletedAt: null },
+      orderBy: [{ transferDate: "desc" }, { createdAt: "desc" }],
+    });
+
+    return transfers.map((transfer) => ({
+      ...transfer,
+      amount: formatAmount(transfer.amountCents),
+      amountLabel: formatAmount(transfer.amountCents),
+      transferDateInput: formatDateInput(transfer.transferDate),
+      transferDateLabel: formatDateLabel(transfer.transferDate),
+    }));
+  }
+
+  async function findTransfer(req, id) {
+    return prisma.financialTransfer.findFirst({
+      where: { id, ...ownerScope(req), deletedAt: null },
+    });
+  }
+
+  function transferHistory(transfer, action) {
+    const history = safeJsonParse(transfer.historyJson);
+    history.push({
+      action,
+      at: new Date().toISOString(),
+      previous: {
+        fromAccount: transfer.fromAccount,
+        toAccount: transfer.toAccount,
+        amountCents: transfer.amountCents,
+        transferDate: formatDateInput(transfer.transferDate),
+        note: transfer.note || null,
+      },
+    });
+    return JSON.stringify(history);
   }
 
   router.get(
@@ -178,6 +224,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         user: req.user,
         currentPath: "/administrativo",
         accounts: await buildAccountRows(req),
+        transfers: await loadTransferRows(req),
         success: req.query.ok === "1",
       });
     }
@@ -249,27 +296,51 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   );
 
   router.post(
-    "/administrativo/contas/capital",
+    "/administrativo/contas/transferencias/:id/update",
     requireAuth,
     requirePermission("admin.administrative"),
     async (req, res) => {
-      const accountName = String(req.body.accountName || "").trim();
-      const amountCents = parseAmountToCents(req.body.capitalEntryAmount);
-      if (!accountName || amountCents <= 0) return res.redirect("/administrativo/contas");
+      const id = Number(req.params.id);
+      const transfer = await findTransfer(req, id);
+      if (!transfer) return res.status(404).send("Transferência não encontrada.");
 
-      const setting = await upsertSetting(req, accountName);
-      const entries = safeJsonParse(setting.capitalEntriesJson);
-      entries.push({
-        date: String(req.body.capitalEntryDate || todayForInput()).slice(0, 10),
-        amountCents,
+      const fromAccount = String(req.body.fromAccount || "").trim();
+      const toAccount = String(req.body.toAccount || "").trim();
+      const amountCents = parseAmountToCents(req.body.transferAmount);
+      if (!fromAccount || !toAccount || fromAccount === toAccount || amountCents <= 0) {
+        return res.redirect("/administrativo/contas");
+      }
+
+      await prisma.financialTransfer.update({
+        where: { id },
+        data: {
+          fromAccount,
+          toAccount,
+          amountCents,
+          transferDate: parseDateInput(req.body.transferDate),
+          note: req.body.transferNote || null,
+          historyJson: transferHistory(transfer, "UPDATE"),
+        },
       });
 
-      await prisma.financialAccountSetting.update({
-        where: { id: setting.id },
+      res.redirect("/administrativo/contas?ok=1");
+    }
+  );
+
+  router.post(
+    "/administrativo/contas/transferencias/:id/delete",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    async (req, res) => {
+      const id = Number(req.params.id);
+      const transfer = await findTransfer(req, id);
+      if (!transfer) return res.status(404).send("Transferência não encontrada.");
+
+      await prisma.financialTransfer.update({
+        where: { id },
         data: {
-          capitalSocialEnabled: true,
-          capitalSocialCents: Number(setting.capitalSocialCents || 0) + amountCents,
-          capitalEntriesJson: JSON.stringify(entries),
+          deletedAt: new Date(),
+          historyJson: transferHistory(transfer, "DELETE"),
         },
       });
 

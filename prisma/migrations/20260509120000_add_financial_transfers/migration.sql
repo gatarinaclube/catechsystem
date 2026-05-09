@@ -6,7 +6,10 @@ CREATE TABLE "FinancialTransfer" (
   "amountCents" INTEGER NOT NULL,
   "transferDate" TIMESTAMP(3) NOT NULL,
   "note" TEXT,
+  "historyJson" TEXT,
+  "deletedAt" TIMESTAMP(3),
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
   CONSTRAINT "FinancialTransfer_pkey" PRIMARY KEY ("id")
 );

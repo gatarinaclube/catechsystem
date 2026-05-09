@@ -688,7 +688,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         orderBy: [{ createdAt: "desc" }],
       });
       const transfers = await prisma.financialTransfer.findMany({
-        where: canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId },
+        where: {
+          ...(canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId }),
+          deletedAt: null,
+        },
         orderBy: [{ transferDate: "desc" }, { createdAt: "desc" }],
       });
       const revenueRows = mapRevenueRows(revenues, filters);
@@ -732,7 +735,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         orderBy: [{ createdAt: "desc" }],
       });
       const transfers = await prisma.financialTransfer.findMany({
-        where: canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId },
+        where: {
+          ...(canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId }),
+          deletedAt: null,
+        },
         orderBy: [{ transferDate: "desc" }, { createdAt: "desc" }],
       });
       const revenueRows = mapRevenueRows(revenues, filters);
