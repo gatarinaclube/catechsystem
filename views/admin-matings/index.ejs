@@ -78,38 +78,47 @@
         font-size: 16px;
         font-weight: 700;
       }
-      .pedigree-tree,
-      .pedigree-tree ul {
-        list-style: none;
-        margin: 0;
-        padding-left: 22px;
+      .pedigree-map {
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+        min-width: 780px;
+        overflow-x: auto;
+        padding: 4px 2px 10px;
+      }
+      .pedigree-generation {
+        display: grid;
+        gap: 12px;
         position: relative;
       }
-      .pedigree-tree {
-        padding-left: 0;
-      }
-      .pedigree-tree ul {
-        margin-top: 10px;
-        border-left: 2px solid #dbeafe;
-      }
-      .pedigree-tree li {
-        margin: 10px 0;
-        line-height: 1.35;
-        position: relative;
-      }
-      .pedigree-tree ul > li::before {
+      .pedigree-generation:not(:first-child)::before {
         content: "";
         position: absolute;
-        left: -22px;
-        top: 20px;
-        width: 18px;
+        top: -15px;
+        left: 4%;
+        right: 4%;
         height: 2px;
-        background: #dbeafe;
+        background: #c7d2fe;
+      }
+      .pedigree-slot {
+        display: flex;
+        justify-content: center;
+        position: relative;
+      }
+      .pedigree-generation:not(:first-child) .pedigree-slot::before {
+        content: "";
+        position: absolute;
+        top: -15px;
+        left: 50%;
+        width: 2px;
+        height: 15px;
+        background: #c7d2fe;
       }
       .pedigree-node {
-        display: inline-grid;
+        display: grid;
         gap: 2px;
-        min-width: 190px;
+        width: 100%;
+        min-width: 150px;
         padding: 10px 12px;
         border: 1px solid #cbd5e1;
         border-radius: 10px;
@@ -127,6 +136,20 @@
       .pedigree-node.is-mother {
         border-color: #f9a8d4;
         background: #fdf2f8;
+      }
+      .pedigree-node.is-empty {
+        border-style: dashed;
+        border-color: #cbd5e1;
+        background: #f8fafc;
+        color: #94a3b8;
+      }
+      .pedigree-generation-label {
+        margin-bottom: -18px;
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
       }
       .pedigree-label {
         color: #64748b;
@@ -198,16 +221,12 @@
         .origin-dialog {
           padding: 14px;
         }
-        .pedigree-tree,
-        .pedigree-tree ul {
-          padding-left: 14px;
-        }
-        .pedigree-tree ul > li::before {
-          left: -14px;
-          width: 11px;
+        .pedigree-map {
+          min-width: 680px;
         }
         .pedigree-node {
-          min-width: min(210px, 72vw);
+          min-width: 130px;
+          padding: 9px 10px;
         }
       }
     </style>
@@ -257,31 +276,63 @@
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#39;");
         } %>
-        <% function pedigreeNodeClass(label) {
-          const normalized = String(label || "").toLowerCase();
-          if (normalized.includes("pai")) return "is-father";
-          if (normalized.includes("mãe") || normalized.includes("mae")) return "is-mother";
+        <% function pedigreeNodeClass(slot) {
+          if (!slot || !slot.name) return "is-empty";
+          if (slot.side === "father") return "is-father";
+          if (slot.side === "mother") return "is-mother";
           return "is-root";
         } %>
-        <% function renderPedigreeNode(node, label, level) {
-          if (!node) {
-            return "";
+        <% function pedigreeGenerationLabel(index) {
+          return ["Gato", "Pais", "Avós", "Bisavós", "Tataravós"][index] || `${index + 1}ª geração`;
+        } %>
+        <% function pedigreeSlotLabel(index, side) {
+          if (index === 0) return "Gato";
+          if (index === 1) return side === "father" ? "Pai" : "Mãe";
+          if (index === 2) return side === "father" ? "Avô" : "Avó";
+          if (index === 3) return side === "father" ? "Bisavô" : "Bisavó";
+          if (index === 4) return side === "father" ? "Tataravô" : "Tataravó";
+          return side === "father" ? "Ancestral" : "Ancestral";
+        } %>
+        <% function buildPedigreeGenerations(root, maxGenerations) {
+          if (!root) return [];
+          const generations = [[{ node: root, name: root.name || "-", side: "root" }]];
+
+          for (let index = 1; index < maxGenerations; index += 1) {
+            const previous = generations[index - 1];
+            const next = [];
+
+            previous.forEach(function(slot) {
+              const source = slot.node || null;
+              next.push({
+                node: source?.father || null,
+                name: source?.father?.name || source?.fatherName || "",
+                side: "father",
+              });
+              next.push({
+                node: source?.mother || null,
+                name: source?.mother?.name || source?.motherName || "",
+                side: "mother",
+              });
+            });
+
+            generations.push(next);
           }
 
-          const fatherBranch = node.father
-            ? renderPedigreeNode(node.father, "Pai", level - 1)
-            : node.fatherName
-              ? `<li><div class="pedigree-node is-father"><span class="pedigree-label">Pai</span><span class="pedigree-name">${escapeHtml(node.fatherName)}</span></div></li>`
-              : "";
-          const motherBranch = node.mother
-            ? renderPedigreeNode(node.mother, "Mãe", level - 1)
-            : node.motherName
-              ? `<li><div class="pedigree-node is-mother"><span class="pedigree-label">Mãe</span><span class="pedigree-name">${escapeHtml(node.motherName)}</span></div></li>`
-              : "";
-          const children = level > 1 && (fatherBranch || motherBranch)
-            ? `<ul>${fatherBranch}${motherBranch}</ul>`
-            : "";
-          return `<li><div class="pedigree-node ${pedigreeNodeClass(label)}"><span class="pedigree-label">${escapeHtml(label)}</span><span class="pedigree-name">${escapeHtml(node.name)}</span></div>${children}</li>`;
+          return generations;
+        } %>
+        <% function renderPedigreeMap(root, maxGenerations) {
+          const generations = buildPedigreeGenerations(root, maxGenerations);
+          return generations.map(function(generation, index) {
+            const columns = Math.max(1, generation.length);
+            const cards = generation.map(function(slot) {
+              const nodeClass = pedigreeNodeClass(slot);
+              const label = slot.name ? pedigreeSlotLabel(index, slot.side) : "Não informado";
+              const name = slot.name || "-";
+              return `<div class="pedigree-slot"><div class="pedigree-node ${nodeClass}"><span class="pedigree-label">${escapeHtml(label)}</span><span class="pedigree-name">${escapeHtml(name)}</span></div></div>`;
+            }).join("");
+
+            return `<div class="pedigree-generation-label">${escapeHtml(pedigreeGenerationLabel(index))}</div><div class="pedigree-generation" style="grid-template-columns: repeat(${columns}, minmax(150px, 1fr));">${cards}</div>`;
+          }).join("");
         } %>
 
         <% groups.forEach(function(group) { %>
@@ -324,9 +375,9 @@
                           <div class="origin-dialog-title">Origem - <%= row.femaleDisplayName %></div>
                           <button type="button" class="btn" data-close-origin>Fechar</button>
                         </div>
-                        <ul class="pedigree-tree">
-                          <%- renderPedigreeNode(row.pedigree, "Gata", 5) %>
-                        </ul>
+                        <div class="pedigree-map">
+                          <%- renderPedigreeMap(row.pedigree, 5) %>
+                        </div>
                       </dialog>
                     </div>
 
