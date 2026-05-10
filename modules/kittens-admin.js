@@ -8,6 +8,15 @@ const BREEDS = [
   "PEB","RAG","RUS","SBI","SIB","SNO","SOK","SPH","SRL","SRS","THA","TUA","TUV"
 ];
 
+const KITTEN_STATUS_OPTIONS = [
+  { value: "UNAVAILABLE", label: "Indisponível" },
+  { value: "AVAILABLE", label: "Disponível" },
+  { value: "RESERVED", label: "Reservado" },
+  { value: "BREEDER", label: "Padreador/Matriz" },
+  { value: "DELIVERED", label: "Entregue" },
+  { value: "DECEASED", label: "Óbito" },
+];
+
 function formatDateForInput(date) {
   if (!date) return "";
   const parsed = new Date(date);
@@ -46,7 +55,35 @@ function mergeLinkedKittenFields(cat) {
     neutered: linkedBreeding
       ? linkedBreeding === "NOT_FOR_BREEDING"
       : cat.neutered,
+    kittenAvailabilityStatus: deriveKittenStatus(cat),
     newOwnerInfo: safeJsonParse(cat.newOwnerInfoJson),
+  };
+}
+
+function normalizeKittenStatus(value) {
+  return KITTEN_STATUS_OPTIONS.some((option) => option.value === value)
+    ? value
+    : "UNAVAILABLE";
+}
+
+function deriveKittenStatus(cat) {
+  if (!cat) return "UNAVAILABLE";
+  if (cat.deceased === true) return "DECEASED";
+  if (cat.breedingProspect === true) return "BREEDER";
+  if (cat.delivered === true) return "DELIVERED";
+  if (cat.sold === true) return "RESERVED";
+  if (cat.kittenAvailabilityStatus) return normalizeKittenStatus(cat.kittenAvailabilityStatus);
+  return "AVAILABLE";
+}
+
+function statusFlags(status) {
+  const normalized = normalizeKittenStatus(status);
+  return {
+    kittenAvailabilityStatus: normalized,
+    sold: normalized === "RESERVED" || normalized === "DELIVERED",
+    delivered: normalized === "DELIVERED" || normalized === "DECEASED",
+    breedingProspect: normalized === "BREEDER",
+    deceased: normalized === "DECEASED",
   };
 }
 
@@ -96,6 +133,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       males,
       users,
       breeds: BREEDS,
+      kittenStatusOptions: KITTEN_STATUS_OPTIONS,
       kitten,
       error,
     };
@@ -218,10 +256,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       ownershipType: currentOwnerMode === "OTHER" ? "CO-OWNERSHIP" : "OWNER",
       currentOwnerId,
       newOwnerInfoJson: newOwnerInfo ? JSON.stringify(newOwnerInfo) : null,
-      delivered: req.body.delivered === "YES",
-      sold: req.body.sold === "YES",
-      breedingProspect: req.body.breedingProspect === "YES",
-      deceased: req.body.deceased === "YES",
+      ...statusFlags(req.body.kittenAvailabilityStatus || existingKitten?.kittenAvailabilityStatus || "UNAVAILABLE"),
       ownerId: existingKitten?.ownerId || req.session.userId,
       status: existingKitten?.status || "APROVADO",
       historyNotes: req.body.historyNotes || null,
@@ -270,16 +305,23 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         selectedOwnerId,
         groupedKittens: {
           available: kittenRows.filter(
-            (kitten) => !kitten.deceased && !kitten.sold && !kitten.delivered && !kitten.breedingProspect
+            (kitten) => deriveKittenStatus(kitten) === "AVAILABLE"
           ),
-          notDelivered: kittenRows.filter(
-            (kitten) => !kitten.deceased && kitten.sold && !kitten.delivered && !kitten.breedingProspect
+          reserved: kittenRows.filter(
+            (kitten) => deriveKittenStatus(kitten) === "RESERVED"
           ),
-          breeders: kittenRows.filter((kitten) => !kitten.deceased && kitten.breedingProspect),
+          unavailable: kittenRows.filter(
+            (kitten) => deriveKittenStatus(kitten) === "UNAVAILABLE"
+          ),
+          breeders: kittenRows.filter((kitten) => deriveKittenStatus(kitten) === "BREEDER"),
           deliveredSold: kittenRows.filter(
-            (kitten) => kitten.deceased || (kitten.sold && kitten.delivered && !kitten.breedingProspect)
+            (kitten) => deriveKittenStatus(kitten) === "DELIVERED"
+          ),
+          deceased: kittenRows.filter(
+            (kitten) => deriveKittenStatus(kitten) === "DECEASED"
           ),
         },
+        kittenStatusOptions: KITTEN_STATUS_OPTIONS,
       });
     }
   );
@@ -317,13 +359,18 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         return res.status(403).send("Você não pode editar este filhote.");
       }
 
-      await prisma.cat.update({
-        where: { id: existingKitten.id },
-        data: {
-          sold: req.body.sold === "YES",
-          delivered: req.body.delivered === "YES",
-          breedingProspect: req.body.breedingProspect === "YES",
-        },
+      const data = statusFlags(req.body.kittenAvailabilityStatus);
+
+      await prisma.$transaction(async (tx) => {
+        await tx.cat.update({
+          where: { id: existingKitten.id },
+          data,
+        });
+
+        await tx.litterKitten.updateMany({
+          where: { kittenCatId: existingKitten.id },
+          data: { deceased: data.deceased },
+        });
       });
 
       if (req.get("X-Autosave") === "true") {

@@ -20,9 +20,7 @@
         color: #4b5563;
       }
       .kitten-list-actions {
-        display: grid;
-        grid-template-columns: repeat(3, max-content);
-        gap: 14px;
+        display: flex;
         align-items: center;
       }
       .kitten-quick-field {
@@ -36,44 +34,11 @@
         font-size: 10px;
         white-space: nowrap;
       }
-      .kitten-toggle {
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-        width: 48px;
-        height: 20px;
-      }
-      .kitten-toggle input {
-        position: absolute;
-        opacity: 0;
-        pointer-events: none;
-      }
-      .kitten-toggle span {
-        width: 48px;
-        height: 20px;
-        border-radius: 999px;
-        background: #e5e7eb;
-        border: 1px solid var(--border-soft);
-        transition: background 0.16s ease, border-color 0.16s ease;
-      }
-      .kitten-toggle span::after {
-        content: "";
-        position: absolute;
-        top: 3px;
-        left: 4px;
-        width: 14px;
-        height: 14px;
-        border-radius: 50%;
-        background: #ffffff;
-        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.22);
-        transition: transform 0.16s ease;
-      }
-      .kitten-toggle input:checked + span {
-        background: #16a34a;
-        border-color: #16a34a;
-      }
-      .kitten-toggle input:checked + span::after {
-        transform: translateX(26px);
+      .kitten-status-select {
+        min-width: 160px;
+        height: 36px;
+        padding: 0 10px;
+        font-size: 13px;
       }
       @media (max-width: 900px) {
         .kitten-list-item {
@@ -81,7 +46,7 @@
           flex-direction: column;
         }
         .kitten-list-actions {
-          grid-template-columns: repeat(3, max-content);
+          justify-content: flex-start;
         }
       }
     </style>
@@ -126,9 +91,11 @@
 
         <% const kittenGroups = [
           { title: "Disponíveis", items: groupedKittens.available || [], color: "#16a34a" },
-          { title: "Não Entregues", items: groupedKittens.notDelivered || [], color: "#f59e0b" },
+          { title: "Reservados", items: groupedKittens.reserved || [], color: "#f59e0b" },
+          { title: "Indisponíveis", items: groupedKittens.unavailable || [], color: "#64748b" },
           { title: "Padreadores/Matrizes", items: groupedKittens.breeders || [], color: "#7c3aed" },
           { title: "Entregues/Vendidos", items: groupedKittens.deliveredSold || [], color: "#6b7280" },
+          { title: "Óbito", items: groupedKittens.deceased || [], color: "#374151" },
         ]; %>
 
         <% if (!kittenGroups.some(function(group) { return group.items.length; })) { %>
@@ -158,25 +125,12 @@
                           </div>
                           <form method="post" action="/admin/kittens/<%= kitten.id %>/quick-status" class="kitten-list-actions" data-quick-kitten-status>
                             <div class="kitten-quick-field">
-                              <span class="field-label">Vendido:</span>
-                              <label class="kitten-toggle" title="Vendido">
-                                <input type="checkbox" name="sold" value="YES" <%= kitten.sold ? "checked" : "" %> />
-                                <span aria-hidden="true"></span>
-                              </label>
-                            </div>
-                            <div class="kitten-quick-field">
-                              <span class="field-label">Entregue:</span>
-                              <label class="kitten-toggle" title="Entregue">
-                                <input type="checkbox" name="delivered" value="YES" <%= kitten.delivered ? "checked" : "" %> />
-                                <span aria-hidden="true"></span>
-                              </label>
-                            </div>
-                            <div class="kitten-quick-field">
-                              <span class="field-label">Padreador/Matriz:</span>
-                              <label class="kitten-toggle" title="Padreador/Matriz">
-                                <input type="checkbox" name="breedingProspect" value="YES" <%= kitten.breedingProspect ? "checked" : "" %> />
-                                <span aria-hidden="true"></span>
-                              </label>
+                              <span class="field-label">Status:</span>
+                              <select class="kitten-status-select" name="kittenAvailabilityStatus">
+                                <% kittenStatusOptions.forEach(function(option) { %>
+                                  <option value="<%= option.value %>" <%= kitten.kittenAvailabilityStatus === option.value ? "selected" : "" %>><%= option.label %></option>
+                                <% }) %>
+                              </select>
                             </div>
                           </form>
                         </div>
@@ -205,8 +159,8 @@
         searchInput.addEventListener("change", syncOwnerId);
 
         document.querySelectorAll("[data-quick-kitten-status]").forEach((form) => {
-          form.querySelectorAll('input[type="checkbox"]').forEach((toggle) => {
-            toggle.addEventListener("change", async () => {
+          form.querySelectorAll("select").forEach((select) => {
+            select.addEventListener("change", async () => {
               try {
                 const response = await fetch(form.action, {
                   method: "POST",

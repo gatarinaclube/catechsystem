@@ -289,13 +289,19 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     if (kitten.kittenCatId) {
       await tx.cat.update({
         where: { id: kitten.kittenCatId },
-        data: catPayload,
+        data: {
+          ...catPayload,
+          ...(kitten.deceased ? { kittenAvailabilityStatus: "DECEASED" } : {}),
+        },
       });
       return kitten.kittenCatId;
     }
 
     const created = await tx.cat.create({
-      data: catPayload,
+      data: {
+        ...catPayload,
+        kittenAvailabilityStatus: kitten.deceased ? "DECEASED" : "UNAVAILABLE",
+      },
     });
     return created.id;
   }

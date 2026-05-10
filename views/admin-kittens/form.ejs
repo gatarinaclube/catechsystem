@@ -195,24 +195,11 @@
                 </div>
               </div>
               <div class="field">
-                <label class="field-label" for="sold">Vendido</label>
-                <select id="sold" name="sold">
-                  <option value="NO" <%= kitten?.sold ? "" : "selected" %>>NÃO</option>
-                  <option value="YES" <%= kitten?.sold ? "selected" : "" %>>SIM</option>
-                </select>
-              </div>
-              <div class="field">
-                <label class="field-label" for="delivered">Entregue</label>
-                <select id="delivered" name="delivered">
-                  <option value="NO" <%= kitten?.delivered ? "" : "selected" %>>NÃO</option>
-                  <option value="YES" <%= kitten?.delivered ? "selected" : "" %>>SIM</option>
-                </select>
-              </div>
-              <div class="field">
-                <label class="field-label" for="breedingProspect">Padreador/Matriz</label>
-                <select id="breedingProspect" name="breedingProspect">
-                  <option value="NO" <%= kitten?.breedingProspect ? "" : "selected" %>>NÃO</option>
-                  <option value="YES" <%= kitten?.breedingProspect ? "selected" : "" %>>SIM</option>
+                <label class="field-label" for="kittenAvailabilityStatus">Status</label>
+                <select id="kittenAvailabilityStatus" name="kittenAvailabilityStatus">
+                  <% kittenStatusOptions.forEach(function(option) { %>
+                    <option value="<%= option.value %>" <%= (kitten?.kittenAvailabilityStatus || 'UNAVAILABLE') === option.value ? "selected" : "" %>><%= option.label %></option>
+                  <% }) %>
                 </select>
               </div>
             </div>
@@ -282,15 +269,6 @@
 
           <div class="content-card">
             <div class="content-title">Histórico</div>
-            <div class="grid-3" style="margin-top:12px;">
-              <div class="field">
-                <label class="field-label" for="deceased">Óbito</label>
-                <select id="deceased" name="deceased">
-                  <option value="NO" <%= kitten?.deceased ? "" : "selected" %>>Não</option>
-                  <option value="YES" <%= kitten?.deceased ? "selected" : "" %>>Sim</option>
-                </select>
-              </div>
-            </div>
             <div class="field" style="margin-top:12px;">
               <label class="field-label" for="historyNotes">Histórico</label>
               <textarea id="historyNotes" name="historyNotes" rows="5"><%= kitten?.historyNotes || '' %></textarea>

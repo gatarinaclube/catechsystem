@@ -2,13 +2,6 @@ const express = require("express");
 const PDFDocument = require("pdfkit");
 const { canViewAllData } = require("../utils/access");
 
-const PAYMENT_FILTERS = [
-  { value: "", label: "Todas" },
-  { value: "CREDIT", label: "Somente Cartão de Crédito" },
-  { value: "PIX", label: "Somente PIX" },
-  { value: "CASH", label: "Somente Dinheiro" },
-];
-
 function todayParts() {
   const today = new Date().toLocaleDateString("en-CA", {
     timeZone: "America/Sao_Paulo",
@@ -65,10 +58,6 @@ function formatCurrency(cents) {
   });
 }
 
-function paymentFilterLabel(value) {
-  return PAYMENT_FILTERS.find((option) => option.value === value)?.label || "Todas";
-}
-
 function buildExpenseFilters(query) {
   const periodType = query.periodType === "custom" ? "custom" : "month";
   const month = /^\d{4}-\d{2}$/.test(query.month || "")
@@ -93,10 +82,6 @@ function buildExpenseFilters(query) {
     endDate = new Date(Date.UTC(year, monthNumber, 0));
   }
 
-  const paymentMethod = PAYMENT_FILTERS.some((option) => option.value === query.paymentMethod)
-    ? query.paymentMethod
-    : "";
-
   return {
     periodType,
     month,
@@ -104,7 +89,6 @@ function buildExpenseFilters(query) {
     endDate,
     startDateInput: formatDateInput(startDate),
     endDateInput: formatDateInput(endDate),
-    paymentMethod,
     account: String(query.account || "").trim(),
   };
 }
@@ -122,15 +106,6 @@ function buildExpenseWhere(req, filters) {
     },
   };
 
-  if (filters.paymentMethod) {
-    const keyword = filters.paymentMethod === "PIX"
-      ? "PIX"
-      : filters.paymentMethod === "CREDIT"
-        ? "Crédito"
-        : "Dinheiro";
-    where.paymentMethod = { contains: keyword, mode: "insensitive" };
-  }
-
   if (filters.account) {
     where.paymentMethod = filters.account;
   }
@@ -144,22 +119,12 @@ function buildRevenueWhere(req, filters) {
   };
 }
 
-function paymentKeyword(filterValue) {
-  if (!filterValue) return "";
-  return filterValue === "PIX"
-    ? "PIX"
-    : filterValue === "CREDIT"
-      ? "Crédito"
-      : "Dinheiro";
-}
-
 function buildQueryString(filters, forcePdf = false) {
   const params = new URLSearchParams({
     periodType: filters.periodType,
     month: filters.month,
     startDate: filters.startDateInput,
     endDate: filters.endDateInput,
-    paymentMethod: filters.paymentMethod,
     account: filters.account || "",
   });
 
@@ -207,8 +172,6 @@ function mapRevenueRows(revenues, filters) {
       if (paidTime < startTime || paidTime >= endTime) return;
       const paymentAccount = parcel.paymentAccount || revenue.paymentAccount || "";
       if (filters.account && paymentAccount !== filters.account) return;
-      const keyword = paymentKeyword(filters.paymentMethod);
-      if (keyword && !paymentAccount.toLowerCase().includes(keyword.toLowerCase())) return;
 
       rows.push({
         ...revenue,
@@ -233,15 +196,13 @@ function mapRevenueRows(revenues, filters) {
 function mapTransferRows(transfers, filters) {
   const startTime = filters.startDate.getTime();
   const endTime = addDays(filters.endDate, 1).getTime();
-  const keyword = paymentKeyword(filters.paymentMethod).toLowerCase();
   const rows = [];
 
   transfers.forEach((transfer) => {
     const transferTime = new Date(transfer.transferDate).getTime();
     if (transferTime < startTime || transferTime >= endTime) return;
 
-    if ((!filters.account || filters.account === transfer.toAccount) &&
-      (!keyword || transfer.toAccount.toLowerCase().includes(keyword))) {
+    if (!filters.account || filters.account === transfer.toAccount) {
       rows.push({
         id: `transfer-in-${transfer.id}`,
         dateTime: transferTime,
@@ -255,8 +216,7 @@ function mapTransferRows(transfers, filters) {
       });
     }
 
-    if ((!filters.account || filters.account === transfer.fromAccount) &&
-      (!keyword || transfer.fromAccount.toLowerCase().includes(keyword))) {
+    if (!filters.account || filters.account === transfer.fromAccount) {
       rows.push({
         id: `transfer-out-${transfer.id}`,
         dateTime: transferTime,
@@ -331,7 +291,7 @@ function renderExpensesPdf(res, rows, filters, totalLabel) {
   doc.font("Helvetica").fontSize(10).text(
     `Período: ${formatDateOnlyLabel(filters.startDate)} a ${formatDateOnlyLabel(filters.endDate)}`
   );
-  doc.text(`Tipo: ${paymentFilterLabel(filters.paymentMethod)} | Conta: ${filters.account || "Todas"}`);
+  doc.text(`Conta: ${filters.account || "Todas"}`);
   doc.text(`Total: ${totalLabel}`);
   doc.moveDown(1);
 
@@ -417,7 +377,7 @@ function renderRevenuesPdf(res, rows, filters, totalLabel) {
   doc.font("Helvetica").fontSize(10).text(
     `Período: ${formatDateOnlyLabel(filters.startDate)} a ${formatDateOnlyLabel(filters.endDate)}`
   );
-  doc.text(`Tipo: ${paymentFilterLabel(filters.paymentMethod)} | Conta: ${filters.account || "Todas"}`);
+  doc.text(`Conta: ${filters.account || "Todas"}`);
   doc.text(`Total: ${totalLabel}`);
   doc.moveDown(1);
 
@@ -593,7 +553,6 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         currentPath: "/reports",
         rows,
         filters,
-        paymentFilters: PAYMENT_FILTERS,
         accountOptions: await loadAccountOptions(prisma),
         totalLabel: formatCurrency(totalCents),
         pdfQuery: buildQueryString(filters, true),
@@ -643,7 +602,6 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         currentPath: "/reports",
         rows,
         filters,
-        paymentFilters: PAYMENT_FILTERS,
         accountOptions: await loadAccountOptions(prisma),
         totalLabel: formatCurrency(totalCents),
         pdfQuery: buildQueryString(filters, true),
@@ -709,7 +667,6 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         currentPath: "/reports",
         rows,
         filters,
-        paymentFilters: PAYMENT_FILTERS,
         accountOptions: await loadAccountOptions(prisma),
         incomeLabel: formatCurrency(incomeCents),
         expenseLabel: formatCurrency(expenseCents),

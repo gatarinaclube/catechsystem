@@ -9,7 +9,7 @@
     <style>
       .report-filter-grid {
         display: grid;
-        grid-template-columns: repeat(6, minmax(0, 1fr));
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         gap: 12px;
         align-items: end;
       }
@@ -106,14 +106,6 @@
             <div class="field">
               <label class="field-label" for="endDate">Data final</label>
               <input id="endDate" name="endDate" type="date" value="<%= filters.endDateInput %>" />
-            </div>
-            <div class="field">
-              <label class="field-label" for="paymentMethod">Tipo</label>
-              <select id="paymentMethod" name="paymentMethod">
-                <% paymentFilters.forEach(function(option) { %>
-                  <option value="<%= option.value %>" <%= filters.paymentMethod === option.value ? 'selected' : '' %>><%= option.label %></option>
-                <% }) %>
-              </select>
             </div>
             <div class="field">
               <label class="field-label" for="account">Conta</label>

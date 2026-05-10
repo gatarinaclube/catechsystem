@@ -259,6 +259,7 @@ model Cat {
   sold             Boolean?          @default(false)
   breedingProspect Boolean?          @default(false)
   delivered        Boolean?          @default(false)
+  kittenAvailabilityStatus String?
   currentOwnerId   Int?
   currentOwner     User?             @relation("CurrentKittenOwner", fields: [currentOwnerId], references: [id])
   newOwnerInfoJson String?

@@ -83,6 +83,14 @@ function buildKittenLabel(cat) {
   return `${number} - ${cat.name || "Sem nome"}`;
 }
 
+function deriveKittenStatus(cat) {
+  if (cat.deceased === true) return "DECEASED";
+  if (cat.breedingProspect === true) return "BREEDER";
+  if (cat.delivered === true) return "DELIVERED";
+  if (cat.sold === true) return "RESERVED";
+  return cat.kittenAvailabilityStatus || "AVAILABLE";
+}
+
 function mapRevenueForForm(revenue = null) {
   if (!revenue) {
     return {
@@ -189,13 +197,13 @@ module.exports = (prisma) => {
         {
           label: "Disponíveis",
           kittens: kittens
-            .filter((cat) => !cat.sold)
+            .filter((cat) => deriveKittenStatus(cat) === "AVAILABLE")
             .map((cat) => ({ ...cat, label: buildKittenLabel(cat) })),
         },
         {
-          label: "Não Entregues",
+          label: "Reservados",
           kittens: kittens
-            .filter((cat) => cat.sold)
+            .filter((cat) => deriveKittenStatus(cat) === "RESERVED")
             .map((cat) => ({ ...cat, label: buildKittenLabel(cat) })),
         },
       ],
