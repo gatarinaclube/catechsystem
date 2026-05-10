@@ -17,7 +17,8 @@
         min-width: 0;
       }
       .kitten-list-main .item-link {
-        color: #4b5563;
+        color: var(--kitten-group-color, #4b5563);
+        font-weight: 700;
       }
       .kitten-list-actions {
         display: flex;
@@ -104,13 +105,13 @@
           </div>
         <% } else { %>
           <% kittenGroups.forEach(function(group) { %>
-            <details class="content-card module-panel module-accordion" open style="border-left: 5px solid <%= group.color %>;">
+            <details class="content-card module-panel module-accordion" open style="border-left: 5px solid <%= group.color %>; --kitten-group-color: <%= group.color %>;">
               <summary>
                 <div class="module-accordion-summary">
                   <span class="module-accordion-icon">⌄</span>
-                  <span class="module-accordion-title"><%= group.title %></span>
+                  <span class="module-accordion-title" style="color: <%= group.color %>;"><%= group.title %></span>
                 </div>
-                <span class="module-accordion-count"><%= group.items.length %></span>
+                <span class="module-accordion-count" style="color: <%= group.color %>;"><%= group.items.length %></span>
               </summary>
               <div class="module-accordion-body module-list-card">
                 <% if (!group.items.length) { %>

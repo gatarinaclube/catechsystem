@@ -62,10 +62,8 @@ function getFullCatName(cat, catteryName = "") {
       : baseName;
 
   return [
-    cat.titleBeforeName,
     cat.country ? `${cat.country}*` : null,
     displayBaseName,
-    cat.titleAfterName,
   ].filter(Boolean).join(" ");
 }
 
@@ -409,7 +407,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         where: canViewAllData(req.session?.userRole) && selectedOwnerId
           ? { ownerId: selectedOwnerId }
           : ownerScope(req),
-        orderBy: [{ litterNumber: "asc" }, { id: "asc" }],
+        orderBy: [{ litterBirthDate: "desc" }, { litterNumber: "desc" }, { id: "desc" }],
       });
 
       res.render("admin-litters/list", {

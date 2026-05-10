@@ -182,6 +182,22 @@ function buildBreederDisplayName(cat, catteryName = "") {
   return displayName;
 }
 
+function buildCatSelectName(cat, catteryName = "") {
+  const cleanCatteryName = String(catteryName || "").trim();
+  const baseName = String(cat.name || "").trim();
+  const prefixedName =
+    cleanCatteryName &&
+    shouldShowCatteryPrefix(cat) &&
+    !baseName.toLowerCase().startsWith(`${cleanCatteryName.toLowerCase()} `)
+      ? `${cleanCatteryName} ${baseName}`
+      : baseName;
+
+  return [
+    cat.country ? `${cat.country}*` : null,
+    prefixedName,
+  ].filter(Boolean).join(" ");
+}
+
 function classifyBreeder(cat) {
   const age = calculateAge(cat.birthDate);
   const isKittenRecord = Boolean(cat.kittenNumber || cat.litterKitten);
@@ -327,10 +343,12 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       maleCats: maleCats.filter(canAppearAsParentOption).map((maleCat) => ({
         ...maleCat,
         displayName: buildBreederDisplayName(maleCat, catteryName),
+        selectName: buildCatSelectName(maleCat, catteryName),
       })),
       femaleCats: femaleCats.filter(canAppearAsParentOption).map((femaleCat) => ({
         ...femaleCat,
         displayName: buildBreederDisplayName(femaleCat, catteryName),
+        selectName: buildCatSelectName(femaleCat, catteryName),
       })),
       cat,
       breedingValue,

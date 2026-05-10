@@ -108,7 +108,7 @@ function buildPedigreeNode(cat, depth = 4) {
   if (!cat || depth <= 0) return null;
 
   return {
-    name: buildDisplayName(cat) || cat.name || "-",
+    name: cat.name || buildDisplayName(cat) || "-",
     fatherName: cat.father?.name || cat.fatherName || "",
     motherName: cat.mother?.name || cat.motherName || "",
     father: buildPedigreeNode(cat.father, depth - 1),
