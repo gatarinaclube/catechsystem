@@ -35,6 +35,7 @@
                     </a>
                     <div class="item-sub">
                       <%= client.document || "Sem documento" %>
+                      · Cadastro: <%= client.createdAtLabel || "-" %>
                       <% if (client.city || client.state) { %>
                         · <%= [client.city, client.state].filter(Boolean).join(" - ") %>
                       <% } %>

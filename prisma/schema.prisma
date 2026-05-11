@@ -177,6 +177,7 @@ model RevenueClient {
   email        String?
   phone        String?
   createdAt    DateTime @default(now())
+  deletedAt    DateTime?
   revenues     RevenueEntry[]
 }
 

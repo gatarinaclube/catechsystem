@@ -15,6 +15,9 @@
 
       <form class="quick-card" method="post" action="<%= formAction || '/receitas/clientes/novo' %>">
         <% if (error) { %><div class="message message-error"><%= error %></div><% } %>
+        <% if (client && client.createdAtLabel) { %>
+          <div class="quick-hint">Cadastro: <%= client.createdAtLabel %></div>
+        <% } %>
 
         <div class="field">
           <label for="fullName">Nome Completo</label>
@@ -78,6 +81,12 @@
 
         <button type="submit" class="btn">Salvar cliente</button>
       </form>
+
+      <% if (typeof deleteAction !== 'undefined' && deleteAction) { %>
+        <form class="quick-card" method="post" action="<%= deleteAction %>" onsubmit="return confirm('Deseja excluir este cliente do CRM? As receitas antigas continuam preservadas.');">
+          <button type="submit" class="btn" style="background:#fee2e2; color:#991b1b;">Excluir cliente</button>
+        </form>
+      <% } %>
 
       <a class="back-link" href="<%= backPath || '/receitas' %>">Voltar</a>
     </main>

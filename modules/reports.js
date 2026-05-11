@@ -231,10 +231,14 @@ function mapRevenueRows(revenues, filters) {
   });
 }
 
+function currentMonthStartDate() {
+  const [year, month] = todayParts();
+  return new Date(Date.UTC(year, month - 1, 1));
+}
+
 function mapReceivableRows(revenues, filters) {
   const rows = [];
-  const startTime = filters.startDate.getTime();
-  const endTime = addDays(filters.endDate, 1).getTime();
+  const startTime = currentMonthStartDate().getTime();
 
   revenues.forEach((revenue) => {
     parseParcelData(revenue.parcelDataJson).forEach((parcel) => {
@@ -244,7 +248,7 @@ function mapReceivableRows(revenues, filters) {
       if (!dueDate) return;
 
       const dueTime = dueDate.getTime();
-      if (dueTime < startTime || dueTime >= endTime) return;
+      if (dueTime < startTime) return;
       const paymentAccount = parcel.paymentAccount || revenue.paymentAccount || "";
       if (filters.account && paymentAccount !== filters.account) return;
 
@@ -368,8 +372,26 @@ function buildMonthBuckets(filters) {
   return buckets.reverse();
 }
 
-function groupRowsByMonth(rows, filters, dateGetter) {
-  const buckets = buildMonthBuckets(filters);
+function buildRowMonthBuckets(rows, dateGetter) {
+  const keys = Array.from(new Set(
+    rows
+      .map((row) => dateGetter(row))
+      .filter(Boolean)
+      .map(monthKeyFromDate)
+  )).sort((a, b) => a.localeCompare(b));
+
+  return keys.map((key) => ({
+    key,
+    label: monthLabelFromKey(key),
+    rows: [],
+    totalCents: 0,
+  }));
+}
+
+function groupRowsByMonth(rows, filters, dateGetter, options = {}) {
+  const buckets = options.onlyWithRows
+    ? buildRowMonthBuckets(rows, dateGetter)
+    : buildMonthBuckets(filters);
   const bucketMap = new Map(buckets.map((bucket) => [bucket.key, bucket]));
 
   rows.forEach((row) => {
@@ -385,7 +407,7 @@ function groupRowsByMonth(rows, filters, dateGetter) {
     bucket.rows.sort((a, b) => {
       const aTime = new Date(dateGetter(a)).getTime();
       const bTime = new Date(dateGetter(b)).getTime();
-      return bTime - aTime;
+      return options.direction === "asc" ? aTime - bTime : bTime - aTime;
     });
     bucket.totalLabel = bucket.totalCents < 0
       ? `- ${formatCurrency(Math.abs(bucket.totalCents))}`
@@ -1055,7 +1077,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const receivableMonths = groupRowsByMonth(
       receivableRows,
       filters,
-      (row) => new Date(row.dueDateTime)
+      (row) => new Date(row.dueDateTime),
+      { onlyWithRows: true, direction: "asc" }
     );
     const revenueTotalCents = revenueRows.reduce((sum, row) => sum + Number(row.amountCents || 0), 0);
     const receivableTotalCents = receivableRows.reduce((sum, row) => sum + Number(row.amountCents || 0), 0);

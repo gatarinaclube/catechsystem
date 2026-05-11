@@ -159,13 +159,32 @@ module.exports = (prisma) => {
   }
 
   function clientScope(req) {
-    if (canViewAllData(req.session?.userRole)) return {};
+    if (canViewAllData(req.session?.userRole)) return { deletedAt: null };
     return {
+      deletedAt: null,
       OR: [
         { ownerId: req.session?.userId || null },
         { ownerId: null },
       ],
     };
+  }
+
+  function normalizeDocument(value) {
+    return String(value || "").replace(/[\s.\-_/]/g, "").toUpperCase();
+  }
+
+  async function ensureUniqueClientDocument(req, document) {
+    const normalized = normalizeDocument(document);
+    if (!normalized) return;
+
+    const clients = await prisma.revenueClient.findMany({
+      where: clientScope(req),
+      select: { document: true },
+    });
+
+    if (clients.some((client) => normalizeDocument(client.document) === normalized)) {
+      throw new Error("Já existe um cliente cadastrado com este CPF/RG/Passaporte.");
+    }
   }
 
   async function loadContext(req, revenue = null) {
@@ -364,6 +383,7 @@ module.exports = (prisma) => {
 
   router.post("/receitas/clientes/novo", async (req, res) => {
     try {
+      await ensureUniqueClientDocument(req, req.body.document);
       await prisma.revenueClient.create({
         data: {
           ownerId: req.session?.userId || null,

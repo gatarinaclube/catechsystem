@@ -180,11 +180,14 @@
           <div class="report-summary">
             <div>
               <div class="content-title">A Receber</div>
-              <div class="content-sub">Total previsto no período: <strong class="cash-in"><%= receivableTotalLabel %></strong></div>
+              <div class="content-sub">Total previsto do mês atual em diante: <strong class="cash-in"><%= receivableTotalLabel %></strong></div>
             </div>
           </div>
 
-          <% receivableMonths.forEach(function(month) { %>
+          <% if (!receivableMonths.length) { %>
+            <div class="empty">Nenhum valor a receber do mês atual em diante.</div>
+          <% } else { %>
+            <% receivableMonths.forEach(function(month) { %>
             <div class="accounting-month">
               <div class="accounting-month-head">
                 <strong><%= month.label %></strong>
@@ -221,7 +224,8 @@
                 </div>
               <% } %>
             </div>
-          <% }) %>
+            <% }) %>
+          <% } %>
         </div>
 
         <% accountSections.forEach(function(section, index) { %>
