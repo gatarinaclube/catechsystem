@@ -15,6 +15,7 @@ const STATUS_GROUPS = [
   { key: "CONFIRMADO", label: "Confirmado" },
   { key: "NAO_CONFIRMADO", label: "Não Confirmado" },
   { key: "PARA_ACASALAR", label: "Para Acasalar" },
+  { key: "PAUSA_REPRODUTIVA", label: "Pausa Reprodutiva" },
   { key: "COM_PROBLEMA", label: "Com Problema" },
   { key: "EM_DESENVOLVIMENTO", label: "Em Desenvolvimento" },
 ];
