@@ -699,23 +699,37 @@ function renderAccountingPdf(res, data, filters) {
   function drawSectionTitle(title, totalLabel) {
     ensureSpace(56);
     doc.moveDown(0.7);
-    doc.font("Helvetica-Bold").fontSize(13).fillColor("#111827").text(title);
+    doc.x = 40;
+    doc.font("Helvetica-Bold").fontSize(13).fillColor("#111827").text(title, 40, doc.y, {
+      width: 515,
+      align: "left",
+    });
     if (totalLabel) {
-      doc.font("Helvetica").fontSize(9).fillColor("#6b7280").text(`Total: ${totalLabel}`);
+      doc.font("Helvetica").fontSize(9).fillColor("#6b7280").text(`Total: ${totalLabel}`, 40, doc.y, {
+        width: 515,
+        align: "left",
+      });
     }
     doc.moveDown(0.4);
   }
 
   function drawMonthTitle(month) {
     ensureSpace(42);
+    doc.x = 40;
     doc.font("Helvetica-Bold").fontSize(10).fillColor("#1f2937")
-      .text(`${month.label} · ${month.totalLabel}`);
+      .text(`${month.label} · ${month.totalLabel}`, 40, doc.y, {
+        width: 515,
+        align: "left",
+      });
     doc.moveDown(0.2);
   }
 
   function drawRows(rows, columns, emptyText) {
     if (!rows.length) {
-      doc.font("Helvetica").fontSize(9).fillColor("#6b7280").text(emptyText);
+      doc.font("Helvetica").fontSize(9).fillColor("#6b7280").text(emptyText, 40, doc.y, {
+        width: 515,
+        align: "left",
+      });
       doc.moveDown(0.4);
       return;
     }
@@ -774,12 +788,21 @@ function renderAccountingPdf(res, data, filters) {
     { label: "Valor", x: 462, width: 65, value: "amountLabel", align: "right" },
   ];
 
-  doc.font("Helvetica-Bold").fontSize(18).fillColor("#111827").text("Relatório Contábil");
+  doc.font("Helvetica-Bold").fontSize(18).fillColor("#111827").text("Relatório Contábil", 40, doc.y, {
+    width: 515,
+    align: "left",
+  });
   doc.moveDown(0.4);
   doc.font("Helvetica").fontSize(10).fillColor("#111827").text(
-    `Período: ${formatDateOnlyLabel(filters.startDate)} a ${formatDateOnlyLabel(filters.endDate)}`
+    `Período: ${formatDateOnlyLabel(filters.startDate)} a ${formatDateOnlyLabel(filters.endDate)}`,
+    40,
+    doc.y,
+    { width: 515, align: "left" }
   );
-  doc.text(`Conta filtrada: ${filters.account || "Receitas gerais e contas contábeis"}`);
+  doc.text(`Conta filtrada: ${filters.account || "Receitas gerais e contas contábeis"}`, 40, doc.y, {
+    width: 515,
+    align: "left",
+  });
 
   drawSectionTitle("Receitas", data.revenueTotalLabel);
   data.revenueMonths.forEach((month) => {
