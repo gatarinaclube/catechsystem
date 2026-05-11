@@ -718,9 +718,8 @@ function renderAccountingPdf(res, data, filters) {
     }
   }
 
-  function drawSectionTitle(title, totalLabel) {
-    ensureSpace(56);
-    doc.moveDown(0.7);
+  function startSectionPage(title, totalLabel) {
+    doc.addPage();
     doc.x = 40;
     doc.font("Helvetica-Bold").fontSize(13).fillColor("#111827").text(title, 40, doc.y, {
       width: 515,
@@ -732,7 +731,7 @@ function renderAccountingPdf(res, data, filters) {
         align: "left",
       });
     }
-    doc.moveDown(0.4);
+    doc.moveDown(0.7);
   }
 
   function drawMonthTitle(month) {
@@ -826,20 +825,20 @@ function renderAccountingPdf(res, data, filters) {
     align: "left",
   });
 
-  drawSectionTitle("Receitas", data.revenueTotalLabel);
+  startSectionPage("Receitas", data.revenueTotalLabel);
   data.revenueMonths.forEach((month) => {
     drawMonthTitle(month);
     drawRows(month.rows, revenueColumns, "Nenhuma receita neste mês.");
   });
 
-  drawSectionTitle("A Receber", data.receivableTotalLabel);
+  startSectionPage("A Receber", data.receivableTotalLabel);
   data.receivableMonths.forEach((month) => {
     drawMonthTitle(month);
     drawRows(month.rows, revenueColumns, "Nenhum valor a receber neste mês.");
   });
 
   data.accountSections.forEach((section, index) => {
-    drawSectionTitle(`Despesas - Conta ${index + 1} - ${section.account}`, section.totalLabel);
+    startSectionPage(`Despesas - Conta ${index + 1} - ${section.account}`, section.totalLabel);
     section.months.forEach((month) => {
       drawMonthTitle(month);
       drawRows(month.rows, expenseColumns, "Nenhuma movimentação nesta conta neste mês.");
