@@ -97,6 +97,44 @@ function buildRevenueFilters(query) {
   return buildExpenseFilters(query);
 }
 
+function buildAccountingFilters(query) {
+  const periodType = ["last3", "month", "custom"].includes(query.periodType)
+    ? query.periodType
+    : "last3";
+  const month = /^\d{4}-\d{2}$/.test(query.month || "")
+    ? query.month
+    : currentMonthInput();
+  const [year, monthNumber] = month.split("-").map(Number);
+  let startDate;
+  let endDate;
+
+  if (periodType === "custom") {
+    startDate = parseDateInput(query.startDate, null);
+    endDate = parseDateInput(query.endDate, null);
+  } else if (periodType === "month") {
+    startDate = new Date(Date.UTC(year, monthNumber - 1, 1));
+    endDate = new Date(Date.UTC(year, monthNumber, 0));
+  } else {
+    startDate = new Date(Date.UTC(year, monthNumber - 3, 1));
+    endDate = new Date(Date.UTC(year, monthNumber, 0));
+  }
+
+  if (!startDate || !endDate) {
+    startDate = new Date(Date.UTC(year, monthNumber - 3, 1));
+    endDate = new Date(Date.UTC(year, monthNumber, 0));
+  }
+
+  return {
+    periodType,
+    month,
+    startDate,
+    endDate,
+    startDateInput: formatDateInput(startDate),
+    endDateInput: formatDateInput(endDate),
+    account: String(query.account || "").trim(),
+  };
+}
+
 function buildExpenseWhere(req, filters) {
   const where = {
     ...(canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId }),
@@ -193,6 +231,43 @@ function mapRevenueRows(revenues, filters) {
   });
 }
 
+function mapReceivableRows(revenues, filters) {
+  const rows = [];
+  const startTime = filters.startDate.getTime();
+  const endTime = addDays(filters.endDate, 1).getTime();
+
+  revenues.forEach((revenue) => {
+    parseParcelData(revenue.parcelDataJson).forEach((parcel) => {
+      if (parcel.paid || !parcel.date || !parcel.amountCents) return;
+
+      const dueDate = parseDateInput(parcel.date, null);
+      if (!dueDate) return;
+
+      const dueTime = dueDate.getTime();
+      if (dueTime < startTime || dueTime >= endTime) return;
+      const paymentAccount = parcel.paymentAccount || revenue.paymentAccount || "";
+      if (filters.account && paymentAccount !== filters.account) return;
+
+      rows.push({
+        ...revenue,
+        parcelNumber: parcel.number,
+        parcelLabel: `${parcel.number || "-"} / ${revenue.installments || "-"}`,
+        dueDateTime: dueTime,
+        dateLabel: formatDateOnlyLabel(dueDate),
+        amountLabel: formatCurrency(parcel.amountCents),
+        amountCents: parcel.amountCents || 0,
+        clientLabel: revenue.client?.fullName || "-",
+        paymentAccount,
+      });
+    });
+  });
+
+  return rows.sort((a, b) => {
+    const dateCompare = a.dueDateTime - b.dueDateTime;
+    return dateCompare || Number(a.id) - Number(b.id);
+  });
+}
+
 function mapTransferRows(transfers, filters) {
   const startTime = filters.startDate.getTime();
   const endTime = addDays(filters.endDate, 1).getTime();
@@ -263,6 +338,96 @@ function mapCashFlowRows(expenses, revenueRows, transfers, filters) {
     const dateCompare = b.dateTime - a.dateTime;
     return dateCompare || String(b.id).localeCompare(String(a.id));
   });
+}
+
+function monthKeyFromDate(date) {
+  const parsed = new Date(date);
+  return `${parsed.getUTCFullYear()}-${String(parsed.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+function monthLabelFromKey(key) {
+  const [year, month] = key.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+function buildMonthBuckets(filters) {
+  const buckets = [];
+  const cursor = new Date(Date.UTC(filters.startDate.getUTCFullYear(), filters.startDate.getUTCMonth(), 1));
+  const end = new Date(Date.UTC(filters.endDate.getUTCFullYear(), filters.endDate.getUTCMonth(), 1));
+
+  while (cursor <= end) {
+    const key = monthKeyFromDate(cursor);
+    buckets.push({ key, label: monthLabelFromKey(key), rows: [], totalCents: 0 });
+    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+  }
+
+  return buckets.reverse();
+}
+
+function groupRowsByMonth(rows, filters, dateGetter) {
+  const buckets = buildMonthBuckets(filters);
+  const bucketMap = new Map(buckets.map((bucket) => [bucket.key, bucket]));
+
+  rows.forEach((row) => {
+    const date = dateGetter(row);
+    if (!date) return;
+    const bucket = bucketMap.get(monthKeyFromDate(date));
+    if (!bucket) return;
+    bucket.rows.push(row);
+    bucket.totalCents += Number(row.amountCents || 0);
+  });
+
+  buckets.forEach((bucket) => {
+    bucket.rows.sort((a, b) => {
+      const aTime = new Date(dateGetter(a)).getTime();
+      const bTime = new Date(dateGetter(b)).getTime();
+      return bTime - aTime;
+    });
+    bucket.totalLabel = bucket.totalCents < 0
+      ? `- ${formatCurrency(Math.abs(bucket.totalCents))}`
+      : formatCurrency(bucket.totalCents);
+  });
+
+  return buckets;
+}
+
+function buildAccountingExpenseRows(expenses, transfers, filters, account) {
+  const expenseRows = mapExpenseRows(
+    expenses.filter((expense) => !account || expense.paymentMethod === account)
+  ).map((expense) => ({
+    id: `expense-${expense.id}`,
+    date: expense.competenceDate,
+    dateTime: new Date(expense.competenceDate).getTime(),
+    dateLabel: expense.dateLabel,
+    typeLabel: "Despesa",
+    account: expense.paymentMethod || "-",
+    description: [expense.category, expense.supplier].filter(Boolean).join(" · ") || "Despesa",
+    note: expense.note || "",
+    amountCents: -Number(expense.amountCents || 0),
+    amountLabel: `- ${formatCurrency(expense.amountCents)}`,
+  }));
+
+  const transferRows = mapTransferRows(transfers, { ...filters, account });
+  return [...expenseRows, ...transferRows].sort((a, b) => b.dateTime - a.dateTime);
+}
+
+function pickAccountingAccounts(accountOptions, selectedAccount = "") {
+  const names = accountOptions.map((option) => option.value).filter(Boolean);
+  if (selectedAccount) return [selectedAccount];
+
+  const sicoob = names.find((name) => /sicoob/i.test(name) && !/cart|cr[eé]dito/i.test(name))
+    || names.find((name) => /sicoob/i.test(name))
+    || names[0]
+    || "";
+  const credit = names.find((name) => /cart|cr[eé]dito/i.test(name) && name !== sicoob)
+    || names.find((name) => name !== sicoob)
+    || "";
+
+  return [sicoob, credit].filter(Boolean);
 }
 
 async function loadAccountOptions(prisma) {
@@ -517,6 +682,128 @@ function renderCashFlowPdf(res, rows, filters, totals) {
   doc.end();
 }
 
+function renderAccountingPdf(res, data, filters) {
+  const doc = new PDFDocument({ margin: 40, size: "A4" });
+  const fileName = `relatorio-contabil-${filters.startDateInput}-${filters.endDateInput}.pdf`;
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+  doc.pipe(res);
+
+  function ensureSpace(height = 70) {
+    if (doc.y + height > 750) {
+      doc.addPage();
+    }
+  }
+
+  function drawSectionTitle(title, totalLabel) {
+    ensureSpace(56);
+    doc.moveDown(0.7);
+    doc.font("Helvetica-Bold").fontSize(13).fillColor("#111827").text(title);
+    if (totalLabel) {
+      doc.font("Helvetica").fontSize(9).fillColor("#6b7280").text(`Total: ${totalLabel}`);
+    }
+    doc.moveDown(0.4);
+  }
+
+  function drawMonthTitle(month) {
+    ensureSpace(42);
+    doc.font("Helvetica-Bold").fontSize(10).fillColor("#1f2937")
+      .text(`${month.label} · ${month.totalLabel}`);
+    doc.moveDown(0.2);
+  }
+
+  function drawRows(rows, columns, emptyText) {
+    if (!rows.length) {
+      doc.font("Helvetica").fontSize(9).fillColor("#6b7280").text(emptyText);
+      doc.moveDown(0.4);
+      return;
+    }
+
+    const headerY = doc.y;
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#374151");
+    columns.forEach((column) => doc.text(column.label, column.x, headerY, { width: column.width }));
+    doc.moveTo(40, headerY + 12).lineTo(555, headerY + 12).strokeColor("#d1d5db").stroke();
+    let y = headerY + 18;
+
+    rows.forEach((row, index) => {
+      const note = String(row.note || "").trim();
+      const rowHeight = 21 + (note ? doc.heightOfString(`Obs.: ${note}`, { width: 390 }) + 5 : 0);
+      if (y + rowHeight > 750) {
+        doc.addPage();
+        y = 40;
+      }
+
+      if (index % 2 === 0) doc.rect(40, y - 4, 515, rowHeight).fill("#f9fafb");
+      doc.strokeColor("#e5e7eb").lineWidth(0.4);
+      doc.moveTo(40, y + rowHeight - 5).lineTo(555, y + rowHeight - 5).stroke();
+
+      doc.font("Helvetica").fontSize(7.5).fillColor("#111827");
+      columns.forEach((column) => {
+        const value = typeof column.value === "function" ? column.value(row) : row[column.value];
+        doc.text(value || "-", column.x, y, {
+          width: column.width,
+          align: column.align || "left",
+        });
+      });
+
+      if (note) {
+        doc.font("Helvetica").fontSize(7).fillColor("#6b7280")
+          .text(`Obs.: ${note}`, 108, y + 10, { width: 390 });
+      }
+
+      y += rowHeight;
+    });
+
+    doc.y = y + 2;
+  }
+
+  const revenueColumns = [
+    { label: "Data", x: 40, width: 58, value: "dateLabel" },
+    { label: "Filhote", x: 102, width: 104, value: (row) => kittenNameOnly(row.kittenLabel) },
+    { label: "Cliente", x: 210, width: 116, value: "clientLabel" },
+    { label: "Parcela", x: 330, width: 42, value: "parcelLabel" },
+    { label: "Conta", x: 376, width: 84, value: "paymentAccount" },
+    { label: "Valor", x: 464, width: 63, value: "amountLabel", align: "right" },
+  ];
+  const expenseColumns = [
+    { label: "Data", x: 40, width: 58, value: "dateLabel" },
+    { label: "Tipo", x: 102, width: 66, value: "typeLabel" },
+    { label: "Descrição", x: 172, width: 190, value: "description" },
+    { label: "Conta", x: 366, width: 92, value: "account" },
+    { label: "Valor", x: 462, width: 65, value: "amountLabel", align: "right" },
+  ];
+
+  doc.font("Helvetica-Bold").fontSize(18).fillColor("#111827").text("Relatório Contábil");
+  doc.moveDown(0.4);
+  doc.font("Helvetica").fontSize(10).fillColor("#111827").text(
+    `Período: ${formatDateOnlyLabel(filters.startDate)} a ${formatDateOnlyLabel(filters.endDate)}`
+  );
+  doc.text(`Conta filtrada: ${filters.account || "Receitas gerais e contas contábeis"}`);
+
+  drawSectionTitle("Receitas", data.revenueTotalLabel);
+  data.revenueMonths.forEach((month) => {
+    drawMonthTitle(month);
+    drawRows(month.rows, revenueColumns, "Nenhuma receita neste mês.");
+  });
+
+  drawSectionTitle("A Receber", data.receivableTotalLabel);
+  data.receivableMonths.forEach((month) => {
+    drawMonthTitle(month);
+    drawRows(month.rows, revenueColumns, "Nenhum valor a receber neste mês.");
+  });
+
+  data.accountSections.forEach((section, index) => {
+    drawSectionTitle(`Despesas - Conta ${index + 1} - ${section.account}`, section.totalLabel);
+    section.months.forEach((month) => {
+      drawMonthTitle(month);
+      drawRows(month.rows, expenseColumns, "Nenhuma movimentação nesta conta neste mês.");
+    });
+  });
+
+  doc.end();
+}
+
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
@@ -713,6 +1000,100 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         expenseLabel: formatCurrency(expenseCents),
         balanceLabel: formatCurrency(balanceCents),
       });
+    }
+  );
+
+  async function loadAccountingData(req, filters) {
+    const accountOptions = await loadAccountOptions(prisma);
+    const expenses = await prisma.quickLaunchEntry.findMany({
+      where: buildExpenseWhere(req, { ...filters, account: "" }),
+      orderBy: [{ competenceDate: "desc" }, { createdAt: "desc" }],
+    });
+    const revenues = await prisma.revenueEntry.findMany({
+      where: buildRevenueWhere(req, filters),
+      include: { client: true },
+      orderBy: [{ createdAt: "desc" }],
+    });
+    const transfers = await prisma.financialTransfer.findMany({
+      where: {
+        ...(canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId }),
+        deletedAt: null,
+      },
+      orderBy: [{ transferDate: "desc" }, { createdAt: "desc" }],
+    });
+
+    const revenueRows = mapRevenueRows(revenues, filters);
+    const receivableRows = mapReceivableRows(revenues, filters);
+    const revenueMonths = groupRowsByMonth(
+      revenueRows,
+      filters,
+      (row) => new Date(row.paidDateTime)
+    );
+    const receivableMonths = groupRowsByMonth(
+      receivableRows,
+      filters,
+      (row) => new Date(row.dueDateTime)
+    );
+    const revenueTotalCents = revenueRows.reduce((sum, row) => sum + Number(row.amountCents || 0), 0);
+    const receivableTotalCents = receivableRows.reduce((sum, row) => sum + Number(row.amountCents || 0), 0);
+    const accounts = pickAccountingAccounts(accountOptions, filters.account);
+    const accountSections = accounts.map((account) => {
+      const rows = buildAccountingExpenseRows(expenses, transfers, filters, account);
+      const totalCents = rows
+        .filter((row) => row.amountCents < 0)
+        .reduce((sum, row) => sum + Math.abs(row.amountCents), 0);
+
+      return {
+        account,
+        rows,
+        months: groupRowsByMonth(rows, filters, (row) => new Date(row.dateTime)),
+        totalLabel: formatCurrency(totalCents),
+      };
+    });
+
+    return {
+      accountOptions,
+      revenueRows,
+      revenueMonths,
+      revenueTotalLabel: formatCurrency(revenueTotalCents),
+      receivableRows,
+      receivableMonths,
+      receivableTotalLabel: formatCurrency(receivableTotalCents),
+      accountSections,
+    };
+  }
+
+  router.get(
+    "/reports/accounting",
+    requireAuth,
+    requirePermission("admin.reports"),
+    async (req, res) => {
+      const filters = buildAccountingFilters(req.query);
+      const data = await loadAccountingData(req, filters);
+
+      res.render("reports/accounting", {
+        user: req.user,
+        currentPath: "/reports",
+        filters,
+        accountOptions: data.accountOptions,
+        revenueMonths: data.revenueMonths,
+        revenueTotalLabel: data.revenueTotalLabel,
+        receivableMonths: data.receivableMonths,
+        receivableTotalLabel: data.receivableTotalLabel,
+        accountSections: data.accountSections,
+        pdfQuery: buildQueryString(filters, true),
+      });
+    }
+  );
+
+  router.get(
+    "/reports/accounting/pdf",
+    requireAuth,
+    requirePermission("admin.reports"),
+    async (req, res) => {
+      const filters = buildAccountingFilters(req.query);
+      const data = await loadAccountingData(req, filters);
+      renderAccountingPdf(res, data, filters);
     }
   );
 

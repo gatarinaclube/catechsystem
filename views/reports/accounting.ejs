@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Relatório Contábil - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+    <style>
+      .report-filter-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px;
+        align-items: end;
+      }
+      .accounting-section {
+        margin-top: 18px;
+      }
+      .accounting-section:first-child {
+        margin-top: 0;
+      }
+      .accounting-month {
+        border-top: 1px solid var(--border-soft);
+        padding-top: 14px;
+        margin-top: 14px;
+      }
+      .accounting-month-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 8px;
+      }
+      .report-table-wrap {
+        overflow-x: auto;
+      }
+      .report-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 760px;
+      }
+      .report-table th,
+      .report-table td {
+        border-bottom: 1px solid var(--border-soft);
+        padding: 10px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+      .report-table th {
+        color: var(--text-muted);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .report-table .amount {
+        text-align: right;
+        white-space: nowrap;
+      }
+      .cash-in {
+        color: #047857;
+        font-weight: 700;
+      }
+      .cash-out {
+        color: #b91c1c;
+        font-weight: 700;
+      }
+      @media (max-width: 1100px) {
+        .report-filter-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 680px) {
+        .report-filter-grid,
+        .accounting-month-head {
+          grid-template-columns: 1fr;
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Relatório Contábil</h2>
+            <div class="welcome-sub">Receitas primeiro, depois despesas por conta, sempre separadas por mês.</div>
+          </div>
+          <div class="actions">
+            <a href="/reports" class="btn">Voltar</a>
+            <a href="/reports/accounting/pdf?<%= pdfQuery %>" class="btn btn-primary">Download PDF</a>
+          </div>
+        </div>
+
+        <div class="content-card module-panel">
+          <form method="get" action="/reports/accounting" class="report-filter-grid">
+            <div class="field">
+              <label class="field-label" for="periodType">Período</label>
+              <select id="periodType" name="periodType">
+                <option value="last3" <%= filters.periodType === 'last3' ? 'selected' : '' %>>Últimos 3 meses</option>
+                <option value="month" <%= filters.periodType === 'month' ? 'selected' : '' %>>Mês</option>
+                <option value="custom" <%= filters.periodType === 'custom' ? 'selected' : '' %>>Personalizado</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label" for="month">Mês base</label>
+              <input id="month" name="month" type="month" value="<%= filters.month %>" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="startDate">Data inicial</label>
+              <input id="startDate" name="startDate" type="date" value="<%= filters.startDateInput %>" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="endDate">Data final</label>
+              <input id="endDate" name="endDate" type="date" value="<%= filters.endDateInput %>" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="account">Conta</label>
+              <select id="account" name="account">
+                <% accountOptions.forEach(function(option) { %>
+                  <option value="<%= option.value %>" <%= filters.account === option.value ? 'selected' : '' %>><%= option.label %></option>
+                <% }) %>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+            <a href="/reports/accounting" class="btn">Limpar</a>
+          </form>
+        </div>
+
+        <div class="content-card accounting-section">
+          <div class="report-summary">
+            <div>
+              <div class="content-title">Receitas</div>
+              <div class="content-sub">Total no período: <strong class="cash-in"><%= revenueTotalLabel %></strong></div>
+            </div>
+          </div>
+
+          <% revenueMonths.forEach(function(month) { %>
+            <div class="accounting-month">
+              <div class="accounting-month-head">
+                <strong><%= month.label %></strong>
+                <span class="cash-in"><%= month.totalLabel %></span>
+              </div>
+              <% if (!month.rows.length) { %>
+                <div class="empty">Nenhuma receita neste mês.</div>
+              <% } else { %>
+                <div class="report-table-wrap">
+                  <table class="report-table">
+                    <thead>
+                      <tr>
+                        <th>Data</th>
+                        <th>Filhote</th>
+                        <th>Cliente</th>
+                        <th>Parcela</th>
+                        <th>Conta</th>
+                        <th class="amount">Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% month.rows.forEach(function(row) { %>
+                        <tr>
+                          <td><%= row.dateLabel %></td>
+                          <td><%= row.kittenLabel || '-' %></td>
+                          <td><%= row.clientLabel || '-' %></td>
+                          <td><%= row.parcelLabel || '-' %></td>
+                          <td><%= row.paymentAccount || '-' %></td>
+                          <td class="amount cash-in"><%= row.amountLabel %></td>
+                        </tr>
+                      <% }) %>
+                    </tbody>
+                  </table>
+                </div>
+              <% } %>
+            </div>
+          <% }) %>
+        </div>
+
+        <div class="content-card accounting-section">
+          <div class="report-summary">
+            <div>
+              <div class="content-title">A Receber</div>
+              <div class="content-sub">Total previsto no período: <strong class="cash-in"><%= receivableTotalLabel %></strong></div>
+            </div>
+          </div>
+
+          <% receivableMonths.forEach(function(month) { %>
+            <div class="accounting-month">
+              <div class="accounting-month-head">
+                <strong><%= month.label %></strong>
+                <span class="cash-in"><%= month.totalLabel %></span>
+              </div>
+              <% if (!month.rows.length) { %>
+                <div class="empty">Nenhum valor a receber neste mês.</div>
+              <% } else { %>
+                <div class="report-table-wrap">
+                  <table class="report-table">
+                    <thead>
+                      <tr>
+                        <th>Vencimento</th>
+                        <th>Filhote</th>
+                        <th>Cliente</th>
+                        <th>Parcela</th>
+                        <th>Conta</th>
+                        <th class="amount">Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% month.rows.forEach(function(row) { %>
+                        <tr>
+                          <td><%= row.dateLabel %></td>
+                          <td><%= row.kittenLabel || '-' %></td>
+                          <td><%= row.clientLabel || '-' %></td>
+                          <td><%= row.parcelLabel || '-' %></td>
+                          <td><%= row.paymentAccount || '-' %></td>
+                          <td class="amount cash-in"><%= row.amountLabel %></td>
+                        </tr>
+                      <% }) %>
+                    </tbody>
+                  </table>
+                </div>
+              <% } %>
+            </div>
+          <% }) %>
+        </div>
+
+        <% accountSections.forEach(function(section, index) { %>
+          <div class="content-card accounting-section">
+            <div class="report-summary">
+              <div>
+                <div class="content-title">Despesas - Conta <%= index + 1 %> - <%= section.account %></div>
+                <div class="content-sub">Total de saídas no período: <strong class="cash-out"><%= section.totalLabel %></strong></div>
+              </div>
+            </div>
+
+            <% section.months.forEach(function(month) { %>
+              <div class="accounting-month">
+                <div class="accounting-month-head">
+                  <strong><%= month.label %></strong>
+                  <span><%= month.totalLabel %></span>
+                </div>
+                <% if (!month.rows.length) { %>
+                  <div class="empty">Nenhuma movimentação nesta conta neste mês.</div>
+                <% } else { %>
+                  <div class="report-table-wrap">
+                    <table class="report-table">
+                      <thead>
+                        <tr>
+                          <th>Data</th>
+                          <th>Tipo</th>
+                          <th>Descrição</th>
+                          <th>Conta</th>
+                          <th>Observação</th>
+                          <th class="amount">Valor</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <% month.rows.forEach(function(row) { %>
+                          <tr>
+                            <td><%= row.dateLabel %></td>
+                            <td><%= row.typeLabel %></td>
+                            <td><%= row.description || '-' %></td>
+                            <td><%= row.account || '-' %></td>
+                            <td><%= row.note || '-' %></td>
+                            <td class="amount <%= row.amountCents >= 0 ? 'cash-in' : 'cash-out' %>"><%= row.amountLabel %></td>
+                          </tr>
+                        <% }) %>
+                      </tbody>
+                    </table>
+                  </div>
+                <% } %>
+              </div>
+            <% }) %>
+          </div>
+        <% }) %>
+      </main>
+    </div>
+  </body>
+</html>
