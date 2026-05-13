@@ -138,6 +138,24 @@
         { href: "/reports", match: "/reports", icon: "📊", label: "Relatórios", allowed: access && access.canAccessReports },
         { href: "/administrativo", match: "/administrativo", icon: "🏦", label: "Administrativo", allowed: access && access.canAccessAdministrative },
       ].forEach(renderMenuItem); %>
+
+      <div
+        style="
+          margin: 14px 0 8px;
+          padding-top: 12px;
+          border-top: 1px solid #d6a84f;
+          font-size: 11px;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #d6a84f;
+        "
+      >
+        Academy
+      </div>
+
+      <% [
+        { href: "/academy", match: "/academy", icon: "🎓", label: "CatBreeder Pro", allowed: access && access.canAccessAcademy },
+      ].forEach(renderMenuItem); %>
     </nav>
   </div>
 

@@ -41,6 +41,7 @@ const reportsRouterFactory = require("./modules/reports");
 const revenuesRouterFactory = require("./modules/revenues");
 const crmRouterFactory = require("./modules/crm");
 const administrativeRouterFactory = require("./modules/administrative");
+const academyRouterFactory = require("./modules/academy");
 const {generateTitleHomologationPDF,} = require("./modules/pdf/titleHomologationPdf");
 const {generatePedigreeHomologationPDF,} = require("./modules/pdf/pedigreeHomologationPdf");
 const { generateCatteryRegistrationPDF } = require("./modules/pdf/catteryRegistrationPdf");
@@ -1260,6 +1261,9 @@ const historyAdminRouter = historyAdminRouterFactory(
   requirePermission
 );
 app.use(historyAdminRouter);
+
+const academyRouter = academyRouterFactory(prisma);
+app.use(academyRouter);
 
 const EXPENSE_OPTION_TYPES = ["CATEGORY", "SUPPLIER", "PAYMENT"];
 const EXPENSE_OPTION_LABELS = {

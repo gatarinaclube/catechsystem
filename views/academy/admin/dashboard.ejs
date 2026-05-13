@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><%= pageTitle %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-[#f8faf7] text-[#111827]">
+    <main class="mx-auto max-w-7xl px-5 py-8">
+      <nav class="flex flex-wrap items-center justify-between gap-3">
+        <a href="/academy/app" class="font-black">← CatBreeder Pro</a>
+        <a href="/dashboard" class="text-sm font-bold text-[#31513d]">CaTech</a>
+      </nav>
+      <h1 class="mt-8 text-4xl font-black">Admin Academy</h1>
+      <div class="mt-6 grid gap-4 md:grid-cols-5">
+        <% Object.entries(overview).forEach(function(entry) { %>
+          <div class="rounded-3xl bg-white p-5 shadow-sm">
+            <div class="text-xs font-black uppercase tracking-widest text-slate-400"><%= entry[0] %></div>
+            <div class="mt-2 text-3xl font-black"><%= entry[1] %></div>
+          </div>
+        <% }) %>
+      </div>
+
+      <section class="mt-8 grid gap-6 lg:grid-cols-2">
+        <div class="rounded-3xl bg-white p-6 shadow-sm">
+          <h2 class="text-2xl font-black">Categorias</h2>
+          <form method="post" action="/academy/admin/categorias" class="mt-4 grid gap-3">
+            <input name="title" placeholder="Título" required class="rounded-xl border p-3" />
+            <input name="slug" placeholder="slug opcional" class="rounded-xl border p-3" />
+            <textarea name="description" placeholder="Descrição" class="rounded-xl border p-3"></textarea>
+            <input name="sortOrder" type="number" placeholder="Ordem" class="rounded-xl border p-3" />
+            <label><input type="checkbox" name="published" /> Publicada</label>
+            <button class="rounded-xl bg-[#111827] p-3 font-black text-white">Criar categoria</button>
+          </form>
+          <div class="mt-5 grid gap-3">
+            <% categories.forEach(function(item) { %>
+              <form method="post" action="/academy/admin/categorias/<%= item.id %>" class="rounded-2xl bg-slate-50 p-4">
+                <input name="title" value="<%= item.title %>" class="w-full rounded-xl border p-2" />
+                <input name="slug" value="<%= item.slug %>" class="mt-2 w-full rounded-xl border p-2" />
+                <textarea name="description" class="mt-2 w-full rounded-xl border p-2"><%= item.description || '' %></textarea>
+                <input name="sortOrder" type="number" value="<%= item.sortOrder %>" class="mt-2 w-full rounded-xl border p-2" />
+                <label class="mt-2 block"><input type="checkbox" name="published" <%= item.published ? 'checked' : '' %> /> Publicada</label>
+                <button class="mt-2 rounded-xl bg-[#31513d] px-4 py-2 font-bold text-white">Salvar</button>
+              </form>
+              <form method="post" action="/academy/admin/categorias/<%= item.id %>/excluir" onsubmit="return confirm('Excluir categoria e seus módulos?');">
+                <button class="mt-2 rounded-xl bg-red-50 px-4 py-2 font-bold text-red-700">Excluir</button>
+              </form>
+            <% }) %>
+          </div>
+        </div>
+
+        <div class="rounded-3xl bg-white p-6 shadow-sm">
+          <h2 class="text-2xl font-black">Módulos</h2>
+          <form method="post" action="/academy/admin/modulos" class="mt-4 grid gap-3">
+            <select name="categoryId" required class="rounded-xl border p-3"><% categories.forEach(function(c) { %><option value="<%= c.id %>"><%= c.title %></option><% }) %></select>
+            <input name="title" placeholder="Título" required class="rounded-xl border p-3" />
+            <input name="slug" placeholder="slug opcional" class="rounded-xl border p-3" />
+            <select name="level" class="rounded-xl border p-3"><% Object.values(levels).forEach(function(level) { %><option value="<%= level %>"><%= levelLabels[level] || level %></option><% }) %></select>
+            <textarea name="description" placeholder="Descrição" class="rounded-xl border p-3"></textarea>
+            <input name="sortOrder" type="number" placeholder="Ordem" class="rounded-xl border p-3" />
+            <label><input type="checkbox" name="published" /> Publicado</label>
+            <button class="rounded-xl bg-[#111827] p-3 font-black text-white">Criar módulo</button>
+          </form>
+          <div class="mt-5 grid gap-3">
+            <% modules.forEach(function(item) { %>
+              <form method="post" action="/academy/admin/modulos/<%= item.id %>" class="rounded-2xl bg-slate-50 p-4">
+                <div class="font-bold"><%= item.category.title %></div>
+                <input name="title" value="<%= item.title %>" class="mt-2 w-full rounded-xl border p-2" />
+                <input name="slug" value="<%= item.slug %>" class="mt-2 w-full rounded-xl border p-2" />
+                <input type="hidden" name="categoryId" value="<%= item.categoryId %>" />
+                <input type="hidden" name="level" value="<%= item.level %>" />
+                <input name="sortOrder" type="number" value="<%= item.sortOrder %>" class="mt-2 w-full rounded-xl border p-2" />
+                <label class="mt-2 block"><input type="checkbox" name="published" <%= item.published ? 'checked' : '' %> /> Publicado</label>
+                <button class="mt-2 rounded-xl bg-[#31513d] px-4 py-2 font-bold text-white">Salvar</button>
+              </form>
+              <form method="post" action="/academy/admin/modulos/<%= item.id %>/excluir" onsubmit="return confirm('Excluir módulo e suas aulas?');">
+                <button class="mt-2 rounded-xl bg-red-50 px-4 py-2 font-bold text-red-700">Excluir</button>
+              </form>
+            <% }) %>
+          </div>
+        </div>
+      </section>
+
+      <section class="mt-8 rounded-3xl bg-white p-6 shadow-sm">
+        <h2 class="text-2xl font-black">Aulas</h2>
+        <form method="post" action="/academy/admin/aulas" class="mt-4 grid gap-3 md:grid-cols-2">
+          <select name="moduleId" required class="rounded-xl border p-3"><% modules.forEach(function(m) { %><option value="<%= m.id %>"><%= m.title %></option><% }) %></select>
+          <input name="title" placeholder="Título" required class="rounded-xl border p-3" />
+          <input name="slug" placeholder="slug opcional" class="rounded-xl border p-3" />
+          <input name="imageUrl" placeholder="Imagem URL" class="rounded-xl border p-3" />
+          <textarea name="videoEmbed" placeholder="Vídeo embed" class="rounded-xl border p-3 md:col-span-2"></textarea>
+          <textarea name="richText" placeholder="Texto rico HTML" class="rounded-xl border p-3 md:col-span-2"></textarea>
+          <textarea name="filesJson" placeholder='Arquivos JSON [{"name":"PDF","url":"/uploads/a.pdf"}]' class="rounded-xl border p-3 md:col-span-2"></textarea>
+          <select name="level" class="rounded-xl border p-3"><% Object.values(levels).forEach(function(level) { %><option value="<%= level %>"><%= levelLabels[level] || level %></option><% }) %></select>
+          <input name="durationMinutes" type="number" placeholder="Minutos" class="rounded-xl border p-3" />
+          <label><input type="checkbox" name="published" /> Publicada</label>
+          <button class="rounded-xl bg-[#111827] p-3 font-black text-white">Criar aula</button>
+        </form>
+        <div class="mt-5 grid gap-3 md:grid-cols-2">
+          <% lessons.forEach(function(item) { %>
+            <form method="post" action="/academy/admin/aulas/<%= item.id %>" class="rounded-2xl bg-slate-50 p-4">
+              <div class="text-sm font-bold text-slate-500"><%= item.module.title %></div>
+              <input name="title" value="<%= item.title %>" class="mt-2 w-full rounded-xl border p-2" />
+              <input name="slug" value="<%= item.slug %>" class="mt-2 w-full rounded-xl border p-2" />
+              <input type="hidden" name="moduleId" value="<%= item.moduleId %>" />
+              <input type="hidden" name="level" value="<%= item.level %>" />
+              <textarea name="summary" class="mt-2 w-full rounded-xl border p-2"><%= item.summary || '' %></textarea>
+              <textarea name="richText" class="mt-2 w-full rounded-xl border p-2"><%= item.richText || '' %></textarea>
+              <input name="sortOrder" type="number" value="<%= item.sortOrder %>" class="mt-2 w-full rounded-xl border p-2" />
+              <label class="mt-2 block"><input type="checkbox" name="published" <%= item.published ? 'checked' : '' %> /> Publicada</label>
+              <button class="mt-2 rounded-xl bg-[#31513d] px-4 py-2 font-bold text-white">Salvar</button>
+              <button formaction="/academy/admin/aulas/<%= item.id %>/excluir" formmethod="post" class="mt-2 rounded-xl bg-red-50 px-4 py-2 font-bold text-red-700" onclick="return confirm('Excluir aula?');">Excluir</button>
+            </form>
+          <% }) %>
+        </div>
+      </section>
+
+      <section class="mt-8 grid gap-6 lg:grid-cols-2">
+        <div class="rounded-3xl bg-white p-6 shadow-sm">
+          <h2 class="text-2xl font-black">Planos</h2>
+          <form method="post" action="/academy/admin/planos" class="mt-4 grid gap-3">
+            <input name="name" placeholder="Nome" required class="rounded-xl border p-3" />
+            <input name="slug" placeholder="slug opcional" class="rounded-xl border p-3" />
+            <input name="priceCents" type="number" placeholder="Valor em centavos" class="rounded-xl border p-3" />
+            <select name="billingCycle" class="rounded-xl border p-3"><option value="MONTHLY">Mensal</option><option value="YEARLY">Anual</option></select>
+            <textarea name="description" placeholder="Descrição" class="rounded-xl border p-3"></textarea>
+            <label><input type="checkbox" name="featured" /> Destaque</label>
+            <label><input type="checkbox" name="active" checked /> Ativo</label>
+            <button class="rounded-xl bg-[#111827] p-3 font-black text-white">Criar plano</button>
+          </form>
+          <div class="mt-5 grid gap-3">
+            <% plans.forEach(function(plan) { %>
+              <form method="post" action="/academy/admin/planos/<%= plan.id %>" class="rounded-2xl bg-slate-50 p-4">
+                <input name="name" value="<%= plan.name %>" class="w-full rounded-xl border p-2" />
+                <input name="slug" value="<%= plan.slug %>" class="mt-2 w-full rounded-xl border p-2" />
+                <input name="priceCents" type="number" value="<%= plan.priceCents %>" class="mt-2 w-full rounded-xl border p-2" />
+                <select name="billingCycle" class="mt-2 w-full rounded-xl border p-2"><option value="MONTHLY" <%= plan.billingCycle === 'MONTHLY' ? 'selected' : '' %>>Mensal</option><option value="YEARLY" <%= plan.billingCycle === 'YEARLY' ? 'selected' : '' %>>Anual</option></select>
+                <textarea name="description" class="mt-2 w-full rounded-xl border p-2"><%= plan.description || '' %></textarea>
+                <label class="mt-2 block"><input type="checkbox" name="featured" <%= plan.featured ? 'checked' : '' %> /> Destaque</label>
+                <label class="mt-2 block"><input type="checkbox" name="active" <%= plan.active ? 'checked' : '' %> /> Ativo</label>
+                <button class="mt-2 rounded-xl bg-[#31513d] px-4 py-2 font-bold text-white">Salvar</button>
+                <button formaction="/academy/admin/planos/<%= plan.id %>/excluir" formmethod="post" class="mt-2 rounded-xl bg-red-50 px-4 py-2 font-bold text-red-700" onclick="return confirm('Excluir plano?');">Excluir</button>
+              </form>
+            <% }) %>
+          </div>
+        </div>
+        <div class="rounded-3xl bg-white p-6 shadow-sm">
+          <h2 class="text-2xl font-black">Usuários Academy</h2>
+          <form method="post" action="/academy/admin/usuarios" class="mt-4 grid gap-3 rounded-2xl border border-slate-200 p-4">
+            <select name="userId" required class="rounded-xl border p-3">
+              <option value="">Vincular usuário existente...</option>
+              <% availableUsers.forEach(function(item) { %>
+                <option value="<%= item.id %>"><%= item.name %> - <%= item.email %></option>
+              <% }) %>
+            </select>
+            <select name="level" class="rounded-xl border p-3"><% Object.values(levels).forEach(function(level) { %><option value="<%= level %>"><%= levelLabels[level] || level %></option><% }) %></select>
+            <select name="planId" class="rounded-xl border p-3"><option value="">Sem plano</option><% plans.forEach(function(plan) { %><option value="<%= plan.id %>"><%= plan.name %></option><% }) %></select>
+            <input name="status" value="ACTIVE" class="rounded-xl border p-3" />
+            <button class="rounded-xl bg-[#111827] p-3 font-black text-white">Adicionar usuário Academy</button>
+          </form>
+          <div class="mt-4 grid gap-3">
+            <% enrollments.forEach(function(item) { %>
+              <form method="post" action="/academy/admin/usuarios/<%= item.id %>" class="rounded-2xl bg-slate-50 p-4">
+                <div class="font-black"><%= item.user.name %></div>
+                <div class="text-sm text-slate-500"><%= item.user.email %></div>
+                <select name="level" class="mt-3 w-full rounded-xl border p-2"><% Object.values(levels).forEach(function(level) { %><option value="<%= level %>" <%= item.level === level ? 'selected' : '' %>><%= levelLabels[level] || level %></option><% }) %></select>
+                <select name="planId" class="mt-2 w-full rounded-xl border p-2"><option value="">Sem plano</option><% plans.forEach(function(plan) { %><option value="<%= plan.id %>" <%= item.planId === plan.id ? 'selected' : '' %>><%= plan.name %></option><% }) %></select>
+                <input name="status" value="<%= item.status %>" class="mt-2 w-full rounded-xl border p-2" />
+                <button class="mt-2 rounded-xl bg-[#31513d] px-4 py-2 font-bold text-white">Salvar</button>
+              </form>
+            <% }) %>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

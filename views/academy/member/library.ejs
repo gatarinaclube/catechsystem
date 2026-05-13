@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><%= pageTitle %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-white text-[#111827]">
+    <main class="mx-auto max-w-6xl px-5 py-8">
+      <a href="/academy/app" class="text-sm font-bold text-[#31513d]">← Área do aluno</a>
+      <h1 class="mt-8 text-4xl font-black">Biblioteca</h1>
+      <form method="get" class="mt-6">
+        <input name="q" value="<%= query %>" placeholder="Buscar conteúdo..." class="w-full rounded-2xl border border-slate-200 px-5 py-4" />
+      </form>
+      <div class="mt-8 grid gap-4 md:grid-cols-2">
+        <% lessons.forEach(function(lesson) { %>
+          <a href="/academy/app/aulas/<%= lesson.slug %>" class="rounded-3xl border border-slate-200 p-6 shadow-sm">
+            <div class="text-xs font-black uppercase tracking-[0.2em] text-slate-400"><%= lesson.categoryTitle %> · <%= lesson.moduleTitle %></div>
+            <h2 class="mt-3 text-xl font-black"><%= lesson.title %></h2>
+            <p class="mt-2 text-slate-600"><%= lesson.summary || '' %></p>
+          </a>
+        <% }) %>
+      </div>
+    </main>
+  </body>
+</html>

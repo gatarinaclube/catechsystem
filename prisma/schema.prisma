@@ -68,6 +68,128 @@ model User {
   financialAccountSettings FinancialAccountSetting[]
   financialTransfers FinancialTransfer[]
   passwordResetTokens PasswordResetToken[]
+  academyEnrollments AcademyEnrollment[]
+  academyProgress AcademyProgress[]
+  academyFavorites AcademyFavorite[]
+}
+
+model AcademyEnrollment {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  level     String   @default("STUDENT")
+  status    String   @default("ACTIVE")
+  plan      AcademyPlan? @relation(fields: [planId], references: [id])
+  planId    Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId])
+  @@map("academy_enrollments")
+}
+
+model AcademyPlan {
+  id              Int      @id @default(autoincrement())
+  name            String
+  slug            String   @unique
+  description     String?
+  priceCents      Int      @default(0)
+  billingCycle    String   @default("MONTHLY")
+  featured        Boolean  @default(false)
+  active          Boolean  @default(true)
+  checkoutProvider String?
+  checkoutMetadataJson String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  enrollments AcademyEnrollment[]
+
+  @@map("academy_plans")
+}
+
+model AcademyCategory {
+  id          Int      @id @default(autoincrement())
+  title       String
+  slug        String   @unique
+  description String?
+  sortOrder   Int      @default(0)
+  published   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  modules AcademyModule[]
+
+  @@map("academy_categories")
+}
+
+model AcademyModule {
+  id          Int      @id @default(autoincrement())
+  category   AcademyCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId Int
+  title       String
+  slug        String   @unique
+  description String?
+  level       String   @default("STUDENT")
+  sortOrder   Int      @default(0)
+  published   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lessons AcademyLesson[]
+
+  @@map("academy_modules")
+}
+
+model AcademyLesson {
+  id          Int      @id @default(autoincrement())
+  module      AcademyModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  moduleId    Int
+  title       String
+  slug        String   @unique
+  summary     String?
+  richText    String?
+  imageUrl    String?
+  videoEmbed  String?
+  filesJson   String?
+  durationMinutes Int?
+  level       String   @default("STUDENT")
+  sortOrder   Int      @default(0)
+  published   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  progress AcademyProgress[]
+  favorites AcademyFavorite[]
+
+  @@map("academy_lessons")
+}
+
+model AcademyProgress {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  lesson    AcademyLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId  Int
+  completed Boolean  @default(false)
+  completedAt DateTime?
+  lastSeenAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, lessonId])
+  @@map("academy_progress")
+}
+
+model AcademyFavorite {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  lesson    AcademyLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId  Int
+  createdAt DateTime @default(now())
+
+  @@unique([userId, lessonId])
+  @@map("academy_favorites")
 }
 
 model UserSettings {

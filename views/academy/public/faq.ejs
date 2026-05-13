@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FAQ | CatBreeder Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-[#070907] text-white">
+    <main class="mx-auto max-w-4xl px-5 py-10">
+      <a href="/academy" class="text-sm text-[#d6a84f]">← CatBreeder Pro</a>
+      <h1 class="mt-10 text-5xl font-black">Perguntas frequentes</h1>
+      <div class="mt-8 grid gap-4">
+        <% [
+          ["É integrado ao CaTech?", "Sim. Usa o mesmo banco, sessão e usuários."],
+          ["Já aceita pagamento?", "A estrutura está preparada para Mercado Pago, PIX, cartão e recorrência."],
+          ["O visual será diferente?", "Sim. A Academy tem frontend premium independente do administrativo."]
+        ].forEach(function(item) { %>
+          <details class="rounded-2xl border border-white/15 p-5">
+            <summary class="cursor-pointer font-black"><%= item[0] %></summary>
+            <p class="mt-3 text-white/70"><%= item[1] %></p>
+          </details>
+        <% }) %>
+      </div>
+    </main>
+  </body>
+</html>

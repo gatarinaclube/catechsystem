@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><%= pageTitle %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/academy.css" />
+  </head>
+  <body class="bg-[#f8faf7] text-[#111827]">
+    <main class="mx-auto max-w-4xl px-5 py-8">
+      <a href="/academy/app" class="text-sm font-bold text-[#31513d]">← Área do aluno</a>
+      <article class="mt-8 rounded-3xl bg-white p-7 shadow-sm">
+        <div class="text-xs font-black uppercase tracking-[0.2em] text-[#b9892e]"><%= lesson.module.category.title %> · <%= lesson.module.title %></div>
+        <h1 class="mt-4 text-4xl font-black"><%= lesson.title %></h1>
+        <p class="mt-3 text-slate-600"><%= lesson.summary || '' %></p>
+        <% if (lesson.videoEmbed) { %>
+          <div class="mt-6 overflow-hidden rounded-2xl bg-black"><%- lesson.videoEmbed %></div>
+        <% } %>
+        <% if (lesson.imageUrl) { %>
+          <img src="<%= lesson.imageUrl %>" alt="" class="mt-6 rounded-2xl" />
+        <% } %>
+        <div class="academy-richtext mt-8 leading-8 text-slate-700"><%- lesson.richText || '<p>Conteúdo em preparação.</p>' %></div>
+        <% if (files.length) { %>
+          <div class="mt-8 rounded-2xl bg-slate-50 p-5">
+            <h2 class="font-black">Arquivos complementares</h2>
+            <% files.forEach(function(file) { %>
+              <a href="<%= file.url %>" class="mt-3 block text-[#31513d]"><%= file.name || file.url %></a>
+            <% }) %>
+          </div>
+        <% } %>
+        <div class="mt-8 flex flex-wrap gap-3">
+          <form method="post" action="/academy/app/aulas/<%= lesson.id %>/concluir">
+            <button class="rounded-full bg-[#111827] px-5 py-3 font-black text-white"><%= progress && progress.completed ? 'Marcar como não concluída' : 'Concluir aula' %></button>
+          </form>
+          <form method="post" action="/academy/app/aulas/<%= lesson.id %>/favorito">
+            <button class="rounded-full border border-slate-200 px-5 py-3 font-black"><%= favorite ? 'Remover favorito' : 'Favoritar' %></button>
+          </form>
+        </div>
+      </article>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CatBreeder Pro | Formação premium para criadores felinos</title>
+    <meta name="description" content="CatBreeder Pro é a academy premium do ecossistema CaTech/Gatarina para criadores felinos responsáveis." />
+    <meta property="og:title" content="CatBreeder Pro" />
+    <meta property="og:description" content="Ensino online premium para criadores felinos." />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/academy.css" />
+    <!-- Meta Pixel futuro -->
+    <!-- Google Analytics futuro -->
+  </head>
+  <body class="bg-[#070907] text-white">
+    <main class="min-h-screen overflow-hidden">
+      <section class="relative px-5 py-8 md:px-10">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,#1d3b2a,transparent_35%),linear-gradient(135deg,#070907,#111111_48%,#0d2118)]"></div>
+        <div class="relative mx-auto max-w-7xl">
+          <nav class="flex items-center justify-between gap-4">
+            <a href="/academy" class="text-xl font-black tracking-tight">CatBreeder <span class="academy-gold">Pro</span></a>
+            <div class="hidden items-center gap-6 text-sm text-white/75 md:flex">
+              <a href="/academy/sobre">Sobre</a>
+              <a href="/academy/planos">Planos</a>
+              <a href="/academy/conteudos">Conteúdos</a>
+              <a href="/academy/faq">FAQ</a>
+            </div>
+            <a href="/academy/login" class="rounded-full border border-white/20 px-4 py-2 text-sm font-bold">Entrar</a>
+          </nav>
+
+          <div class="grid min-h-[78vh] items-center gap-10 py-14 md:grid-cols-[1.1fr_.9fr]">
+            <div>
+              <div class="mb-5 inline-flex rounded-full border border-[#d6a84f]/40 bg-[#d6a84f]/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-[#eacb7a]">
+                Academy Gatarina / CaTech
+              </div>
+              <h1 class="max-w-4xl text-5xl font-black leading-[0.95] tracking-tight md:text-7xl">
+                Formação premium para criadores felinos responsáveis.
+              </h1>
+              <p class="mt-6 max-w-2xl text-lg leading-8 text-white/72">
+                Aulas, protocolos, biblioteca e trilhas práticas para profissionalizar manejo, saúde, reprodução e gestão do gatil.
+              </p>
+              <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+                <a href="/academy/cadastro" class="rounded-full bg-[#d6a84f] px-6 py-3 text-center font-black text-black">Começar agora</a>
+                <a href="/academy/conteudos" class="rounded-full border border-white/20 px-6 py-3 text-center font-bold">Ver conteúdos</a>
+              </div>
+            </div>
+
+            <div class="academy-glass rounded-3xl p-6 shadow-2xl">
+              <div class="rounded-2xl bg-black/35 p-5">
+                <div class="text-sm uppercase tracking-[0.25em] text-[#d6a84f]">Trilha em destaque</div>
+                <h2 class="mt-3 text-3xl font-black">Gatil de Alta Performance</h2>
+                <div class="mt-5 grid gap-3">
+                  <% ["Reprodução ética", "Sanidade e prevenção", "Gestão financeira", "Documentos e processos"].forEach(function(item, index) { %>
+                    <div class="flex items-center justify-between rounded-2xl bg-white/8 p-4">
+                      <span><%= item %></span>
+                      <span class="rounded-full bg-white/10 px-3 py-1 text-xs"><%= index + 1 %></span>
+                    </div>
+                  <% }) %>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-white px-5 py-16 text-[#111827] md:px-10">
+        <div class="mx-auto grid max-w-7xl gap-6 md:grid-cols-3">
+          <% [
+            ["Método", "Aulas diretas para aplicar no manejo real do gatil."],
+            ["Biblioteca", "Conteúdos consultivos para rotina, saúde e gestão."],
+            ["Ecossistema", "Integrado ao CaTech System e preparado para evolução SaaS."]
+          ].forEach(function(card) { %>
+            <div class="rounded-3xl border border-slate-200 p-6 shadow-sm">
+              <h3 class="text-xl font-black"><%= card[0] %></h3>
+              <p class="mt-3 text-slate-600"><%= card[1] %></p>
+            </div>
+          <% }) %>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
