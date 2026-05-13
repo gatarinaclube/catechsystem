@@ -13,12 +13,6 @@
         gap: 10px;
         align-items: start;
       }
-      .cat-subline {
-        margin-top: 4px;
-        font-size: 11px;
-        line-height: 1.35;
-        color: var(--text-muted);
-      }
       .deworming-header {
         font-size: 12px;
         font-weight: 600;
@@ -35,36 +29,6 @@
       }
       .deworming-row.is-dewormed {
         border-left: 5px solid #16a34a;
-      }
-      .mini-stack {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-      .inline-plus {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-      .history-date-display,
-      .history-type-display {
-        padding: 8px 10px;
-        border: 1px solid var(--border-soft);
-        border-radius: 8px;
-        background: #f8fafc;
-        font-size: 13px;
-      }
-      .history-date-display {
-        flex: 1 1 auto;
-        min-width: 0;
-      }
-      .history-type-display {
-        flex: 0 0 140px;
-      }
-      .delete-history-date {
-        min-width: 38px;
-        padding-left: 0;
-        padding-right: 0;
       }
       @media (max-width: 1300px) {
         .deworming-grid {
@@ -119,6 +83,11 @@
                         <%= row.displayName %>
                       </div>
                       <div class="cat-subline">Mãe: <%= row.motherName %></div>
+                      <div style="margin-top:8px;">
+                        <span class="status-pill <%= row.dewormingState === 'overdue' ? 'is-red' : 'is-green' %>">
+                          <%= row.dewormingState === 'overdue' ? 'Vencida' : 'Em dia' %>
+                        </span>
+                      </div>
                     </div>
 
                     <div><strong><%= row.birthDateLabel %></strong></div>

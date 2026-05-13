@@ -158,6 +158,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         initialBalance: formatAmount(setting.initialBalanceCents),
         capitalSocialEnabled: setting.capitalSocialEnabled,
         capitalSocial: formatAmount(setting.capitalSocialCents),
+        capitalSocialLabel: formatAmount(setting.capitalSocialCents),
         balanceLabel: formatAmount(setting.initialBalanceCents + totalIncome + totalTransfersIn - totalExpenses - totalTransfersOut),
         monthIncomeLabel: formatAmount(monthIncome + monthTransfersIn),
         monthExpenseLabel: formatAmount(monthExpenses + monthTransfersOut),

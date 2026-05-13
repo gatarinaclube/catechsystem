@@ -22,28 +22,76 @@
           </div>
         </div>
 
+        <div class="metric-grid" style="margin-bottom:18px;">
+          <div class="metric-card is-blue">
+            <div class="metric-label">Clientes</div>
+            <div class="metric-value"><%= summary.total %></div>
+            <div class="metric-note">Total cadastrado</div>
+          </div>
+          <div class="metric-card is-green">
+            <div class="metric-label">Completos</div>
+            <div class="metric-value"><%= summary.complete %></div>
+            <div class="metric-note">Cadastro com contato e endereço</div>
+          </div>
+          <div class="metric-card is-yellow">
+            <div class="metric-label">Incompletos</div>
+            <div class="metric-value"><%= summary.incomplete %></div>
+            <div class="metric-note">Precisam de revisão</div>
+          </div>
+          <div class="metric-card is-purple">
+            <div class="metric-label">Com vendas</div>
+            <div class="metric-value"><%= summary.withSales %></div>
+            <div class="metric-note">Clientes vinculados a receitas</div>
+          </div>
+        </div>
+
         <div class="content-card module-list-card">
+          <div class="history-section-head" style="margin-bottom:12px;">
+            <div>
+              <div class="content-title">Clientes</div>
+              <div class="content-sub">Clique no cliente para editar cadastro, contato e endereço.</div>
+            </div>
+            <span class="status-pill is-blue"><%= clients.length %></span>
+          </div>
           <% if (!clients.length) { %>
             <div class="empty">Nenhum cliente cadastrado.</div>
           <% } else { %>
-            <ul class="list">
+            <div class="record-list">
               <% clients.forEach(function(client) { %>
-                <li class="item">
-                  <div>
-                    <a class="item-link" href="/crm/clientes/<%= client.id %>">
+                <a class="record-row" href="/crm/clientes/<%= client.id %>" style="text-decoration:none;">
+                  <div class="record-main">
+                    <div class="record-title">
                       <%= client.fullName || "Cliente sem nome" %>
-                    </a>
-                    <div class="item-sub">
+                    </div>
+                    <div class="record-sub">
                       <%= client.document || "Sem documento" %>
                       · Cadastro: <%= client.createdAtLabel || "-" %>
-                      <% if (client.city || client.state) { %>
-                        · <%= [client.city, client.state].filter(Boolean).join(" - ") %>
+                      <% if (client.locationLabel) { %>
+                        · <%= client.locationLabel %>
+                      <% } %>
+                    </div>
+                    <% if (client.contactLabel) { %>
+                      <div class="record-sub"><%= client.contactLabel %></div>
+                    <% } else { %>
+                      <div class="record-sub">Sem telefone/e-mail</div>
+                    <% } %>
+                    <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+                      <span class="status-pill <%= client.isComplete ? 'is-green' : 'is-yellow' %>">
+                        <%= client.isComplete ? 'Cadastro completo' : 'Cadastro incompleto' %>
+                      </span>
+                      <% if (client.salesCount > 0) { %>
+                        <span class="status-pill is-purple"><%= client.salesCount %> venda(s)</span>
+                      <% } else { %>
+                        <span class="status-pill">Sem vendas</span>
                       <% } %>
                     </div>
                   </div>
-                </li>
+                  <div class="record-meta">
+                    <span class="status-pill is-blue">Editar</span>
+                  </div>
+                </a>
               <% }) %>
-            </ul>
+            </div>
           <% } %>
         </div>
       </main>

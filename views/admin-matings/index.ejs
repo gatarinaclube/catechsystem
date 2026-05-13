@@ -31,21 +31,6 @@
         border-radius: 14px;
         margin-bottom: 12px;
       }
-      .parent-line {
-        margin-top: 4px;
-        font-size: 11px;
-        line-height: 1.35;
-        color: var(--text-muted);
-      }
-      .birth-line {
-        margin-top: 4px;
-        font-size: 11px;
-        line-height: 1.35;
-        color: var(--text-muted);
-      }
-      .parent-line span {
-        display: block;
-      }
       .origin-button {
         margin-top: 4px;
         padding: 0;
@@ -177,39 +162,10 @@
       .mating-dpp {
         padding-left: 14px;
       }
-      .mini-stack {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-      .inline-plus {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        min-width: 0;
-      }
       .mating-table input,
       .mating-table select {
         width: 100%;
         min-width: 0;
-      }
-      .inline-plus select,
-      .inline-plus input {
-        flex: 1 1 auto;
-      }
-      .history-date-display {
-        flex: 1 1 auto;
-        min-width: 0;
-        padding: 8px 10px;
-        border: 1px solid var(--border-soft);
-        border-radius: 8px;
-        background: #f8fafc;
-        font-size: 13px;
-      }
-      .delete-history-date {
-        min-width: 38px;
-        padding-left: 0;
-        padding-right: 0;
       }
       @media (max-width: 900px) {
         .mating-table {
@@ -266,6 +222,33 @@
             <button type="submit" class="btn btn-primary">Filtrar</button>
             <a href="/admin/matings" class="btn">Limpar</a>
           </form>
+        </div>
+
+        <div class="content-card module-panel">
+          <div class="history-section-head">
+            <div>
+              <div class="content-title">Próximas ações</div>
+              <div class="content-sub">Cruzas liberadas ou DPP próximas para acompanhamento.</div>
+            </div>
+            <span class="status-pill is-purple"><%= nextActions.length %></span>
+          </div>
+          <% if (!nextActions.length) { %>
+            <div class="empty" style="margin-top:12px;">Nenhuma ação urgente para acasalamentos.</div>
+          <% } else { %>
+            <div class="record-list" style="margin-top:12px;">
+              <% nextActions.forEach(function(action) { %>
+                <div class="record-row">
+                  <div class="record-main">
+                    <div class="record-title"><%= action.title %></div>
+                    <div class="record-sub"><%= action.sub %></div>
+                  </div>
+                  <div class="record-meta">
+                    <span class="status-pill <%= action.color %>"><%= action.badge %></span>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
         </div>
 
         <% function escapeHtml(value) {

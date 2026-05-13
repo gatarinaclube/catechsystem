@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Busca - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath, searchQuery }) %>
+
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Busca</h2>
+            <div class="welcome-sub">Localize gatos, ninhadas, clientes e vendas em um só lugar.</div>
+          </div>
+          <div class="actions">
+            <a href="/dashboard" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <div class="content-card module-panel">
+          <form method="get" action="/buscar" class="admin-filter-form">
+            <div class="field">
+              <label class="field-label" for="q">Buscar</label>
+              <input id="q" name="q" type="search" value="<%= searchQuery || '' %>" placeholder="Nome, microchip, cliente, ninhada..." autofocus />
+            </div>
+            <button class="btn btn-primary" type="submit">Buscar</button>
+          </form>
+        </div>
+
+        <% if (!searchQuery || searchQuery.length < 2) { %>
+          <div class="content-card">
+            <div class="empty">Digite pelo menos 2 caracteres para pesquisar.</div>
+          </div>
+        <% } else { %>
+          <% const sections = [
+            { title: 'Gatos', rows: results.cats, href: function(item) { return '/cats/' + item.id; }, titleText: function(item) { return item.name || 'Gato sem nome'; }, subText: function(item) { return [item.kittenNumber ? 'N ' + item.kittenNumber : '', item.microchip ? 'Microchip ' + item.microchip : '', item.breed || ''].filter(Boolean).join(' · ') || 'Sem detalhes'; }, color: 'is-blue' },
+            { title: 'Ninhadas', rows: results.litters, href: function(item) { return '/admin/litters/' + item.id; }, titleText: function(item) { return item.litterNumber || 'Ninhada'; }, subText: function(item) { return [item.femaleName, item.maleName].filter(Boolean).join(' X ') || 'Sem pais informados'; }, color: 'is-purple' },
+            { title: 'Clientes', rows: results.clients, href: function(item) { return '/crm/clientes/' + item.id; }, titleText: function(item) { return item.fullName || 'Cliente sem nome'; }, subText: function(item) { return [item.document, [item.city, item.state].filter(Boolean).join(' - ')].filter(Boolean).join(' · ') || 'Sem detalhes'; }, color: 'is-green' },
+            { title: 'Vendas', rows: results.sales, href: function(item) { return '/vendas/' + item.id; }, titleText: function(item) { return item.kittenLabel || 'Venda sem filhote'; }, subText: function(item) { return [item.client ? item.client.fullName : '', item.invoiceNumber ? 'NF ' + item.invoiceNumber : ''].filter(Boolean).join(' · ') || 'Sem detalhes'; }, color: 'is-yellow' },
+          ]; %>
+
+          <% sections.forEach(function(section) { %>
+            <div class="content-card module-panel">
+              <div class="report-summary" style="display:flex; justify-content:space-between; gap:12px; margin-bottom:12px;">
+                <div>
+                  <div class="content-title"><%= section.title %></div>
+                  <div class="content-sub"><%= section.rows.length %> resultado(s)</div>
+                </div>
+              </div>
+              <% if (!section.rows.length) { %>
+                <div class="empty">Nenhum resultado nesta categoria.</div>
+              <% } else { %>
+                <div class="record-list">
+                  <% section.rows.forEach(function(item) { %>
+                    <a class="record-row" href="<%= section.href(item) %>" style="text-decoration:none;">
+                      <div class="record-main">
+                        <div class="record-title"><%= section.titleText(item) %></div>
+                        <div class="record-sub"><%= section.subText(item) %></div>
+                      </div>
+                      <div class="record-meta">
+                        <span class="status-pill <%= section.color %>"><%= section.title %></span>
+                      </div>
+                    </a>
+                  <% }) %>
+                </div>
+              <% } %>
+            </div>
+          <% }) %>
+        <% } %>
+      </main>
+    </div>
+  </body>
+</html>

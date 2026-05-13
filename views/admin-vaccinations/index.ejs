@@ -13,12 +13,6 @@
         gap: 10px;
         align-items: start;
       }
-      .cat-subline {
-        margin-top: 4px;
-        font-size: 11px;
-        line-height: 1.35;
-        color: var(--text-muted);
-      }
       .vaccination-header {
         font-size: 12px;
         font-weight: 600;
@@ -39,37 +33,8 @@
       .vaccination-row.is-vaccinated {
         border-left: 5px solid #16a34a;
       }
-      .mini-stack {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-      .inline-plus {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-      .history-date-display {
-        flex: 1 1 auto;
-        min-width: 0;
-        padding: 8px 10px;
-        border: 1px solid var(--border-soft);
-        border-radius: 8px;
-        background: #f8fafc;
-        font-size: 13px;
-      }
       .history-type-display {
         flex: 0 0 120px;
-        padding: 8px 10px;
-        border: 1px solid var(--border-soft);
-        border-radius: 8px;
-        background: #f8fafc;
-        font-size: 13px;
-      }
-      .delete-history-date {
-        min-width: 38px;
-        padding-left: 0;
-        padding-right: 0;
       }
       @media (max-width: 1300px) {
         .vaccination-grid {
@@ -93,6 +58,33 @@
           <div class="actions">
             <a href="/dashboard" class="btn">Voltar</a>
           </div>
+        </div>
+
+        <div class="content-card module-panel">
+          <div class="history-section-head">
+            <div>
+              <div class="content-title">Próximas ações</div>
+              <div class="content-sub">Vacinas vencidas ou próximas nos próximos 15 dias.</div>
+            </div>
+            <span class="status-pill is-blue"><%= nextActions.length %></span>
+          </div>
+          <% if (!nextActions.length) { %>
+            <div class="empty" style="margin-top:12px;">Nenhuma vacinação urgente no momento.</div>
+          <% } else { %>
+            <div class="record-list" style="margin-top:12px;">
+              <% nextActions.forEach(function(action) { %>
+                <div class="record-row">
+                  <div class="record-main">
+                    <div class="record-title"><%= action.title %></div>
+                    <div class="record-sub"><%= action.sub %></div>
+                  </div>
+                  <div class="record-meta">
+                    <span class="status-pill <%= action.color %>"><%= action.badge %></span>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
         </div>
 
         <% categories.forEach(function(category) { %>
@@ -125,6 +117,11 @@
                       </div>
                       <div class="cat-subline">Nascimento: <%= row.birthDateLabel %></div>
                       <div class="cat-subline">Mãe: <%= row.motherName %></div>
+                      <div style="margin-top:8px;">
+                        <span class="status-pill <%= row.vaccinationState === 'overdue' ? 'is-red' : row.vaccinationState === 'upcoming' ? 'is-yellow' : 'is-green' %>">
+                          <%= row.vaccinationState === 'overdue' ? 'Vencida' : row.vaccinationState === 'upcoming' ? 'Próxima' : 'Em dia' %>
+                        </span>
+                      </div>
                     </div>
 
                     <div class="mini-stack" data-antirabic-box>

@@ -7,6 +7,7 @@
     <!-- CSS GLOBAL -->
     <link rel="stylesheet" href="/css/theme.css" />
     <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
   </head>
   <body>
   <div class="shell">
@@ -123,6 +124,64 @@
   </div>
 <% } %>
 
+
+        <% if (operationalPanel) { %>
+          <div class="content-card" style="margin-bottom:20px;">
+            <div class="content-title">Painel operacional</div>
+            <div class="content-sub">Resumo rápido para acompanhar o trabalho do gatil hoje.</div>
+            <div class="metric-grid" style="margin-top:14px;">
+              <a class="metric-card is-green" href="<%= access && access.canAccessKittensAdmin ? '/admin/kittens' : '#' %>" style="text-decoration:none;">
+                <div class="metric-label">Filhotes disponíveis</div>
+                <div class="metric-value"><%= operationalPanel.kittens.available %></div>
+                <div class="metric-note">Reservados: <%= operationalPanel.kittens.reserved %></div>
+              </a>
+              <a class="metric-card is-purple" href="<%= access && access.canAccessMatingsAdmin ? '/admin/matings' : '#' %>" style="text-decoration:none;">
+                <div class="metric-label">Para acasalar</div>
+                <div class="metric-value"><%= operationalPanel.matings.ready %></div>
+                <div class="metric-note">Pausa: <%= operationalPanel.matings.pause %></div>
+              </a>
+              <a class="metric-card is-blue" href="<%= access && access.canAccessRevenues ? '/receitas/lista' : '#' %>" style="text-decoration:none;">
+                <div class="metric-label">Receitas do mês</div>
+                <div class="metric-value" style="font-size:20px;"><%= operationalPanel.finance.incomeLabel %></div>
+                <div class="metric-note">A receber: <%= operationalPanel.finance.receivableLabel %></div>
+              </a>
+              <a class="metric-card is-red" href="<%= access && access.canAccessQuickLaunch ? '/despesas/lista' : '#' %>" style="text-decoration:none;">
+                <div class="metric-label">Despesas do mês</div>
+                <div class="metric-value" style="font-size:20px;"><%= operationalPanel.finance.expenseLabel %></div>
+                <div class="metric-note">Saldo: <%= operationalPanel.finance.balanceLabel %></div>
+              </a>
+              <a class="metric-card is-yellow" href="<%= access && access.canAccessWeighingAdmin ? '/admin/weighing' : '#' %>" style="text-decoration:none;">
+                <div class="metric-label">Pesagens ativas</div>
+                <div class="metric-value"><%= operationalPanel.routines.weighingAttentionCount %></div>
+                <div class="metric-note">Gatos marcados para pesar</div>
+              </a>
+            </div>
+
+            <% if (operationalPanel.attentionItems && operationalPanel.attentionItems.length) { %>
+              <div style="margin-top:18px;">
+                <div class="content-title" style="font-size:15px;">Atenção operacional</div>
+                <div class="content-sub">Próximos recebimentos e rotinas que merecem acompanhamento.</div>
+                <div class="record-list" style="margin-top:12px;">
+                  <% operationalPanel.attentionItems.forEach(function(item) { %>
+                    <a class="record-row" href="<%= item.href %>" style="text-decoration:none;">
+                      <div class="record-main">
+                        <div class="record-title"><%= item.title %></div>
+                        <div class="record-sub"><%= item.sub %></div>
+                      </div>
+                      <div class="record-meta">
+                        <span class="status-pill <%= item.color %>"><%= item.badge %></span>
+                      </div>
+                    </a>
+                  <% }) %>
+                </div>
+              </div>
+            <% } else { %>
+              <div class="empty" style="margin-top:16px;">
+                Nenhuma rotina urgente para acompanhar agora.
+              </div>
+            <% } %>
+          </div>
+        <% } %>
 
 
 

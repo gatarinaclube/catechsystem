@@ -53,17 +53,21 @@
               <% if (!items.length) { %>
                 <div class="empty">Nenhum gato nesta categoria.</div>
               <% } else { %>
-                <ul class="list">
+                <div class="record-list">
                   <% items.forEach(function(cat) { %>
-                    <li class="item">
-                      <div>
-                        <a class="item-link" href="/admin/history/<%= cat.id %>">
-                          <%= cat.displayName %> - <%= cat.birthDateLabel %> - <%= cat.microchipLabel %>
-                        </a>
+                    <a class="record-row" href="/admin/history/<%= cat.id %>" style="text-decoration:none; border-left:4px solid <%= category.color %>;">
+                      <div class="record-main">
+                        <div class="record-title"><%= cat.displayName %></div>
+                        <div class="record-sub">
+                          Nascimento: <%= cat.birthDateLabel %> · Microchip: <%= cat.microchipLabel %>
+                        </div>
                       </div>
-                    </li>
+                      <div class="record-meta">
+                        <span class="status-pill" style="color:<%= category.color %>;"><%= category.label %></span>
+                      </div>
+                    </a>
                   <% }) %>
-                </ul>
+                </div>
               <% } %>
             </div>
           </details>

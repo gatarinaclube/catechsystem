@@ -7,137 +7,6 @@
     <link rel="stylesheet" href="/css/layout.css" />
     <link rel="stylesheet" href="/css/cattery-admin.css" />
     <link rel="stylesheet" href="/css/quick-finance.css" />
-    <style>
-      .account-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 14px;
-      }
-      .account-card {
-        border: 1px solid var(--border-soft);
-        border-radius: 8px;
-        padding: 16px;
-        background: #fff;
-      }
-      .account-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-      }
-      .account-metrics {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 10px;
-        margin: 12px 0;
-      }
-      .metric {
-        border: 1px solid var(--border-soft);
-        border-radius: 8px;
-        padding: 10px;
-      }
-      .metric span {
-        display: block;
-        color: var(--text-muted);
-        font-size: 11px;
-        margin-bottom: 4px;
-      }
-      .metric strong {
-        display: block;
-        font-size: 15px;
-      }
-      .metric-balance {
-        background: #ecfdf5;
-        border-color: #a7f3d0;
-      }
-      .metric-balance strong {
-        color: #047857;
-      }
-      .metric-income {
-        background: #eff6ff;
-        border-color: #bfdbfe;
-      }
-      .metric-income strong {
-        color: #1d4ed8;
-      }
-      .metric-expense {
-        background: #fef2f2;
-        border-color: #fecaca;
-      }
-      .metric-expense strong {
-        color: #b91c1c;
-      }
-      .account-settings-button {
-        border: 1px solid var(--border-soft);
-        border-radius: 8px;
-        background: #f9fafb;
-        cursor: pointer;
-        min-width: 38px;
-        min-height: 38px;
-      }
-      .account-settings {
-        display: none;
-        border-top: 1px solid var(--border-soft);
-        margin-top: 12px;
-        padding-top: 12px;
-      }
-      .account-settings.is-visible {
-        display: block;
-      }
-      .account-form {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 10px;
-        align-items: end;
-      }
-      .capital-row {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-      .capital-extra {
-        display: none;
-      }
-      .capital-extra.is-visible {
-        display: block;
-      }
-      .transfer-card {
-        margin-top: 16px;
-      }
-      .transfer-grid {
-        display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 10px;
-        align-items: end;
-      }
-      .transfer-history {
-        margin-top: 12px;
-      }
-      .transfer-list {
-        display: grid;
-        gap: 10px;
-        margin-top: 10px;
-      }
-      .transfer-item {
-        border: 1px solid var(--border-soft);
-        border-radius: 8px;
-        padding: 12px;
-      }
-      .transfer-edit-grid {
-        display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr)) auto auto;
-        gap: 8px;
-        align-items: end;
-      }
-      @media (max-width: 760px) {
-        .account-metrics,
-        .account-form,
-        .transfer-grid,
-        .transfer-edit-grid {
-          grid-template-columns: 1fr;
-        }
-      }
-    </style>
   </head>
   <body>
     <div class="shell">
@@ -165,7 +34,12 @@
             <% accounts.forEach(function(account, index) { %>
               <div class="account-card">
                 <div class="account-head">
-                  <h3 class="content-title"><%= account.accountName %></h3>
+                  <div class="account-title">
+                    <h3 class="content-title"><%= account.accountName %></h3>
+                    <% if (account.capitalSocialEnabled) { %>
+                      <div class="content-sub">Capital social: <%= account.capitalSocialLabel %></div>
+                    <% } %>
+                  </div>
                   <button
                     class="account-settings-button"
                     type="button"
@@ -175,15 +49,15 @@
                 </div>
 
                 <div class="account-metrics">
-                  <div class="metric metric-balance">
+                  <div class="account-metric is-balance">
                     <span>Saldo da conta</span>
                     <strong><%= account.balanceLabel %></strong>
                   </div>
-                  <div class="metric metric-income">
+                  <div class="account-metric is-income">
                     <span>Entradas no mês</span>
                     <strong><%= account.monthIncomeLabel %></strong>
                   </div>
-                  <div class="metric metric-expense">
+                  <div class="account-metric is-expense">
                     <span>Saídas no mês</span>
                     <strong><%= account.monthExpenseLabel %></strong>
                   </div>
@@ -270,40 +144,59 @@
                 <div class="transfer-list">
                   <% transfers.forEach(function(transfer) { %>
                     <div class="transfer-item">
-                      <form method="post" action="/administrativo/contas/transferencias/<%= transfer.id %>/update" class="transfer-edit-grid">
-                        <div class="field">
-                          <label class="field-label">Saída</label>
-                          <select name="fromAccount" required>
-                            <% accounts.forEach(function(account) { %>
-                              <option value="<%= account.accountName %>" <%= transfer.fromAccount === account.accountName ? 'selected' : '' %>><%= account.accountName %></option>
-                            <% }) %>
-                          </select>
+                      <div class="transfer-item-head">
+                        <div>
+                          <div class="transfer-title">
+                            <%= transfer.fromAccount %> → <%= transfer.toAccount %>
+                          </div>
+                          <div class="transfer-sub">
+                            <%= transfer.transferDateLabel %>
+                            <% if (transfer.note) { %>
+                              · <%= transfer.note %>
+                            <% } %>
+                          </div>
                         </div>
-                        <div class="field">
-                          <label class="field-label">Entrada</label>
-                          <select name="toAccount" required>
-                            <% accounts.forEach(function(account) { %>
-                              <option value="<%= account.accountName %>" <%= transfer.toAccount === account.accountName ? 'selected' : '' %>><%= account.accountName %></option>
-                            <% }) %>
-                          </select>
-                        </div>
-                        <div class="field">
-                          <label class="field-label">Valor</label>
-                          <input class="money-input" name="transferAmount" inputmode="decimal" value="<%= transfer.amount %>" required />
-                        </div>
-                        <div class="field">
-                          <label class="field-label">Data</label>
-                          <input name="transferDate" type="date" value="<%= transfer.transferDateInput %>" required />
-                        </div>
-                        <div class="field">
-                          <label class="field-label">Observação</label>
-                          <input name="transferNote" value="<%= transfer.note || '' %>" />
-                        </div>
-                        <button class="btn btn-primary" type="submit">Salvar</button>
-                      </form>
-                      <form method="post" action="/administrativo/contas/transferencias/<%= transfer.id %>/delete" onsubmit="return confirm('Excluir esta transferência?');" style="margin-top:8px;">
-                        <button class="btn" type="submit">Excluir</button>
-                      </form>
+                        <span class="status-pill is-blue"><%= transfer.amountLabel %></span>
+                      </div>
+                      <details>
+                        <summary>Editar transferência</summary>
+                        <form method="post" action="/administrativo/contas/transferencias/<%= transfer.id %>/update" class="transfer-edit-grid" style="margin-top:12px;">
+                          <div class="field">
+                            <label class="field-label">Saída</label>
+                            <select name="fromAccount" required>
+                              <% accounts.forEach(function(account) { %>
+                                <option value="<%= account.accountName %>" <%= transfer.fromAccount === account.accountName ? 'selected' : '' %>><%= account.accountName %></option>
+                              <% }) %>
+                            </select>
+                          </div>
+                          <div class="field">
+                            <label class="field-label">Entrada</label>
+                            <select name="toAccount" required>
+                              <% accounts.forEach(function(account) { %>
+                                <option value="<%= account.accountName %>" <%= transfer.toAccount === account.accountName ? 'selected' : '' %>><%= account.accountName %></option>
+                              <% }) %>
+                            </select>
+                          </div>
+                          <div class="field">
+                            <label class="field-label">Valor</label>
+                            <input class="money-input" name="transferAmount" inputmode="decimal" value="<%= transfer.amount %>" required />
+                          </div>
+                          <div class="field">
+                            <label class="field-label">Data</label>
+                            <input name="transferDate" type="date" value="<%= transfer.transferDateInput %>" required />
+                          </div>
+                          <div class="field">
+                            <label class="field-label">Observação</label>
+                            <input name="transferNote" value="<%= transfer.note || '' %>" />
+                          </div>
+                          <div class="transfer-actions">
+                            <button class="btn btn-primary" type="submit">Salvar</button>
+                          </div>
+                        </form>
+                        <form method="post" action="/administrativo/contas/transferencias/<%= transfer.id %>/delete" onsubmit="return confirm('Excluir esta transferência?');" class="transfer-actions" style="margin-top:8px;">
+                          <button class="btn" type="submit">Excluir transferência</button>
+                        </form>
+                      </details>
                     </div>
                   <% }) %>
                 </div>

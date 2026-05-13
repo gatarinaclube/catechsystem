@@ -6,64 +6,6 @@
     <link rel="stylesheet" href="/css/theme.css" />
     <link rel="stylesheet" href="/css/layout.css" />
     <link rel="stylesheet" href="/css/cattery-admin.css" />
-    <style>
-      .report-filter-grid {
-        display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 12px;
-        align-items: end;
-      }
-      .report-summary {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        align-items: center;
-        margin-bottom: 12px;
-      }
-      .report-total {
-        font-size: 18px;
-        font-weight: 700;
-      }
-      .report-table-wrap {
-        overflow-x: auto;
-      }
-      .report-table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 760px;
-      }
-      .report-table th,
-      .report-table td {
-        border-bottom: 1px solid var(--border-soft);
-        padding: 10px 8px;
-        text-align: left;
-        vertical-align: top;
-      }
-      .report-table th {
-        color: var(--text-muted);
-        font-size: 11px;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-      .report-table .amount {
-        text-align: right;
-        white-space: nowrap;
-      }
-      @media (max-width: 1100px) {
-        .report-filter-grid {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-      }
-      @media (max-width: 680px) {
-        .report-filter-grid {
-          grid-template-columns: 1fr;
-        }
-        .report-summary {
-          align-items: flex-start;
-          flex-direction: column;
-        }
-      }
-    </style>
   </head>
   <body>
     <div class="shell">
@@ -77,11 +19,10 @@
           </div>
           <div class="actions">
             <a href="/reports" class="btn">Voltar</a>
-            <a href="/reports/expenses/pdf?<%= pdfQuery %>" class="btn btn-primary">Download PDF</a>
           </div>
         </div>
 
-        <div class="content-card module-panel">
+        <div class="content-card report-filter-card">
           <form method="get" action="/reports/expenses" class="report-filter-grid">
             <div class="field">
               <label class="field-label" for="periodType">Período</label>
@@ -110,8 +51,11 @@
                 <% }) %>
               </select>
             </div>
-            <button type="submit" class="btn btn-primary">Filtrar</button>
-            <a href="/reports/expenses" class="btn">Limpar</a>
+            <div class="report-filter-actions">
+              <button type="submit" class="btn btn-primary">Filtrar</button>
+              <a href="/reports/expenses" class="btn">Limpar</a>
+              <a href="/reports/expenses/pdf?<%= pdfQuery %>" class="btn">PDF</a>
+            </div>
           </form>
         </div>
 

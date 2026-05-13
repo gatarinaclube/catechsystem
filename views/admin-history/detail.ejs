@@ -6,45 +6,6 @@
     <link rel="stylesheet" href="/css/theme.css" />
     <link rel="stylesheet" href="/css/layout.css" />
     <link rel="stylesheet" href="/css/cattery-admin.css" />
-    <style>
-      .info-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 12px;
-      }
-      .info-box {
-        border: 1px solid var(--border-soft);
-        border-radius: 12px;
-        padding: 12px;
-        background: rgba(148, 163, 184, 0.06);
-      }
-      .history-form-row {
-        display: grid;
-        grid-template-columns: 160px 1fr;
-        gap: 8px;
-        margin-bottom: 10px;
-      }
-      .history-form-row.treatment {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
-      .history-readonly {
-        border: 1px solid var(--border-soft);
-        border-radius: 12px;
-        padding: 12px;
-        margin-bottom: 10px;
-      }
-      .sublist {
-        margin: 8px 0 0;
-        padding-left: 18px;
-      }
-      @media (max-width: 1100px) {
-        .info-grid,
-        .history-form-row,
-        .history-form-row.treatment {
-          grid-template-columns: 1fr;
-        }
-      }
-    </style>
   </head>
   <body>
     <div class="shell">
@@ -54,6 +15,18 @@
           <div>
             <h2 class="welcome-title">Histórico do Gato</h2>
             <div class="welcome-sub"><%= birthInfo.displayName %></div>
+            <div class="prontuario-nav">
+              <a href="#dados" class="status-pill is-blue">Dados</a>
+              <a href="#linha-do-tempo" class="status-pill is-purple">Linha do tempo</a>
+              <a href="#nascimento" class="status-pill is-green">Nascimento</a>
+              <% if (cat.gender === 'F') { %><a href="#partos" class="status-pill is-purple">Partos</a><% } %>
+              <a href="#tratamentos" class="status-pill is-yellow">Tratamentos</a>
+              <a href="#vacinas" class="status-pill is-blue">Vacinas</a>
+              <a href="#vermifugacao" class="status-pill is-green">Vermifugação</a>
+              <a href="#pesagem" class="status-pill is-purple">Pesagem</a>
+              <a href="#exames" class="status-pill is-blue">Exames</a>
+              <a href="#outros" class="status-pill">Outros</a>
+            </div>
           </div>
           <div class="actions">
             <a href="/admin/history" class="btn">Voltar</a>
@@ -61,7 +34,63 @@
         </div>
 
         <section class="content-card" style="margin-bottom:18px;">
-          <div class="content-title">Informações do Gato</div>
+          <div class="content-title">Resumo do Prontuário</div>
+          <div class="metric-grid" style="margin-top:14px;">
+            <div class="metric-card is-blue">
+              <div class="metric-label">Vacinas</div>
+              <div class="metric-value"><%= vaccinationHistory.antirabic.length + vaccinationHistory.feline.length %></div>
+              <div class="metric-note">Antirrábica e Feline</div>
+            </div>
+            <div class="metric-card is-green">
+              <div class="metric-label">Vermifugações</div>
+              <div class="metric-value"><%= dewormingHistory.length %></div>
+              <div class="metric-note">Registros salvos</div>
+            </div>
+            <div class="metric-card is-purple">
+              <div class="metric-label">Pesagens</div>
+              <div class="metric-value"><%= weighingHistory.length %></div>
+              <div class="metric-note">Acompanhamentos</div>
+            </div>
+            <div class="metric-card is-yellow">
+              <div class="metric-label">Tratamentos</div>
+              <div class="metric-value"><%= treatmentHistory.length %></div>
+              <div class="metric-note">Internações, tratamentos e cirurgias</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="content-card" id="linha-do-tempo" style="margin-bottom:18px;">
+          <div class="history-section-head">
+            <div class="content-title">Linha do Tempo</div>
+            <span class="status-pill is-purple"><%= timeline.length %> evento(s)</span>
+          </div>
+          <% if (!timeline.length) { %>
+            <div class="empty">Nenhum evento com data encontrado no prontuário.</div>
+          <% } else { %>
+            <div class="timeline-list">
+              <% timeline.forEach(function(item) { %>
+                <div class="timeline-item">
+                  <div class="timeline-date"><%= item.dateLabel %></div>
+                  <div class="timeline-card <%= item.color || '' %>">
+                    <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+                      <div>
+                        <div class="timeline-title"><%= item.title %></div>
+                        <div class="timeline-sub"><%= item.description %></div>
+                      </div>
+                      <span class="status-pill <%= item.color || '' %>"><%= item.section %></span>
+                    </div>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
+        </section>
+
+        <section class="content-card" id="dados" style="margin-bottom:18px;">
+          <div class="history-section-head">
+            <div class="content-title">Informações do Gato</div>
+            <span class="status-pill is-blue"><%= birthInfo.classification %></span>
+          </div>
           <div class="info-grid" style="margin-top:12px;">
             <div class="info-box"><strong>Nome:</strong><br /><%= birthInfo.displayName %></div>
             <div class="info-box"><strong>Data de Nascimento:</strong><br /><%= birthInfo.birthDate %></div>
@@ -81,8 +110,11 @@
           </div>
         </section>
 
-        <section class="content-card" style="margin-bottom:18px;">
-          <div class="content-title">Histórico de Nascimento</div>
+        <section class="content-card" id="nascimento" style="margin-bottom:18px;">
+          <div class="history-section-head">
+            <div class="content-title">Histórico de Nascimento</div>
+            <span class="status-pill is-green"><%= birthLitter ? 'Com ninhada' : 'Sem ninhada' %></span>
+          </div>
           <% if (birthLitter) { %>
             <div class="history-readonly" style="margin-top:12px;">
               <strong>Ninhada:</strong> <%= birthLitter.litterNumber || String(birthLitter.id).padStart(3, "0") %><br />
@@ -99,8 +131,8 @@
               <% birthItems.forEach(function(item, idx) { %>
                 <div class="history-form-row">
                   <input type="date" name="birthDates" value="<%= formatDateInput(item.date) %>" />
-                  <div style="display:flex; gap:8px;">
-                    <textarea name="birthNotes" rows="3" style="flex:1;" placeholder="Descreva o histórico individual de nascimento"><%= item.notes || '' %></textarea>
+                  <div class="responsive-inline">
+                    <textarea name="birthNotes" rows="3" class="responsive-fill" placeholder="Descreva o histórico individual de nascimento"><%= item.notes || '' %></textarea>
                     <% if (idx === birthItems.length - 1) { %>
                       <button type="button" class="btn add-birth">+</button>
                     <% } %>
@@ -113,8 +145,11 @@
         </section>
 
         <% if (cat.gender === 'F') { %>
-          <section class="content-card" style="margin-bottom:18px;">
-            <div class="content-title">Histórico de Partos</div>
+          <section class="content-card" id="partos" style="margin-bottom:18px;">
+            <div class="history-section-head">
+              <div class="content-title">Histórico de Partos</div>
+              <span class="status-pill is-purple"><%= partumHistory.length %> registro(s)</span>
+            </div>
             <% if (!partumHistory.length) { %>
               <div class="empty" style="margin-top:12px;">Nenhum parto relacionado encontrado.</div>
             <% } else { %>
@@ -139,8 +174,11 @@
           </section>
         <% } %>
 
-        <section class="content-card" style="margin-bottom:18px;">
-          <div class="content-title">Internações / Tratamentos</div>
+        <section class="content-card" id="tratamentos" style="margin-bottom:18px;">
+          <div class="history-section-head">
+            <div class="content-title">Internações / Tratamentos</div>
+            <span class="status-pill is-yellow"><%= treatmentHistory.length %> registro(s)</span>
+          </div>
           <form method="post" action="/admin/history/<%= cat.id %>/treatments" style="margin-top:12px;">
             <div data-treatment-box>
               <% const treatmentItems = treatmentHistory.length ? treatmentHistory : [{ type: '', startDate: '', endDate: '', dischargeDate: '', dosageSchedule: '', medication: '', dosage: '', notes: '' }]; %>
@@ -180,8 +218,11 @@
           </form>
         </section>
 
-        <section class="content-card" style="margin-bottom:18px;">
-          <div class="content-title">Vacinas</div>
+        <section class="content-card" id="vacinas" style="margin-bottom:18px;">
+          <div class="history-section-head">
+            <div class="content-title">Vacinas</div>
+            <span class="status-pill is-blue"><%= vaccinationHistory.antirabic.length + vaccinationHistory.feline.length %> registro(s)</span>
+          </div>
           <div class="history-readonly" style="margin-top:12px;">
             <strong>Antirrábica</strong>
             <ul class="sublist">
@@ -198,8 +239,11 @@
           </div>
         </section>
 
-        <section class="content-card" style="margin-bottom:18px;">
-          <div class="content-title">Vermifugação</div>
+        <section class="content-card" id="vermifugacao" style="margin-bottom:18px;">
+          <div class="history-section-head">
+            <div class="content-title">Vermifugação</div>
+            <span class="status-pill is-green"><%= dewormingHistory.length %> registro(s)</span>
+          </div>
           <div class="history-readonly" style="margin-top:12px;">
             <ul class="sublist">
               <% (dewormingHistory.length ? dewormingHistory : [{ date: '', type: '' }]).forEach(function(item) { %>
@@ -209,8 +253,11 @@
           </div>
         </section>
 
-        <section class="content-card" style="margin-bottom:18px;">
-          <div class="content-title">Pesagem</div>
+        <section class="content-card" id="pesagem" style="margin-bottom:18px;">
+          <div class="history-section-head">
+            <div class="content-title">Pesagem</div>
+            <span class="status-pill is-purple"><%= weighingHistory.length %> registro(s)</span>
+          </div>
           <div class="history-readonly" style="margin-top:12px;">
             <ul class="sublist">
               <% (weighingHistory.length ? weighingHistory : [{ date: '', weight: '' }]).forEach(function(item) { %>
@@ -220,8 +267,11 @@
           </div>
         </section>
 
-        <section class="content-card" style="margin-bottom:18px;">
-          <div class="content-title">Exames</div>
+        <section class="content-card" id="exames" style="margin-bottom:18px;">
+          <div class="history-section-head">
+            <div class="content-title">Exames</div>
+            <span class="status-pill is-blue">Prontuário</span>
+          </div>
           <div class="history-readonly" style="margin-top:12px;">
             <strong>PKDef:</strong> <%= examHistory.pkdefSource || '-' %> <%= examHistory.pkdefResult ? `- ${examHistory.pkdefResult}` : '' %><br />
             <strong>PRA-bf:</strong> <%= examHistory.prabfSource || '-' %> <%= examHistory.prabfResult ? `- ${examHistory.prabfResult}` : '' %><br />
@@ -234,16 +284,19 @@
           </div>
         </section>
 
-        <section class="content-card">
-          <div class="content-title">Outros Históricos</div>
+        <section class="content-card" id="outros">
+          <div class="history-section-head">
+            <div class="content-title">Outros Históricos</div>
+            <span class="status-pill"><%= otherHistory.length %> registro(s)</span>
+          </div>
           <form method="post" action="/admin/history/<%= cat.id %>/others" style="margin-top:12px;">
             <div data-other-box>
               <% const otherItems = otherHistory.length ? otherHistory : [{ date: '', notes: '' }]; %>
               <% otherItems.forEach(function(item, idx) { %>
                 <div class="history-form-row">
                   <input type="date" name="otherDates" value="<%= formatDateInput(item.date) %>" />
-                  <div style="display:flex; gap:8px;">
-                    <textarea name="otherNotes" rows="3" style="flex:1;" placeholder="Descreva o histórico"><%= item.notes || '' %></textarea>
+                  <div class="responsive-inline">
+                    <textarea name="otherNotes" rows="3" class="responsive-fill" placeholder="Descreva o histórico"><%= item.notes || '' %></textarea>
                     <% if (idx === otherItems.length - 1) { %>
                       <button type="button" class="btn add-other">+</button>
                     <% } %>

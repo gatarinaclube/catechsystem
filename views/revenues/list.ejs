@@ -28,7 +28,7 @@
           <ul class="quick-list">
             <% revenues.forEach(function(revenue) { %>
               <li>
-                <a href="/receitas/<%= revenue.id %>">
+                <a class="quick-expense-row" href="/receitas/<%= revenue.id %>">
                   <span class="quick-expense-left">
                     <strong><%= revenue.dateLabel %></strong>
                     <span><%= revenue.amountLabel %></span>
@@ -54,7 +54,10 @@
         <% } %>
       </div>
 
-      <a class="back-link" href="/receitas">Voltar</a>
+      <div class="quick-footer">
+        <a class="quick-options-link" href="/receitas" title="Voltar para receitas">←</a>
+        <a class="quick-options-link" href="/dashboard" title="Página inicial">⌂</a>
+      </div>
     </main>
   </body>
 </html>

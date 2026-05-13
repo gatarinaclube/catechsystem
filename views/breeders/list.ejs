@@ -67,16 +67,19 @@
               <% if (!section.items.length) { %>
                 <div class="empty">Nenhum registro nesta categoria.</div>
               <% } else { %>
-                <ul class="list">
+                <div class="record-list">
                   <% section.items.forEach(function(cat) { %>
-                    <li class="item">
-                      <div>
-                        <a class="item-link" href="/breeders/<%= cat.id %>"><%= cat.displayName %></a>
-                        <div class="item-sub">Idade: <%= cat.ageLabel %></div>
+                    <a class="record-row" href="/breeders/<%= cat.id %>" style="text-decoration:none; border-left:4px solid <%= section.color %>;">
+                      <div class="record-main">
+                        <div class="record-title"><%= cat.displayName %></div>
+                        <div class="record-sub">Idade: <%= cat.ageLabel %></div>
                       </div>
-                    </li>
+                      <div class="record-meta">
+                        <span class="status-pill" style="color:<%= section.color %>;"><%= section.title %></span>
+                      </div>
+                    </a>
                   <% }) %>
-                </ul>
+                </div>
               <% } %>
             </div>
           </details>

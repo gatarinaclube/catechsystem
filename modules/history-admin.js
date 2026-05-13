@@ -179,6 +179,148 @@ function formatExamHistory(plan) {
   };
 }
 
+function timelineDateTime(value) {
+  const parsed = parseDate(value);
+  return parsed ? parsed.getTime() : null;
+}
+
+function buildTimelineEntry({ date, section, title, description, color = "is-blue" }) {
+  const dateTime = timelineDateTime(date);
+  if (!dateTime) return null;
+
+  return {
+    date,
+    dateTime,
+    dateLabel: formatDateLabel(date),
+    section,
+    title,
+    description,
+    color,
+  };
+}
+
+function buildCatTimeline({
+  cat,
+  birthLitter,
+  birthHistory,
+  treatmentHistory,
+  otherHistory,
+  partumHistory,
+  vaccinationHistory,
+  dewormingHistory,
+  weighingHistory,
+  examHistory,
+}) {
+  const entries = [];
+
+  entries.push(buildTimelineEntry({
+    date: cat.birthDate,
+    section: "Nascimento",
+    title: "Nascimento",
+    description: birthLitter
+      ? `Ninhada ${birthLitter.litterNumber || String(birthLitter.id).padStart(3, "0")}`
+      : "Registro de nascimento do gato.",
+    color: "is-green",
+  }));
+
+  birthHistory.forEach((item) => {
+    entries.push(buildTimelineEntry({
+      date: item.date,
+      section: "Nascimento",
+      title: "Histórico individual de nascimento",
+      description: item.notes || "Sem observações.",
+      color: "is-green",
+    }));
+  });
+
+  partumHistory.forEach((item) => {
+    entries.push(buildTimelineEntry({
+      date: item.rawBirthDate,
+      section: "Partos",
+      title: `Parto - Ninhada ${item.litterNumber}`,
+      description: `${item.totalKittens} filhote(s), ${item.females} fêmea(s), ${item.males} macho(s), ${item.dead} óbito(s).`,
+      color: "is-purple",
+    }));
+  });
+
+  treatmentHistory.forEach((item) => {
+    entries.push(buildTimelineEntry({
+      date: item.startDate || item.endDate || item.dischargeDate,
+      section: "Tratamentos",
+      title: item.type || "Tratamento",
+      description: [
+        item.medication ? `Medicação: ${item.medication}` : "",
+        item.dosage ? `Dosagem: ${item.dosage}` : "",
+        item.notes || "",
+      ].filter(Boolean).join(" · ") || "Sem observações.",
+      color: "is-yellow",
+    }));
+  });
+
+  vaccinationHistory.antirabic.forEach((item) => {
+    entries.push(buildTimelineEntry({
+      date: item.date,
+      section: "Vacinas",
+      title: "Vacina antirrábica",
+      description: "Registro de vacina antirrábica.",
+      color: "is-blue",
+    }));
+  });
+
+  vaccinationHistory.feline.forEach((item) => {
+    entries.push(buildTimelineEntry({
+      date: item.date,
+      section: "Vacinas",
+      title: "Vacina Feline",
+      description: item.type || "Tipo não informado.",
+      color: "is-blue",
+    }));
+  });
+
+  dewormingHistory.forEach((item) => {
+    entries.push(buildTimelineEntry({
+      date: item.date,
+      section: "Vermifugação",
+      title: "Vermifugação",
+      description: item.type || "Tipo não informado.",
+      color: "is-green",
+    }));
+  });
+
+  weighingHistory.forEach((item) => {
+    entries.push(buildTimelineEntry({
+      date: item.date,
+      section: "Pesagem",
+      title: "Pesagem",
+      description: item.weight ? `${item.weight} kg` : "Peso não informado.",
+      color: "is-purple",
+    }));
+  });
+
+  examHistory.ecoHistory.forEach((item) => {
+    entries.push(buildTimelineEntry({
+      date: item.date,
+      section: "Exames",
+      title: "Ecocardiodoppler",
+      description: "Registro de exame ecocardiodoppler.",
+      color: "is-blue",
+    }));
+  });
+
+  otherHistory.forEach((item) => {
+    entries.push(buildTimelineEntry({
+      date: item.date,
+      section: "Outros",
+      title: "Outro histórico",
+      description: item.notes || "Sem observações.",
+    }));
+  });
+
+  return entries
+    .filter(Boolean)
+    .sort((a, b) => b.dateTime - a.dateTime);
+}
+
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
@@ -338,6 +480,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       const partumHistory = linkedLitters.map((litter) => ({
         litterNumber: litter.litterNumber || String(litter.id).padStart(3, "0"),
+        rawBirthDate: litter.litterBirthDate,
         birthDate: formatDateLabel(litter.litterBirthDate),
         totalKittens: litter.litterCount || litter.kittens.length || 0,
         females: litter.femaleCount || 0,
@@ -351,6 +494,22 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           microchip: formatMicrochip(kitten.microchip),
         })),
       }));
+      const vaccinationHistory = formatVaccinationHistory(cat.vaccinationPlan);
+      const dewormingHistory = formatDewormingHistory(cat.dewormingPlan);
+      const weighingHistory = formatWeighingHistory(cat.weighingPlan);
+      const examHistory = formatExamHistory(cat.examPlan);
+      const timeline = buildCatTimeline({
+        cat,
+        birthLitter,
+        birthHistory,
+        treatmentHistory,
+        otherHistory,
+        partumHistory,
+        vaccinationHistory,
+        dewormingHistory,
+        weighingHistory,
+        examHistory,
+      });
 
       res.render("admin-history/detail", {
         user: req.user,
@@ -363,10 +522,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         treatmentHistory,
         otherHistory,
         partumHistory,
-        vaccinationHistory: formatVaccinationHistory(cat.vaccinationPlan),
-        dewormingHistory: formatDewormingHistory(cat.dewormingPlan),
-        weighingHistory: formatWeighingHistory(cat.weighingPlan),
-        examHistory: formatExamHistory(cat.examPlan),
+        vaccinationHistory,
+        dewormingHistory,
+        weighingHistory,
+        examHistory,
+        timeline,
         treatmentTypes: TREATMENT_TYPES,
         dosageOptions: DOSAGE_OPTIONS,
         formatDate,

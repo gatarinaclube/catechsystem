@@ -60,18 +60,45 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     };
   }
 
+  function isClientComplete(client) {
+    return Boolean(
+      client.fullName &&
+      client.document &&
+      (client.email || client.phone) &&
+      client.country &&
+      client.city &&
+      client.state
+    );
+  }
+
   router.get("/crm", requireAuth, requirePermission("admin.crm"), async (req, res) => {
     const clients = await prisma.revenueClient.findMany({
       where: clientScope(req),
       orderBy: { fullName: "asc" },
+      include: {
+        _count: {
+          select: { revenues: true },
+        },
+      },
     });
+    const mappedClients = clients.map((client) => ({
+      ...client,
+      createdAtLabel: formatDateLabel(client.createdAt),
+      isComplete: isClientComplete(client),
+      salesCount: client._count?.revenues || 0,
+      locationLabel: [client.city, client.state].filter(Boolean).join(" - "),
+      contactLabel: [client.phone, client.email].filter(Boolean).join(" · "),
+    }));
 
     res.render("crm/index", {
       user: req.user,
-      clients: clients.map((client) => ({
-        ...client,
-        createdAtLabel: formatDateLabel(client.createdAt),
-      })),
+      clients: mappedClients,
+      summary: {
+        total: mappedClients.length,
+        complete: mappedClients.filter((client) => client.isComplete).length,
+        incomplete: mappedClients.filter((client) => !client.isComplete).length,
+        withSales: mappedClients.filter((client) => client.salesCount > 0).length,
+      },
       currentPath: "/crm",
     });
   });

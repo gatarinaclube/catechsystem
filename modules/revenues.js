@@ -118,6 +118,61 @@ function mapRevenueForForm(revenue = null) {
   };
 }
 
+function buildRevenueSummary(revenue) {
+  if (!revenue?.id) {
+    return null;
+  }
+
+  const totalCents = Number(revenue.totalAmountCents || 0);
+  const parcels = safeJsonParse(revenue.parcelDataJson);
+  const paidCents = parcels.reduce(
+    (sum, parcel) => sum + (parcel.paid ? Number(parcel.amountCents || 0) : 0),
+    0
+  );
+  const openCents = Math.max(0, totalCents - paidCents);
+  const today = parseDateInput(todayForInput(), true);
+  const openParcels = parcels
+    .filter((parcel) => !parcel.paid)
+    .map((parcel) => ({
+      ...parcel,
+      dueDate: parcel.date ? parseDateInput(parcel.date, true) : null,
+    }))
+    .sort((a, b) => {
+      if (!a.dueDate && !b.dueDate) return Number(a.number || 0) - Number(b.number || 0);
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
+      return a.dueDate - b.dueDate;
+    });
+  const nextParcel = openParcels[0] || null;
+  const overdueCount = openParcels.filter(
+    (parcel) => parcel.dueDate && today && parcel.dueDate < today
+  ).length;
+  const paidCount = parcels.filter((parcel) => parcel.paid).length;
+  const status = openCents <= 0
+    ? "Pago"
+    : overdueCount > 0
+      ? "Em atraso"
+      : "Em aberto";
+
+  return {
+    totalLabel: formatAmount(totalCents),
+    paidLabel: formatAmount(paidCents),
+    openLabel: formatAmount(openCents),
+    paidCount,
+    installments: revenue.installments || parcels.length || 1,
+    status,
+    statusClass: status === "Pago" ? "is-green" : status === "Em atraso" ? "is-red" : "is-yellow",
+    nextParcel: nextParcel
+      ? {
+          label: `${nextParcel.number || "-"} / ${revenue.installments || parcels.length || "-"}`,
+          dateLabel: nextParcel.dueDate ? formatDateOnlyLabel(nextParcel.dueDate) : "Sem vencimento",
+          amountLabel: formatAmount(nextParcel.amountCents || 0),
+          account: nextParcel.paymentAccount || revenue.paymentAccount || "-",
+        }
+      : null,
+  };
+}
+
 function mapPaidRevenueRows(revenues, start, end) {
   const startTime = start.getTime();
   const endTime = end.getTime();
@@ -267,6 +322,7 @@ module.exports = (prisma) => {
   async function renderForm(req, res, extra = {}) {
     res.status(extra.status || 200).render("revenues/index", {
       ...(await loadContext(req, extra.revenue)),
+      revenueSummary: buildRevenueSummary(extra.revenue),
       formAction: extra.formAction || (extra.revenue?.id ? `/receitas/${extra.revenue.id}` : "/receitas"),
       backPath: extra.backPath || "/receitas",
       success: extra.success || false,

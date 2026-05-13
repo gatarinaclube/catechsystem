@@ -488,6 +488,37 @@ app.get("/dashboard", requireAuth, async (req, res) => {
    
    
     const user = req.user;
+    const userScope = canViewAllData(req.session.userRole) ? {} : { ownerId: req.session.userId };
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+    const nextMonthStart = new Date(monthStart);
+    nextMonthStart.setMonth(nextMonthStart.getMonth() + 1);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    function moneyLabel(cents) {
+      return (Number(cents || 0) / 100).toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      });
+    }
+
+    function dateLabel(value) {
+      if (!value) return "";
+      const parsed = value instanceof Date ? value : new Date(value);
+      if (Number.isNaN(parsed.getTime())) return "";
+      return parsed.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+    }
+
+    function parseJsonList(value) {
+      if (!value) return [];
+      try {
+        return JSON.parse(value);
+      } catch {
+        return [];
+      }
+    }
 
     let catsInReviewCount = 0;
 
@@ -542,6 +573,150 @@ if (!isAdminRole(req.session.userRole)) {
   );
 }
 
+const kittenStatusRows = await prisma.cat.groupBy({
+  by: ["kittenAvailabilityStatus"],
+  where: {
+    ...userScope,
+    OR: [{ kittenNumber: { not: null } }, { litterKitten: { isNot: null } }],
+  },
+  _count: { _all: true },
+});
+
+const kittenStatusCounts = Object.fromEntries(
+  kittenStatusRows.map((row) => [row.kittenAvailabilityStatus || "UNAVAILABLE", row._count._all])
+);
+
+const matingStatusRows = await prisma.matingPlan.groupBy({
+  by: ["status"],
+  where: userScope,
+  _count: { _all: true },
+});
+const matingStatusCounts = Object.fromEntries(
+  matingStatusRows.map((row) => [row.status || "PARA_ACASALAR", row._count._all])
+);
+
+const expenseMonthRows = await prisma.quickLaunchEntry.findMany({
+  where: {
+    ...userScope,
+    competenceDate: { gte: monthStart, lt: nextMonthStart },
+  },
+  select: { amountCents: true },
+});
+const monthExpenseCents = expenseMonthRows.reduce(
+  (sum, row) => sum + Number(row.amountCents || 0),
+  0
+);
+
+const monthRevenues = await prisma.revenueEntry.findMany({
+  where: userScope,
+  select: {
+    id: true,
+    kittenLabel: true,
+    parcelDataJson: true,
+    client: { select: { fullName: true } },
+  },
+});
+let monthRevenueCents = 0;
+let receivableCents = 0;
+let receivableCount = 0;
+const attentionLimitDate = new Date(today);
+attentionLimitDate.setDate(attentionLimitDate.getDate() + 15);
+const receivableAttention = [];
+monthRevenues.forEach((revenue) => {
+  parseJsonList(revenue.parcelDataJson).forEach((parcel, index) => {
+    const parcelDate = parcel.date ? new Date(`${parcel.date}T00:00:00`) : null;
+    if (!parcelDate || Number.isNaN(parcelDate.getTime())) return;
+    const amount = Number(parcel.amountCents || 0);
+    if (parcel.paid && parcelDate >= monthStart && parcelDate < nextMonthStart) {
+      monthRevenueCents += amount;
+    }
+    if (!parcel.paid && parcelDate >= today) {
+      receivableCents += amount;
+      receivableCount += 1;
+    }
+    if (!parcel.paid && parcelDate <= attentionLimitDate) {
+      receivableAttention.push({
+        date: parcelDate,
+        title: `${revenue.kittenLabel || "Receita"} - Parcela ${index + 1}`,
+        sub: [
+          revenue.client?.fullName || "",
+          moneyLabel(amount),
+        ].filter(Boolean).join(" · "),
+        href: `/receitas/${revenue.id}`,
+        overdue: parcelDate < today,
+      });
+    }
+  });
+});
+
+const weighingAttentionPlans = await prisma.weighingPlan.findMany({
+  where: {
+    shouldWeigh: true,
+    cat: { is: userScope },
+  },
+  include: { cat: { select: { id: true, name: true } } },
+  orderBy: { updatedAt: "desc" },
+  take: 5,
+});
+const weighingAttentionCount = await prisma.weighingPlan.count({
+  where: {
+    shouldWeigh: true,
+    cat: { is: userScope },
+  },
+});
+
+const attentionItems = [
+  ...receivableAttention
+    .sort((a, b) => a.date - b.date)
+    .slice(0, 5)
+    .map((item) => ({
+      title: item.title,
+      sub: item.sub,
+      badge: item.overdue ? "Atrasado" : dateLabel(item.date),
+      href: item.href,
+      color: item.overdue ? "is-red" : "is-blue",
+    })),
+  ...weighingAttentionPlans.map((plan) => ({
+    title: plan.cat?.name || "Gato sem nome",
+    sub: [
+      "Pesagem ativa",
+      plan.weighingFrequency || "",
+      plan.weighingPeriod || "",
+    ].filter(Boolean).join(" · "),
+    badge: "Pesagem",
+    href: "/admin/weighing",
+    color: "is-yellow",
+  })),
+].slice(0, 8);
+
+const operationalPanel = {
+  kittens: {
+    available: kittenStatusCounts.AVAILABLE || 0,
+    reserved: kittenStatusCounts.RESERVED || 0,
+    unavailable: kittenStatusCounts.UNAVAILABLE || 0,
+    breeders: kittenStatusCounts.BREEDER || 0,
+    delivered: kittenStatusCounts.DELIVERED || 0,
+    deceased: kittenStatusCounts.DECEASED || 0,
+  },
+  matings: {
+    ready: matingStatusCounts.PARA_ACASALAR || 0,
+    pause: matingStatusCounts.PAUSA_REPRODUTIVA || 0,
+    confirmed: matingStatusCounts.CONFIRMADO || 0,
+    problem: matingStatusCounts.COM_PROBLEMA || 0,
+  },
+  finance: {
+    incomeLabel: moneyLabel(monthRevenueCents),
+    expenseLabel: moneyLabel(monthExpenseCents),
+    balanceLabel: moneyLabel(monthRevenueCents - monthExpenseCents),
+    receivableLabel: moneyLabel(receivableCents),
+    receivableCount,
+  },
+  routines: {
+    weighingAttentionCount,
+  },
+  attentionItems,
+};
+
 
 res.render("dashboard", {
   user,
@@ -553,6 +728,7 @@ res.render("dashboard", {
 
   pendingServices,
 pendingServicesCount: pendingServices.length,
+  operationalPanel,
 
   currentPath: req.path,
 });
@@ -563,6 +739,93 @@ pendingServicesCount: pendingServices.length,
     console.error("Erro ao carregar dashboard:", err);
     res.status(500).send("Erro ao carregar dashboard");
   }
+});
+
+app.get("/buscar", requireAuth, async (req, res) => {
+  const query = String(req.query.q || "").trim();
+  const userScope = canViewAllData(req.session.userRole) ? {} : { ownerId: req.session.userId };
+  const contains = { contains: query, mode: "insensitive" };
+  const results = {
+    cats: [],
+    litters: [],
+    clients: [],
+    sales: [],
+  };
+
+  if (query.length >= 2) {
+    if (userCan(req.session.userRole, "cats.manage")) {
+      results.cats = await prisma.cat.findMany({
+        where: {
+          ...userScope,
+          OR: [
+            { name: contains },
+            { microchip: { contains: query.replace(/\D/g, "") || query } },
+            { kittenNumber: contains },
+          ],
+        },
+        orderBy: { name: "asc" },
+        take: 12,
+        select: { id: true, name: true, microchip: true, kittenNumber: true, breed: true },
+      });
+    }
+
+    if (userCan(req.session.userRole, "admin.litters")) {
+      results.litters = await prisma.litter.findMany({
+        where: {
+          ...userScope,
+          OR: [
+            { litterNumber: contains },
+            { femaleName: contains },
+            { maleName: contains },
+          ],
+        },
+        orderBy: [{ litterBirthDate: "desc" }, { id: "desc" }],
+        take: 10,
+        select: { id: true, litterNumber: true, femaleName: true, maleName: true, litterBirthDate: true },
+      });
+    }
+
+    if (userCan(req.session.userRole, "admin.crm")) {
+      results.clients = await prisma.revenueClient.findMany({
+        where: {
+          ...userScope,
+          deletedAt: null,
+          OR: [
+            { fullName: contains },
+            { document: contains },
+            { email: contains },
+            { phone: contains },
+          ],
+        },
+        orderBy: { fullName: "asc" },
+        take: 12,
+        select: { id: true, fullName: true, document: true, city: true, state: true },
+      });
+    }
+
+    if (userCan(req.session.userRole, "admin.sales")) {
+      results.sales = await prisma.revenueEntry.findMany({
+        where: {
+          ...userScope,
+          OR: [
+            { kittenLabel: contains },
+            { invoiceNumber: contains },
+            { client: { fullName: contains } },
+          ],
+        },
+        include: { client: true },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      });
+    }
+  }
+
+  res.render("search/index", {
+    user: req.user,
+    currentPath: "/buscar",
+    searchQuery: query,
+    results,
+  });
 });
 
 app.get("/meus-dados", requireAuth, async (req, res) => {

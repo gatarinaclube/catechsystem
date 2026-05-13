@@ -26,14 +26,14 @@
           <% if (!revenues.length) { %>
             <div class="empty">Nenhuma venda registrada.</div>
           <% } else { %>
-            <ul class="list">
+            <div class="record-list">
               <% revenues.forEach(function(revenue) { %>
-                <li class="item">
-                  <div>
-                    <a class="item-link" href="/vendas/<%= revenue.id %>">
+                <a class="record-row" href="/vendas/<%= revenue.id %>" style="text-decoration:none;">
+                  <div class="record-main">
+                    <div class="record-title">
                       <%= revenue.kittenLabel || "Venda sem filhote" %>
-                    </a>
-                    <div class="item-sub">
+                    </div>
+                    <div class="record-sub">
                       <%= revenue.client ? revenue.client.fullName : "Cliente não informado" %>
                       <% if (revenue.paymentAccount) { %>
                         · <%= revenue.paymentAccount %>
@@ -43,12 +43,15 @@
                       <% } %>
                     </div>
                   </div>
-                  <div class="item-meta">
+                  <div class="record-meta">
+                    <span class="status-pill is-green">Venda</span>
+                    <div style="margin-top:6px;">
                     <%= (Number(revenue.totalAmountCents || 0) / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) %>
+                    </div>
                   </div>
-                </li>
+                </a>
               <% }) %>
-            </ul>
+            </div>
           <% } %>
         </div>
       </main>

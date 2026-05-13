@@ -87,6 +87,29 @@ function getVaccinationState(nextAntirabic, nextFeline) {
   return "vaccinated";
 }
 
+function buildNextActions(grouped) {
+  return Object.values(grouped)
+    .flat()
+    .filter((row) => row.vaccinationState === "overdue" || row.vaccinationState === "upcoming")
+    .map((row) => {
+      const dates = [
+        row.nextAntirabic ? { label: "Antirrábica", date: row.nextAntirabic } : null,
+        row.nextFeline ? { label: "Feline", date: row.nextFeline } : null,
+      ].filter(Boolean).sort((a, b) => a.date - b.date);
+      const next = dates[0];
+
+      return {
+        title: row.displayName,
+        sub: next ? `${next.label}: ${formatDate(next.date)}` : "Vacinação pendente",
+        badge: row.vaccinationState === "overdue" ? "Vencida" : "Próxima",
+        color: row.vaccinationState === "overdue" ? "is-red" : "is-yellow",
+        orderDate: next?.date || new Date(8640000000000000),
+      };
+    })
+    .sort((a, b) => a.orderDate - b.orderDate)
+    .slice(0, 8);
+}
+
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
@@ -167,6 +190,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         currentPath: req.path,
         categories: CATEGORY_META,
         grouped,
+        nextActions: buildNextActions(grouped),
         felineTypes: FelineTypes,
         formatDate,
       });

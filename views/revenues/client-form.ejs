@@ -88,7 +88,10 @@
         </form>
       <% } %>
 
-      <a class="back-link" href="<%= backPath || '/receitas' %>">Voltar</a>
+      <div class="quick-footer">
+        <a class="quick-options-link" href="<%= backPath || '/receitas' %>" title="Voltar">←</a>
+        <a class="quick-options-link" href="/dashboard" title="Página inicial">⌂</a>
+      </div>
     </main>
     <script>
       const states = [

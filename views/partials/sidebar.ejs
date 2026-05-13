@@ -28,6 +28,17 @@
 
     <div class="menu-title">Menu</div>
 
+    <form class="global-search" method="get" action="/buscar">
+      <input
+        type="search"
+        name="q"
+        placeholder="Buscar..."
+        value="<%= typeof searchQuery !== 'undefined' ? searchQuery : '' %>"
+        aria-label="Buscar no sistema"
+      />
+      <button type="submit" class="btn" title="Buscar">⌕</button>
+    </form>
+
     <nav class="menu">
       <%
         function renderMenuItem(item) {

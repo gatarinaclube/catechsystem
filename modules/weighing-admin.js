@@ -103,6 +103,21 @@ function computeHistoryStats(history) {
   return { gp, gpStar };
 }
 
+function buildNextActions(grouped) {
+  return (grouped.weighing || [])
+    .filter((row) => row.shouldWeigh)
+    .map((row) => ({
+      title: row.displayName,
+      sub: [
+        row.weighingFrequency || "Periodicidade não definida",
+        row.weighingPeriod || "",
+      ].filter(Boolean).join(" · "),
+      badge: "Pesar",
+      color: "is-purple",
+    }))
+    .slice(0, 8);
+}
+
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
@@ -165,6 +180,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         currentPath: req.path,
         categories: CATEGORY_META,
         grouped,
+        nextActions: buildNextActions(grouped),
         formatDate,
         formatWeight,
         weighingFrequencies: WEIGHING_FREQUENCIES,

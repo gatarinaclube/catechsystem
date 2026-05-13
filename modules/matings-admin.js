@@ -140,6 +140,45 @@ function isMaleAvailableForMatingModule(male) {
   return male.gender === "M";
 }
 
+function buildNextActions(grouped) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const upcomingLimit = addDays(today, 15);
+  const actions = [];
+
+  (grouped.PARA_ACASALAR || []).forEach((row) => {
+    if (!row.nextCrossDate) return;
+    const nextDate = parseDate(row.nextCrossDate);
+    if (!nextDate || nextDate > upcomingLimit) return;
+
+    actions.push({
+      title: row.femaleDisplayName,
+      sub: `Próxima cruza: ${formatDate(nextDate)}`,
+      badge: nextDate < today ? "Atrasada" : "Para acasalar",
+      color: nextDate < today ? "is-red" : "is-green",
+      orderDate: nextDate,
+    });
+  });
+
+  (grouped.CONFIRMADO || []).forEach((row) => {
+    if (!row.dppDate) return;
+    const dppDate = parseDate(row.dppDate);
+    if (!dppDate || dppDate > upcomingLimit) return;
+
+    actions.push({
+      title: row.femaleDisplayName,
+      sub: `DPP: ${formatDate(dppDate)}${row.gestationDays !== null ? ` · ${row.gestationDays} dias` : ""}`,
+      badge: dppDate < today ? "DPP vencida" : "DPP próxima",
+      color: dppDate < today ? "is-red" : "is-yellow",
+      orderDate: dppDate,
+    });
+  });
+
+  return actions
+    .sort((a, b) => a.orderDate - b.orderDate)
+    .slice(0, 6);
+}
+
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
@@ -276,6 +315,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         currentPath: req.path,
         groups: STATUS_GROUPS,
         grouped,
+        nextActions: buildNextActions(grouped),
         males,
         users,
         selectedOwnerId,

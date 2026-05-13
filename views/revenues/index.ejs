@@ -18,6 +18,42 @@
         <% if (success) { %><div class="message message-success">Receita salva.</div><% } %>
         <% if (error) { %><div class="message message-error"><%= error %></div><% } %>
 
+        <% if (revenueSummary) { %>
+          <div class="revenue-summary">
+            <div class="revenue-summary-head">
+              <div>
+                <div class="revenue-summary-title">Resumo da venda</div>
+                <div class="quick-hint" style="margin:4px 0 0;">Parcelas pagas: <%= revenueSummary.paidCount %> / <%= revenueSummary.installments %></div>
+              </div>
+              <span class="status-pill <%= revenueSummary.statusClass %>"><%= revenueSummary.status %></span>
+            </div>
+            <div class="quick-grid">
+              <div class="summary-chip">
+                <span>Total</span>
+                <strong><%= revenueSummary.totalLabel %></strong>
+              </div>
+              <div class="summary-chip is-paid">
+                <span>Pago</span>
+                <strong><%= revenueSummary.paidLabel %></strong>
+              </div>
+              <div class="summary-chip is-open">
+                <span>Em aberto</span>
+                <strong><%= revenueSummary.openLabel %></strong>
+              </div>
+              <div class="summary-chip">
+                <span>Próxima parcela</span>
+                <% if (revenueSummary.nextParcel) { %>
+                  <strong><%= revenueSummary.nextParcel.amountLabel %></strong>
+                  <small><%= revenueSummary.nextParcel.label %> · <%= revenueSummary.nextParcel.dateLabel %></small>
+                <% } else { %>
+                  <strong>-</strong>
+                  <small>Nenhuma parcela pendente</small>
+                <% } %>
+              </div>
+            </div>
+          </div>
+        <% } %>
+
         <div class="inline-action-row">
           <div class="field">
             <label for="clientId">Cliente</label>

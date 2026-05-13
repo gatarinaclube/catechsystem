@@ -13,12 +13,6 @@
         gap: 10px;
         align-items: start;
       }
-      .cat-subline {
-        margin-top: 4px;
-        font-size: 11px;
-        line-height: 1.35;
-        color: var(--text-muted);
-      }
       .weighing-header {
         font-size: 12px;
         font-weight: 600;
@@ -29,41 +23,6 @@
         border: 1px solid var(--border-soft);
         border-radius: 14px;
         margin-bottom: 12px;
-      }
-      .mini-stack {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-      .inline-plus {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-      .history-date-display,
-      .history-weight-display {
-        padding: 8px 10px;
-        border: 1px solid var(--border-soft);
-        border-radius: 8px;
-        background: #f8fafc;
-        font-size: 13px;
-      }
-      .history-date-display {
-        flex: 1 1 auto;
-        min-width: 0;
-      }
-      .history-weight-display {
-        flex: 0 0 110px;
-      }
-      .delete-history-date {
-        min-width: 38px;
-        padding-left: 0;
-        padding-right: 0;
-      }
-      .history-box {
-        border-radius: 12px;
-        background: rgba(148, 163, 184, 0.08);
-        padding: 10px;
       }
       .weighing-settings {
         border-radius: 12px;
@@ -118,6 +77,33 @@
           </div>
         </div>
 
+        <div class="content-card module-panel">
+          <div class="history-section-head">
+            <div>
+              <div class="content-title">Próximas ações</div>
+              <div class="content-sub">Gatos marcados para rotina ativa de pesagem.</div>
+            </div>
+            <span class="status-pill is-purple"><%= nextActions.length %></span>
+          </div>
+          <% if (!nextActions.length) { %>
+            <div class="empty" style="margin-top:12px;">Nenhuma pesagem ativa no momento.</div>
+          <% } else { %>
+            <div class="record-list" style="margin-top:12px;">
+              <% nextActions.forEach(function(action) { %>
+                <div class="record-row">
+                  <div class="record-main">
+                    <div class="record-title"><%= action.title %></div>
+                    <div class="record-sub"><%= action.sub %></div>
+                  </div>
+                  <div class="record-meta">
+                    <span class="status-pill <%= action.color %>"><%= action.badge %></span>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
+
         <% categories.forEach(function(category) { %>
           <% const items = grouped[category.key] || []; %>
           <details class="content-card module-panel module-accordion" style="border-left: 5px solid <%= category.color %>;">
@@ -146,6 +132,11 @@
                     <div>
                       <div class="item-title"><%= row.displayName %></div>
                       <div class="cat-subline">Mãe: <%= row.motherName %></div>
+                      <div style="margin-top:8px;">
+                        <span class="status-pill <%= row.shouldWeigh ? 'is-purple' : '' %>">
+                          <%= row.shouldWeigh ? 'Em pesagem' : 'Sem rotina ativa' %>
+                        </span>
+                      </div>
                     </div>
 
                     <div><strong><%= row.birthDateLabel %></strong></div>
