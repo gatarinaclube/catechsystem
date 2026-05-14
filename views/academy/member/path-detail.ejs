@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><%= pageTitle %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/academy.css" />
+  </head>
+  <body class="bg-[#f8faf7] text-[#111827]">
+    <main class="mx-auto max-w-7xl px-5 py-8">
+      <nav class="flex flex-wrap items-center justify-between gap-3">
+        <a href="/academy/app/trilhas" class="text-xl font-black">CatBreeder <span class="text-[#b9892e]">Pro</span></a>
+        <div class="flex flex-wrap gap-3 text-sm font-bold">
+          <a href="/academy/app">Dashboard</a>
+          <a href="/academy/app/trilhas">Trilhas</a>
+          <a href="/academy/app/biblioteca">Biblioteca</a>
+          <a href="/academy/app/certificados">Certificados</a>
+          <a href="/dashboard">CaTech</a>
+        </div>
+      </nav>
+
+      <section class="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div class="rounded-[32px] bg-[#111827] p-8 text-white shadow-2xl md:p-10">
+          <div class="text-sm uppercase tracking-[0.22em] text-[#d6a84f]">Trilha</div>
+          <h1 class="mt-4 text-4xl font-black md:text-5xl"><%= path.title %></h1>
+          <p class="mt-4 max-w-3xl text-white/65"><%= path.description || 'Conteúdos organizados para avançar com segurança e método.' %></p>
+          <div class="mt-8 h-3 rounded-full bg-white/10">
+            <div class="h-3 rounded-full bg-[#d6a84f]" style="width:<%= path.progressPercent %>%"></div>
+          </div>
+          <div class="mt-3 text-sm text-white/70"><%= path.completedLessons %> de <%= path.totalLessons %> aulas concluídas</div>
+          <% if (path.nextLesson) { %>
+            <a href="/academy/app/aulas/<%= path.nextLesson.slug %>" class="mt-7 inline-flex rounded-full bg-[#d6a84f] px-6 py-3 font-black text-black">Continuar: <%= path.nextLesson.title %></a>
+          <% } %>
+        </div>
+
+        <aside class="rounded-[32px] bg-white p-6 shadow-sm">
+          <div class="text-sm font-bold text-slate-500">Resumo</div>
+          <div class="mt-4 grid gap-3">
+            <div class="rounded-2xl bg-slate-50 p-4"><div class="text-3xl font-black"><%= path.progressPercent %>%</div><div class="text-sm text-slate-500">progresso</div></div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="rounded-2xl bg-slate-50 p-4"><div class="text-2xl font-black"><%= path.modules.length %></div><div class="text-xs text-slate-500">módulos</div></div>
+              <div class="rounded-2xl bg-slate-50 p-4"><div class="text-2xl font-black"><%= path.availableLessons %></div><div class="text-xs text-slate-500">liberadas</div></div>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="mt-8 grid gap-5">
+        <% path.modules.forEach(function(module, moduleIndex) { %>
+          <article class="rounded-[28px] bg-white p-6 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+              <div class="flex items-center gap-4">
+                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#31513d]/10 font-black text-[#31513d]"><%= moduleIndex + 1 %></div>
+                <div>
+                  <h2 class="text-2xl font-black"><%= module.title %></h2>
+                  <div class="mt-1 text-sm text-slate-500"><%= module.completedLessons %> de <%= module.totalLessons %> aulas concluídas</div>
+                </div>
+              </div>
+              <% if (module.locked) { %>
+                <span class="rounded-full bg-slate-100 px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-500">Bloqueado</span>
+              <% } else { %>
+                <span class="rounded-full bg-[#d6a84f]/15 px-4 py-2 text-xs font-black uppercase tracking-widest text-[#8a641d]"><%= module.progressPercent %>%</span>
+              <% } %>
+            </div>
+            <div class="mt-5 h-2 rounded-full bg-slate-100">
+              <div class="h-2 rounded-full bg-[#31513d]" style="width:<%= module.progressPercent %>%"></div>
+            </div>
+            <div class="mt-5 grid gap-3">
+              <% module.lessons.forEach(function(lesson, lessonIndex) { %>
+                <% const blocked = lesson.effectivelyLocked; %>
+                <% const href = blocked ? '#' : '/academy/app/aulas/' + lesson.slug; %>
+                <a href="<%= href %>" class="grid gap-3 rounded-2xl border border-slate-200 p-4 md:grid-cols-[42px_minmax(0,1fr)_auto] md:items-center <%= blocked ? 'pointer-events-none opacity-55' : 'hover:border-[#d6a84f]' %>">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-xl <%= lesson.completed ? 'bg-[#31513d] text-white' : 'bg-slate-100 text-slate-500' %> font-black"><%= lesson.completed ? '✓' : lessonIndex + 1 %></div>
+                  <div>
+                    <div class="font-black"><%= lesson.title %></div>
+                    <div class="mt-1 text-sm text-slate-500"><%= lesson.summary || 'Aula CatBreeder Pro.' %></div>
+                  </div>
+                  <div class="text-sm font-black <%= lesson.completed ? 'text-[#31513d]' : blocked ? 'text-slate-400' : 'text-[#b9892e]' %>"><%= lesson.completed ? 'Concluída' : blocked ? 'Bloqueada' : 'Abrir' %></div>
+                </a>
+              <% }) %>
+            </div>
+          </article>
+        <% }) %>
+      </section>
+    </main>
+  </body>
+</html>

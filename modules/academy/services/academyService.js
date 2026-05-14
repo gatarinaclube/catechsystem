@@ -252,30 +252,83 @@ async function getMemberDashboard(prisma, userId, level) {
     .filter((lesson) => lesson.favorite)
     .slice(0, 4);
   const nextLesson = inProgressLessons[0] || recommendedLessons[0] || accessibleLessons.find((lesson) => !lesson.completed) || null;
-
-  return {
-    catalog: catalog.map((category) => ({
-      ...category,
-      modules: category.modules.map((module) => ({
-        ...module,
-        lessons: module.lessons.map((lesson) => ({
-          ...lesson,
-          completed: completedSet.has(lesson.id),
-          favorite: favoriteSet.has(lesson.id),
-        })),
+  const catalogWithProgress = catalog.map((category) => ({
+    ...category,
+    modules: category.modules.map((module) => ({
+      ...module,
+      lessons: module.lessons.map((lesson) => ({
+        ...lesson,
+        completed: completedSet.has(lesson.id),
+        favorite: favoriteSet.has(lesson.id),
+        progress: progressByLesson.get(lesson.id) || null,
       })),
     })),
+  }));
+  const learningPaths = buildLearningPaths(catalogWithProgress);
+
+  return {
+    catalog: catalogWithProgress,
     totalLessons,
     completedLessons,
     progressPercent: totalLessons ? Math.round((completedLessons / totalLessons) * 100) : 0,
     favoriteCount: favoriteSet.size,
     nextLesson,
+    learningPaths,
     inProgressLessons,
     recommendedLessons,
     latestLessons,
     recentFavorites,
     accessibleLessonCount: accessibleLessons.length,
   };
+}
+
+function buildLearningPaths(catalog) {
+  return catalog.map((category) => {
+    const modules = category.modules.map((module) => {
+      const lessons = module.lessons.map((lesson) => ({
+        ...lesson,
+        effectivelyLocked: Boolean(module.locked || lesson.locked),
+      }));
+      const totalLessons = lessons.length;
+      const completedLessons = lessons.filter((lesson) => lesson.completed).length;
+      const availableLessons = lessons.filter((lesson) => !lesson.effectivelyLocked).length;
+      const nextLesson = lessons.find((lesson) => !lesson.effectivelyLocked && !lesson.completed) || null;
+
+      return {
+        ...module,
+        lessons,
+        totalLessons,
+        completedLessons,
+        availableLessons,
+        progressPercent: totalLessons ? Math.round((completedLessons / totalLessons) * 100) : 0,
+        nextLesson,
+      };
+    });
+    const lessons = modules.flatMap((module) => module.lessons);
+    const totalLessons = lessons.length;
+    const completedLessons = lessons.filter((lesson) => lesson.completed).length;
+    const lockedLessons = lessons.filter((lesson) => lesson.effectivelyLocked).length;
+    const nextLesson = modules.map((module) => module.nextLesson).find(Boolean) || null;
+    const activeModule = modules.find((module) => module.nextLesson) || modules.find((module) => module.totalLessons) || null;
+
+    return {
+      ...category,
+      modules,
+      totalLessons,
+      completedLessons,
+      lockedLessons,
+      availableLessons: totalLessons - lockedLessons,
+      progressPercent: totalLessons ? Math.round((completedLessons / totalLessons) * 100) : 0,
+      nextLesson,
+      activeModule,
+      completed: totalLessons > 0 && completedLessons === totalLessons,
+    };
+  });
+}
+
+async function getLearningPaths(prisma, userId, level) {
+  const dashboard = await getMemberDashboard(prisma, userId, level);
+  return dashboard.learningPaths;
 }
 
 async function getAdminOverview(prisma) {
@@ -314,5 +367,6 @@ module.exports = {
   ensureEnrollment,
   getPublishedCatalog,
   getMemberDashboard,
+  getLearningPaths,
   getAdminOverview,
 };

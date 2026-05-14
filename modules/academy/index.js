@@ -36,9 +36,12 @@ module.exports = (prisma) => {
   router.post("/academy/cadastro", publicController.register);
 
   router.get("/academy/app", academySession, academyAccess, memberController.dashboard);
+  router.get("/academy/app/trilhas", academySession, academyAccess, memberController.paths);
+  router.get("/academy/app/trilhas/:slug", academySession, academyAccess, memberController.pathDetail);
   router.get("/academy/app/biblioteca", academySession, academyAccess, memberController.library);
   router.get("/academy/app/favoritos", academySession, academyAccess, memberController.favorites);
   router.get("/academy/app/certificados", academySession, academyAccess, memberController.certificates);
+  router.get("/academy/app/premium", academySession, academyAccess, memberController.premium);
   router.get("/academy/app/aulas/:slug", academySession, academyAccess, memberController.lesson);
   router.post("/academy/app/aulas/:id/concluir", academySession, academyAccess, memberController.toggleComplete);
   router.post("/academy/app/aulas/:id/favorito", academySession, academyAccess, memberController.toggleFavorite);

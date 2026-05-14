@@ -3,6 +3,7 @@ const {
   ensureEnrollment,
   getAcademyContext,
   getMemberDashboard,
+  getLearningPaths,
   getPublishedCatalog,
   canAccessLevel,
   isPublishedStatus,
@@ -12,6 +13,7 @@ const {
   issueLessonCertificate,
   listUserCertificates,
 } = require("../services/academyCertificateService");
+const { getAcademyFutureHub } = require("../services/academyFutureService");
 
 function parseFilesJson(value) {
   if (!value) return [];
@@ -48,6 +50,47 @@ module.exports = (prisma) => ({
       user: req.user,
       academy,
       certificates,
+    });
+  },
+
+  premium: async (req, res) => {
+    const academy = await getAcademyContext(prisma, req);
+    const hub = getAcademyFutureHub();
+
+    res.render("academy/member/premium", {
+      pageTitle: "Premium Lab - CatBreeder Pro",
+      user: req.user,
+      academy,
+      hub,
+    });
+  },
+
+  paths: async (req, res) => {
+    const academy = await getAcademyContext(prisma, req);
+    const paths = await getLearningPaths(prisma, req.user.id, academy.level);
+
+    res.render("academy/member/paths", {
+      pageTitle: "Trilhas - CatBreeder Pro",
+      user: req.user,
+      academy,
+      paths,
+    });
+  },
+
+  pathDetail: async (req, res) => {
+    const academy = await getAcademyContext(prisma, req);
+    const paths = await getLearningPaths(prisma, req.user.id, academy.level);
+    const path = paths.find((item) => item.slug === req.params.slug);
+
+    if (!path) {
+      return res.status(404).send("Trilha não encontrada.");
+    }
+
+    res.render("academy/member/path-detail", {
+      pageTitle: `${path.title} - CatBreeder Pro`,
+      user: req.user,
+      academy,
+      path,
     });
   },
 

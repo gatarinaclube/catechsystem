@@ -12,9 +12,11 @@
       <nav class="flex flex-wrap items-center justify-between gap-3">
         <a href="/academy" class="text-xl font-black">CatBreeder <span class="text-[#b9892e]">Pro</span></a>
         <div class="flex flex-wrap gap-3 text-sm font-bold">
+          <a href="/academy/app/trilhas">Trilhas</a>
           <a href="/academy/app/biblioteca">Biblioteca</a>
           <a href="/academy/app/favoritos">Favoritos</a>
           <a href="/academy/app/certificados">Certificados</a>
+          <a href="/academy/app/premium">Premium Lab</a>
           <% if (academy.canContribute) { %><a href="/academy/especialista">Especialista</a><% } %>
           <% if (academy.isAdmin) { %><a href="/academy/admin">Admin</a><% } %>
           <a href="/dashboard">CaTech</a>
@@ -52,6 +54,33 @@
         <div class="rounded-3xl bg-white p-6 shadow-sm"><div class="text-sm text-slate-500">Em andamento</div><div class="mt-2 text-3xl font-black"><%= dashboard.inProgressLessons.length %></div></div>
         <div class="rounded-3xl bg-white p-6 shadow-sm"><div class="text-sm text-slate-500">Favoritos</div><div class="mt-2 text-3xl font-black"><%= dashboard.favoriteCount %></div></div>
         <div class="rounded-3xl bg-white p-6 shadow-sm"><div class="text-sm text-slate-500">Certificados</div><div class="mt-2 text-3xl font-black"><%= certificates.length %></div></div>
+      </section>
+
+      <section class="mt-8 rounded-[28px] bg-white p-6 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-2xl font-black">Trilhas de aprendizagem</h2>
+            <p class="mt-1 text-sm text-slate-500">Caminhos organizados por objetivo, com progresso e próxima aula.</p>
+          </div>
+          <a href="/academy/app/trilhas" class="text-sm font-bold text-[#31513d]">Ver trilhas</a>
+        </div>
+        <div class="mt-5 grid gap-4 md:grid-cols-3">
+          <% dashboard.learningPaths.slice(0, 3).forEach(function(path) { %>
+            <a href="/academy/app/trilhas/<%= path.slug %>" class="rounded-2xl border border-slate-200 p-5 hover:border-[#d6a84f]">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <div class="text-xs font-black uppercase tracking-widest text-[#b9892e]"><%= path.modules.length %> módulos</div>
+                  <div class="mt-2 font-black"><%= path.title %></div>
+                </div>
+                <div class="rounded-full bg-[#31513d]/10 px-3 py-1 text-xs font-black text-[#31513d]"><%= path.progressPercent %>%</div>
+              </div>
+              <div class="mt-4 h-2 rounded-full bg-slate-100">
+                <div class="h-2 rounded-full bg-[#d6a84f]" style="width:<%= path.progressPercent %>%"></div>
+              </div>
+              <div class="mt-3 text-sm text-slate-500"><%= path.nextLesson ? 'Próxima: ' + path.nextLesson.title : path.completed ? 'Trilha concluída' : 'Sem aula liberada' %></div>
+            </a>
+          <% }) %>
+        </div>
       </section>
 
       <section class="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
@@ -106,6 +135,17 @@
             </div>
           </section>
         </aside>
+      </section>
+
+      <section class="mt-8 overflow-hidden rounded-[28px] bg-[#111827] p-6 text-white shadow-sm">
+        <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+          <div>
+            <div class="text-xs font-black uppercase tracking-[0.22em] text-[#d6a84f]">Premium Lab</div>
+            <h2 class="mt-2 text-2xl font-black">Próximos recursos da Academy</h2>
+            <p class="mt-2 max-w-2xl text-sm text-white/65">Comunidade, mentorias, lives, notificações, conquistas e assistente inteligente já têm uma área preparada para evolução futura.</p>
+          </div>
+          <a href="/academy/app/premium" class="inline-flex justify-center rounded-full bg-[#d6a84f] px-5 py-3 text-sm font-black text-black">Ver roadmap</a>
+        </div>
       </section>
 
       <section class="mt-8 rounded-[28px] bg-white p-6 shadow-sm">
