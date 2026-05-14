@@ -42,7 +42,7 @@ const revenuesRouterFactory = require("./modules/revenues");
 const crmRouterFactory = require("./modules/crm");
 const administrativeRouterFactory = require("./modules/administrative");
 const academyRouterFactory = require("./modules/academy");
-const { isAcademyPaidEnrollment } = require("./modules/academy/services/academyService");
+const { isAcademyPaidEnrollment, isAcademyActiveSubscription } = require("./modules/academy/services/academyService");
 const {generateTitleHomologationPDF,} = require("./modules/pdf/titleHomologationPdf");
 const {generatePedigreeHomologationPDF,} = require("./modules/pdf/pedigreeHomologationPdf");
 const { generateCatteryRegistrationPDF } = require("./modules/pdf/catteryRegistrationPdf");
@@ -180,7 +180,10 @@ app.use(async (req, res, next) => {
 
     const currentUser = await prisma.user.findUnique({
       where: { id: req.session.userId },
-      include: { academyEnrollments: { take: 1 } },
+      include: {
+        academyEnrollments: { include: { plan: true }, take: 1 },
+        academySubscriptions: { include: { plan: true }, orderBy: { updatedAt: "desc" }, take: 1 },
+      },
     });
 
     if (!currentUser) {
@@ -191,7 +194,11 @@ app.use(async (req, res, next) => {
     const normalizedRole = normalizeRole(currentUser.role || sessionRole);
     const userAccess = buildAccessContext(normalizedRole);
     const academyEnrollment = currentUser.academyEnrollments?.[0] || null;
-    userAccess.canAccessAcademy = userAccess.canAccessAcademy || isAcademyPaidEnrollment(academyEnrollment);
+    const academySubscription = currentUser.academySubscriptions?.[0] || null;
+    userAccess.canAccessAcademy =
+      userAccess.canAccessAcademy ||
+      isAcademyPaidEnrollment(academyEnrollment) ||
+      isAcademyActiveSubscription(academySubscription);
     req.session.userRole = normalizedRole;
 
     req.user = {

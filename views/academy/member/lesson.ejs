@@ -3,16 +3,27 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title><%= pageTitle %></title>
+    <%- include("../partials/seo", { seo, pageTitle }) %>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/css/academy.css" />
   </head>
   <body class="bg-[#f8faf7] text-[#111827]">
     <main class="mx-auto max-w-4xl px-5 py-8">
-      <a href="/academy/app" class="text-sm font-bold text-[#31513d]">← Área do aluno</a>
+      <nav class="text-sm font-bold text-slate-500">
+        <a href="/academy/app" class="text-[#31513d]">Área do aluno</a>
+        <span class="mx-2">/</span>
+        <a href="/academy/app/biblioteca" class="text-[#31513d]">Biblioteca</a>
+        <span class="mx-2">/</span>
+        <span><%= lesson.module.category.title %></span>
+      </nav>
       <article class="mt-8 rounded-3xl bg-white p-7 shadow-sm">
         <div class="text-xs font-black uppercase tracking-[0.2em] text-[#b9892e]"><%= lesson.module.category.title %> · <%= lesson.module.title %></div>
         <h1 class="mt-4 text-4xl font-black"><%= lesson.title %></h1>
+        <div class="mt-3 flex flex-wrap gap-3 text-sm text-slate-500">
+          <% if (lesson.author) { %><span>Por <%= lesson.author.name %></span><% } %>
+          <% if (lesson.estimatedReadingMinutes) { %><span><%= lesson.estimatedReadingMinutes %> min de leitura</span><% } %>
+          <% if (lesson.durationMinutes) { %><span><%= lesson.durationMinutes %> min de aula</span><% } %>
+        </div>
         <p class="mt-3 text-slate-600"><%= lesson.summary || '' %></p>
         <% if (lesson.videoEmbed) { %>
           <div class="mt-6 overflow-hidden rounded-2xl bg-black"><%- lesson.videoEmbed %></div>
@@ -27,6 +38,22 @@
             <% files.forEach(function(file) { %>
               <a href="<%= file.url %>" class="mt-3 block text-[#31513d]"><%= file.name || file.url %></a>
             <% }) %>
+          </div>
+        <% } %>
+        <% if (lesson.media && lesson.media.length) { %>
+          <div class="mt-8 rounded-2xl bg-slate-50 p-5">
+            <h2 class="font-black">Biblioteca da aula</h2>
+            <div class="mt-4 grid gap-3">
+              <% lesson.media.forEach(function(media) { %>
+                <% if (media.type === 'IMAGE') { %>
+                  <a href="<%= media.url %>" target="_blank" class="block overflow-hidden rounded-2xl bg-white">
+                    <img src="<%= media.url %>" alt="<%= media.altText || '' %>" class="max-h-80 w-full object-cover" />
+                  </a>
+                <% } else { %>
+                  <a href="<%= media.url %>" target="_blank" class="rounded-2xl bg-white p-4 font-bold text-[#31513d]"><%= media.title || media.url %></a>
+                <% } %>
+              <% }) %>
+            </div>
           </div>
         <% } %>
         <div class="mt-8 flex flex-wrap gap-3">

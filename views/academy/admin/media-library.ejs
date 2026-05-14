@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><%= pageTitle %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/academy.css" />
+  </head>
+  <body class="bg-[#f8faf7] text-[#111827]">
+    <main class="mx-auto max-w-7xl px-5 py-8">
+      <nav class="flex flex-wrap items-center justify-between gap-3">
+        <a href="/academy/admin" class="text-sm font-black text-[#31513d]">← Admin Academy</a>
+        <a href="/academy/app" class="text-sm font-bold text-[#b9892e]">CatBreeder Pro</a>
+      </nav>
+
+      <section class="mt-8 rounded-[28px] bg-white p-6 shadow-sm">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div class="text-xs font-black uppercase tracking-[0.22em] text-[#b9892e]">Biblioteca de mídia</div>
+            <h1 class="mt-3 text-4xl font-black">Arquivos Academy</h1>
+            <p class="mt-2 max-w-2xl text-slate-500">Envie imagens, PDFs e vídeos complementares para usar nas aulas.</p>
+          </div>
+        </div>
+
+        <form method="post" action="/academy/admin/midia" enctype="multipart/form-data" class="mt-6 grid gap-3 rounded-3xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-2">
+          <input name="title" placeholder="Título do arquivo" class="rounded-2xl border border-slate-200 p-3" />
+          <input name="altText" placeholder="Texto alternativo" class="rounded-2xl border border-slate-200 p-3" />
+          <select name="type" class="rounded-2xl border border-slate-200 p-3">
+            <option value="">Detectar automaticamente</option>
+            <option value="IMAGE">Imagem</option>
+            <option value="DOCUMENT">Documento</option>
+            <option value="VIDEO">Vídeo</option>
+          </select>
+          <input type="file" name="file" required accept="image/*,application/pdf,video/mp4,video/webm" class="rounded-2xl border border-slate-200 bg-white p-3" />
+          <button class="rounded-2xl bg-[#111827] p-3 font-black text-white md:col-span-2">Enviar arquivo</button>
+        </form>
+      </section>
+
+      <section class="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <% media.forEach(function(item) { %>
+          <article class="rounded-[24px] bg-white p-4 shadow-sm">
+            <div class="aspect-video overflow-hidden rounded-2xl bg-slate-100">
+              <% if (item.type === 'IMAGE') { %>
+                <img src="<%= item.url %>" alt="<%= item.altText || '' %>" class="h-full w-full object-cover" />
+              <% } else if (item.type === 'VIDEO') { %>
+                <video src="<%= item.url %>" class="h-full w-full object-cover" controls></video>
+              <% } else { %>
+                <div class="flex h-full items-center justify-center text-4xl">PDF</div>
+              <% } %>
+            </div>
+            <form method="post" action="/academy/admin/midia/<%= item.id %>" class="mt-4 grid gap-2">
+              <input name="title" value="<%= item.title || '' %>" class="rounded-xl border border-slate-200 p-2 font-bold" />
+              <input name="altText" value="<%= item.altText || '' %>" placeholder="Texto alternativo" class="rounded-xl border border-slate-200 p-2 text-sm" />
+              <select name="type" class="rounded-xl border border-slate-200 p-2 text-sm">
+                <% ['IMAGE','DOCUMENT','VIDEO','FILE'].forEach(function(type) { %>
+                  <option value="<%= type %>" <%= item.type === type ? 'selected' : '' %>><%= type %></option>
+                <% }) %>
+              </select>
+              <div class="text-xs text-slate-500">
+                <a href="<%= item.url %>" target="_blank" class="font-bold text-[#31513d]">Abrir arquivo</a>
+                <% if (item.lesson) { %> · Aula: <%= item.lesson.title %><% } %>
+                <% if (item.author) { %> · Autor: <%= item.author.name %><% } %>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button class="rounded-xl bg-[#31513d] px-4 py-2 text-sm font-bold text-white">Salvar</button>
+                <button formaction="/academy/admin/midia/<%= item.id %>/excluir" formmethod="post" class="rounded-xl bg-red-50 px-4 py-2 text-sm font-bold text-red-700" onclick="return confirm('Excluir mídia?');">Excluir</button>
+              </div>
+            </form>
+          </article>
+        <% }) %>
+      </section>
+    </main>
+  </body>
+</html>

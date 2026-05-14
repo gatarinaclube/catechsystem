@@ -1,0 +1,33 @@
+<% const meta = seo || {}; %>
+<title><%= meta.title || pageTitle || 'CatBreeder Pro' %></title>
+<meta name="description" content="<%= meta.description || 'Academy premium para criadores felinos responsáveis.' %>" />
+<meta name="robots" content="<%= meta.robots || 'index,follow' %>" />
+<% if (meta.canonicalUrl) { %><link rel="canonical" href="<%= meta.canonicalUrl %>" /><% } %>
+<meta property="og:type" content="<%= meta.type || 'website' %>" />
+<meta property="og:title" content="<%= meta.ogTitle || meta.title || pageTitle || 'CatBreeder Pro' %>" />
+<meta property="og:description" content="<%= meta.ogDescription || meta.description || 'Conteúdo premium CatBreeder Pro.' %>" />
+<% if (meta.ogImage) { %><meta property="og:image" content="<%= meta.ogImage %>" /><% } %>
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="<%= meta.ogTitle || meta.title || pageTitle || 'CatBreeder Pro' %>" />
+<meta name="twitter:description" content="<%= meta.ogDescription || meta.description || 'Conteúdo premium CatBreeder Pro.' %>" />
+<% if (meta.ogImage) { %><meta name="twitter:image" content="<%= meta.ogImage %>" /><% } %>
+<% if (meta.googleAnalyticsId) { %>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=<%= meta.googleAnalyticsId %>"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', '<%= meta.googleAnalyticsId %>');
+  </script>
+<% } %>
+<% if (meta.metaPixelId) { %>
+  <script>
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
+    (window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '<%= meta.metaPixelId %>');
+    fbq('track', 'PageView');
+  </script>
+<% } %>

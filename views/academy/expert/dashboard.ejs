@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><%= pageTitle %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/academy.css" />
+  </head>
+  <body class="bg-[#f8faf7] text-[#111827]">
+    <main class="mx-auto max-w-7xl px-5 py-8">
+      <nav class="flex flex-wrap items-center justify-between gap-3">
+        <a href="/academy/app" class="text-sm font-black text-[#31513d]">← Área do aluno</a>
+        <div class="flex flex-wrap gap-3 text-sm font-bold">
+          <% if (academy.isAdmin) { %><a href="/academy/admin">Admin</a><% } %>
+          <a href="/dashboard">CaTech</a>
+        </div>
+      </nav>
+
+      <section class="mt-8 rounded-[32px] bg-[#111827] p-8 text-white shadow-2xl">
+        <div class="text-xs font-black uppercase tracking-[0.22em] text-[#d6a84f]">Especialista convidado</div>
+        <h1 class="mt-3 text-4xl font-black"><%= author ? author.name : 'Painel de especialistas' %></h1>
+        <p class="mt-3 max-w-2xl text-white/65">Crie rascunhos, envie materiais e encaminhe aulas para revisão. A publicação final é feita pelo administrador.</p>
+        <% if (author) { %>
+          <div class="mt-5 flex flex-wrap gap-2 text-sm">
+            <% if (author.specialty) { %><span class="rounded-full bg-white/10 px-4 py-2"><%= author.specialty %></span><% } %>
+            <% if (author.breedFocus) { %><span class="rounded-full bg-white/10 px-4 py-2"><%= author.breedFocus %></span><% } %>
+          </div>
+        <% } %>
+        <a href="/academy/especialista/aulas/nova" class="mt-7 inline-block rounded-full bg-[#d6a84f] px-6 py-3 font-black text-black">Nova aula</a>
+      </section>
+
+      <section class="mt-8 grid gap-5 md:grid-cols-3">
+        <div class="rounded-3xl bg-white p-6 shadow-sm"><div class="text-sm text-slate-500">Total</div><div class="mt-2 text-3xl font-black"><%= lessons.length %></div></div>
+        <div class="rounded-3xl bg-white p-6 shadow-sm"><div class="text-sm text-slate-500">Em revisão</div><div class="mt-2 text-3xl font-black"><%= lessons.filter(function(item) { return item.status === 'REVIEW'; }).length %></div></div>
+        <div class="rounded-3xl bg-white p-6 shadow-sm"><div class="text-sm text-slate-500">Publicadas</div><div class="mt-2 text-3xl font-black"><%= lessons.filter(function(item) { return item.status === 'PUBLISHED'; }).length %></div></div>
+      </section>
+
+      <section class="mt-8 rounded-[28px] bg-white p-6 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h2 class="text-2xl font-black">Minhas aulas</h2>
+          <span class="text-sm text-slate-500">Rascunho → Revisão → Publicação pelo admin</span>
+        </div>
+        <div class="mt-5 grid gap-3">
+          <% if (!lessons.length) { %>
+            <div class="rounded-2xl bg-slate-50 p-5 text-slate-500">Nenhuma aula criada ainda.</div>
+          <% } %>
+          <% lessons.forEach(function(lesson) { %>
+            <a href="/academy/especialista/aulas/<%= lesson.id %>" class="grid gap-3 rounded-2xl border border-slate-200 p-4 md:grid-cols-[minmax(0,1fr)_160px] md:items-center">
+              <div>
+                <div class="text-xs font-black uppercase tracking-widest text-[#b9892e]"><%= lesson.module.category.title %> · <%= lesson.module.title %></div>
+                <div class="mt-1 text-xl font-black"><%= lesson.title %></div>
+                <p class="mt-1 text-sm text-slate-500"><%= lesson.summary || 'Sem resumo.' %></p>
+              </div>
+              <div class="rounded-full bg-slate-100 px-4 py-2 text-center text-sm font-black"><%= contentStatusLabels[lesson.status] || lesson.status %></div>
+            </a>
+          <% }) %>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

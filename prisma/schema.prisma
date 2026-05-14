@@ -72,6 +72,10 @@ model User {
   academyEnrollments AcademyEnrollment[]
   academyProgress AcademyProgress[]
   academyFavorites AcademyFavorite[]
+  academyAuthorship AcademyAuthor?
+  academyMedia AcademyMedia[]
+  academySubscriptions AcademySubscription[]
+  academyCertificates AcademyCertificate[]
 }
 
 model AcademyEnrollment {
@@ -89,6 +93,27 @@ model AcademyEnrollment {
   @@map("academy_enrollments")
 }
 
+model AcademyAuthor {
+  id          Int      @id @default(autoincrement())
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId      Int?     @unique
+  name        String
+  slug        String   @unique
+  bio         String?
+  photoUrl    String?
+  specialty   String?
+  breedFocus  String?
+  socialLinksJson String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lessons AcademyLesson[]
+  media   AcademyMedia[]
+
+  @@map("academy_authors")
+}
+
 model AcademyPlan {
   id              Int      @id @default(autoincrement())
   name            String
@@ -96,14 +121,17 @@ model AcademyPlan {
   description     String?
   priceCents      Int      @default(0)
   billingCycle    String   @default("MONTHLY")
+  accessLevel      String   @default("STUDENT")
   featured        Boolean  @default(false)
   active          Boolean  @default(true)
   checkoutProvider String?
   checkoutMetadataJson String?
+  featuresJson     String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   enrollments AcademyEnrollment[]
+  subscriptions AcademySubscription[]
 
   @@map("academy_plans")
 }
@@ -145,22 +173,33 @@ model AcademyLesson {
   id          Int      @id @default(autoincrement())
   module      AcademyModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   moduleId    Int
+  author      AcademyAuthor? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  authorId    Int?
   title       String
   slug        String   @unique
   summary     String?
   richText    String?
+  contentJson String?
   imageUrl    String?
   videoEmbed  String?
   filesJson   String?
   durationMinutes Int?
+  estimatedReadingMinutes Int?
   level       String   @default("STUDENT")
+  status      String   @default("DRAFT")
   sortOrder   Int      @default(0)
   published   Boolean  @default(false)
+  metaTitle   String?
+  metaDescription String?
+  ogImageUrl  String?
+  relatedLessonIdsJson String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   progress AcademyProgress[]
   favorites AcademyFavorite[]
+  media AcademyMedia[]
+  certificates AcademyCertificate[]
 
   @@map("academy_lessons")
 }
@@ -191,6 +230,65 @@ model AcademyFavorite {
 
   @@unique([userId, lessonId])
   @@map("academy_favorites")
+}
+
+model AcademyMedia {
+  id        Int      @id @default(autoincrement())
+  owner     User?    @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  ownerId   Int?
+  author    AcademyAuthor? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  authorId  Int?
+  lesson    AcademyLesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  lessonId  Int?
+  type      String
+  title     String?
+  url       String
+  mimeType  String?
+  sizeBytes Int?
+  altText   String?
+  metadataJson String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("academy_media")
+}
+
+model AcademySubscription {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  plan      AcademyPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+  planId    Int?
+  status    String   @default("PENDING")
+  provider  String?
+  providerSubscriptionId String? @unique
+  startedAt DateTime?
+  currentPeriodStart DateTime?
+  currentPeriodEnd DateTime?
+  canceledAt DateTime?
+  metadataJson String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("academy_subscriptions")
+}
+
+model AcademyCertificate {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  lesson    AcademyLesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  lessonId  Int?
+  title     String
+  certificateNumber String @unique
+  issuedAt  DateTime @default(now())
+  expiresAt DateTime?
+  pdfUrl    String?
+  metadataJson String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("academy_certificates")
 }
 
 model UserSettings {

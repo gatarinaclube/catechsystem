@@ -31,8 +31,20 @@ function requireAcademyAdmin(prisma) {
   };
 }
 
+function requireAcademyContributor(prisma) {
+  return async (req, res, next) => {
+    const academy = await getAcademyContext(prisma, req);
+    if (!academy.canContribute) {
+      return res.status(403).send("Acesso restrito a especialistas convidados ou administradores da Academy.");
+    }
+    res.locals.academy = academy;
+    return next();
+  };
+}
+
 module.exports = {
   requireAcademySession,
   requireAcademyAccess,
   requireAcademyAdmin,
+  requireAcademyContributor,
 };

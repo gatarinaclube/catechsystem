@@ -3,6 +3,8 @@ const ACADEMY_LEVELS = {
   STUDENT: "STUDENT",
   PREMIUM: "PREMIUM",
   GATARINA_ASSOCIATE: "GATARINA_ASSOCIATE",
+  PARTNER_CREATOR: "PARTNER_CREATOR",
+  GUEST_EXPERT: "GUEST_EXPERT",
   ADMIN: "ADMIN",
 };
 
@@ -11,10 +13,25 @@ const LEVEL_LABELS = {
   STUDENT: "Aluno",
   PREMIUM: "Premium",
   GATARINA_ASSOCIATE: "Associado Gatarina",
+  PARTNER_CREATOR: "Criador parceiro",
+  GUEST_EXPERT: "Especialista convidado",
   ADMIN: "Administrador",
 };
 
 const PAID_ENROLLMENT_STATUSES = new Set(["ACTIVE", "PAID", "TRIALING"]);
+const ACTIVE_SUBSCRIPTION_STATUSES = new Set(["ACTIVE", "PAID", "TRIALING"]);
+
+const ACADEMY_CONTENT_STATUSES = {
+  DRAFT: "DRAFT",
+  REVIEW: "REVIEW",
+  PUBLISHED: "PUBLISHED",
+};
+
+const CONTENT_STATUS_LABELS = {
+  DRAFT: "Rascunho",
+  REVIEW: "Revisão",
+  PUBLISHED: "Publicado",
+};
 
 function slugify(value) {
   return String(value || "")
@@ -35,6 +52,8 @@ function canAccessLevel(userLevel, contentLevel) {
     ACADEMY_LEVELS.VISITOR,
     ACADEMY_LEVELS.STUDENT,
     ACADEMY_LEVELS.GATARINA_ASSOCIATE,
+    ACADEMY_LEVELS.PARTNER_CREATOR,
+    ACADEMY_LEVELS.GUEST_EXPERT,
     ACADEMY_LEVELS.PREMIUM,
     ACADEMY_LEVELS.ADMIN,
   ];
@@ -49,15 +68,66 @@ async function getEnrollment(prisma, userId) {
   });
 }
 
+async function getActiveSubscription(prisma, userId) {
+  if (!userId) return null;
+  const now = new Date();
+  const subscriptions = await prisma.academySubscription.findMany({
+    where: {
+      userId,
+      status: { in: Array.from(ACTIVE_SUBSCRIPTION_STATUSES) },
+      OR: [{ currentPeriodEnd: null }, { currentPeriodEnd: { gte: now } }],
+    },
+    include: { plan: true },
+    orderBy: [{ currentPeriodEnd: "desc" }, { updatedAt: "desc" }],
+    take: 1,
+  });
+  return subscriptions[0] || null;
+}
+
+async function getAcademyAuthorForUser(prisma, userId) {
+  if (!userId) return null;
+  return prisma.academyAuthor.findUnique({
+    where: { userId },
+  });
+}
+
 function isAcademyPaidEnrollment(enrollment) {
   if (!enrollment) return false;
   const status = String(enrollment.status || "").toUpperCase();
-  return PAID_ENROLLMENT_STATUSES.has(status) && Boolean(enrollment.planId || enrollment.plan);
+  const plan = enrollment.plan || null;
+  const hasPlan = Boolean(enrollment.planId || plan);
+  const planIsActive = plan ? plan.active !== false : true;
+  return PAID_ENROLLMENT_STATUSES.has(status) && hasPlan && planIsActive;
 }
 
-function userHasAcademyAccess(user, enrollment) {
+function isAcademyActiveSubscription(subscription) {
+  if (!subscription) return false;
+  const status = String(subscription.status || "").toUpperCase();
+  const planIsActive = subscription.plan ? subscription.plan.active !== false : true;
+  const periodEnd = subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd) : null;
+  return ACTIVE_SUBSCRIPTION_STATUSES.has(status) && planIsActive && (!periodEnd || periodEnd >= new Date());
+}
+
+function userHasAcademyAccess(user, enrollment, subscription = null) {
   const role = String(user?.role || "").toUpperCase();
-  return role === "ADMIN" || role === "PREMIUM" || isAcademyPaidEnrollment(enrollment);
+  return role === "ADMIN" || role === "PREMIUM" || isAcademyPaidEnrollment(enrollment) || isAcademyActiveSubscription(subscription);
+}
+
+function resolveAcademyLevel(user, enrollment, subscription) {
+  const role = String(user?.role || "").toUpperCase();
+  if (role === "ADMIN") return ACADEMY_LEVELS.ADMIN;
+  if (role === "PREMIUM") return ACADEMY_LEVELS.PREMIUM;
+  return (
+    subscription?.plan?.accessLevel ||
+    enrollment?.plan?.accessLevel ||
+    enrollment?.level ||
+    ACADEMY_LEVELS.VISITOR
+  );
+}
+
+function isPublishedStatus(status, published) {
+  if (status) return status === ACADEMY_CONTENT_STATUSES.PUBLISHED;
+  return Boolean(published);
 }
 
 async function getAcademyContext(prisma, req) {
@@ -72,19 +142,22 @@ async function getAcademyContext(prisma, req) {
   }
 
   const isAdmin = req.user.role === "ADMIN";
-  const enrollment = await getEnrollment(prisma, req.user.id);
-  const hasMemberAccess = userHasAcademyAccess(req.user, enrollment);
-  const level = isAdmin
-    ? ACADEMY_LEVELS.ADMIN
-    : hasMemberAccess
-      ? enrollment?.level || ACADEMY_LEVELS.PREMIUM
-      : ACADEMY_LEVELS.VISITOR;
+  const [enrollment, subscription, author] = await Promise.all([
+    getEnrollment(prisma, req.user.id),
+    getActiveSubscription(prisma, req.user.id),
+    getAcademyAuthorForUser(prisma, req.user.id),
+  ]);
+  const hasMemberAccess = userHasAcademyAccess(req.user, enrollment, subscription);
+  const level = hasMemberAccess ? resolveAcademyLevel(req.user, enrollment, subscription) : ACADEMY_LEVELS.VISITOR;
 
   return {
     level,
     levelLabel: LEVEL_LABELS[level] || LEVEL_LABELS.STUDENT,
     enrollment,
+    subscription,
+    author,
     isAdmin,
+    canContribute: isAdmin || Boolean(author?.active),
     hasMemberAccess,
   };
 }
@@ -107,7 +180,7 @@ async function getPublishedCatalog(prisma, level = ACADEMY_LEVELS.VISITOR) {
         orderBy: [{ sortOrder: "asc" }, { title: "asc" }],
         include: {
           lessons: {
-            where: { published: true },
+            where: { published: true, status: ACADEMY_CONTENT_STATUSES.PUBLISHED },
             orderBy: [{ sortOrder: "asc" }, { title: "asc" }],
           },
         },
@@ -130,11 +203,24 @@ async function getPublishedCatalog(prisma, level = ACADEMY_LEVELS.VISITOR) {
 
 async function getMemberDashboard(prisma, userId, level) {
   const catalog = await getPublishedCatalog(prisma, level);
-  const lessonIds = catalog.flatMap((category) =>
-    category.modules.flatMap((module) => module.lessons.map((lesson) => lesson.id))
+  const flatLessons = catalog.flatMap((category) =>
+    category.modules.flatMap((module) =>
+      module.lessons.map((lesson) => ({
+        ...lesson,
+        categoryTitle: category.title,
+        categorySlug: category.slug,
+        moduleTitle: module.title,
+        moduleSlug: module.slug,
+        moduleLocked: module.locked,
+      }))
+    )
   );
+  const lessonIds = flatLessons.map((lesson) => lesson.id);
   const progress = lessonIds.length
-    ? await prisma.academyProgress.findMany({ where: { userId, lessonId: { in: lessonIds } } })
+    ? await prisma.academyProgress.findMany({
+        where: { userId, lessonId: { in: lessonIds } },
+        orderBy: { lastSeenAt: "desc" },
+      })
     : [];
   const favorites = lessonIds.length
     ? await prisma.academyFavorite.findMany({ where: { userId, lessonId: { in: lessonIds } } })
@@ -143,6 +229,29 @@ async function getMemberDashboard(prisma, userId, level) {
   const favoriteSet = new Set(favorites.map((item) => item.lessonId));
   const totalLessons = lessonIds.length;
   const completedLessons = completedSet.size;
+  const progressByLesson = new Map(progress.map((item) => [item.lessonId, item]));
+  const enrichedLessons = flatLessons.map((lesson) => ({
+    ...lesson,
+    completed: completedSet.has(lesson.id),
+    favorite: favoriteSet.has(lesson.id),
+    progress: progressByLesson.get(lesson.id) || null,
+  }));
+  const accessibleLessons = enrichedLessons.filter((lesson) => !lesson.locked && !lesson.moduleLocked);
+  const inProgressLessons = accessibleLessons
+    .filter((lesson) => lesson.progress && !lesson.completed)
+    .sort((a, b) => new Date(b.progress.lastSeenAt) - new Date(a.progress.lastSeenAt))
+    .slice(0, 4);
+  const recommendedLessons = accessibleLessons
+    .filter((lesson) => !lesson.completed && !lesson.progress)
+    .slice(0, 6);
+  const latestLessons = accessibleLessons
+    .slice()
+    .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
+    .slice(0, 4);
+  const recentFavorites = accessibleLessons
+    .filter((lesson) => lesson.favorite)
+    .slice(0, 4);
+  const nextLesson = inProgressLessons[0] || recommendedLessons[0] || accessibleLessons.find((lesson) => !lesson.completed) || null;
 
   return {
     catalog: catalog.map((category) => ({
@@ -160,30 +269,47 @@ async function getMemberDashboard(prisma, userId, level) {
     completedLessons,
     progressPercent: totalLessons ? Math.round((completedLessons / totalLessons) * 100) : 0,
     favoriteCount: favoriteSet.size,
+    nextLesson,
+    inProgressLessons,
+    recommendedLessons,
+    latestLessons,
+    recentFavorites,
+    accessibleLessonCount: accessibleLessons.length,
   };
 }
 
 async function getAdminOverview(prisma) {
-  const [categories, modules, lessons, plans, enrollments] = await Promise.all([
+  const [categories, modules, lessons, authors, media, subscriptions, certificates, plans, enrollments] = await Promise.all([
     prisma.academyCategory.count(),
     prisma.academyModule.count(),
     prisma.academyLesson.count(),
+    prisma.academyAuthor.count(),
+    prisma.academyMedia.count(),
+    prisma.academySubscription.count(),
+    prisma.academyCertificate.count(),
     prisma.academyPlan.count(),
     prisma.academyEnrollment.count(),
   ]);
 
-  return { categories, modules, lessons, plans, enrollments };
+  return { categories, modules, lessons, authors, media, subscriptions, certificates, plans, enrollments };
 }
 
 module.exports = {
   ACADEMY_LEVELS,
   LEVEL_LABELS,
+  ACADEMY_CONTENT_STATUSES,
+  CONTENT_STATUS_LABELS,
   slugify,
   toBool,
   canAccessLevel,
+  isPublishedStatus,
   getEnrollment,
+  getActiveSubscription,
+  getAcademyAuthorForUser,
   isAcademyPaidEnrollment,
+  isAcademyActiveSubscription,
   userHasAcademyAccess,
+  resolveAcademyLevel,
   getAcademyContext,
   ensureEnrollment,
   getPublishedCatalog,

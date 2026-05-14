@@ -5,48 +5,149 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title><%= pageTitle %></title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/academy.css" />
   </head>
   <body class="bg-[#f8faf7] text-[#111827]">
     <main class="mx-auto max-w-7xl px-5 py-8">
       <nav class="flex flex-wrap items-center justify-between gap-3">
         <a href="/academy" class="text-xl font-black">CatBreeder <span class="text-[#b9892e]">Pro</span></a>
-        <div class="flex gap-3 text-sm font-bold">
+        <div class="flex flex-wrap gap-3 text-sm font-bold">
           <a href="/academy/app/biblioteca">Biblioteca</a>
           <a href="/academy/app/favoritos">Favoritos</a>
+          <a href="/academy/app/certificados">Certificados</a>
+          <% if (academy.canContribute) { %><a href="/academy/especialista">Especialista</a><% } %>
           <% if (academy.isAdmin) { %><a href="/academy/admin">Admin</a><% } %>
           <a href="/dashboard">CaTech</a>
         </div>
       </nav>
 
-      <section class="mt-10 rounded-3xl bg-[#111827] p-7 text-white">
-        <div class="text-sm uppercase tracking-[0.2em] text-[#d6a84f]"><%= academy.levelLabel %></div>
-        <h1 class="mt-3 text-4xl font-black">Olá, <%= user.name.split(' ')[0] %>.</h1>
-        <p class="mt-3 text-white/65">Continue sua formação como criador felino responsável.</p>
-        <div class="mt-6 h-3 rounded-full bg-white/10">
-          <div class="h-3 rounded-full bg-[#d6a84f]" style="width:<%= dashboard.progressPercent %>%"></div>
+      <section class="mt-10 overflow-hidden rounded-[32px] bg-[#111827] text-white shadow-2xl">
+        <div class="grid gap-8 p-7 lg:grid-cols-[minmax(0,1fr)_360px] lg:p-10">
+          <div>
+            <div class="text-sm uppercase tracking-[0.22em] text-[#d6a84f]"><%= academy.levelLabel %></div>
+            <h1 class="mt-4 text-4xl font-black md:text-5xl">Olá, <%= user.name.split(' ')[0] %>.</h1>
+            <p class="mt-4 max-w-2xl text-white/65">Continue sua formação como criador felino responsável, com uma trilha clara e conteúdos organizados para evolução prática.</p>
+            <div class="mt-8 h-3 rounded-full bg-white/10">
+              <div class="h-3 rounded-full bg-[#d6a84f]" style="width:<%= dashboard.progressPercent %>%"></div>
+            </div>
+            <div class="mt-3 text-sm text-white/70"><%= dashboard.completedLessons %> de <%= dashboard.totalLessons %> aulas concluídas</div>
+            <% if (dashboard.nextLesson) { %>
+              <a href="/academy/app/aulas/<%= dashboard.nextLesson.slug %>" class="mt-7 inline-flex rounded-full bg-[#d6a84f] px-6 py-3 font-black text-black">Continuar: <%= dashboard.nextLesson.title %></a>
+            <% } %>
+          </div>
+          <div class="rounded-[28px] border border-white/10 bg-white/10 p-6">
+            <div class="text-sm font-bold text-white/60">Próxima conquista</div>
+            <div class="mt-3 text-5xl font-black"><%= dashboard.progressPercent %>%</div>
+            <p class="mt-3 text-sm text-white/65">Complete aulas e salve favoritos para montar sua biblioteca de consulta rápida.</p>
+            <div class="mt-6 grid grid-cols-2 gap-3 text-center">
+              <div class="rounded-2xl bg-black/20 p-4"><div class="text-2xl font-black"><%= dashboard.favoriteCount %></div><div class="text-xs text-white/60">favoritos</div></div>
+              <div class="rounded-2xl bg-black/20 p-4"><div class="text-2xl font-black"><%= dashboard.accessibleLessonCount %></div><div class="text-xs text-white/60">liberadas</div></div>
+            </div>
+          </div>
         </div>
-        <div class="mt-3 text-sm text-white/70"><%= dashboard.completedLessons %> de <%= dashboard.totalLessons %> aulas concluídas</div>
       </section>
 
-      <section class="mt-8 grid gap-5 md:grid-cols-3">
+      <section class="mt-8 grid gap-5 md:grid-cols-4">
         <div class="rounded-3xl bg-white p-6 shadow-sm"><div class="text-sm text-slate-500">Progresso</div><div class="mt-2 text-3xl font-black"><%= dashboard.progressPercent %>%</div></div>
+        <div class="rounded-3xl bg-white p-6 shadow-sm"><div class="text-sm text-slate-500">Em andamento</div><div class="mt-2 text-3xl font-black"><%= dashboard.inProgressLessons.length %></div></div>
         <div class="rounded-3xl bg-white p-6 shadow-sm"><div class="text-sm text-slate-500">Favoritos</div><div class="mt-2 text-3xl font-black"><%= dashboard.favoriteCount %></div></div>
-        <div class="rounded-3xl bg-white p-6 shadow-sm"><div class="text-sm text-slate-500">Aulas</div><div class="mt-2 text-3xl font-black"><%= dashboard.totalLessons %></div></div>
+        <div class="rounded-3xl bg-white p-6 shadow-sm"><div class="text-sm text-slate-500">Certificados</div><div class="mt-2 text-3xl font-black"><%= certificates.length %></div></div>
+      </section>
+
+      <section class="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
+        <div class="rounded-[28px] bg-white p-6 shadow-sm">
+          <div class="flex items-center justify-between gap-4">
+            <h2 class="text-2xl font-black">Trilha Recomendada</h2>
+            <a href="/academy/app/biblioteca" class="text-sm font-bold text-[#31513d]">Ver biblioteca</a>
+          </div>
+          <div class="mt-5 grid gap-3">
+            <% if (!dashboard.recommendedLessons.length) { %>
+              <div class="rounded-2xl bg-slate-50 p-5 text-slate-500">Você já avançou bastante. Confira as novidades para continuar.</div>
+            <% } %>
+            <% dashboard.recommendedLessons.forEach(function(lesson, index) { %>
+              <a href="/academy/app/aulas/<%= lesson.slug %>" class="grid gap-3 rounded-2xl border border-slate-200 p-4 md:grid-cols-[48px_minmax(0,1fr)_auto] md:items-center">
+                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#31513d]/10 font-black text-[#31513d]"><%= index + 1 %></div>
+                <div>
+                  <div class="text-xs font-black uppercase tracking-widest text-[#b9892e]"><%= lesson.categoryTitle %> · <%= lesson.moduleTitle %></div>
+                  <div class="mt-1 font-black"><%= lesson.title %></div>
+                  <div class="mt-1 text-sm text-slate-500"><%= lesson.summary || 'Conteúdo premium CatBreeder Pro.' %></div>
+                </div>
+                <div class="text-sm font-bold text-[#31513d]">Abrir</div>
+              </a>
+            <% }) %>
+          </div>
+        </div>
+
+        <aside class="grid content-start gap-6">
+          <section class="rounded-[28px] bg-white p-6 shadow-sm">
+            <h2 class="text-2xl font-black">Em andamento</h2>
+            <div class="mt-5 grid gap-3">
+              <% if (!dashboard.inProgressLessons.length) { %>
+                <div class="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">Nenhuma aula em andamento ainda.</div>
+              <% } %>
+              <% dashboard.inProgressLessons.forEach(function(lesson) { %>
+                <a href="/academy/app/aulas/<%= lesson.slug %>" class="rounded-2xl bg-slate-50 p-4">
+                  <div class="text-xs font-black uppercase tracking-widest text-slate-400"><%= lesson.moduleTitle %></div>
+                  <div class="mt-1 font-black"><%= lesson.title %></div>
+                </a>
+              <% }) %>
+            </div>
+          </section>
+
+          <section class="rounded-[28px] bg-white p-6 shadow-sm">
+            <h2 class="text-2xl font-black">Novidades</h2>
+            <div class="mt-5 grid gap-3">
+              <% dashboard.latestLessons.forEach(function(lesson) { %>
+                <a href="/academy/app/aulas/<%= lesson.slug %>" class="rounded-2xl bg-slate-50 p-4">
+                  <div class="text-xs font-black uppercase tracking-widest text-[#b9892e]"><%= lesson.categoryTitle %></div>
+                  <div class="mt-1 font-black"><%= lesson.title %></div>
+                </a>
+              <% }) %>
+            </div>
+          </section>
+        </aside>
+      </section>
+
+      <section class="mt-8 rounded-[28px] bg-white p-6 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h2 class="text-2xl font-black">Certificados Recentes</h2>
+          <a href="/academy/app/certificados" class="text-sm font-bold text-[#31513d]">Ver todos</a>
+        </div>
+        <div class="mt-5 grid gap-3 md:grid-cols-2">
+          <% if (!certificates.length) { %>
+            <div class="rounded-2xl bg-slate-50 p-5 text-slate-500">Conclua uma aula para emitir seu primeiro certificado.</div>
+          <% } %>
+          <% certificates.forEach(function(certificate) { %>
+            <div class="rounded-2xl border border-[#d6a84f]/40 bg-[#fffaf0] p-5">
+              <div class="text-xs font-black uppercase tracking-widest text-[#b9892e]"><%= certificate.certificateNumber %></div>
+              <div class="mt-2 font-black"><%= certificate.title %></div>
+              <div class="mt-1 text-sm text-slate-500">Emitido em <%= certificate.issuedAt.toLocaleDateString('pt-BR') %></div>
+            </div>
+          <% }) %>
+        </div>
       </section>
 
       <section class="mt-8 grid gap-5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h2 class="text-3xl font-black">Catálogo</h2>
+          <div class="text-sm text-slate-500">Organizado por categorias e módulos</div>
+        </div>
         <% dashboard.catalog.forEach(function(category) { %>
-          <div class="rounded-3xl bg-white p-6 shadow-sm">
-            <h2 class="text-2xl font-black"><%= category.title %></h2>
+          <div class="rounded-[28px] bg-white p-6 shadow-sm">
+            <h3 class="text-2xl font-black"><%= category.title %></h3>
+            <p class="mt-2 text-slate-500"><%= category.description || '' %></p>
             <div class="mt-5 grid gap-4 md:grid-cols-2">
               <% category.modules.forEach(function(module) { %>
                 <div class="rounded-2xl border border-slate-200 p-5">
-                  <div class="font-black"><%= module.title %></div>
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="font-black"><%= module.title %></div>
+                    <% if (module.locked) { %><span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500">Bloqueado</span><% } %>
+                  </div>
                   <div class="mt-3 grid gap-2">
                     <% module.lessons.forEach(function(lesson) { %>
                       <a href="/academy/app/aulas/<%= lesson.slug %>" class="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 text-sm">
                         <span><%= lesson.title %></span>
-                        <span><%= lesson.completed ? '✓' : lesson.locked ? 'Bloqueada' : 'Abrir' %></span>
+                        <span class="font-bold text-[#31513d]"><%= lesson.completed ? 'Concluída' : lesson.locked ? 'Bloqueada' : 'Abrir' %></span>
                       </a>
                     <% }) %>
                   </div>

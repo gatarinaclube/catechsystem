@@ -5,7 +5,13 @@ const {
   getMemberDashboard,
   getPublishedCatalog,
   canAccessLevel,
+  isPublishedStatus,
 } = require("../services/academyService");
+const { academySeo } = require("../services/academySeo");
+const {
+  issueLessonCertificate,
+  listUserCertificates,
+} = require("../services/academyCertificateService");
 
 function parseFilesJson(value) {
   if (!value) return [];
@@ -22,12 +28,26 @@ module.exports = (prisma) => ({
     await ensureEnrollment(prisma, req.user.id, ACADEMY_LEVELS.STUDENT);
     const academy = await getAcademyContext(prisma, req);
     const dashboard = await getMemberDashboard(prisma, req.user.id, academy.level);
+    const certificates = await listUserCertificates(prisma, req.user.id);
 
     res.render("academy/member/dashboard", {
       pageTitle: "Área do Aluno - CatBreeder Pro",
       user: req.user,
       academy,
       dashboard,
+      certificates: certificates.slice(0, 4),
+    });
+  },
+
+  certificates: async (req, res) => {
+    const academy = await getAcademyContext(prisma, req);
+    const certificates = await listUserCertificates(prisma, req.user.id);
+
+    res.render("academy/member/certificates", {
+      pageTitle: "Certificados - CatBreeder Pro",
+      user: req.user,
+      academy,
+      certificates,
     });
   },
 
@@ -42,7 +62,9 @@ module.exports = (prisma) => ({
     ).filter((lesson) =>
       !query ||
       lesson.title.toLowerCase().includes(query) ||
-      String(lesson.summary || "").toLowerCase().includes(query)
+      String(lesson.summary || "").toLowerCase().includes(query) ||
+      lesson.moduleTitle.toLowerCase().includes(query) ||
+      lesson.categoryTitle.toLowerCase().includes(query)
     );
 
     res.render("academy/member/library", {
@@ -71,7 +93,7 @@ module.exports = (prisma) => ({
     });
     const lessons = favorites
       .map((favorite) => favorite.lesson)
-      .filter((lesson) => lesson.published && canAccessLevel(academy.level, lesson.level));
+      .filter((lesson) => lesson.published && isPublishedStatus(lesson.status, lesson.published) && canAccessLevel(academy.level, lesson.level));
 
     res.render("academy/member/favorites", {
       pageTitle: "Favoritos - CatBreeder Pro",
@@ -85,10 +107,14 @@ module.exports = (prisma) => ({
     const academy = await getAcademyContext(prisma, req);
     const lesson = await prisma.academyLesson.findUnique({
       where: { slug: req.params.slug },
-      include: { module: { include: { category: true } } },
+      include: {
+        author: true,
+        media: true,
+        module: { include: { category: true } },
+      },
     });
 
-    if (!lesson || !lesson.published || !canAccessLevel(academy.level, lesson.level)) {
+    if (!lesson || !lesson.published || !isPublishedStatus(lesson.status, lesson.published) || !canAccessLevel(academy.level, lesson.level)) {
       return res.status(404).send("Aula não encontrada ou indisponível para seu plano.");
     }
 
@@ -109,6 +135,14 @@ module.exports = (prisma) => ({
 
     res.render("academy/member/lesson", {
       pageTitle: `${lesson.title} - CatBreeder Pro`,
+      seo: academySeo(req, {
+        path: `/academy/app/aulas/${lesson.slug}`,
+        title: lesson.metaTitle || `${lesson.title} | CatBreeder Pro`,
+        description: lesson.metaDescription || lesson.summary || "Aula CatBreeder Pro para criadores felinos.",
+        image: lesson.ogImageUrl || lesson.imageUrl || undefined,
+        type: "article",
+        robots: "noindex,nofollow",
+      }),
       user: req.user,
       academy,
       lesson,
@@ -138,6 +172,9 @@ module.exports = (prisma) => ({
         completedAt: completed ? new Date() : null,
       },
     });
+    if (completed) {
+      await issueLessonCertificate(prisma, req.user.id, lessonId);
+    }
     res.redirect(req.get("Referer") || "/academy/app");
   },
 

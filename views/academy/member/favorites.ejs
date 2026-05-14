@@ -8,9 +8,16 @@
   </head>
   <body class="bg-[#f8faf7] text-[#111827]">
     <main class="mx-auto max-w-6xl px-5 py-8">
-      <a href="/academy/app" class="text-sm font-bold text-[#31513d]">← Área do aluno</a>
-      <h1 class="mt-8 text-4xl font-black">Favoritos</h1>
-      <p class="mt-3 text-slate-600">Aulas salvas para consulta rápida.</p>
+      <nav class="text-sm font-bold text-slate-500">
+        <a href="/academy/app" class="text-[#31513d]">Área do aluno</a>
+        <span class="mx-2">/</span>
+        <span>Favoritos</span>
+      </nav>
+      <section class="mt-8 rounded-[28px] bg-white p-7 shadow-sm">
+        <div class="text-xs font-black uppercase tracking-[0.2em] text-[#b9892e]">Consulta rápida</div>
+        <h1 class="mt-3 text-4xl font-black">Favoritos</h1>
+        <p class="mt-3 text-slate-600">Aulas salvas para voltar quando precisar.</p>
+      </section>
       <div class="mt-8 grid gap-4 md:grid-cols-2">
         <% if (!lessons.length) { %>
           <div class="rounded-3xl bg-white p-8 text-slate-600 shadow-sm">Nenhuma aula favoritada ainda.</div>
