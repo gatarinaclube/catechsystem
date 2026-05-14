@@ -6,7 +6,7 @@
     <title><%= pageTitle %></title>
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
-  <body class="bg-[#f8faf7] text-[#111827]">
+  <body class="bg-[#f8faf7] text-[#1f2933]">
     <main class="mx-auto max-w-7xl px-5 py-8">
       <nav class="flex flex-wrap items-center justify-between gap-3">
         <a href="/academy/app" class="font-black">← CatBreeder Pro</a>
@@ -37,7 +37,7 @@
             <textarea name="description" placeholder="Descrição" class="rounded-xl border p-3"></textarea>
             <input name="sortOrder" type="number" placeholder="Ordem" class="rounded-xl border p-3" />
             <label><input type="checkbox" name="published" /> Publicada</label>
-            <button class="rounded-xl bg-[#111827] p-3 font-black text-white">Criar categoria</button>
+            <button class="rounded-xl bg-[#31513d] p-3 font-black text-white">Criar categoria</button>
           </form>
           <div class="mt-5 grid gap-3">
             <% categories.forEach(function(item) { %>
@@ -66,7 +66,7 @@
             <textarea name="description" placeholder="Descrição" class="rounded-xl border p-3"></textarea>
             <input name="sortOrder" type="number" placeholder="Ordem" class="rounded-xl border p-3" />
             <label><input type="checkbox" name="published" /> Publicado</label>
-            <button class="rounded-xl bg-[#111827] p-3 font-black text-white">Criar módulo</button>
+            <button class="rounded-xl bg-[#31513d] p-3 font-black text-white">Criar módulo</button>
           </form>
           <div class="mt-5 grid gap-3">
             <% modules.forEach(function(item) { %>
@@ -105,7 +105,7 @@
           <textarea name="bio" placeholder="Mini bio" class="rounded-xl border p-3 md:col-span-2"></textarea>
           <textarea name="socialLinksJson" placeholder='Redes sociais JSON {"instagram":"https://..."}' class="rounded-xl border p-3 md:col-span-2"></textarea>
           <label><input type="checkbox" name="active" checked /> Ativo</label>
-          <button class="rounded-xl bg-[#111827] p-3 font-black text-white">Criar autor</button>
+          <button class="rounded-xl bg-[#31513d] p-3 font-black text-white">Criar autor</button>
         </form>
         <div class="mt-5 grid gap-3 md:grid-cols-2">
           <% authors.forEach(function(author) { %>
@@ -147,7 +147,7 @@
           <input name="metaDescription" placeholder="Meta description" class="rounded-xl border p-3" />
           <input name="ogImageUrl" placeholder="Open Graph imagem" class="rounded-xl border p-3" />
           <input name="relatedLessonIdsJson" placeholder="Aulas relacionadas JSON" class="rounded-xl border p-3" />
-          <button class="rounded-xl bg-[#111827] p-3 font-black text-white">Criar aula</button>
+          <button class="rounded-xl bg-[#31513d] p-3 font-black text-white">Criar aula</button>
         </form>
         <div class="mt-5 grid gap-3 md:grid-cols-2">
           <% lessons.forEach(function(item) { %>
@@ -194,7 +194,7 @@
             <textarea name="featuresJson" placeholder='Benefícios JSON ["Aulas premium","Biblioteca"]' class="rounded-xl border p-3"></textarea>
             <label><input type="checkbox" name="featured" /> Destaque</label>
             <label><input type="checkbox" name="active" checked /> Ativo</label>
-            <button class="rounded-xl bg-[#111827] p-3 font-black text-white">Criar plano</button>
+            <button class="rounded-xl bg-[#31513d] p-3 font-black text-white">Criar plano</button>
           </form>
           <div class="mt-5 grid gap-3">
             <% plans.forEach(function(plan) { %>
@@ -228,7 +228,7 @@
             <select name="status" class="rounded-xl border p-3"><option value="ACTIVE">Ativo</option><option value="TRIALING">Teste</option><option value="PENDING">Pendente</option><option value="PAUSED">Pausado</option><option value="CANCELED">Cancelado</option></select>
             <input name="currentPeriodStart" type="date" class="rounded-xl border p-3" />
             <input name="currentPeriodEnd" type="date" class="rounded-xl border p-3" />
-            <button class="rounded-xl bg-[#111827] p-3 font-black text-white">Adicionar usuário Academy</button>
+            <button class="rounded-xl bg-[#31513d] p-3 font-black text-white">Adicionar usuário Academy</button>
           </form>
           <div class="mt-4 grid gap-3">
             <% enrollments.forEach(function(item) { %>

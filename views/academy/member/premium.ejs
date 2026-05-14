@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/css/academy.css" />
   </head>
-  <body class="bg-[#f8faf7] text-[#111827]">
+  <body class="bg-[#f8faf7] text-[#1f2933]">
     <main class="mx-auto max-w-7xl px-5 py-8">
       <nav class="flex flex-wrap items-center justify-between gap-3">
         <a href="/academy/app" class="text-xl font-black">CatBreeder <span class="text-[#b9892e]">Pro</span></a>
@@ -20,27 +20,27 @@
         </div>
       </nav>
 
-      <section class="mt-10 overflow-hidden rounded-[32px] bg-[#111827] text-white shadow-2xl">
+      <section class="mt-10 overflow-hidden rounded-[32px] border border-slate-200 bg-white text-[#1f2933] shadow-xl">
         <div class="grid gap-8 p-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:p-10">
           <div>
-            <div class="text-sm uppercase tracking-[0.22em] text-[#d6a84f]">Premium Lab</div>
+            <div class="text-sm uppercase tracking-[0.22em] text-[#b9892e]">Premium Lab</div>
             <h1 class="mt-4 text-4xl font-black md:text-5xl"><%= hub.headline %></h1>
-            <p class="mt-4 max-w-2xl text-white/65"><%= hub.summary %></p>
+            <p class="mt-4 max-w-2xl text-slate-600"><%= hub.summary %></p>
             <div class="mt-7 flex flex-wrap gap-3">
-              <a href="/academy/app/trilhas" class="rounded-full bg-[#d6a84f] px-5 py-3 text-sm font-black text-black">Continuar trilhas</a>
-              <a href="/academy/app/biblioteca" class="rounded-full border border-white/20 px-5 py-3 text-sm font-black text-white">Abrir biblioteca</a>
+              <a href="/academy/app/trilhas" class="rounded-full bg-[#31513d] px-5 py-3 text-sm font-black text-white">Continuar trilhas</a>
+              <a href="/academy/app/biblioteca" class="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-[#31513d]">Abrir biblioteca</a>
             </div>
           </div>
-          <aside class="rounded-[28px] border border-white/10 bg-white/10 p-6">
-            <div class="text-sm font-bold text-white/60">Estrutura pronta para</div>
+          <aside class="rounded-[28px] border border-[#d6a84f]/30 bg-[#fffaf0] p-6">
+            <div class="text-sm font-bold text-[#8a641d]">Estrutura pronta para</div>
             <div class="mt-4 grid gap-3">
-              <div class="rounded-2xl bg-black/20 p-4">
+              <div class="rounded-2xl bg-white p-4">
                 <div class="text-2xl font-black"><%= hub.features.length %></div>
-                <div class="text-xs text-white/60">recursos mapeados</div>
+                <div class="text-xs text-slate-500">recursos mapeados</div>
               </div>
-              <div class="rounded-2xl bg-black/20 p-4">
+              <div class="rounded-2xl bg-white p-4">
                 <div class="text-2xl font-black">CMS</div>
-                <div class="text-xs text-white/60">sem duplicar usuários</div>
+                <div class="text-xs text-slate-500">sem duplicar usuários</div>
               </div>
             </div>
           </aside>

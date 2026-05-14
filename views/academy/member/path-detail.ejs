@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/css/academy.css" />
   </head>
-  <body class="bg-[#f8faf7] text-[#111827]">
+  <body class="bg-[#f8faf7] text-[#1f2933]">
     <main class="mx-auto max-w-7xl px-5 py-8">
       <nav class="flex flex-wrap items-center justify-between gap-3">
         <a href="/academy/app/trilhas" class="text-xl font-black">CatBreeder <span class="text-[#b9892e]">Pro</span></a>
@@ -21,16 +21,16 @@
       </nav>
 
       <section class="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div class="rounded-[32px] bg-[#111827] p-8 text-white shadow-2xl md:p-10">
-          <div class="text-sm uppercase tracking-[0.22em] text-[#d6a84f]">Trilha</div>
+        <div class="rounded-[32px] border border-slate-200 bg-white p-8 text-[#1f2933] shadow-xl md:p-10">
+          <div class="text-sm uppercase tracking-[0.22em] text-[#b9892e]">Trilha</div>
           <h1 class="mt-4 text-4xl font-black md:text-5xl"><%= path.title %></h1>
-          <p class="mt-4 max-w-3xl text-white/65"><%= path.description || 'Conteúdos organizados para avançar com segurança e método.' %></p>
-          <div class="mt-8 h-3 rounded-full bg-white/10">
+          <p class="mt-4 max-w-3xl text-slate-600"><%= path.description || 'Conteúdos organizados para avançar com segurança e método.' %></p>
+          <div class="mt-8 h-3 rounded-full bg-slate-100">
             <div class="h-3 rounded-full bg-[#d6a84f]" style="width:<%= path.progressPercent %>%"></div>
           </div>
-          <div class="mt-3 text-sm text-white/70"><%= path.completedLessons %> de <%= path.totalLessons %> aulas concluídas</div>
+          <div class="mt-3 text-sm text-slate-500"><%= path.completedLessons %> de <%= path.totalLessons %> aulas concluídas</div>
           <% if (path.nextLesson) { %>
-            <a href="/academy/app/aulas/<%= path.nextLesson.slug %>" class="mt-7 inline-flex rounded-full bg-[#d6a84f] px-6 py-3 font-black text-black">Continuar: <%= path.nextLesson.title %></a>
+            <a href="/academy/app/aulas/<%= path.nextLesson.slug %>" class="mt-7 inline-flex rounded-full bg-[#31513d] px-6 py-3 font-black text-white">Continuar: <%= path.nextLesson.title %></a>
           <% } %>
         </div>
 

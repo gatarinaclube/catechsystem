@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/css/academy.css" />
   </head>
-  <body class="bg-[#f8faf7] text-[#111827]">
+  <body class="bg-[#f8faf7] text-[#1f2933]">
     <main class="mx-auto max-w-4xl px-5 py-8">
       <nav class="text-sm font-bold text-slate-500">
         <a href="/academy/app" class="text-[#31513d]">Área do aluno</a>
@@ -58,7 +58,7 @@
         <% } %>
         <div class="mt-8 flex flex-wrap gap-3">
           <form method="post" action="/academy/app/aulas/<%= lesson.id %>/concluir">
-            <button class="rounded-full bg-[#111827] px-5 py-3 font-black text-white"><%= progress && progress.completed ? 'Marcar como não concluída' : 'Concluir aula' %></button>
+            <button class="rounded-full bg-[#31513d] px-5 py-3 font-black text-white"><%= progress && progress.completed ? 'Marcar como não concluída' : 'Concluir aula' %></button>
           </form>
           <form method="post" action="/academy/app/aulas/<%= lesson.id %>/favorito">
             <button class="rounded-full border border-slate-200 px-5 py-3 font-black"><%= favorite ? 'Remover favorito' : 'Favoritar' %></button>

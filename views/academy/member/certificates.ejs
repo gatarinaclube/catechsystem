@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/css/academy.css" />
   </head>
-  <body class="bg-[#f8faf7] text-[#111827]">
+  <body class="bg-[#f8faf7] text-[#1f2933]">
     <main class="mx-auto max-w-6xl px-5 py-8">
       <nav class="text-sm font-bold text-slate-500">
         <a href="/academy/app" class="text-[#31513d]">Área do aluno</a>
@@ -15,10 +15,10 @@
         <span>Certificados</span>
       </nav>
 
-      <section class="mt-8 rounded-[32px] bg-[#111827] p-8 text-white shadow-2xl">
-        <div class="text-xs font-black uppercase tracking-[0.22em] text-[#d6a84f]">Progresso reconhecido</div>
+      <section class="mt-8 rounded-[32px] border border-slate-200 bg-white p-8 text-[#1f2933] shadow-xl">
+        <div class="text-xs font-black uppercase tracking-[0.22em] text-[#b9892e]">Progresso reconhecido</div>
         <h1 class="mt-3 text-4xl font-black">Certificados</h1>
-        <p class="mt-3 max-w-2xl text-white/65">Cada aula concluída pode gerar um certificado de conclusão, registrado no seu histórico Academy.</p>
+        <p class="mt-3 max-w-2xl text-slate-600">Cada aula concluída pode gerar um certificado de conclusão, registrado no seu histórico Academy.</p>
       </section>
 
       <section class="mt-8 grid gap-4 md:grid-cols-2">
@@ -34,7 +34,7 @@
             <% } %>
             <div class="mt-5 text-sm font-bold text-slate-600">Emitido em <%= certificate.issuedAt.toLocaleDateString('pt-BR') %></div>
             <% if (certificate.pdfUrl) { %>
-              <a href="<%= certificate.pdfUrl %>" class="mt-4 inline-block rounded-full bg-[#111827] px-5 py-3 font-black text-white">Abrir PDF</a>
+              <a href="<%= certificate.pdfUrl %>" class="mt-4 inline-block rounded-full bg-[#31513d] px-5 py-3 font-black text-white">Abrir PDF</a>
             <% } %>
           </article>
         <% }) %>

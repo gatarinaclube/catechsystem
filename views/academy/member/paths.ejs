@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/css/academy.css" />
   </head>
-  <body class="bg-[#f8faf7] text-[#111827]">
+  <body class="bg-[#f8faf7] text-[#1f2933]">
     <main class="mx-auto max-w-7xl px-5 py-8">
       <nav class="flex flex-wrap items-center justify-between gap-3">
         <a href="/academy/app" class="text-xl font-black">CatBreeder <span class="text-[#b9892e]">Pro</span></a>
@@ -20,11 +20,11 @@
         </div>
       </nav>
 
-      <section class="mt-10 rounded-[32px] bg-[#111827] p-8 text-white shadow-2xl md:p-10">
+      <section class="mt-10 rounded-[32px] border border-slate-200 bg-white p-8 text-[#1f2933] shadow-xl md:p-10">
         <div class="max-w-3xl">
-          <div class="text-sm uppercase tracking-[0.22em] text-[#d6a84f]">Trilhas de aprendizagem</div>
+          <div class="text-sm uppercase tracking-[0.22em] text-[#b9892e]">Trilhas de aprendizagem</div>
           <h1 class="mt-4 text-4xl font-black md:text-5xl">Caminhos claros para evoluir como criador.</h1>
-          <p class="mt-4 text-white/65">Cada trilha agrupa módulos e aulas em uma ordem prática. Acompanhe o progresso, retome a próxima aula e veja quais conteúdos dependem do seu plano.</p>
+          <p class="mt-4 text-slate-600">Cada trilha agrupa módulos e aulas em uma ordem prática. Acompanhe o progresso, retome a próxima aula e veja quais conteúdos dependem do seu plano.</p>
         </div>
       </section>
 
@@ -59,7 +59,7 @@
                 <div class="mt-2 text-sm text-slate-500"><%= path.completed ? 'Trilha concluída.' : 'Sem aula liberada para este plano.' %></div>
               <% } %>
             </div>
-            <a href="/academy/app/trilhas/<%= path.slug %>" class="mt-5 inline-flex justify-center rounded-full bg-[#111827] px-5 py-3 text-sm font-black text-white">Abrir trilha</a>
+            <a href="/academy/app/trilhas/<%= path.slug %>" class="mt-5 inline-flex justify-center rounded-full bg-[#31513d] px-5 py-3 text-sm font-black text-white">Abrir trilha</a>
           </article>
         <% }) %>
       </section>
