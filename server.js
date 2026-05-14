@@ -42,6 +42,7 @@ const revenuesRouterFactory = require("./modules/revenues");
 const crmRouterFactory = require("./modules/crm");
 const administrativeRouterFactory = require("./modules/administrative");
 const academyRouterFactory = require("./modules/academy");
+const { isAcademyPaidEnrollment } = require("./modules/academy/services/academyService");
 const {generateTitleHomologationPDF,} = require("./modules/pdf/titleHomologationPdf");
 const {generatePedigreeHomologationPDF,} = require("./modules/pdf/pedigreeHomologationPdf");
 const { generateCatteryRegistrationPDF } = require("./modules/pdf/catteryRegistrationPdf");
@@ -179,6 +180,7 @@ app.use(async (req, res, next) => {
 
     const currentUser = await prisma.user.findUnique({
       where: { id: req.session.userId },
+      include: { academyEnrollments: { take: 1 } },
     });
 
     if (!currentUser) {
@@ -187,17 +189,20 @@ app.use(async (req, res, next) => {
     }
 
     const normalizedRole = normalizeRole(currentUser.role || sessionRole);
+    const userAccess = buildAccessContext(normalizedRole);
+    const academyEnrollment = currentUser.academyEnrollments?.[0] || null;
+    userAccess.canAccessAcademy = userAccess.canAccessAcademy || isAcademyPaidEnrollment(academyEnrollment);
     req.session.userRole = normalizedRole;
 
     req.user = {
       ...currentUser,
       role: normalizedRole,
-      roleLabel: buildAccessContext(normalizedRole).roleLabel,
+      roleLabel: userAccess.roleLabel,
     };
 
     req.session.user = req.user;
     res.locals.user = req.user;
-    res.locals.access = buildAccessContext(normalizedRole);
+    res.locals.access = userAccess;
 
     next();
   } catch (err) {
@@ -489,6 +494,10 @@ app.get("/dashboard", requireAuth, async (req, res) => {
    
    
     const user = req.user;
+    if (user?.role === ROLES.CATBREED) {
+      return res.redirect(res.locals.access?.canAccessAcademy ? "/academy/app" : "/academy/planos");
+    }
+
     const userScope = canViewAllData(req.session.userRole) ? {} : { ownerId: req.session.userId };
     const monthStart = new Date();
     monthStart.setDate(1);

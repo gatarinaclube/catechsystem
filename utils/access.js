@@ -3,6 +3,7 @@ const ROLES = {
   PREMIUM: "PREMIUM",
   MASTER: "MASTER",
   BASIC: "BASIC",
+  CATBREED: "CATBREED",
 };
 
 const LEGACY_ROLE_MAP = {
@@ -14,6 +15,7 @@ const ROLE_LABELS = {
   [ROLES.PREMIUM]: "Premium",
   [ROLES.MASTER]: "Master",
   [ROLES.BASIC]: "Básico",
+  [ROLES.CATBREED]: "Catbreed",
 };
 
 const PERMISSIONS = {
@@ -48,7 +50,7 @@ const PERMISSIONS = {
   "admin.sales": [ROLES.ADMIN, ROLES.PREMIUM],
   "admin.reports": [ROLES.ADMIN, ROLES.PREMIUM],
   "admin.administrative": [ROLES.ADMIN, ROLES.PREMIUM],
-  "academy.access": [ROLES.ADMIN, ROLES.PREMIUM, ROLES.MASTER, ROLES.BASIC],
+  "academy.access": [ROLES.ADMIN, ROLES.PREMIUM],
 };
 
 function normalizeRole(role) {

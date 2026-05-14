@@ -27,6 +27,7 @@ enum UserRole {
   PREMIUM
   MASTER
   BASIC
+  CATBREED
 }
 
 model User {

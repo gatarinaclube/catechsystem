@@ -9,6 +9,17 @@ function requireAcademySession() {
   };
 }
 
+function requireAcademyAccess(prisma) {
+  return async (req, res, next) => {
+    const academy = await getAcademyContext(prisma, req);
+    if (!academy.hasMemberAccess) {
+      return res.status(403).send("Acesso restrito a administradores, usuários Premium ou alunos com plano Academy ativo.");
+    }
+    res.locals.academy = academy;
+    return next();
+  };
+}
+
 function requireAcademyAdmin(prisma) {
   return async (req, res, next) => {
     const academy = await getAcademyContext(prisma, req);
@@ -22,5 +33,6 @@ function requireAcademyAdmin(prisma) {
 
 module.exports = {
   requireAcademySession,
+  requireAcademyAccess,
   requireAcademyAdmin,
 };

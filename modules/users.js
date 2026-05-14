@@ -7,6 +7,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
   const roleOptions = [
     { value: ROLES.BASIC, label: getRoleLabel(ROLES.BASIC) },
+    { value: ROLES.CATBREED, label: getRoleLabel(ROLES.CATBREED) },
     { value: ROLES.MASTER, label: getRoleLabel(ROLES.MASTER) },
     { value: ROLES.PREMIUM, label: getRoleLabel(ROLES.PREMIUM) },
     { value: ROLES.ADMIN, label: getRoleLabel(ROLES.ADMIN) },
@@ -72,6 +73,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         { key: "premium", title: getRoleLabel(ROLES.PREMIUM), users: [] },
         { key: "master", title: getRoleLabel(ROLES.MASTER), users: [] },
         { key: "basic", title: getRoleLabel(ROLES.BASIC), users: [] },
+        { key: "catbreed", title: getRoleLabel(ROLES.CATBREED), users: [] },
         { key: "inactive", title: "Inativo", users: [] },
       ];
       const groupByRole = new Map(

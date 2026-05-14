@@ -14,6 +14,8 @@ const LEVEL_LABELS = {
   ADMIN: "Administrador",
 };
 
+const PAID_ENROLLMENT_STATUSES = new Set(["ACTIVE", "PAID", "TRIALING"]);
+
 function slugify(value) {
   return String(value || "")
     .normalize("NFD")
@@ -47,6 +49,17 @@ async function getEnrollment(prisma, userId) {
   });
 }
 
+function isAcademyPaidEnrollment(enrollment) {
+  if (!enrollment) return false;
+  const status = String(enrollment.status || "").toUpperCase();
+  return PAID_ENROLLMENT_STATUSES.has(status) && Boolean(enrollment.planId || enrollment.plan);
+}
+
+function userHasAcademyAccess(user, enrollment) {
+  const role = String(user?.role || "").toUpperCase();
+  return role === "ADMIN" || role === "PREMIUM" || isAcademyPaidEnrollment(enrollment);
+}
+
 async function getAcademyContext(prisma, req) {
   if (!req.user?.id) {
     return {
@@ -54,18 +67,25 @@ async function getAcademyContext(prisma, req) {
       levelLabel: LEVEL_LABELS.VISITOR,
       enrollment: null,
       isAdmin: false,
+      hasMemberAccess: false,
     };
   }
 
   const isAdmin = req.user.role === "ADMIN";
   const enrollment = await getEnrollment(prisma, req.user.id);
-  const level = isAdmin ? ACADEMY_LEVELS.ADMIN : enrollment?.level || ACADEMY_LEVELS.STUDENT;
+  const hasMemberAccess = userHasAcademyAccess(req.user, enrollment);
+  const level = isAdmin
+    ? ACADEMY_LEVELS.ADMIN
+    : hasMemberAccess
+      ? enrollment?.level || ACADEMY_LEVELS.PREMIUM
+      : ACADEMY_LEVELS.VISITOR;
 
   return {
     level,
     levelLabel: LEVEL_LABELS[level] || LEVEL_LABELS.STUDENT,
     enrollment,
     isAdmin,
+    hasMemberAccess,
   };
 }
 
@@ -161,6 +181,9 @@ module.exports = {
   slugify,
   toBool,
   canAccessLevel,
+  getEnrollment,
+  isAcademyPaidEnrollment,
+  userHasAcademyAccess,
   getAcademyContext,
   ensureEnrollment,
   getPublishedCatalog,

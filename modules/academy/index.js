@@ -4,6 +4,7 @@ const memberControllerFactory = require("./controllers/memberController");
 const adminControllerFactory = require("./controllers/adminController");
 const {
   requireAcademySession,
+  requireAcademyAccess,
   requireAcademyAdmin,
 } = require("./middlewares/academyAuth");
 
@@ -13,6 +14,7 @@ module.exports = (prisma) => {
   const memberController = memberControllerFactory(prisma);
   const adminController = adminControllerFactory(prisma);
   const academySession = requireAcademySession();
+  const academyAccess = requireAcademyAccess(prisma);
   const academyAdmin = requireAcademyAdmin(prisma);
 
   router.get("/academy", publicController.home);
@@ -25,12 +27,12 @@ module.exports = (prisma) => {
   router.get("/academy/cadastro", publicController.registerForm);
   router.post("/academy/cadastro", publicController.register);
 
-  router.get("/academy/app", academySession, memberController.dashboard);
-  router.get("/academy/app/biblioteca", academySession, memberController.library);
-  router.get("/academy/app/favoritos", academySession, memberController.favorites);
-  router.get("/academy/app/aulas/:slug", academySession, memberController.lesson);
-  router.post("/academy/app/aulas/:id/concluir", academySession, memberController.toggleComplete);
-  router.post("/academy/app/aulas/:id/favorito", academySession, memberController.toggleFavorite);
+  router.get("/academy/app", academySession, academyAccess, memberController.dashboard);
+  router.get("/academy/app/biblioteca", academySession, academyAccess, memberController.library);
+  router.get("/academy/app/favoritos", academySession, academyAccess, memberController.favorites);
+  router.get("/academy/app/aulas/:slug", academySession, academyAccess, memberController.lesson);
+  router.post("/academy/app/aulas/:id/concluir", academySession, academyAccess, memberController.toggleComplete);
+  router.post("/academy/app/aulas/:id/favorito", academySession, academyAccess, memberController.toggleFavorite);
 
   router.get("/academy/admin", academySession, academyAdmin, adminController.dashboard);
   router.post("/academy/admin/categorias", academySession, academyAdmin, adminController.createCategory);

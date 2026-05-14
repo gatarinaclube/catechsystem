@@ -1,9 +1,9 @@
 const bcrypt = require("bcryptjs");
 const {
-  ACADEMY_LEVELS,
-  ensureEnrollment,
+  getEnrollment,
   getAcademyContext,
   getPublishedCatalog,
+  userHasAcademyAccess,
 } = require("../services/academyService");
 
 function renderPublic(res, view, locals = {}) {
@@ -55,7 +55,13 @@ module.exports = (prisma) => ({
       return renderPublic(res, "login", { error: "E-mail ou senha inválidos." });
     }
 
-    await ensureEnrollment(prisma, user.id, ACADEMY_LEVELS.STUDENT);
+    const enrollment = await getEnrollment(prisma, user.id);
+    if (!userHasAcademyAccess(user, enrollment)) {
+      return renderPublic(res, "login", {
+        error: "Seu acesso à Academy ainda não está ativo. Entre com um usuário Premium ou solicite a liberação de um plano Academy.",
+      });
+    }
+
     req.session.userId = user.id;
     req.session.userRole = user.role;
     return res.redirect("/academy/app");
@@ -82,14 +88,13 @@ module.exports = (prisma) => ({
           name,
           email,
           password: await bcrypt.hash(password, 10),
-          role: "BASIC",
+          role: "CATBREED",
           approvalStatus: "DEFERIDO",
         },
       });
-      await ensureEnrollment(prisma, user.id, ACADEMY_LEVELS.STUDENT);
       req.session.userId = user.id;
       req.session.userRole = user.role;
-      return res.redirect("/academy/app");
+      return res.redirect("/academy/planos");
     } catch (err) {
       return renderPublic(res, "register", {
         error: "Não foi possível criar o cadastro. Verifique se o e-mail já está em uso.",
