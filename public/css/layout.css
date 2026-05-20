@@ -1042,3 +1042,53 @@ button:disabled {
 .service-price-row strong {
   color: #000;
 }
+
+.service-prices-note {
+  margin: 0 0 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.service-prices-table-wrap {
+  overflow-x: auto;
+}
+
+.service-prices-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  color: var(--text-main);
+  background: #ffffff;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.service-prices-table th,
+.service-prices-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  text-align: left;
+  vertical-align: top;
+}
+
+.service-prices-table th {
+  background: #fff7ea;
+  color: var(--text-muted);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.service-prices-table th:last-child,
+.service-prices-table td:last-child {
+  width: 180px;
+  text-align: right;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.service-prices-table tr:last-child td {
+  border-bottom: none;
+}
