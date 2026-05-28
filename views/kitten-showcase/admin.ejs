@@ -34,44 +34,85 @@
 
           <section class="content-card showcase-panel">
             <div class="content-title">Cabeçalho público</div>
-            <div class="grid-3 showcase-profile-grid">
-              <div class="field">
-                <label class="field-label" for="title">Nome do gatil</label>
-                <input id="title" data-profile="title" type="text" value="<%= showcase.title || '' %>" />
-              </div>
-              <div class="field">
-                <label class="field-label" for="slug">Link</label>
-                <div class="showcase-url-field">
-                  <span><%= publicBaseUrl %>/</span>
-                  <input id="slug" data-profile="slug" type="text" value="<%= showcase.slug || '' %>" />
+            <div class="showcase-header-editor">
+              <div class="field-panel showcase-logo-panel">
+                <div class="content-title">Logo</div>
+                <% if (showcase.logoPath) { %>
+                  <img class="showcase-logo-preview" src="<%= showcase.logoPath %>" alt="" />
+                <% } else { %>
+                  <div class="showcase-logo-placeholder">Logo</div>
+                <% } %>
+                <div class="field">
+                  <label class="field-label" for="showcaseLogo">Logo do gatil</label>
+                  <input id="showcaseLogo" name="showcaseLogo" type="file" accept="image/*" />
+                  <input id="logoPath" type="hidden" value="<%= showcase.logoPath || '' %>" />
                 </div>
               </div>
-              <label class="showcase-toggle">
-                <input id="published" data-profile="published" type="checkbox" <%= showcase.published ? "checked" : "" %> />
-                <span>Publicado</span>
-              </label>
+
+              <div class="showcase-header-fields">
+                <div class="grid-2">
+                  <div class="field">
+                    <label class="field-label" for="title">Nome do gatil</label>
+                    <input id="title" data-profile="title" type="text" value="<%= showcase.title || '' %>" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="slug">Link</label>
+                    <div class="showcase-url-field">
+                      <span><%= publicBaseUrl %>/</span>
+                      <input id="slug" data-profile="slug" type="text" value="<%= showcase.slug || '' %>" />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="grid-3 showcase-profile-grid">
+                  <div class="field">
+                    <label class="field-label" for="websiteUrl">Site</label>
+                    <input id="websiteUrl" type="url" placeholder="https://..." value="<%= showcase.websiteUrl || '' %>" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="instagramUrl">Instagram</label>
+                    <input id="instagramUrl" type="url" placeholder="https://instagram.com/seugatil" value="<%= showcase.instagramUrl || '' %>" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="whatsappUrl">WhatsApp</label>
+                    <input id="whatsappUrl" type="text" placeholder="DDD + número ou link" value="<%= showcase.whatsappUrl || '' %>" />
+                  </div>
+                </div>
+
+                <div class="field" style="margin-top:12px;">
+                  <label class="field-label" for="intro">Texto de abertura</label>
+                  <textarea id="intro" data-profile="intro" rows="5"><%= showcase.intro || '' %></textarea>
+                </div>
+
+                <div class="showcase-header-bottom">
+                  <label class="showcase-toggle">
+                    <input id="published" data-profile="published" type="checkbox" <%= showcase.published ? "checked" : "" %> />
+                    <span>Publicado</span>
+                  </label>
+                </div>
+              </div>
             </div>
-            <div class="grid-3 showcase-profile-grid">
-              <div class="field">
-                <label class="field-label" for="showcaseLogo">Logo do gatil</label>
-                <input id="showcaseLogo" name="showcaseLogo" type="file" accept="image/*" />
-                <input id="logoPath" type="hidden" value="<%= showcase.logoPath || '' %>" />
-                <% if (showcase.logoPath) { %>
-                  <img class="showcase-parent-preview" style="display:block;" src="<%= showcase.logoPath %>" alt="" />
-                <% } %>
+
+            <div class="field-panel showcase-payment-panel">
+              <div class="content-title">Formas de pagamento</div>
+              <div class="showcase-payment-options">
+                <label class="showcase-toggle">
+                  <input id="paymentPix" type="checkbox" <%= showcase.paymentPix ? "checked" : "" %> />
+                  <span>PIX</span>
+                </label>
+                <label class="showcase-toggle">
+                  <input id="paymentCardCash" type="checkbox" <%= showcase.paymentCardCash ? "checked" : "" %> />
+                  <span>Cartão à vista</span>
+                </label>
+                <label class="showcase-toggle">
+                  <input id="paymentCardInstallments" type="checkbox" <%= showcase.paymentCardInstallments ? "checked" : "" %> />
+                  <span>Cartão parcelado</span>
+                </label>
+                <div class="field showcase-installments-field" id="paymentInstallmentsField">
+                  <label class="field-label" for="paymentInstallments">Parcelas</label>
+                  <input id="paymentInstallments" type="number" min="2" max="24" step="1" value="<%= showcase.paymentInstallments || '' %>" />
+                </div>
               </div>
-              <div class="field">
-                <label class="field-label" for="websiteUrl">Site</label>
-                <input id="websiteUrl" type="url" placeholder="https://..." value="<%= showcase.websiteUrl || '' %>" />
-              </div>
-              <div class="field">
-                <label class="field-label" for="instagramUrl">Instagram</label>
-                <input id="instagramUrl" type="url" placeholder="https://instagram.com/seugatil" value="<%= showcase.instagramUrl || '' %>" />
-              </div>
-            </div>
-            <div class="field" style="margin-top:12px;">
-              <label class="field-label" for="intro">Texto de abertura</label>
-              <textarea id="intro" data-profile="intro" rows="3"><%= showcase.intro || '' %></textarea>
             </div>
           </section>
 

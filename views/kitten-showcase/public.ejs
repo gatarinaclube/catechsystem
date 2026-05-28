@@ -19,13 +19,25 @@
         <% if (showcase.intro) { %>
           <p class="showcase-intro"><%= showcase.intro %></p>
         <% } %>
-        <% if (showcase.websiteUrl || showcase.instagramUrl) { %>
+        <% if (showcase.websiteUrl || showcase.instagramUrl || showcase.whatsappUrl) { %>
           <div class="showcase-links">
             <% if (showcase.websiteUrl) { %>
-              <a href="<%= showcase.websiteUrl %>" target="_blank" rel="noopener noreferrer">Site</a>
+              <a href="<%= showcase.websiteUrl %>" target="_blank" rel="noopener noreferrer">
+                <span class="showcase-link-icon" aria-hidden="true">◎</span>
+                <span>Site</span>
+              </a>
             <% } %>
             <% if (showcase.instagramUrl) { %>
-              <a href="<%= showcase.instagramUrl %>" target="_blank" rel="noopener noreferrer">Instagram</a>
+              <a href="<%= showcase.instagramUrl %>" target="_blank" rel="noopener noreferrer">
+                <span class="showcase-link-icon instagram-icon" aria-hidden="true">◉</span>
+                <span>Instagram</span>
+              </a>
+            <% } %>
+            <% if (showcase.whatsappUrl) { %>
+              <a href="<%= showcase.whatsappUrl %>" target="_blank" rel="noopener noreferrer">
+                <span class="showcase-link-icon whatsapp-icon" aria-hidden="true">☎</span>
+                <span>WhatsApp</span>
+              </a>
             <% } %>
           </div>
         <% } %>
@@ -33,6 +45,26 @@
     </header>
 
     <main class="showcase-main">
+      <% if (showcase.paymentPix || showcase.paymentCardCash || showcase.paymentCardInstallments) { %>
+        <section class="public-payment">
+          <h2>Formas de pagamento</h2>
+          <div class="public-payment-options">
+            <% if (showcase.paymentPix) { %>
+              <div class="public-payment-chip"><span class="payment-icon pix-icon">PIX</span><span>PIX</span></div>
+            <% } %>
+            <% if (showcase.paymentCardCash) { %>
+              <div class="public-payment-chip"><span class="payment-icon card-icon">▣</span><span>Cartão à vista</span></div>
+            <% } %>
+            <% if (showcase.paymentCardInstallments) { %>
+              <div class="public-payment-chip">
+                <span class="payment-icon card-icon">▣</span>
+                <span>Cartão parcelado<%= showcase.paymentInstallments ? ` em até ${showcase.paymentInstallments}x` : '' %></span>
+              </div>
+            <% } %>
+          </div>
+        </section>
+      <% } %>
+
       <% if (!litters.length) { %>
         <section class="showcase-empty">Nenhuma ninhada disponível no momento.</section>
       <% } %>

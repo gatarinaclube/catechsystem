@@ -93,6 +93,21 @@ function normalizeUrl(value) {
   return `https://${text}`;
 }
 
+function normalizeWhatsappUrl(value) {
+  const text = compact(value);
+  if (!text) return null;
+  if (/^https?:\/\//i.test(text)) return text;
+  const digits = text.replace(/\D/g, "");
+  if (digits) return `https://wa.me/${digits}`;
+  return normalizeUrl(text);
+}
+
+function normalizeInstallments(value) {
+  const number = Number(value);
+  if (!Number.isInteger(number) || number < 2) return null;
+  return Math.min(number, 24);
+}
+
 function filesByField(files) {
   const map = new Map();
   for (const file of files || []) {
@@ -111,6 +126,11 @@ function emptyShowcase(settings, user) {
     logoPath: settings?.logoPath || "",
     websiteUrl: "",
     instagramUrl: "",
+    whatsappUrl: "",
+    paymentPix: false,
+    paymentCardCash: false,
+    paymentCardInstallments: false,
+    paymentInstallments: null,
     published: false,
     litters: [],
   };
@@ -293,6 +313,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               logoPath: logoUpload || compact(payload.logoPath),
               websiteUrl: normalizeUrl(payload.websiteUrl),
               instagramUrl: normalizeUrl(payload.instagramUrl),
+              whatsappUrl: normalizeWhatsappUrl(payload.whatsappUrl),
+              paymentPix: payload.paymentPix === true,
+              paymentCardCash: payload.paymentCardCash === true,
+              paymentCardInstallments: payload.paymentCardInstallments === true,
+              paymentInstallments: payload.paymentCardInstallments === true
+                ? normalizeInstallments(payload.paymentInstallments)
+                : null,
               published: payload.published === true,
             },
             create: {
@@ -303,6 +330,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               logoPath: logoUpload || compact(payload.logoPath),
               websiteUrl: normalizeUrl(payload.websiteUrl),
               instagramUrl: normalizeUrl(payload.instagramUrl),
+              whatsappUrl: normalizeWhatsappUrl(payload.whatsappUrl),
+              paymentPix: payload.paymentPix === true,
+              paymentCardCash: payload.paymentCardCash === true,
+              paymentCardInstallments: payload.paymentCardInstallments === true,
+              paymentInstallments: payload.paymentCardInstallments === true
+                ? normalizeInstallments(payload.paymentInstallments)
+                : null,
               published: payload.published === true,
             },
           });

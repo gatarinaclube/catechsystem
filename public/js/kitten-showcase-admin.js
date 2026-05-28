@@ -9,6 +9,8 @@
   const addLitterButton = document.getElementById("addLitterButton");
   const slugInput = document.getElementById("slug");
   const publicLinkButton = document.getElementById("publicLinkButton");
+  const paymentCardInstallments = document.getElementById("paymentCardInstallments");
+  const paymentInstallmentsField = document.getElementById("paymentInstallmentsField");
   const initial = window.__SHOWCASE__ || {};
 
   function makeKey(prefix) {
@@ -51,6 +53,10 @@
   function updatePublicLink() {
     const slug = (slugInput.value || "").trim();
     publicLinkButton.href = slug ? `/${slug}` : "#";
+  }
+
+  function syncPaymentInstallments() {
+    paymentInstallmentsField.style.display = paymentCardInstallments.checked ? "flex" : "none";
   }
 
   function addParentPreview(litter, type, url) {
@@ -243,6 +249,11 @@
       logoPath: document.getElementById("logoPath").value.trim(),
       websiteUrl: document.getElementById("websiteUrl").value.trim(),
       instagramUrl: document.getElementById("instagramUrl").value.trim(),
+      whatsappUrl: document.getElementById("whatsappUrl").value.trim(),
+      paymentPix: document.getElementById("paymentPix").checked,
+      paymentCardCash: document.getElementById("paymentCardCash").checked,
+      paymentCardInstallments: document.getElementById("paymentCardInstallments").checked,
+      paymentInstallments: document.getElementById("paymentInstallments").value.trim(),
       published: document.getElementById("published").checked,
       litters,
     };
@@ -250,6 +261,7 @@
 
   addLitterButton.addEventListener("click", () => addLitter());
   slugInput.addEventListener("input", updatePublicLink);
+  paymentCardInstallments.addEventListener("change", syncPaymentInstallments);
   form.addEventListener("submit", (event) => {
     const oversized = Array.from(form.querySelectorAll('input[type="file"]'))
       .some((input) => !filesAreWithinLimit(input));
@@ -267,4 +279,5 @@
     addLitter();
   }
   updatePublicLink();
+  syncPaymentInstallments();
 })();
