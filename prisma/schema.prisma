@@ -320,6 +320,9 @@ model CatteryKittenShowcase {
   slug        String   @unique
   title       String?
   intro       String?
+  logoPath    String?
+  websiteUrl  String?
+  instagramUrl String?
   published   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -337,6 +340,7 @@ model CatteryShowcaseLitter {
 
   fatherName  String
   fatherPhoto String?
+  fatherPhoto2 String?
   fatherColor String?
   fatherPkdef String?
   fatherPra   String?
@@ -344,6 +348,7 @@ model CatteryShowcaseLitter {
 
   motherName  String
   motherPhoto String?
+  motherPhoto2 String?
   motherColor String?
   motherPkdef String?
   motherPra   String?

@@ -86,6 +86,13 @@ function compact(value) {
   return text || null;
 }
 
+function normalizeUrl(value) {
+  const text = compact(value);
+  if (!text) return null;
+  if (/^https?:\/\//i.test(text)) return text;
+  return `https://${text}`;
+}
+
 function filesByField(files) {
   const map = new Map();
   for (const file of files || []) {
@@ -101,6 +108,9 @@ function emptyShowcase(settings, user) {
     slug: slugify(catteryName) || `gatil-${user.id}`,
     title: catteryName,
     intro: "",
+    logoPath: settings?.logoPath || "",
+    websiteUrl: "",
+    instagramUrl: "",
     published: false,
     litters: [],
   };
@@ -118,6 +128,8 @@ function shapeShowcase(showcase, settings, user) {
       ...litter,
       birthDate: formatDateInput(litter.birthDate),
       deliveryForecast: formatDateInput(litter.deliveryForecast),
+      fatherPhotos: [litter.fatherPhoto, litter.fatherPhoto2].filter(Boolean),
+      motherPhotos: [litter.motherPhoto, litter.motherPhoto2].filter(Boolean),
       kittens: (litter.kittens || []).map((kitten) => ({
         ...kitten,
         photos: (kitten.photos || []).map((photo) => photo.path),
@@ -242,6 +254,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         const settings = await getSettings(req.session.userId);
         const fallback = emptyShowcase(settings, req.user);
         const slug = slugify(payload.slug || fallback.slug);
+        const logoUpload = uploaded.get("showcaseLogo")?.[0] || null;
 
         if (!slug || RESERVED_SLUGS.has(slug)) {
           throw new Error("Informe um link válido para o gatil.");
@@ -277,6 +290,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               slug,
               title: compact(payload.title) || fallback.title,
               intro: compact(payload.intro),
+              logoPath: logoUpload || compact(payload.logoPath),
+              websiteUrl: normalizeUrl(payload.websiteUrl),
+              instagramUrl: normalizeUrl(payload.instagramUrl),
               published: payload.published === true,
             },
             create: {
@@ -284,6 +300,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               slug,
               title: compact(payload.title) || fallback.title,
               intro: compact(payload.intro),
+              logoPath: logoUpload || compact(payload.logoPath),
+              websiteUrl: normalizeUrl(payload.websiteUrl),
+              instagramUrl: normalizeUrl(payload.instagramUrl),
               published: payload.published === true,
             },
           });
@@ -294,8 +313,16 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
           for (const [litterIndex, litter] of litters.entries()) {
             const litterKey = litter.key;
-            const fatherUpload = uploaded.get(`fatherPhoto_${litterKey}`)?.[0] || null;
-            const motherUpload = uploaded.get(`motherPhoto_${litterKey}`)?.[0] || null;
+            const fatherUploads = uploaded.get(`fatherPhotos_${litterKey}`) || [];
+            const motherUploads = uploaded.get(`motherPhotos_${litterKey}`) || [];
+            const fatherPhotos = [
+              ...fatherUploads,
+              ...(Array.isArray(litter.fatherPhotos) ? litter.fatherPhotos.map(compact).filter(Boolean) : []),
+            ].slice(0, 2);
+            const motherPhotos = [
+              ...motherUploads,
+              ...(Array.isArray(litter.motherPhotos) ? litter.motherPhotos.map(compact).filter(Boolean) : []),
+            ].slice(0, 2);
             const savedLitter = await tx.catteryShowcaseLitter.create({
               data: {
                 showcaseId: showcase.id,
@@ -303,13 +330,15 @@ module.exports = (prisma, requireAuth, requirePermission) => {
                 deliveryForecast: parseDate(litter.deliveryForecast),
                 published: litter.published !== false,
                 fatherName: compact(litter.fatherName),
-                fatherPhoto: fatherUpload || compact(litter.fatherPhoto),
+                fatherPhoto: fatherPhotos[0] || null,
+                fatherPhoto2: fatherPhotos[1] || null,
                 fatherColor: compact(litter.fatherColor),
                 fatherPkdef: compact(litter.fatherPkdef),
                 fatherPra: compact(litter.fatherPra),
                 fatherHcm: compact(litter.fatherHcm),
                 motherName: compact(litter.motherName),
-                motherPhoto: motherUpload || compact(litter.motherPhoto),
+                motherPhoto: motherPhotos[0] || null,
+                motherPhoto2: motherPhotos[1] || null,
                 motherColor: compact(litter.motherColor),
                 motherPkdef: compact(litter.motherPkdef),
                 motherPra: compact(litter.motherPra),

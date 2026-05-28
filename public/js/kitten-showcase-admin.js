@@ -54,10 +54,9 @@
   }
 
   function addParentPreview(litter, type, url) {
-    const preview = litter.querySelector(`[data-parent-preview="${type}"]`);
-    if (!preview) return;
-    preview.src = url || "";
-    preview.style.display = url ? "block" : "none";
+    const grid = litter.querySelector(`[data-parent-photo-grid="${type}"]`);
+    if (!grid || !url) return;
+    grid.appendChild(makeParentPhotoCard(url));
   }
 
   function filesAreWithinLimit(input) {
@@ -80,6 +79,16 @@
     card.innerHTML = `<img src="${path}" alt="" /><span>Remover</span>`;
     card.addEventListener("click", () => card.remove());
     addDragHandlers(card, ".showcase-photo-card");
+    return card;
+  }
+
+  function makeParentPhotoCard(path) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "showcase-photo-card";
+    card.dataset.path = path;
+    card.innerHTML = `<img src="${path}" alt="" /><span>Remover</span>`;
+    card.addEventListener("click", () => card.remove());
     return card;
   }
 
@@ -143,13 +152,11 @@
       "deliveryForecast",
       "published",
       "fatherName",
-      "fatherPhoto",
       "fatherColor",
       "fatherPkdef",
       "fatherPra",
       "fatherHcm",
       "motherName",
-      "motherPhoto",
       "motherColor",
       "motherPkdef",
       "motherPra",
@@ -158,16 +165,23 @@
 
     ["father", "mother"].forEach((type) => {
       const photoInput = node.querySelector(`[data-parent-photo="${type}"]`);
-      const currentPhoto = data?.[`${type}Photo`] || "";
-      photoInput.name = `${type}Photo_${key}`;
-      addParentPreview(node, type, currentPhoto);
+      const grid = node.querySelector(`[data-parent-photo-grid="${type}"]`);
+      const currentPhotos = data?.[`${type}Photos`] || [data?.[`${type}Photo`]].filter(Boolean);
+      photoInput.name = `${type}Photos_${key}`;
+      currentPhotos.slice(0, 2).forEach((photo) => addParentPreview(node, type, photo));
       photoInput.addEventListener("change", () => {
         if (!validateFiles(photoInput)) {
-          addParentPreview(node, type, currentPhoto);
           return;
         }
-        const file = photoInput.files && photoInput.files[0];
-        addParentPreview(node, type, file ? URL.createObjectURL(file) : currentPhoto);
+        grid.querySelectorAll(".showcase-photo-card.is-new").forEach((card) => card.remove());
+        Array.from(photoInput.files || []).slice(0, 2).reverse().forEach((file) => {
+          const card = makeParentPhotoCard(URL.createObjectURL(file));
+          card.classList.add("is-new");
+          grid.prepend(card);
+        });
+        if ((photoInput.files || []).length > 2) {
+          alert("Use no máximo 2 fotos para o pai ou para a mãe.");
+        }
       });
     });
 
@@ -193,13 +207,17 @@
       deliveryForecast: getValue(field(litter, "deliveryForecast")),
       published: getValue(field(litter, "published")),
       fatherName: getValue(field(litter, "fatherName")),
-      fatherPhoto: getValue(field(litter, "fatherPhoto")),
+      fatherPhotos: Array.from(litter.querySelectorAll('[data-parent-photo-grid="father"] .showcase-photo-card:not(.is-new)'))
+        .map((card) => card.dataset.path)
+        .filter(Boolean),
       fatherColor: getValue(field(litter, "fatherColor")),
       fatherPkdef: getValue(field(litter, "fatherPkdef")),
       fatherPra: getValue(field(litter, "fatherPra")),
       fatherHcm: getValue(field(litter, "fatherHcm")),
       motherName: getValue(field(litter, "motherName")),
-      motherPhoto: getValue(field(litter, "motherPhoto")),
+      motherPhotos: Array.from(litter.querySelectorAll('[data-parent-photo-grid="mother"] .showcase-photo-card:not(.is-new)'))
+        .map((card) => card.dataset.path)
+        .filter(Boolean),
       motherColor: getValue(field(litter, "motherColor")),
       motherPkdef: getValue(field(litter, "motherPkdef")),
       motherPra: getValue(field(litter, "motherPra")),
@@ -222,6 +240,9 @@
       title: document.getElementById("title").value.trim(),
       slug: slugInput.value.trim(),
       intro: document.getElementById("intro").value.trim(),
+      logoPath: document.getElementById("logoPath").value.trim(),
+      websiteUrl: document.getElementById("websiteUrl").value.trim(),
+      instagramUrl: document.getElementById("instagramUrl").value.trim(),
       published: document.getElementById("published").checked,
       litters,
     };

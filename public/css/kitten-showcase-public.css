@@ -6,6 +6,11 @@ body {
   background: #fffaf2;
 }
 
+.protected-image {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
 .showcase-hero {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -47,6 +52,24 @@ body {
   color: #475569;
   font-size: 16px;
   line-height: 1.6;
+}
+
+.showcase-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.showcase-links a {
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  color: #92400e;
+  padding: 9px 14px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .showcase-main {
@@ -104,6 +127,33 @@ body {
   border-radius: 8px;
 }
 
+.public-parent-photo-stack,
+.public-kitten-thumbs button,
+.gallery-trigger {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.public-parent-photo-stack {
+  position: relative;
+  width: 128px;
+}
+
+.public-parent-photo-stack span {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.72);
+  color: #ffffff;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .public-label {
   margin: 0 0 4px;
   color: #b45309;
@@ -156,6 +206,14 @@ body {
   border: 1px solid rgba(148, 163, 184, 0.35);
 }
 
+.public-kitten-photos {
+  position: relative;
+}
+
+.public-kitten-main-trigger {
+  width: 100%;
+}
+
 .public-kitten-main-photo {
   display: block;
   width: 100%;
@@ -176,6 +234,65 @@ body {
   aspect-ratio: 1;
   object-fit: cover;
   border-radius: 6px;
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) 72px;
+  align-items: center;
+  gap: 12px;
+  background: rgba(15, 23, 42, 0.92);
+  padding: 24px;
+}
+
+.lightbox[hidden] {
+  display: none;
+}
+
+.lightbox img {
+  max-width: 100%;
+  max-height: calc(100vh - 48px);
+  justify-self: center;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.lightbox-close,
+.lightbox-nav {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.lightbox-nav {
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  font-size: 42px;
+  line-height: 1;
+}
+
+.lightbox-prev {
+  justify-self: end;
+}
+
+.lightbox-next {
+  justify-self: start;
 }
 
 .public-kitten-body {
@@ -219,5 +336,20 @@ body {
 
   .public-parent img {
     width: 96px;
+  }
+
+  .public-parent-photo-stack {
+    width: 96px;
+  }
+
+  .lightbox {
+    grid-template-columns: 46px minmax(0, 1fr) 46px;
+    padding: 14px;
+  }
+
+  .lightbox-nav {
+    width: 40px;
+    height: 40px;
+    font-size: 32px;
   }
 }

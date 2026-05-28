@@ -9,14 +9,25 @@
   </head>
   <body>
     <header class="showcase-hero">
-      <% if (settings && settings.logoPath) { %>
-        <img class="showcase-logo" src="<%= settings.logoPath %>" alt="" />
+      <% const headerLogo = showcase.logoPath || (settings && settings.logoPath); %>
+      <% if (headerLogo) { %>
+        <img class="showcase-logo protected-image" src="<%= headerLogo %>" alt="" draggable="false" />
       <% } %>
       <div>
         <p class="showcase-kicker">Filhotes disponíveis</p>
         <h1><%= showcase.title || settings?.catteryName || 'Gatil' %></h1>
         <% if (showcase.intro) { %>
           <p class="showcase-intro"><%= showcase.intro %></p>
+        <% } %>
+        <% if (showcase.websiteUrl || showcase.instagramUrl) { %>
+          <div class="showcase-links">
+            <% if (showcase.websiteUrl) { %>
+              <a href="<%= showcase.websiteUrl %>" target="_blank" rel="noopener noreferrer">Site</a>
+            <% } %>
+            <% if (showcase.instagramUrl) { %>
+              <a href="<%= showcase.instagramUrl %>" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <% } %>
+          </div>
         <% } %>
       </div>
     </header>
@@ -37,12 +48,15 @@
 
           <div class="public-parent-grid">
             <% [
-              { label: 'Pai', name: litter.fatherName, photo: litter.fatherPhoto, color: litter.fatherColor, pkdef: litter.fatherPkdef, pra: litter.fatherPra, hcm: litter.fatherHcm },
-              { label: 'Mãe', name: litter.motherName, photo: litter.motherPhoto, color: litter.motherColor, pkdef: litter.motherPkdef, pra: litter.motherPra, hcm: litter.motherHcm }
+              { label: 'Pai', name: litter.fatherName, photos: [litter.fatherPhoto, litter.fatherPhoto2].filter(Boolean), color: litter.fatherColor, pkdef: litter.fatherPkdef, pra: litter.fatherPra, hcm: litter.fatherHcm },
+              { label: 'Mãe', name: litter.motherName, photos: [litter.motherPhoto, litter.motherPhoto2].filter(Boolean), color: litter.motherColor, pkdef: litter.motherPkdef, pra: litter.motherPra, hcm: litter.motherHcm }
             ].forEach(function(parent) { %>
               <article class="public-parent">
-                <% if (parent.photo) { %>
-                  <img src="<%= parent.photo %>" alt="<%= parent.name %>" />
+                <% if (parent.photos.length) { %>
+                  <button class="gallery-trigger public-parent-photo-stack" type="button" data-gallery='<%- JSON.stringify(parent.photos) %>' data-index="0" aria-label="Abrir fotos de <%= parent.name %>">
+                    <img class="protected-image" src="<%= parent.photos[0] %>" alt="<%= parent.name %>" draggable="false" />
+                    <% if (parent.photos.length > 1) { %><span>+<%= parent.photos.length - 1 %></span><% } %>
+                  </button>
                 <% } %>
                 <div>
                   <p class="public-label"><%= parent.label %></p>
@@ -63,11 +77,15 @@
               <article class="public-kitten">
                 <% if (kitten.photos.length) { %>
                   <div class="public-kitten-photos">
-                    <img class="public-kitten-main-photo" src="<%= kitten.photos[0].path %>" alt="<%= kitten.displayName %>" />
+                    <button class="gallery-trigger public-kitten-main-trigger" type="button" data-gallery='<%- JSON.stringify(kitten.photos.map(function(photo) { return photo.path; })) %>' data-index="0" aria-label="Abrir fotos de <%= kitten.displayName %>">
+                      <img class="public-kitten-main-photo protected-image" src="<%= kitten.photos[0].path %>" alt="<%= kitten.displayName %>" draggable="false" />
+                    </button>
                     <% if (kitten.photos.length > 1) { %>
                       <div class="public-kitten-thumbs">
-                        <% kitten.photos.slice(1, 5).forEach(function(photo) { %>
-                          <img src="<%= photo.path %>" alt="" />
+                        <% kitten.photos.slice(1, 5).forEach(function(photo, photoIndex) { %>
+                          <button class="gallery-trigger" type="button" data-gallery='<%- JSON.stringify(kitten.photos.map(function(item) { return item.path; })) %>' data-index="<%= photoIndex + 1 %>" aria-label="Abrir foto">
+                            <img class="protected-image" src="<%= photo.path %>" alt="" draggable="false" />
+                          </button>
                         <% }) %>
                       </div>
                     <% } %>
@@ -88,5 +106,12 @@
         </section>
       <% }) %>
     </main>
+    <div class="lightbox" id="showcaseLightbox" hidden>
+      <button class="lightbox-close" type="button" aria-label="Fechar">×</button>
+      <button class="lightbox-nav lightbox-prev" type="button" aria-label="Foto anterior">‹</button>
+      <img class="protected-image" id="lightboxImage" alt="" draggable="false" />
+      <button class="lightbox-nav lightbox-next" type="button" aria-label="Próxima foto">›</button>
+    </div>
+    <script src="/js/kitten-showcase-public.js"></script>
   </body>
 </html>

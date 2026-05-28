@@ -33,7 +33,7 @@
           <input type="hidden" id="payload" name="payload" />
 
           <section class="content-card showcase-panel">
-            <div class="content-title">Link público</div>
+            <div class="content-title">Cabeçalho público</div>
             <div class="grid-3 showcase-profile-grid">
               <div class="field">
                 <label class="field-label" for="title">Nome do gatil</label>
@@ -50,6 +50,24 @@
                 <input id="published" data-profile="published" type="checkbox" <%= showcase.published ? "checked" : "" %> />
                 <span>Publicado</span>
               </label>
+            </div>
+            <div class="grid-3 showcase-profile-grid">
+              <div class="field">
+                <label class="field-label" for="showcaseLogo">Logo do gatil</label>
+                <input id="showcaseLogo" name="showcaseLogo" type="file" accept="image/*" />
+                <input id="logoPath" type="hidden" value="<%= showcase.logoPath || '' %>" />
+                <% if (showcase.logoPath) { %>
+                  <img class="showcase-parent-preview" style="display:block;" src="<%= showcase.logoPath %>" alt="" />
+                <% } %>
+              </div>
+              <div class="field">
+                <label class="field-label" for="websiteUrl">Site</label>
+                <input id="websiteUrl" type="url" placeholder="https://..." value="<%= showcase.websiteUrl || '' %>" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="instagramUrl">Instagram</label>
+                <input id="instagramUrl" type="url" placeholder="https://instagram.com/seugatil" value="<%= showcase.instagramUrl || '' %>" />
+              </div>
             </div>
             <div class="field" style="margin-top:12px;">
               <label class="field-label" for="intro">Texto de abertura</label>
@@ -103,10 +121,9 @@
                 <input data-field="fatherName" type="text" required />
               </div>
               <div class="field">
-                <label class="field-label">Foto do Pai</label>
-                <input data-parent-photo="father" type="file" accept="image/*" />
-                <input data-field="fatherPhoto" type="hidden" />
-                <img data-parent-preview="father" class="showcase-parent-preview" alt="" />
+                <label class="field-label">Fotos do Pai</label>
+                <input data-parent-photo="father" type="file" accept="image/*" multiple />
+                <div class="showcase-parent-photo-grid" data-parent-photo-grid="father"></div>
               </div>
               <div class="field"><label class="field-label">Cor do Pai</label><input data-field="fatherColor" type="text" /></div>
               <div class="field"><label class="field-label">PKDef</label><select data-field="fatherPkdef"><option value="">Não mostrar</option><option>N/N</option><option>N/K</option></select></div>
@@ -123,10 +140,9 @@
                 <input data-field="motherName" type="text" required />
               </div>
               <div class="field">
-                <label class="field-label">Foto da Mãe</label>
-                <input data-parent-photo="mother" type="file" accept="image/*" />
-                <input data-field="motherPhoto" type="hidden" />
-                <img data-parent-preview="mother" class="showcase-parent-preview" alt="" />
+                <label class="field-label">Fotos da Mãe</label>
+                <input data-parent-photo="mother" type="file" accept="image/*" multiple />
+                <div class="showcase-parent-photo-grid" data-parent-photo-grid="mother"></div>
               </div>
               <div class="field"><label class="field-label">Cor da Mãe</label><input data-field="motherColor" type="text" /></div>
               <div class="field"><label class="field-label">PKDef</label><select data-field="motherPkdef"><option value="">Não mostrar</option><option>N/N</option><option>N/K</option></select></div>
