@@ -3,6 +3,9 @@ const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
 
+const SHOWCASE_UPLOAD_LIMIT_MB = 25;
+const SHOWCASE_UPLOAD_LIMIT_BYTES = SHOWCASE_UPLOAD_LIMIT_MB * 1024 * 1024;
+
 const RESERVED_SLUGS = new Set([
   "admin",
   "academy",
@@ -42,7 +45,7 @@ function createUpload() {
         cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
       },
     }),
-    limits: { fileSize: 8 * 1024 * 1024, files: 80 },
+    limits: { fileSize: SHOWCASE_UPLOAD_LIMIT_BYTES, files: 80 },
     fileFilter: (req, file, cb) => {
       const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
       cb(allowed.includes(file.mimetype) ? null : new Error("Envie apenas imagens."), allowed.includes(file.mimetype));
@@ -163,20 +166,65 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     });
   }
 
+  async function renderAdmin(req, res, options = {}) {
+    const settings = await getSettings(req.session.userId);
+    const showcase = await getShowcase(req.session.userId);
+    const publicBaseUrl = `${req.protocol}://${req.get("host")}`;
+
+    return res.status(options.status || 200).render("kitten-showcase/admin", {
+      user: req.user,
+      currentPath: "/admin/vitrine-filhotes",
+      showcase: shapeShowcase(showcase, settings, req.user),
+      publicBaseUrl,
+      error: options.error || null,
+      success: options.success || false,
+    });
+  }
+
+  function uploadShowcaseFiles(req, res, next) {
+    upload.any()(req, res, async (err) => {
+      if (!err) return next();
+
+      if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
+        try {
+          return renderAdmin(req, res, {
+            status: 413,
+            error: `Uma das imagens ultrapassa ${SHOWCASE_UPLOAD_LIMIT_MB} MB. Reduza o tamanho da foto e tente novamente.`,
+          });
+        } catch (renderErr) {
+          return next(renderErr);
+        }
+      }
+
+      if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_COUNT") {
+        try {
+          return renderAdmin(req, res, {
+            status: 413,
+            error: "Envie no máximo 80 imagens por vez.",
+          });
+        } catch (renderErr) {
+          return next(renderErr);
+        }
+      }
+
+      if (err.message) {
+        try {
+          return renderAdmin(req, res, {
+            status: 400,
+            error: err.message,
+          });
+        } catch (renderErr) {
+          return next(renderErr);
+        }
+      }
+
+      return next(err);
+    });
+  }
+
   router.get("/admin/vitrine-filhotes", requireAuth, requirePermission("showcase.manage"), async (req, res, next) => {
     try {
-      const settings = await getSettings(req.session.userId);
-      const showcase = await getShowcase(req.session.userId);
-      const publicBaseUrl = `${req.protocol}://${req.get("host")}`;
-
-      res.render("kitten-showcase/admin", {
-        user: req.user,
-        currentPath: "/admin/vitrine-filhotes",
-        showcase: shapeShowcase(showcase, settings, req.user),
-        publicBaseUrl,
-        error: null,
-        success: req.query.ok === "1",
-      });
+      return renderAdmin(req, res, { success: req.query.ok === "1" });
     } catch (err) {
       next(err);
     }
@@ -186,7 +234,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     "/admin/vitrine-filhotes",
     requireAuth,
     requirePermission("showcase.manage"),
-    upload.any(),
+    uploadShowcaseFiles,
     async (req, res, next) => {
       try {
         const uploaded = filesByField(req.files || []);
@@ -303,16 +351,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       } catch (err) {
         if (err.message && !err.code) {
           try {
-            const settings = await getSettings(req.session.userId);
-            const publicBaseUrl = `${req.protocol}://${req.get("host")}`;
-            return res.status(400).render("kitten-showcase/admin", {
-              user: req.user,
-              currentPath: "/admin/vitrine-filhotes",
-              showcase: shapeShowcase(null, settings, req.user),
-              publicBaseUrl,
-              error: err.message,
-              success: false,
-            });
+            return renderAdmin(req, res, { status: 400, error: err.message });
           } catch {
             return next(err);
           }

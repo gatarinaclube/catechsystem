@@ -1,4 +1,6 @@
 (function () {
+  const MAX_PHOTO_MB = 25;
+  const MAX_PHOTO_BYTES = MAX_PHOTO_MB * 1024 * 1024;
   const root = document.getElementById("littersRoot");
   const form = document.getElementById("showcaseForm");
   const payloadInput = document.getElementById("payload");
@@ -58,6 +60,17 @@
     preview.style.display = url ? "block" : "none";
   }
 
+  function filesAreWithinLimit(input) {
+    return Array.from(input.files || []).every((file) => file.size <= MAX_PHOTO_BYTES);
+  }
+
+  function validateFiles(input) {
+    if (filesAreWithinLimit(input)) return true;
+    input.value = "";
+    alert(`Cada imagem deve ter no máximo ${MAX_PHOTO_MB} MB.`);
+    return false;
+  }
+
   function makePhotoCard(path) {
     const card = document.createElement("button");
     card.type = "button";
@@ -97,6 +110,7 @@
     const input = node.querySelector("[data-photo-input]");
     input.name = `kittenPhotos_${key}`;
     input.addEventListener("change", () => {
+      if (!validateFiles(input)) return;
       const grid = node.querySelector("[data-photo-grid]");
       Array.from(input.files || []).forEach((file) => {
         const card = makePhotoCard(URL.createObjectURL(file));
@@ -148,6 +162,10 @@
       photoInput.name = `${type}Photo_${key}`;
       addParentPreview(node, type, currentPhoto);
       photoInput.addEventListener("change", () => {
+        if (!validateFiles(photoInput)) {
+          addParentPreview(node, type, currentPhoto);
+          return;
+        }
         const file = photoInput.files && photoInput.files[0];
         addParentPreview(node, type, file ? URL.createObjectURL(file) : currentPhoto);
       });
@@ -211,7 +229,14 @@
 
   addLitterButton.addEventListener("click", () => addLitter());
   slugInput.addEventListener("input", updatePublicLink);
-  form.addEventListener("submit", () => {
+  form.addEventListener("submit", (event) => {
+    const oversized = Array.from(form.querySelectorAll('input[type="file"]'))
+      .some((input) => !filesAreWithinLimit(input));
+    if (oversized) {
+      alert(`Cada imagem deve ter no máximo ${MAX_PHOTO_MB} MB.`);
+      event.preventDefault();
+      return;
+    }
     payloadInput.value = JSON.stringify(collectPayload());
   });
 
