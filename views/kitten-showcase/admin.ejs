@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Vitrine de Filhotes - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Vitrine de Filhotes</h2>
+            <div class="welcome-sub">Monte a página pública de filhotes disponíveis do seu gatil.</div>
+          </div>
+          <div class="actions">
+            <a id="publicLinkButton" class="btn" href="/<%= showcase.slug %>" target="_blank">Abrir link</a>
+            <button class="btn btn-primary" type="submit" form="showcaseForm">Salvar e publicar</button>
+          </div>
+        </div>
+
+        <% if (error) { %>
+          <div class="content-card alert-card"><%= error %></div>
+        <% } %>
+        <% if (success) { %>
+          <div class="content-card success-card">Vitrine salva com sucesso.</div>
+        <% } %>
+
+        <form id="showcaseForm" method="post" action="/admin/vitrine-filhotes" enctype="multipart/form-data">
+          <input type="hidden" id="payload" name="payload" />
+
+          <section class="content-card showcase-panel">
+            <div class="content-title">Link público</div>
+            <div class="grid-3 showcase-profile-grid">
+              <div class="field">
+                <label class="field-label" for="title">Nome do gatil</label>
+                <input id="title" data-profile="title" type="text" value="<%= showcase.title || '' %>" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="slug">Link</label>
+                <div class="showcase-url-field">
+                  <span><%= publicBaseUrl %>/</span>
+                  <input id="slug" data-profile="slug" type="text" value="<%= showcase.slug || '' %>" />
+                </div>
+              </div>
+              <label class="showcase-toggle">
+                <input id="published" data-profile="published" type="checkbox" <%= showcase.published ? "checked" : "" %> />
+                <span>Publicado</span>
+              </label>
+            </div>
+            <div class="field" style="margin-top:12px;">
+              <label class="field-label" for="intro">Texto de abertura</label>
+              <textarea id="intro" data-profile="intro" rows="3"><%= showcase.intro || '' %></textarea>
+            </div>
+          </section>
+
+          <div id="littersRoot" class="showcase-stack"></div>
+
+          <div class="showcase-actions">
+            <button id="addLitterButton" type="button" class="btn btn-primary">+ ninhada</button>
+            <button type="submit" class="btn btn-primary">Salvar e publicar</button>
+          </div>
+        </form>
+      </main>
+    </div>
+
+    <template id="litterTemplate">
+      <section class="content-card showcase-litter" data-litter>
+        <div class="showcase-section-head">
+          <div>
+            <div class="content-title" data-litter-title>Ninhada</div>
+            <div class="content-sub">As ninhadas mais antigas aparecem primeiro no link público.</div>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn" data-remove-litter>Remover</button>
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <div class="field">
+            <label class="field-label">Data de nascimento</label>
+            <input data-field="birthDate" type="date" required />
+          </div>
+          <div class="field">
+            <label class="field-label">Previsão de entrega</label>
+            <input data-field="deliveryForecast" type="date" required />
+          </div>
+          <label class="showcase-toggle">
+            <input data-field="published" type="checkbox" checked />
+            <span>Mostrar esta ninhada</span>
+          </label>
+        </div>
+
+        <div class="showcase-parent-grid">
+          <div class="field-panel">
+            <div class="content-title">Pai</div>
+            <div class="grid-2 showcase-parent-fields">
+              <div class="field">
+                <label class="field-label">Nome do Pai</label>
+                <input data-field="fatherName" type="text" required />
+              </div>
+              <div class="field">
+                <label class="field-label">Foto do Pai</label>
+                <input data-parent-photo="father" type="file" accept="image/*" />
+                <input data-field="fatherPhoto" type="hidden" />
+                <img data-parent-preview="father" class="showcase-parent-preview" alt="" />
+              </div>
+              <div class="field"><label class="field-label">Cor do Pai</label><input data-field="fatherColor" type="text" /></div>
+              <div class="field"><label class="field-label">PKDef</label><select data-field="fatherPkdef"><option value="">Não mostrar</option><option>N/N</option><option>N/K</option></select></div>
+              <div class="field"><label class="field-label">PRA</label><select data-field="fatherPra"><option value="">Não mostrar</option><option>N/N</option><option>N/PRA</option></select></div>
+              <div class="field"><label class="field-label">HCM</label><input data-field="fatherHcm" type="text" placeholder="Negativo" /></div>
+            </div>
+          </div>
+
+          <div class="field-panel">
+            <div class="content-title">Mãe</div>
+            <div class="grid-2 showcase-parent-fields">
+              <div class="field">
+                <label class="field-label">Nome da Mãe</label>
+                <input data-field="motherName" type="text" required />
+              </div>
+              <div class="field">
+                <label class="field-label">Foto da Mãe</label>
+                <input data-parent-photo="mother" type="file" accept="image/*" />
+                <input data-field="motherPhoto" type="hidden" />
+                <img data-parent-preview="mother" class="showcase-parent-preview" alt="" />
+              </div>
+              <div class="field"><label class="field-label">Cor da Mãe</label><input data-field="motherColor" type="text" /></div>
+              <div class="field"><label class="field-label">PKDef</label><select data-field="motherPkdef"><option value="">Não mostrar</option><option>N/N</option><option>N/K</option></select></div>
+              <div class="field"><label class="field-label">PRA</label><select data-field="motherPra"><option value="">Não mostrar</option><option>N/N</option><option>N/PRA</option></select></div>
+              <div class="field"><label class="field-label">HCM</label><input data-field="motherHcm" type="text" placeholder="Negativo" /></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="showcase-kittens" data-kittens></div>
+        <button type="button" class="btn" data-add-kitten>+ filhote</button>
+      </section>
+    </template>
+
+    <template id="kittenTemplate">
+      <article class="showcase-kitten" data-kitten draggable="true">
+        <div class="showcase-kitten-head">
+          <div class="content-title" data-kitten-title>Filhote</div>
+          <div class="actions">
+            <button type="button" class="btn" data-remove-kitten>Remover</button>
+          </div>
+        </div>
+        <div class="grid-3">
+          <div class="field">
+            <label class="field-label">Nome do Filhote</label>
+            <input data-kitten-field="name" type="text" />
+          </div>
+          <div class="field">
+            <label class="field-label">Cor do Filhote</label>
+            <input data-kitten-field="color" type="text" />
+          </div>
+          <div class="field">
+            <label class="field-label">Sexo</label>
+            <select data-kitten-field="sex" required>
+              <option value="M">Macho</option>
+              <option value="F">Femea</option>
+            </select>
+          </div>
+        </div>
+        <div class="showcase-kitten-row">
+          <label class="showcase-toggle">
+            <input data-kitten-field="available" type="checkbox" checked />
+            <span>Disponível</span>
+          </label>
+          <div class="field showcase-photo-input">
+            <label class="field-label">Fotos do filhote</label>
+            <input data-photo-input type="file" multiple accept="image/*" />
+          </div>
+        </div>
+        <div class="showcase-photo-grid" data-photo-grid></div>
+      </article>
+    </template>
+
+    <script>
+      window.__SHOWCASE__ = <%- JSON.stringify(showcase) %>;
+    </script>
+    <script src="/js/kitten-showcase-admin.js"></script>
+  </body>
+</html>

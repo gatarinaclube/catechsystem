@@ -76,6 +76,7 @@ model User {
   academyMedia AcademyMedia[]
   academySubscriptions AcademySubscription[]
   academyCertificates AcademyCertificate[]
+  kittenShowcase CatteryKittenShowcase?
 }
 
 model AcademyEnrollment {
@@ -310,6 +311,73 @@ model UserSettings {
   examsJson       String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model CatteryKittenShowcase {
+  id          Int      @id @default(autoincrement())
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId     Int      @unique
+  slug        String   @unique
+  title       String?
+  intro       String?
+  published   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  litters CatteryShowcaseLitter[]
+}
+
+model CatteryShowcaseLitter {
+  id          Int      @id @default(autoincrement())
+  showcase    CatteryKittenShowcase @relation(fields: [showcaseId], references: [id], onDelete: Cascade)
+  showcaseId  Int
+  birthDate   DateTime
+  deliveryForecast DateTime
+  published   Boolean @default(true)
+
+  fatherName  String
+  fatherPhoto String?
+  fatherColor String?
+  fatherPkdef String?
+  fatherPra   String?
+  fatherHcm   String?
+
+  motherName  String
+  motherPhoto String?
+  motherColor String?
+  motherPkdef String?
+  motherPra   String?
+  motherHcm   String?
+
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  kittens CatteryShowcaseKitten[]
+}
+
+model CatteryShowcaseKitten {
+  id          Int      @id @default(autoincrement())
+  litter      CatteryShowcaseLitter @relation(fields: [litterId], references: [id], onDelete: Cascade)
+  litterId    Int
+  name        String?
+  color       String?
+  sex         String
+  available   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  photos CatteryShowcasePhoto[]
+}
+
+model CatteryShowcasePhoto {
+  id          Int      @id @default(autoincrement())
+  kitten      CatteryShowcaseKitten @relation(fields: [kittenId], references: [id], onDelete: Cascade)
+  kittenId    Int
+  path        String
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
 }
 
 model PasswordResetToken {

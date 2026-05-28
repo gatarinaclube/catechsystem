@@ -42,6 +42,7 @@ const revenuesRouterFactory = require("./modules/revenues");
 const crmRouterFactory = require("./modules/crm");
 const administrativeRouterFactory = require("./modules/administrative");
 const academyRouterFactory = require("./modules/academy");
+const kittenShowcaseRouterFactory = require("./modules/kitten-showcase");
 const { isAcademyPaidEnrollment, isAcademyActiveSubscription } = require("./modules/academy/services/academyService");
 const {generateTitleHomologationPDF,} = require("./modules/pdf/titleHomologationPdf");
 const {generatePedigreeHomologationPDF,} = require("./modules/pdf/pedigreeHomologationPdf");
@@ -2379,6 +2380,13 @@ if (service.type === "Segunda Via e Alterações") {
   }
 });
 
+
+const kittenShowcaseRouter = kittenShowcaseRouterFactory(
+  prisma,
+  requireAuth,
+  requirePermission
+);
+app.use(kittenShowcaseRouter);
 
 // ---------- TRATAMENTO DE 404 SIMPLES ----------
 app.use((req, res) => {

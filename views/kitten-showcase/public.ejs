@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><%= showcase.title || settings?.catteryName || 'Filhotes disponíveis' %></title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/kitten-showcase-public.css" />
+  </head>
+  <body>
+    <header class="showcase-hero">
+      <% if (settings && settings.logoPath) { %>
+        <img class="showcase-logo" src="<%= settings.logoPath %>" alt="" />
+      <% } %>
+      <div>
+        <p class="showcase-kicker">Filhotes disponíveis</p>
+        <h1><%= showcase.title || settings?.catteryName || 'Gatil' %></h1>
+        <% if (showcase.intro) { %>
+          <p class="showcase-intro"><%= showcase.intro %></p>
+        <% } %>
+      </div>
+    </header>
+
+    <main class="showcase-main">
+      <% if (!litters.length) { %>
+        <section class="showcase-empty">Nenhuma ninhada disponível no momento.</section>
+      <% } %>
+
+      <% litters.forEach(function(litter) { %>
+        <section class="public-litter">
+          <div class="public-litter-head">
+            <div>
+              <h2>Ninhada de <%= litter.birthDateLabel %></h2>
+              <p>Previsão de entrega: <strong><%= litter.deliveryForecastLabel %></strong></p>
+            </div>
+          </div>
+
+          <div class="public-parent-grid">
+            <% [
+              { label: 'Pai', name: litter.fatherName, photo: litter.fatherPhoto, color: litter.fatherColor, pkdef: litter.fatherPkdef, pra: litter.fatherPra, hcm: litter.fatherHcm },
+              { label: 'Mãe', name: litter.motherName, photo: litter.motherPhoto, color: litter.motherColor, pkdef: litter.motherPkdef, pra: litter.motherPra, hcm: litter.motherHcm }
+            ].forEach(function(parent) { %>
+              <article class="public-parent">
+                <% if (parent.photo) { %>
+                  <img src="<%= parent.photo %>" alt="<%= parent.name %>" />
+                <% } %>
+                <div>
+                  <p class="public-label"><%= parent.label %></p>
+                  <h3><%= parent.name %></h3>
+                  <dl>
+                    <% if (parent.color) { %><div><dt>Cor</dt><dd><%= parent.color %></dd></div><% } %>
+                    <% if (parent.pkdef) { %><div><dt>PKDef</dt><dd><%= parent.pkdef %></dd></div><% } %>
+                    <% if (parent.pra) { %><div><dt>PRA</dt><dd><%= parent.pra %></dd></div><% } %>
+                    <% if (parent.hcm) { %><div><dt>HCM</dt><dd><%= parent.hcm %></dd></div><% } %>
+                  </dl>
+                </div>
+              </article>
+            <% }) %>
+          </div>
+
+          <div class="public-kitten-grid">
+            <% litter.kittens.forEach(function(kitten) { %>
+              <article class="public-kitten">
+                <% if (kitten.photos.length) { %>
+                  <div class="public-kitten-photos">
+                    <img class="public-kitten-main-photo" src="<%= kitten.photos[0].path %>" alt="<%= kitten.displayName %>" />
+                    <% if (kitten.photos.length > 1) { %>
+                      <div class="public-kitten-thumbs">
+                        <% kitten.photos.slice(1, 5).forEach(function(photo) { %>
+                          <img src="<%= photo.path %>" alt="" />
+                        <% }) %>
+                      </div>
+                    <% } %>
+                  </div>
+                <% } %>
+                <div class="public-kitten-body">
+                  <div class="public-kitten-title-row">
+                    <h3><%= kitten.displayName %></h3>
+                    <span><%= kitten.sex === 'M' ? 'Macho' : 'Femea' %></span>
+                  </div>
+                  <% if (kitten.color) { %>
+                    <p><%= kitten.color %></p>
+                  <% } %>
+                </div>
+              </article>
+            <% }) %>
+          </div>
+        </section>
+      <% }) %>
+    </main>
+  </body>
+</html>

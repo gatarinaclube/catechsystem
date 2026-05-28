@@ -93,6 +93,7 @@
 
       <% [
         { href: "/breeders", match: "/breeders", icon: "🐱", label: "Reprodutores", allowed: access && access.canAccessBreeders },
+        { href: "/admin/vitrine-filhotes", match: "/admin/vitrine-filhotes", icon: "📷", label: "Vitrine de Filhotes", allowed: access && access.canManageShowcase },
         { href: "/admin/litters", match: "/admin/litters", icon: "🐾", label: "Ninhadas", allowed: access && access.canAccessLittersAdmin },
         { href: "/admin/kittens", match: "/admin/kittens", icon: "🐣", label: "Filhotes", allowed: access && access.canAccessKittensAdmin },
         { href: "/admin/matings", match: "/admin/matings", icon: "💞", label: "Acasalamentos", allowed: access && access.canAccessMatingsAdmin },
