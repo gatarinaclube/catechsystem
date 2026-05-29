@@ -205,12 +205,22 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   async function renderAdmin(req, res, options = {}) {
     const settings = await getSettings(req.session.userId);
     const showcase = await getShowcase(req.session.userId);
+    const showcaseLitterLimit = getCreationLimits(req.session.userRole).showcaseLitters;
     const publicBaseUrl = `${req.protocol}://${req.get("host")}`;
 
     return res.status(options.status || 200).render("kitten-showcase/admin", {
       user: req.user,
       currentPath: "/admin/vitrine-filhotes",
       showcase: shapeShowcase(showcase, settings, req.user),
+      showcaseLimits: {
+        litters: showcaseLitterLimit,
+        littersLabel: showcaseLitterLimit === null
+          ? "Ilimitado"
+          : `${showcaseLitterLimit} ninhada${showcaseLitterLimit === 1 ? "" : "s"} por vez`,
+        littersNote: showcaseLitterLimit === 1
+          ? "Seu perfil permite manter 1 ninhada na vitrine. Para incluir uma nova, remova a ninhada atual."
+          : null,
+      },
       publicBaseUrl,
       error: options.error || null,
       success: options.success || false,

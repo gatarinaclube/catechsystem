@@ -15,6 +15,12 @@
           <div>
             <h2 class="welcome-title">Vitrine de Filhotes</h2>
             <div class="welcome-sub">Monte a página pública de filhotes disponíveis do seu gatil.</div>
+            <% if (showcaseLimits && showcaseLimits.litters !== null) { %>
+              <div class="section-note">
+                Limite do seu perfil: <strong><%= showcaseLimits.littersLabel %></strong>.
+                <% if (showcaseLimits.littersNote) { %><%= showcaseLimits.littersNote %><% } %>
+              </div>
+            <% } %>
           </div>
           <div class="actions">
             <a id="publicLinkButton" class="btn" href="/<%= showcase.slug %>" target="_blank">Abrir link</a>
@@ -239,6 +245,7 @@
 
     <script>
       window.__SHOWCASE__ = <%- JSON.stringify(showcase) %>;
+      window.__SHOWCASE_LIMITS__ = <%- JSON.stringify(showcaseLimits) %>;
     </script>
     <script src="/js/kitten-showcase-admin.js"></script>
   </body>

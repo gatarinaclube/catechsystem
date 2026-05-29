@@ -207,6 +207,82 @@
   background: #fffefa;
 }
 
+.profile-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-plan-card {
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 14px;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+}
+
+.profile-plan-card--current {
+  border-color: var(--accent);
+  background: #fffefa;
+}
+
+.profile-plan-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.profile-plan-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.profile-plan-badge {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: var(--accent-soft);
+  color: var(--accent-hover);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.profile-plan-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profile-plan-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(229, 229, 229, 0.8);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.profile-plan-item strong {
+  color: var(--text-main);
+  font-size: 13px;
+  text-align: right;
+}
+
+.profile-plan-item small {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.35;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 textarea {
   padding: 8px 10px;
   border-radius: 8px;
@@ -560,6 +636,10 @@ textarea:focus {
 
   .info-grid {
     grid-template-columns: 1fr !important;
+  }
+
+  .profile-plan-grid {
+    grid-template-columns: 1fr;
   }
 }
 

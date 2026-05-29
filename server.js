@@ -12,11 +12,13 @@ const archiver = require("archiver");
 const {
   ROLES,
   normalizeRole,
+  getRoleLabel,
   isAdminRole,
   canViewAllData,
   buildAccessContext,
   userCan,
 } = require("./utils/access");
+const { getCreationLimits, getFileUploadLimit } = require("./utils/planLimits");
 const { sendStatusEmail } = require("./utils/mailer");
 const {
   notifyNewUser,
@@ -71,6 +73,33 @@ const prisma = new PrismaClient();
 // ===============================
 function serviceZipName(service) {
   return `Serviço ${service.id} - ${service.type}.zip`;
+}
+
+function buildProfilePlanCards(currentRole) {
+  return [ROLES.PREMIUM, ROLES.MASTER, ROLES.BASIC].map((role) => {
+    const limits = getCreationLimits(role);
+    const uploadLimit = getFileUploadLimit(role);
+    const limitLabel = (value) => (value === null ? "Ilimitado" : value);
+    const showcaseLitterLabel = limits.showcaseLitters === null
+      ? "Ilimitado"
+      : `${limits.showcaseLitters} ninhada${limits.showcaseLitters === 1 ? "" : "s"} por vez`;
+    const showcaseLitterNote = role === ROLES.BASIC
+      ? "Para incluir uma nova ninhada, exclua a ninhada atual da vitrine."
+      : null;
+
+    return {
+      role,
+      title: getRoleLabel(role),
+      isCurrent: normalizeRole(currentRole) === role,
+      items: [
+        { label: "Padreadores", value: limitLabel(limits.breeders) },
+        { label: "Tamanho por arquivo", value: uploadLimit.label },
+        { label: "Ninhadas por ano", value: limitLabel(limits.littersPerYear) },
+        { label: "Filhotes por ano", value: limitLabel(limits.kittensPerYear) },
+        { label: "Vitrine de filhotes", value: showcaseLitterLabel, note: showcaseLitterNote },
+      ],
+    };
+  });
 }
 
 
@@ -864,6 +893,7 @@ app.get("/meus-dados", requireAuth, async (req, res) => {
     res.render("users/my-profile", {
       user,
       currentPath: "/meus-dados",
+      profilePlanCards: buildProfilePlanCards(user.role),
     });
   } catch (err) {
     console.error("Erro ao carregar Meus Dados:", err);
@@ -895,8 +925,6 @@ app.post("/meus-dados", requireAuth, async (req, res) => {
     await prisma.user.update({
       where: { id: req.session.userId },
       data: {
-        name,
-        cpf,
         country,
         address,
         city,

@@ -12,6 +12,7 @@
   const paymentCardInstallments = document.getElementById("paymentCardInstallments");
   const paymentInstallmentsField = document.getElementById("paymentInstallmentsField");
   const initial = window.__SHOWCASE__ || {};
+  const limits = window.__SHOWCASE_LIMITS__ || {};
 
   function makeKey(prefix) {
     return `${prefix}_${Date.now()}_${Math.round(Math.random() * 100000)}`;
@@ -57,6 +58,18 @@
 
   function syncPaymentInstallments() {
     paymentInstallmentsField.style.display = paymentCardInstallments.checked ? "flex" : "none";
+  }
+
+  function litterLimitReached() {
+    return Number.isInteger(limits.litters) && root.querySelectorAll("[data-litter]").length >= limits.litters;
+  }
+
+  function syncLitterLimit() {
+    if (!Number.isInteger(limits.litters)) return;
+    addLitterButton.disabled = litterLimitReached();
+    addLitterButton.title = addLitterButton.disabled
+      ? `Seu perfil permite ${limits.littersLabel || `${limits.litters} ninhada(s) por vez`}. Remova uma ninhada para incluir outra.`
+      : "";
   }
 
   function addParentPreview(litter, type, url) {
@@ -194,6 +207,7 @@
     node.querySelector("[data-remove-litter]").addEventListener("click", () => {
       node.remove();
       updateTitles();
+      syncLitterLimit();
     });
 
     node.querySelector("[data-add-kitten]").addEventListener("click", () => {
@@ -204,6 +218,7 @@
     const kittens = data?.kittens && data.kittens.length ? data.kittens : [{ sex: "M", available: true, photos: [] }];
     kittens.forEach((kitten) => addKitten(node, kitten));
     updateTitles();
+    syncLitterLimit();
   }
 
   function collectPayload() {
@@ -259,7 +274,14 @@
     };
   }
 
-  addLitterButton.addEventListener("click", () => addLitter());
+  addLitterButton.addEventListener("click", () => {
+    if (litterLimitReached()) {
+      alert(limits.littersNote || "Remova uma ninhada para incluir outra.");
+      syncLitterLimit();
+      return;
+    }
+    addLitter();
+  });
   slugInput.addEventListener("input", updatePublicLink);
   paymentCardInstallments.addEventListener("change", syncPaymentInstallments);
   form.addEventListener("submit", (event) => {
@@ -280,4 +302,5 @@
   }
   updatePublicLink();
   syncPaymentInstallments();
+  syncLitterLimit();
 })();
