@@ -1366,6 +1366,13 @@ const historyAdminRouter = historyAdminRouterFactory(
 );
 app.use(historyAdminRouter);
 
+const kittenShowcaseRouter = kittenShowcaseRouterFactory(
+  prisma,
+  requireAuth,
+  requirePermission
+);
+app.use(kittenShowcaseRouter);
+
 const academyRouter = academyRouterFactory(prisma);
 app.use(academyRouter);
 
@@ -2466,14 +2473,6 @@ if (service.type === "Segunda Via e Alterações") {
     return res.status(500).send("Erro ao gerar PDF do serviço");
   }
 });
-
-
-const kittenShowcaseRouter = kittenShowcaseRouterFactory(
-  prisma,
-  requireAuth,
-  requirePermission
-);
-app.use(kittenShowcaseRouter);
 
 // ---------- TRATAMENTO DE 404 SIMPLES ----------
 app.use((req, res) => {
