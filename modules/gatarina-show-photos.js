@@ -25,13 +25,14 @@ function createUpload() {
       destination: (req, file, cb) => cb(null, ensureUploadsDir()),
       filename: (req, file, cb) => {
         const base = path.basename(file.originalname || "foto.jpg", path.extname(file.originalname || ""));
+        const ext = path.extname(file.originalname || "").toLowerCase() || ".jpg";
         const safeBase = base
           .normalize("NFD")
           .replace(/[\u0300-\u036f]/g, "")
           .replace(/[^a-zA-Z0-9_-]+/g, "-")
           .replace(/^-+|-+$/g, "")
           .slice(0, 48) || "foto";
-        cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}-${safeBase}.jpg`);
+        cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}-${safeBase}${ext}`);
       },
     }),
     limits: { fileSize: 6 * 1024 * 1024, files: 120 },
@@ -88,7 +89,7 @@ async function getAdminRecipients(prisma) {
 
 async function getConfig(prisma) {
   const rows = await prisma.$queryRaw`
-    SELECT "eventKey", "title", "priceCents", "published", "contactEmail"
+    SELECT "eventKey", "title", "priceCents", "published", "contactEmail", "watermarkLogoPath"
     FROM "GatarinaPhotoGalleryConfig"
     WHERE "eventKey" = ${EVENT_KEY}
     LIMIT 1
@@ -100,6 +101,7 @@ async function getConfig(prisma) {
     priceCents: 3000,
     published: true,
     contactEmail: "",
+    watermarkLogoPath: "",
   };
 }
 
@@ -117,6 +119,16 @@ async function saveConfig(prisma, body) {
       "priceCents" = EXCLUDED."priceCents",
       "published" = EXCLUDED."published",
       "contactEmail" = EXCLUDED."contactEmail",
+      "updatedAt" = CURRENT_TIMESTAMP
+  `;
+}
+
+async function saveWatermarkLogo(prisma, logoPath) {
+  await prisma.$executeRaw`
+    INSERT INTO "GatarinaPhotoGalleryConfig" ("eventKey", "title", "priceCents", "published", "watermarkLogoPath", "updatedAt")
+    VALUES (${EVENT_KEY}, 'Gatarina Show 2026', 3000, true, ${logoPath}, CURRENT_TIMESTAMP)
+    ON CONFLICT ("eventKey") DO UPDATE SET
+      "watermarkLogoPath" = EXCLUDED."watermarkLogoPath",
       "updatedAt" = CURRENT_TIMESTAMP
   `;
 }
@@ -299,6 +311,27 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       next(err);
     }
   });
+
+  router.post(
+    "/admin/fotos-gatarina-2026/logo",
+    requireAuth,
+    requirePermission("admin.gatarinaPhotos"),
+    (req, res, next) => {
+      upload.single("watermarkLogo")(req, res, (err) => {
+        if (err) return next(err);
+        return next();
+      });
+    },
+    async (req, res, next) => {
+      try {
+        if (!req.file) return res.redirect("/admin/fotos-gatarina-2026");
+        await saveWatermarkLogo(prisma, `/uploads/gatarina-show-2026/${req.file.filename}`);
+        res.redirect("/admin/fotos-gatarina-2026?ok=logo");
+      } catch (err) {
+        next(err);
+      }
+    }
+  );
 
   router.post(
     "/admin/fotos-gatarina-2026/upload",

@@ -43,9 +43,19 @@
                 aria-label="Ampliar <%= photo.code %>"
               >
                 <img src="<%= photo.filePath %>" alt="<%= photo.code %>" loading="lazy" draggable="false" />
+                <% if (config.watermarkLogoPath) { %>
+                  <img class="gatarina-watermark-logo" src="<%= config.watermarkLogoPath %>" alt="" loading="lazy" />
+                <% } %>
               </button>
               <span class="gatarina-photo-code"><%= photo.code %></span>
-              <a class="gatarina-download-link" href="<%= photo.filePath %>" download="<%= photo.code %>-baixa.jpg">Baixar baixa qualidade</a>
+              <a
+                class="gatarina-download-link"
+                href="<%= photo.filePath %>"
+                download="<%= photo.code %>-baixa.jpg"
+                data-download-low
+                data-photo-src="<%= photo.filePath %>"
+                data-photo-code="<%= photo.code %>"
+              >Baixar baixa qualidade</a>
             </label>
           <% }) %>
         </div>
@@ -74,16 +84,22 @@
       <div class="gatarina-lightbox-backdrop" data-close-lightbox></div>
       <div class="gatarina-lightbox-dialog" role="dialog" aria-modal="true" aria-label="Foto ampliada">
         <button type="button" class="gatarina-lightbox-close" data-close-lightbox aria-label="Fechar">×</button>
-        <img id="lightboxImage" src="" alt="" />
+        <div class="gatarina-lightbox-image-wrap">
+          <img id="lightboxImage" src="" alt="" />
+          <% if (config.watermarkLogoPath) { %>
+            <img class="gatarina-lightbox-watermark" src="<%= config.watermarkLogoPath %>" alt="" />
+          <% } %>
+        </div>
         <div class="gatarina-lightbox-footer">
           <strong id="lightboxCode"></strong>
-          <a id="lightboxDownload" href="#" download>Baixar baixa qualidade</a>
+          <a id="lightboxDownload" href="#" download data-download-low>Baixar baixa qualidade</a>
         </div>
       </div>
     </div>
 
     <script>
       window.__PHOTO_PRICE_CENTS__ = <%= Number(config.priceCents || 0) %>;
+      window.__GATARINA_WATERMARK_LOGO__ = <%- JSON.stringify(config.watermarkLogoPath || '') %>;
     </script>
     <script src="/js/gatarina-show-public.js"></script>
   </body>

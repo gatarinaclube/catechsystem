@@ -4,11 +4,13 @@
   const compressedInput = document.getElementById("compressedPhotos");
   const status = document.getElementById("uploadStatus");
   const uploadButton = document.getElementById("uploadButton");
+  const watermarkLogoPath = window.__GATARINA_WATERMARK_LOGO__ || "";
 
   if (!form || !sourceInput || !compressedInput) return;
 
   const MAX_WIDTH = 1800;
   const QUALITY = 0.72;
+  let watermarkLogoPromise = null;
 
   function updateStatus(text) {
     status.textContent = text;
@@ -23,9 +25,42 @@
     });
   }
 
+  function loadImageUrl(src) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = src;
+    });
+  }
+
+  function getWatermarkLogo() {
+    if (!watermarkLogoPath) return Promise.resolve(null);
+    if (!watermarkLogoPromise) {
+      watermarkLogoPromise = loadImageUrl(watermarkLogoPath).catch(() => null);
+    }
+    return watermarkLogoPromise;
+  }
+
+  function drawWatermark(context, canvas, logo) {
+    if (!logo) return;
+    const maxWidth = canvas.width * 0.24;
+    const maxHeight = canvas.height * 0.12;
+    const scale = Math.min(maxWidth / logo.width, maxHeight / logo.height, 1);
+    const width = Math.max(1, Math.round(logo.width * scale));
+    const height = Math.max(1, Math.round(logo.height * scale));
+    const x = Math.round((canvas.width - width) / 2);
+    const y = Math.round(canvas.height - height - canvas.height * 0.035);
+    context.save();
+    context.globalAlpha = 0.88;
+    context.drawImage(logo, x, y, width, height);
+    context.restore();
+  }
+
   async function compressFile(file, index, total) {
     updateStatus(`Comprimindo ${index + 1} de ${total}...`);
     const image = await loadImage(file);
+    const logo = await getWatermarkLogo();
     const scale = Math.min(1, MAX_WIDTH / image.width);
     const width = Math.max(1, Math.round(image.width * scale));
     const height = Math.max(1, Math.round(image.height * scale));
@@ -34,6 +69,7 @@
     canvas.height = height;
     const context = canvas.getContext("2d", { alpha: false });
     context.drawImage(image, 0, 0, width, height);
+    drawWatermark(context, canvas, logo);
     URL.revokeObjectURL(image.src);
 
     return new Promise((resolve) => {

@@ -55,6 +55,25 @@
           </section>
 
           <section class="section">
+            <div class="section-title">Logo nas fotos de baixa qualidade</div>
+            <form method="post" action="/admin/fotos-gatarina-2026/logo" enctype="multipart/form-data" class="gatarina-logo-form">
+              <div class="gatarina-logo-preview">
+                <% if (config.watermarkLogoPath) { %>
+                  <img src="<%= config.watermarkLogoPath %>" alt="Logo atual" />
+                <% } else { %>
+                  <span>Sem logo</span>
+                <% } %>
+              </div>
+              <div class="field">
+                <label class="field-label" for="watermarkLogo">Logo do Gatarina</label>
+                <input id="watermarkLogo" name="watermarkLogo" type="file" accept="image/png,image/jpeg,image/webp" />
+                <div class="section-note">Quando houver logo, ele aparecerá na parte inferior das fotos publicadas e nos downloads em baixa qualidade.</div>
+              </div>
+              <button type="submit" class="btn btn-primary">Enviar logo</button>
+            </form>
+          </section>
+
+          <section class="section">
             <div class="section-title">Enviar fotos</div>
             <form id="gatarinaUploadForm" method="post" action="/admin/fotos-gatarina-2026/upload" enctype="multipart/form-data">
               <div class="gatarina-upload-panel">
@@ -118,6 +137,9 @@
         </div>
       </main>
     </div>
+    <script>
+      window.__GATARINA_WATERMARK_LOGO__ = <%- JSON.stringify(config.watermarkLogoPath || '') %>;
+    </script>
     <script src="/js/gatarina-show-admin.js"></script>
   </body>
 </html>
