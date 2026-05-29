@@ -23,19 +23,24 @@ const UPLOADS_ROOT =
   process.env.UPLOADS_DIR || path.join(__dirname, "..", "public", "uploads");
 
 const uploadDir = path.join(UPLOADS_ROOT, "transfer-authorization");
+const catsUploadDir = path.join(UPLOADS_ROOT, "cats");
 
 // garante que a pasta exista
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
+if (!fs.existsSync(catsUploadDir)) {
+  fs.mkdirSync(catsUploadDir, { recursive: true });
+}
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, uploadDir);
+    cb(null, file.fieldname === "kittenPedigreeFile" ? catsUploadDir : uploadDir);
   },
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname);
-    const safeName = `transfer-auth-${Date.now()}${ext}`;
+    const prefix = file.fieldname === "kittenPedigreeFile" ? "kitten-pedigree" : "transfer-auth";
+    const safeName = `${prefix}-${Date.now()}${ext}`;
     cb(null, safeName);
   },
 });
@@ -44,6 +49,22 @@ const upload = multer({
   storage,
   limits: { fileSize: getFileUploadLimit("ADMIN").bytes },
 });
+
+function isKittenFromLitter(cat) {
+  return Boolean(cat?.kittenNumber || cat?.litterKitten);
+}
+
+function isBreederCat(cat) {
+  return !isKittenFromLitter(cat) || cat.breedingProspect === true;
+}
+
+function transferCategoryForCat(cat) {
+  const categories = [];
+  if (cat.gender === "M" && isBreederCat(cat)) categories.push("SIRE");
+  if (cat.gender === "F" && isBreederCat(cat)) categories.push("DAM");
+  if (isKittenFromLitter(cat)) categories.push("KITTEN");
+  return categories.join(" ");
+}
 
 
   // Helper simples para pegar info de sessão
@@ -69,13 +90,21 @@ const user = await prisma.user.findUnique({
 
     // Busca gatos: USER vê só os seus, ADMIN vê todos
     const cats = await prisma.cat.findMany({
-      where: isAdmin ? {} : { ownerId: userId },
+      where: {
+        ...(isAdmin ? {} : { ownerId: userId }),
+        deceased: { not: true },
+      },
+      include: { litterKitten: true },
       orderBy: { name: "asc" },
     });
 
   res.render("transfers/new", {
   user,
-  cats,
+  cats: cats.map((cat) => ({
+    ...cat,
+    transferCategories: transferCategoryForCat(cat),
+    isKittenFromLitter: isKittenFromLitter(cat),
+  })),
   currentPath: "/transfers/new",
 });
 
@@ -87,20 +116,28 @@ router.post(
   "/transfers/new",
   requireAuth,
   requirePermission("service.transfer"),
-  upload.single("authorizationFile"),
+  upload.fields([
+    { name: "authorizationFile", maxCount: 1 },
+    { name: "kittenPedigreeFile", maxCount: 1 },
+  ]),
   async (req, res) => {
 
 // 🔒 VALIDAÇÃO OBRIGATÓRIA PARA "OUTRO"
-if (req.body.oldOwnerType === "OTHER" && !req.file) {
+const authorizationFile = req.files?.authorizationFile?.[0] || null;
+const kittenPedigreeFile = req.files?.kittenPedigreeFile?.[0] || null;
+
+if (req.body.oldOwnerType === "OTHER" && !authorizationFile) {
   return res.status(400).send(
     "Documento do antigo proprietário é obrigatório quando selecionado 'Outro'."
   );
 }
 
     console.log(">>> POST /transfers/new FOI CHAMADO");
-    console.log("FILE:", req.file);
+    console.log("FILES:", req.files);
   const { 
   catId,
+  transferCatType,
+  kittenPedigreeNumber,
   breedingStatus,
 
 
@@ -120,14 +157,56 @@ if (req.body.oldOwnerType === "OTHER" && !req.file) {
 } = req.body;
 
 
-  const userId = req.session.userId;
+  const { userId, isAdmin } = getAuthInfo(req);
 
   try {
-    validateFilesForRole(req.file ? [req.file] : [], req.session?.userRole);
+    validateFilesForRole([authorizationFile, kittenPedigreeFile].filter(Boolean), req.session?.userRole);
     // 1) Buscar usuário (dono atual)
     const user = await prisma.user.findUnique({
       where: { id: userId }
     });
+
+    const cat = await prisma.cat.findFirst({
+      where: {
+        id: Number(catId),
+        ...(isAdmin ? {} : { ownerId: userId }),
+      },
+      include: { litterKitten: true },
+    });
+
+    if (!cat) {
+      return res.status(400).send("Gato inválido para este usuário.");
+    }
+
+    if (!["SIRE", "DAM", "KITTEN"].includes(transferCatType)) {
+      return res.status(400).send("Informe se a transferência é de Padreador, Matriz ou Filhote.");
+    }
+
+    if (transferCatType === "SIRE" && (cat.gender !== "M" || !isBreederCat(cat))) {
+      return res.status(400).send("Selecione um padreador válido.");
+    }
+
+    if (transferCatType === "DAM" && (cat.gender !== "F" || !isBreederCat(cat))) {
+      return res.status(400).send("Selecione uma matriz válida.");
+    }
+
+    if (transferCatType === "KITTEN" && !isKittenFromLitter(cat)) {
+      return res.status(400).send("Selecione um filhote proveniente de registro de ninhada.");
+    }
+
+    if ((transferCatType === "SIRE" || transferCatType === "DAM") && !cat.pedigreeFile) {
+      return res.status(400).send("O pedigree precisa estar anexado no cadastro do gato antes da transferência.");
+    }
+
+    if (transferCatType === "KITTEN") {
+      if (!String(kittenPedigreeNumber || "").trim()) {
+        return res.status(400).send("Informe o número de registro FIFe do filhote.");
+      }
+
+      if (!kittenPedigreeFile) {
+        return res.status(400).send("Anexe o pedigree do filhote.");
+      }
+    }
 
     // -------------------------------
 // DEFINIÇÃO FINAL DOS PROPRIETÁRIOS
@@ -150,10 +229,21 @@ if (oldOwnerType === "ME") {
 // -------------------------------
 let authorizationFilePath = null;
 
-if (req.file) {
-  authorizationFilePath = `/uploads/transfer-authorization/${req.file.filename}`;
+if (authorizationFile) {
+  authorizationFilePath = `/uploads/transfer-authorization/${authorizationFile.filename}`;
 }
 
+if (transferCatType === "KITTEN") {
+  await prisma.cat.update({
+    where: { id: cat.id },
+    data: {
+      pedigreeNumber: String(kittenPedigreeNumber || "").trim(),
+      ...(kittenPedigreeFile
+        ? { pedigreeFile: `/uploads/cats/${kittenPedigreeFile.filename}` }
+        : {}),
+    },
+  });
+}
 
 
     // 2) Criar SERVICE REQUEST
@@ -161,7 +251,8 @@ if (req.file) {
       data: {
         userId,
         type: ("Transferência de Propriedade"),
-        description: `Transferência do gato #${catId}`,
+        description: `Transferência de ${transferCatType === "SIRE" ? "padreador" : transferCatType === "DAM" ? "matriz" : "filhote"} - ${cat.name}`,
+        status: "ENVIADO_GATARINA",
       }
     });
 

@@ -74,6 +74,12 @@
                       <a href="/my-services/<%= s.id %>/pdf" target="_blank">
                         PDF
                       </a>
+                      <% if (lastStatus && lastStatus.status === 'COM_PENDENCIA') { %>
+                        ·
+                        <a href="/my-services/<%= s.id %>/correct" style="color:#b91c1c; font-weight:600;">
+                          Corrigir
+                        </a>
+                      <% } %>
                     </div>
                   </div>
                 </li>

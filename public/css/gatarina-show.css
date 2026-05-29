@@ -209,11 +209,12 @@
 
 .gatarina-price-box div,
 .gatarina-price-admin div {
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(120px, max-content);
+  column-gap: 16px;
   margin-top: 6px;
   font-size: 13px;
+  align-items: baseline;
 }
 
 .gatarina-price-admin {
@@ -230,6 +231,17 @@
 .gatarina-price-admin strong {
   color: var(--text-main);
   text-align: right;
+}
+
+.gatarina-price-box span,
+.gatarina-price-admin span {
+  min-width: 0;
+}
+
+.gatarina-price-box strong,
+.gatarina-price-admin strong {
+  text-align: right;
+  white-space: nowrap;
 }
 
 .gatarina-public-message {

@@ -72,6 +72,9 @@
                     <option value="ENVIADO_GATARINA" <%= service.status === "ENVIADO_GATARINA" ? "selected" : "" %>>
                       Enviado Gatarina
                     </option>
+                    <option value="COM_PENDENCIA" <%= service.status === "COM_PENDENCIA" ? "selected" : "" %>>
+                      Com Pendência
+                    </option>
                     <option value="ENVIADO_FFB" <%= service.status === "ENVIADO_FFB" ? "selected" : "" %>>
                       Enviado FFB
                     </option>
@@ -82,6 +85,14 @@
                       Enviado para Associado
                     </option>
                   </select>
+                </div>
+
+                <div class="form-row">
+                  <label>Pendência</label>
+                  <textarea
+                    name="pendingNote"
+                    placeholder="Descreva o que o usuário precisa corrigir."
+                  ><%= service.statuses && service.statuses[0] && service.statuses[0].status === "COM_PENDENCIA" ? service.statuses[0].pendingNote || "" : "" %></textarea>
                 </div>
 
                 <div class="form-row">

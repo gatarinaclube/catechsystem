@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Corrigir Serviço - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="header">
+          <div>
+            <div class="title-main">Corrigir Serviço</div>
+            <div class="title-sub">
+              Serviço #<%= service.id %> · <%= service.type %>
+            </div>
+          </div>
+          <div class="header-actions">
+            <a href="/my-services/<%= service.id %>" class="btn">← Voltar</a>
+          </div>
+        </div>
+
+        <form method="post" action="/my-services/<%= service.id %>/correct" enctype="multipart/form-data">
+          <div class="content">
+            <div class="section">
+              <div class="section-title">Pendência informada</div>
+              <div class="field-value" style="color:#b91c1c; font-weight:600;">
+                <%= pendingStatus.pendingNote || "Corrija as informações solicitadas pela administração." %>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">Descrição do serviço</div>
+              <textarea name="description" rows="3" style="width:100%;"><%= service.description || "" %></textarea>
+            </div>
+
+            <% if (service.type === "Registro de Ninhada" && service.litter) { const l = service.litter; %>
+              <div class="section">
+                <div class="section-title">Dados da ninhada</div>
+                <div class="grid-2">
+                  <div class="field"><label>Gatil</label><input name="catteryName" value="<%= l.catteryName || '' %>" /></div>
+                  <div class="field"><label>País</label><input name="catteryCountry" value="<%= l.catteryCountry || '' %>" /></div>
+                  <div class="field"><label>Nascimento</label><input type="date" name="litterBirthDate" value="<%= l.litterBirthDate ? new Date(l.litterBirthDate).toISOString().slice(0,10) : '' %>" /></div>
+                  <div class="field"><label>Quantidade</label><input type="number" name="litterCount" min="1" max="9" value="<%= l.litterCount || '' %>" /></div>
+                </div>
+                <div class="grid-2" style="margin-top:12px;">
+                  <div class="field"><label>Macho</label><input name="maleName" value="<%= l.maleName || '' %>" /></div>
+                  <div class="field"><label>Fêmea</label><input name="femaleName" value="<%= l.femaleName || '' %>" /></div>
+                  <div class="field"><label>Raça do macho</label><input name="maleBreed" value="<%= l.maleBreed || '' %>" /></div>
+                  <div class="field"><label>Raça da fêmea</label><input name="femaleBreed" value="<%= l.femaleBreed || '' %>" /></div>
+                  <div class="field"><label>EMS macho</label><input name="maleEms" value="<%= l.maleEms || '' %>" /></div>
+                  <div class="field"><label>EMS fêmea</label><input name="femaleEms" value="<%= l.femaleEms || '' %>" /></div>
+                  <div class="field"><label>Microchip macho</label><input name="maleMicrochip" value="<%= l.maleMicrochip || '' %>" /></div>
+                  <div class="field"><label>Microchip fêmea</label><input name="femaleMicrochip" value="<%= l.femaleMicrochip || '' %>" /></div>
+                  <div class="field"><label>BR/FFB macho</label><input name="maleFfbLo" value="<%= l.maleFfbLo || '' %>" /></div>
+                  <div class="field"><label>BR/FFB fêmea</label><input name="femaleFfbLo" value="<%= l.femaleFfbLo || '' %>" /></div>
+                </div>
+                <div class="field" style="margin-top:12px;">
+                  <label>Autorização do proprietário externo</label>
+                  <input type="file" name="externalOwnerAuthorization" accept=".pdf,.jpg,.jpeg,.png" />
+                </div>
+              </div>
+
+              <div class="section">
+                <div class="section-title">Filhotes</div>
+                <% (l.kittens || []).forEach(function(k, index) { %>
+                  <div class="grid-3" style="margin-bottom:10px;">
+                    <div class="field"><label>Nome <%= index + 1 %></label><input name="kittens[<%= index %>][name]" value="<%= k.name || '' %>" /></div>
+                    <div class="field"><label>Raça</label><input name="kittens[<%= index %>][breed]" value="<%= k.breed || '' %>" /></div>
+                    <div class="field"><label>EMS</label><input name="kittens[<%= index %>][emsEyes]" value="<%= k.emsEyes || '' %>" /></div>
+                    <div class="field"><label>Sexo</label><input name="kittens[<%= index %>][sex]" value="<%= k.sex || '' %>" /></div>
+                    <div class="field"><label>Microchip</label><input name="kittens[<%= index %>][microchip]" value="<%= k.microchip || '' %>" /></div>
+                    <div class="field"><label>Breeding</label><input name="kittens[<%= index %>][breeding]" value="<%= k.breeding || '' %>" /></div>
+                  </div>
+                <% }) %>
+              </div>
+            <% } %>
+
+            <% if (service.type === "Transferência de Propriedade" && service.transferRequest) { const t = service.transferRequest; %>
+              <div class="section">
+                <div class="section-title">Transferência</div>
+                <div class="grid-2">
+                  <div class="field"><label>Antigo proprietário</label><input name="oldOwnerName" value="<%= t.oldOwnerName || '' %>" /></div>
+                  <div class="field"><label>Novo proprietário</label><input name="newOwnerName" value="<%= t.newOwnerName || '' %>" /></div>
+                  <div class="field"><label>Uso para reprodução</label><input name="breedingStatus" value="<%= t.breedingStatus || '' %>" /></div>
+                  <div class="field"><label>Tipo de membro</label><input name="memberType" value="<%= t.memberType || '' %>" /></div>
+                  <div class="field"><label>E-mail</label><input name="email" value="<%= t.email || '' %>" /></div>
+                  <div class="field"><label>Telefone</label><input name="phone" value="<%= t.phone || '' %>" /></div>
+                </div>
+                <div class="field" style="margin-top:12px;">
+                  <label>Documento / autorização</label>
+                  <input type="file" name="authorizationFile" accept=".pdf,.jpg,.jpeg,.png" />
+                </div>
+              </div>
+            <% } %>
+
+            <% if (service.type === "Homologação de Títulos" && service.titleHomologation) { const th = service.titleHomologation; %>
+              <div class="section">
+                <div class="section-title">Homologação de Títulos</div>
+                <div class="field"><label>Título solicitado</label><input name="requestedTitle" value="<%= th.requestedTitle || '' %>" /></div>
+                <div class="field" style="margin-top:12px;"><label>Certificados adicionais/substitutos</label><input type="file" name="certificatesFiles" multiple accept=".pdf,.jpg,.jpeg,.png" /></div>
+                <textarea name="certificatesJson" rows="5" style="width:100%; margin-top:12px;"><%= th.certificatesJson || '[]' %></textarea>
+              </div>
+            <% } %>
+
+            <% if (service.type === "Homologação de Pedigree" && service.pedigreeHomologation) { %>
+              <div class="section">
+                <div class="section-title">Homologação de Pedigree</div>
+                <select name="homologationType">
+                  <option value="NACIONAL" <%= service.pedigreeHomologation.homologationType === 'NACIONAL' ? 'selected' : '' %>>Homologação Nacional</option>
+                  <option value="INTERNACIONAL" <%= service.pedigreeHomologation.homologationType === 'INTERNACIONAL' ? 'selected' : '' %>>Homologação Internacional</option>
+                </select>
+              </div>
+            <% } %>
+
+            <% if (service.type === "Registro de Gatil" && service.catteryRegistration) { const c = service.catteryRegistration; let breeds = []; try { breeds = JSON.parse(c.breedsJson || '[]'); } catch(e) {} %>
+              <div class="section">
+                <div class="section-title">Registro de Gatil</div>
+                <div class="grid-2">
+                  <div class="field"><label>Opção 1</label><input name="nameOption1" value="<%= c.nameOption1 || '' %>" /></div>
+                  <div class="field"><label>Opção 2</label><input name="nameOption2" value="<%= c.nameOption2 || '' %>" /></div>
+                  <div class="field"><label>Opção 3</label><input name="nameOption3" value="<%= c.nameOption3 || '' %>" /></div>
+                  <div class="field"><label>Quantidade de gatos</label><input type="number" name="numberOfCats" value="<%= c.numberOfCats || '' %>" /></div>
+                </div>
+                <div class="field" style="margin-top:12px;"><label>Raças</label><input name="breeds" value="<%= breeds.join(', ') %>" /></div>
+              </div>
+            <% } %>
+
+            <% if (service.type === "Segunda Via e Alterações" && service.secondCopyRequest) { const sc = service.secondCopyRequest; %>
+              <div class="section">
+                <div class="section-title">Segunda Via e Alterações</div>
+                <div class="field"><label>Tipo de solicitação</label><input name="requestType" value="<%= sc.requestType || '' %>" /></div>
+                <div class="field" style="margin-top:12px;"><label>Detalhes</label><textarea name="details" rows="4" style="width:100%;"><%= sc.details || '' %></textarea></div>
+                <div class="field" style="margin-top:12px;"><label>Novo valor</label><input name="newValue" value="<%= sc.newValue || '' %>" /></div>
+                <div class="field" style="margin-top:12px;"><label>Anexos complementares</label><input type="file" name="attachments" multiple accept=".pdf,.jpg,.jpeg,.png" /></div>
+              </div>
+            <% } %>
+          </div>
+
+          <div class="footer">
+            <a href="/my-services/<%= service.id %>" class="btn">Cancelar</a>
+            <button type="submit" class="btn btn-primary">Enviar correção</button>
+          </div>
+        </form>
+      </main>
+    </div>
+  </body>
+</html>

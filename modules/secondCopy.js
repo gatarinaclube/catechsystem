@@ -74,7 +74,8 @@ router.get(
     requirePermission("service.secondCopy"),
     upload.array("attachments", 5),
     async (req, res) => {
-      const { catId, requestType, details, newValue } = req.body;
+      try {
+        const { catId, requestType, details, newValue } = req.body;
 
 // ✅ GARANTIR QUE details e newValue SEJAM STRING (não array)
 const detailsStr = Array.isArray(details)
@@ -89,12 +90,28 @@ const newValueStr = Array.isArray(newValue)
 
 
       const userId = req.session.userId;
+      const role = normalizeRole(req.session.userRole);
+
+      if (catId) {
+        const cat = await prisma.cat.findFirst({
+          where: {
+            id: Number(catId),
+            ...(isAdminRole(role) ? {} : { ownerId: userId }),
+          },
+          select: { id: true },
+        });
+
+        if (!cat) {
+          return res.status(400).send("Gato inválido para este usuário.");
+        }
+      }
 
       const service = await prisma.serviceRequest.create({
         data: {
           userId,
           type: "Segunda Via e Alterações",
           description: requestType,
+          status: "ENVIADO_GATARINA",
         },
       });
 
@@ -122,6 +139,12 @@ const newValueStr = Array.isArray(newValue)
       await notifyUserServiceConfirmation(prisma, service);
 
       res.redirect("/my-services");
+      } catch (err) {
+        console.error("Erro ao salvar Segunda Via / Alterações:", err);
+        res
+          .status(err.code === "UPLOAD_LIMIT" ? 400 : 500)
+          .send(err.code === "UPLOAD_LIMIT" ? err.message : "Erro ao enviar Segunda Via / Alterações");
+      }
     }
   );
 

@@ -95,6 +95,19 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     try {
 const { userId } = getAuthInfo(req);
 const { catId, requestedTitle, certificates } = req.body;
+const role = normalizeRole(req.session.userRole);
+
+const cat = await prisma.cat.findFirst({
+  where: {
+    id: Number(catId),
+    ...(isAdminRole(role) ? {} : { ownerId: userId }),
+  },
+  select: { id: true },
+});
+
+if (!cat) {
+  return res.status(400).send("Gato inválido para este usuário.");
+}
 
 // 🔹 certificados (dados textuais)
 const parsedCertificates = certificates

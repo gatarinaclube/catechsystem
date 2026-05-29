@@ -1,5 +1,7 @@
 const express = require("express");
 const multer = require("multer");
+const fs = require("fs");
+const path = require("path");
 const { isAdminRole, normalizeRole } = require("../utils/access");
 const {
   notifyNewService,
@@ -45,13 +47,25 @@ const cats = await prisma.cat.findMany({
     }
   );
 
+const UPLOADS_ROOT =
+  process.env.UPLOADS_DIR || path.join(__dirname, "..", "public", "uploads");
+const uploadDir = path.join(UPLOADS_ROOT, "pedigree-homologation");
+
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "public/uploads");
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     const unique = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, `${unique}-${file.originalname}`);
+    const safeName = file.originalname
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9._-]/g, "_");
+    cb(null, `${unique}-${safeName}`);
   },
 });
 
@@ -135,10 +149,14 @@ if (
   ownershipDeclaration === "NOT_OWNER" &&
   transferDecision === "REQUEST_TRANSFER"
 ) {
+  if (!req.file) {
+    throw new Error("Documento de Autorização de Transferência é obrigatório.");
+  }
+
   let authorizationFilePath = null;
 
   if (req.file) {
-    authorizationFilePath = `/uploads/${req.file.filename}`;
+    authorizationFilePath = `/uploads/pedigree-homologation/${req.file.filename}`;
   }
 
   const transferService = await prisma.serviceRequest.create({
@@ -146,6 +164,7 @@ if (
       userId,
       type: "Transferência de Propriedade",
       description: `Transferência solicitada via Homologação de Pedigree`,
+      status: "ENVIADO_GATARINA",
     },
   });
 

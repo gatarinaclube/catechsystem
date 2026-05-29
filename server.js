@@ -76,6 +76,40 @@ function serviceZipName(service) {
   return `Serviço ${service.id} - ${service.type}.zip`;
 }
 
+function findUploadedFile(filePath) {
+  if (!filePath) return null;
+
+  let relativePath = String(filePath).replace(/\\/g, "/").trim();
+  const uploadsIndex = relativePath.indexOf("/uploads/");
+
+  if (uploadsIndex >= 0) {
+    relativePath = relativePath.slice(uploadsIndex + "/uploads/".length);
+  }
+
+  relativePath = relativePath.replace(/^\/+/, "").replace(/^uploads\/+/, "");
+
+  const possiblePaths = [
+    path.isAbsolute(filePath) ? filePath : null,
+    path.join(process.env.UPLOADS_DIR || path.join(__dirname, "public", "uploads"), relativePath),
+    path.join(__dirname, "public", "uploads", relativePath),
+    path.join(__dirname, "public", relativePath),
+  ].filter(Boolean);
+
+  return possiblePaths.find((candidate) => fs.existsSync(candidate)) || null;
+}
+
+function addUploadedFileToArchive(archive, label, filePath) {
+  const existingPath = findUploadedFile(filePath);
+
+  if (existingPath) {
+    archive.file(existingPath, {
+      name: `${label}-${path.basename(existingPath)}`,
+    });
+  } else {
+    console.warn("Arquivo não encontrado para ZIP:", { label, filePath });
+  }
+}
+
 function buildProfileAccessGroups(role) {
   const groups = [
     {
@@ -1832,17 +1866,7 @@ res.setHeader(
 
     // PEDIGREE DO GATO
     if (cat?.pedigreeFile) {
-      const pedigreePath = path.join(
-        __dirname,
-        "public",
-        cat.pedigreeFile.replace(/^\/+/, "")
-      );
-
-      if (fs.existsSync(pedigreePath)) {
-        archive.file(pedigreePath, {
-          name: `PEDIGREE-${path.basename(pedigreePath)}`,
-        });
-      }
+      addUploadedFileToArchive(archive, "PEDIGREE", cat.pedigreeFile);
     }
 
     // 🔥 CERTIFICADOS (AQUI ESTAVA FALTANDO)
@@ -1858,20 +1882,7 @@ res.setHeader(
     certificates.forEach((cert, index) => {
   if (!cert.file) return;
 
-  const UPLOADS_ROOT =
-    process.env.UPLOADS_DIR || path.join(__dirname, "public", "uploads");
-
-  // remove "/uploads/" e resolve caminho real
-  const relativePath = cert.file.replace(/^\/uploads\/+/, "");
-  const abs = path.join(UPLOADS_ROOT, relativePath);
-
-  if (fs.existsSync(abs)) {
-    archive.file(abs, {
-      name: `CERTIFICADO-${index + 1}-${path.basename(abs)}`,
-    });
-  } else {
-    console.warn("⚠️ Certificado não encontrado:", abs);
-  }
+  addUploadedFileToArchive(archive, `CERTIFICADO-${index + 1}`, cert.file);
 });
 
     archive.finalize();
@@ -1931,17 +1942,7 @@ res.setHeader(
 
     // inclui o pedigree do gato (se existir)
     if (cat?.pedigreeFile) {
-      const pedigreePath = path.join(
-        __dirname,
-        "public",
-        cat.pedigreeFile.replace(/^\/+/, "")
-      );
-
-      if (fs.existsSync(pedigreePath)) {
-        archive.file(pedigreePath, {
-          name: `PEDIGREE-${path.basename(pedigreePath)}`,
-        });
-      }
+      addUploadedFileToArchive(archive, "PEDIGREE", cat.pedigreeFile);
     }
 
     archive.finalize();
@@ -1995,37 +1996,14 @@ res.setHeader(
         // Apenas PEDIGREE deve ser incluído
         // --------------------------------------
         if (cat.pedigreeFile) {
-          const pedigreePath = path.join(
-            __dirname,
-            "public",
-            cat.pedigreeFile.replace(/^\//, "")
-          );
-
-          if (fs.existsSync(pedigreePath)) {
-            archive.file(pedigreePath, {
-              name: `PEDIGREE-${path.basename(pedigreePath)}`,
-            });
-          }
+          addUploadedFileToArchive(archive, "PEDIGREE", cat.pedigreeFile);
         }
 
 // --------------------------------------
 // AUTORIZAÇÃO DE TRANSFERÊNCIA (se existir)
 // --------------------------------------
 if (transfer.authorizationFile) {
-  const UPLOADS_ROOT =
-    process.env.UPLOADS_DIR || path.join(__dirname, "public", "uploads");
-
-  // remove "/uploads/" do início e resolve caminho real no disco
-  const relativePath = transfer.authorizationFile.replace(/^\/uploads\/+/, "");
-  const authPath = path.join(UPLOADS_ROOT, relativePath);
-
-  if (fs.existsSync(authPath)) {
-    archive.file(authPath, {
-      name: `AUTORIZACAO_TRANSFERENCIA${path.extname(authPath)}`,
-    });
-  } else {
-    console.warn("⚠️ Arquivo de autorização não encontrado:", authPath);
-  }
+  addUploadedFileToArchive(archive, "AUTORIZACAO_TRANSFERENCIA", transfer.authorizationFile);
 }
 
 
@@ -2153,16 +2131,7 @@ res.setHeader(
 
     // 🐱 PEDIGREE (se existir)
     if (cat?.pedigreeFile) {
-      const pedigreePath = path.join(
-        __dirname,
-        "public",
-        cat.pedigreeFile.replace(/^\/+/, "")
-      );
-      if (fs.existsSync(pedigreePath)) {
-        archive.file(pedigreePath, {
-          name: `PEDIGREE-${path.basename(pedigreePath)}`,
-        });
-      }
+      addUploadedFileToArchive(archive, "PEDIGREE", cat.pedigreeFile);
     }
 
 // 📎 ANEXOS DO FORMULÁRIO
@@ -2203,33 +2172,7 @@ attachments.forEach((item, index) => {
   }
 
   const cleanPath = String(filePath).replace(/^\/+/, "");
-  const relativePath = cleanPath.replace(/^uploads\/+/, "");
-
-  const possiblePaths = [
-    process.env.UPLOADS_DIR
-      ? path.join(process.env.UPLOADS_DIR, relativePath)
-      : null,
-    process.env.UPLOADS_DIR
-      ? path.join(process.env.UPLOADS_DIR.replace(/\/uploads\/?$/, ""), relativePath)
-      : null,
-    process.env.UPLOADS_DIR
-      ? path.join(process.env.UPLOADS_DIR.replace(/\/uploads\/?$/, ""), "uploads", relativePath)
-      : null,
-    path.join(__dirname, "public", "uploads", relativePath),
-    path.join(__dirname, "public", relativePath),
-  ].filter(Boolean);
-
-  console.log("SECOND COPY PATHS TEST:", possiblePaths);
-
-  possiblePaths.forEach((p) => {
-  try {
-    console.log("PATH CHECK:", p, fs.existsSync(p));
-  } catch (e) {
-    console.log("PATH CHECK ERROR:", p, e.message);
-  }
-});
-
-  const existingPath = possiblePaths.find((p) => fs.existsSync(p));
+  const existingPath = findUploadedFile(cleanPath);
 
   if (existingPath) {
     archive.file(existingPath, {

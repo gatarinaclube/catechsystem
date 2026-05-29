@@ -6,10 +6,22 @@ const fs = require("fs");
 module.exports = (requireAuth, requireAdmin, requirePermission) => {
   const router = express.Router();
 
-  const FILE_PATH = path.join(
+  const UPLOADS_ROOT =
+    process.env.UPLOADS_DIR || path.join(__dirname, "..", "public", "uploads");
+  const sharedDir = path.join(UPLOADS_ROOT, "shared");
+  const FILE_PATH = path.join(sharedDir, "atestado-saude-reproducao.pdf");
+  const legacyFilePath = path.join(
     __dirname,
-    "../public/uploads/shared/atestado-saude-reproducao.pdf"
+    "..",
+    "public",
+    "uploads",
+    "shared",
+    "atestado-saude-reproducao.pdf"
   );
+
+  if (!fs.existsSync(sharedDir)) {
+    fs.mkdirSync(sharedDir, { recursive: true });
+  }
 
   // ============================
   // USER → DOWNLOAD
@@ -19,12 +31,17 @@ module.exports = (requireAuth, requireAdmin, requirePermission) => {
     requireAuth,
     requirePermission("services.downloads"),
     (req, res) => {
-    if (!fs.existsSync(FILE_PATH)) {
-      return res.status(404).send("Arquivo não disponível.");
-    }
+      const availablePath = fs.existsSync(FILE_PATH)
+        ? FILE_PATH
+        : legacyFilePath;
 
-    res.download(FILE_PATH, "Atestado-de-Saude-para-Reproducao.pdf");
-  });
+      if (!fs.existsSync(availablePath)) {
+        return res.status(404).send("Arquivo não disponível.");
+      }
+
+      res.download(availablePath, "Atestado-de-Saude-para-Reproducao.pdf");
+    }
+  );
 
   // ============================
   // ADMIN → TELA DE UPLOAD
@@ -47,7 +64,7 @@ module.exports = (requireAuth, requireAdmin, requirePermission) => {
   const upload = multer({
     storage: multer.diskStorage({
       destination: (req, file, cb) => {
-        cb(null, path.join(__dirname, "../public/uploads/shared"));
+        cb(null, sharedDir);
       },
       filename: (req, file, cb) => {
         cb(null, "atestado-saude-reproducao.pdf"); // sempre substitui

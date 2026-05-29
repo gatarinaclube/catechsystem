@@ -39,17 +39,31 @@
 
               <div class="grid-2">
                 <div class="field">
+                  <label class="field-label" for="transferCatType">Tipo de gato</label>
+                  <select id="transferCatType" name="transferCatType" required>
+                    <option value="">Selecione...</option>
+                    <option value="SIRE">Padreador</option>
+                    <option value="DAM">Matriz</option>
+                    <option value="KITTEN">Filhote</option>
+                  </select>
+                </div>
+
+                <div class="field">
                   <label class="field-label" for="catId">Selecione o gato</label>
                   <select id="catId" name="catId" required>
-                    <option value="">Selecione um gato...</option>
+                    <option value="">Selecione primeiro o tipo...</option>
 
                     <% if (cats && cats.length) { %>
                       <% cats.forEach(function(c){ %>
                         <option 
                           value="<%= c.id %>"
+                          data-categories="<%= c.transferCategories || '' %>"
+                          data-pedigree-file="<%= c.pedigreeFile || '' %>"
+                          data-is-kitten="<%= c.isKittenFromLitter ? 'YES' : 'NO' %>"
                           data-name="<%= c.name || '' %>"
                           data-microchip="<%= c.microchip || '' %>"
                           data-breed="<%= c.breed || '' %>"
+                          hidden
                         >
                           <%= c.name %>
                           <% if (c.pedigreeNumber) { %> - <%= c.pedigreeNumber %> <% } %>
@@ -58,7 +72,32 @@
                     <% } %>
                   </select>
                 </div>
+              </div>
 
+              <div id="kittenPedigreeBlock" class="grid-2" style="display:none; margin-top:12px;">
+                <div class="field">
+                  <label class="field-label" for="kittenPedigreeNumber">Número de registro FIFe do filhote</label>
+                  <input
+                    id="kittenPedigreeNumber"
+                    type="text"
+                    name="kittenPedigreeNumber"
+                    maxlength="20"
+                    placeholder="Ex.: BR LO 123456"
+                  />
+                </div>
+
+                <div class="field">
+                  <label class="field-label" for="kittenPedigreeFile">Pedigree do filhote</label>
+                  <input
+                    id="kittenPedigreeFile"
+                    type="file"
+                    name="kittenPedigreeFile"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                  />
+                </div>
+              </div>
+
+              <div class="grid-2" style="margin-top:12px;">
                 <div class="field">
                   <label class="field-label">Uso para reprodução</label>
                   <select name="breedingStatus" required>
@@ -287,7 +326,54 @@ if (type === "OTHER") {
   // ✅ ESTA LINHA TEM QUE EXISTIR ASSIM
   document.addEventListener("DOMContentLoaded", () => {
   toggleOwnerType();
+  setupCatTypeFilter();
 });
+</script>
+
+<script>
+function setupCatTypeFilter() {
+  const typeSelect = document.getElementById("transferCatType");
+  const catSelect = document.getElementById("catId");
+  const kittenBlock = document.getElementById("kittenPedigreeBlock");
+  const kittenNumber = document.getElementById("kittenPedigreeNumber");
+  const kittenFile = document.getElementById("kittenPedigreeFile");
+
+  if (!typeSelect || !catSelect) return;
+
+  const allOptions = Array.from(catSelect.querySelectorAll("option")).filter(
+    (option) => option.value
+  );
+
+  function applyFilter() {
+    const type = typeSelect.value;
+
+    catSelect.value = "";
+    catSelect.querySelector("option[value='']").textContent = type
+      ? "Selecione um gato..."
+      : "Selecione primeiro o tipo...";
+
+    allOptions.forEach((option) => {
+      const categories = String(option.dataset.categories || "").split(/\s+/);
+      const visible = type && categories.includes(type);
+      option.hidden = !visible;
+      option.disabled = !visible;
+    });
+
+    const isKitten = type === "KITTEN";
+    if (kittenBlock) kittenBlock.style.display = isKitten ? "grid" : "none";
+    if (kittenNumber) {
+      kittenNumber.required = isKitten;
+      if (!isKitten) kittenNumber.value = "";
+    }
+    if (kittenFile) {
+      kittenFile.required = isKitten;
+      if (!isKitten) kittenFile.value = "";
+    }
+  }
+
+  typeSelect.addEventListener("change", applyFilter);
+  applyFilter();
+}
 </script>
 
 <script>

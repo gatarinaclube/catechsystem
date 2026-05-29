@@ -35,6 +35,12 @@
               📄 Baixar comprovante (PDF)
             </a>
 
+            <% if ((service.statuses || []).length && service.statuses[service.statuses.length - 1].status === 'COM_PENDENCIA') { %>
+              <a href="/my-services/<%= service.id %>/correct" class="btn btn-primary">
+                Corrigir pendência
+              </a>
+            <% } %>
+
           </div>
         </div>
 

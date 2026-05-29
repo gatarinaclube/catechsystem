@@ -97,6 +97,52 @@ async function generateCatteryRegistrationPDF(
   doc.moveDown(1);
 
   /* =======================
+     DADOS DO SOLICITANTE
+  ======================= */
+  doc
+    .font("Helvetica-Bold")
+    .fontSize(11)
+    .fillColor(COLOR_GREEN)
+    .text("DADOS DO SOLICITANTE")
+    .fillColor("black")
+    .moveDown(0.4);
+
+  const requesterBoxTop = doc.y;
+  doc.font("Helvetica").fontSize(10);
+
+  doc.font("Helvetica-Bold").text("Nome: ", { continued: true });
+  doc.font("Helvetica").text(user.name || "-");
+
+  doc.font("Helvetica-Bold").text("Endereço: ", { continued: true });
+  doc.font("Helvetica").text(
+    [
+      user.address,
+      user.city,
+      user.state,
+      user.cep,
+      user.country,
+    ].filter(Boolean).join(" - ") || "-"
+  );
+
+  doc.font("Helvetica-Bold").text("Telefone: ", { continued: true });
+  doc.font("Helvetica").text(user.phones || "-");
+
+  doc.font("Helvetica-Bold").text("E-mail: ", { continued: true });
+  doc.font("Helvetica").text(user.email || "-");
+
+  const requesterBoxBottom = doc.y;
+  doc
+    .rect(
+      marginLeft - 5,
+      requesterBoxTop - 5,
+      usableWidth + 10,
+      requesterBoxBottom - requesterBoxTop + 10
+    )
+    .stroke();
+
+  doc.moveDown(1);
+
+  /* =======================
      INFORMAÇÕES DO GATIL
   ======================= */
   doc

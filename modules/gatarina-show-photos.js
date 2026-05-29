@@ -68,7 +68,11 @@ function photoUnitPriceCents(quantity) {
 }
 
 function photoTotalCents(quantity) {
-  return photoUnitPriceCents(quantity) * quantity;
+  if (quantity <= 0) return 0;
+  if (quantity === 1) return 5000;
+  if (quantity <= 3) return quantity * 3500;
+  if (quantity <= 5) return quantity * 3000;
+  return 15000 + ((quantity - 5) * 2000);
 }
 
 function photoPriceTable() {
@@ -76,7 +80,7 @@ function photoPriceTable() {
     { label: "1 foto", value: formatMoney(5000) },
     { label: "2-3 fotos", value: `${formatMoney(3500)} cada` },
     { label: "4-5 fotos", value: `${formatMoney(3000)} cada` },
-    { label: "A partir da 6ª foto", value: `${formatMoney(2000)} cada` },
+    { label: "A partir da 6ª foto", value: `${formatMoney(2000)} por foto extra` },
   ];
 }
 

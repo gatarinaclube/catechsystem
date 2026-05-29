@@ -11,7 +11,7 @@ const { getFileUploadLimit, validateFilesForRole } = require("../utils/planLimit
 
 const baseUploadsDir =
   process.env.UPLOADS_DIR
-    ? path.join(process.env.UPLOADS_DIR, "uploads")
+    ? process.env.UPLOADS_DIR
     : path.join(__dirname, "..", "public", "uploads");
 
 const uploadDir = path.join(baseUploadsDir, "litters");
@@ -167,6 +167,12 @@ console.log("=======================");
       } = req.body;
 
 
+      const catOwnerWhere = (id, gender) => ({
+        id: Number(id),
+        gender,
+        ...(getAuthInfo(req).isAdmin ? {} : { ownerId: userId }),
+      });
+
       // ----- Buscar dados do macho selecionado -----
       let maleName = null;
       let maleBreed = null;
@@ -174,9 +180,13 @@ console.log("=======================");
       let maleMicrochip = null;
 
       if (maleCatId) {
-        const maleCat = await prisma.cat.findUnique({
-          where: { id: Number(maleCatId) },
+        const maleCat = await prisma.cat.findFirst({
+          where: catOwnerWhere(maleCatId, "M"),
         });
+
+        if (!maleCat) {
+          throw requiredFieldError("Macho inválido para este usuário.");
+        }
 
         if (maleCat) {
           maleName = maleCat.name || null;
@@ -195,9 +205,13 @@ console.log("=======================");
       let femaleMicrochip = null;
 
       if (femaleCatId) {
-        const femaleCat = await prisma.cat.findUnique({
-          where: { id: Number(femaleCatId) },
+        const femaleCat = await prisma.cat.findFirst({
+          where: catOwnerWhere(femaleCatId, "F"),
         });
+
+        if (!femaleCat) {
+          throw requiredFieldError("Fêmea inválida para este usuário.");
+        }
 
         if (femaleCat) {
           femaleName = femaleCat.name || null;
