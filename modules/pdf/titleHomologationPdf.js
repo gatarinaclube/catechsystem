@@ -1,6 +1,7 @@
 const path = require("path");
 const fs = require("fs");
 const PDFDocument = require("pdfkit");
+const { applyPdfTheme } = require("./pdfTheme");
 
 async function generateTitleHomologationPDF(
   service,
@@ -11,6 +12,7 @@ async function generateTitleHomologationPDF(
 ) {
   const doc = new PDFDocument({ margin: 40 });
   doc.pipe(resStream);
+  applyPdfTheme(doc);
 
   const marginLeft = doc.page.margins.left;
   const usableWidth =

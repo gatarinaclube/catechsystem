@@ -59,6 +59,15 @@ function requiredFieldError(message) {
   return error;
 }
 
+function isKittenFromLitter(cat) {
+  return Boolean(cat?.kittenNumber || cat?.litterKitten);
+}
+
+function canAppearAsLitterParent(cat) {
+  if (!isKittenFromLitter(cat)) return true;
+  return cat.breedingProspect === true;
+}
+
 
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
@@ -81,22 +90,24 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     try {
       const { userId } = getAuthInfo(req);
 
-      // machos e fêmeas do próprio usuário
+      // machos e fêmeas do próprio usuário; filhotes de ninhada só entram se marcados como reprodutores
       const maleCats = await prisma.cat.findMany({
         where: { ownerId: userId, gender: "M" },
+        include: { litterKitten: true },
         orderBy: { name: "asc" },
       });
 
       const femaleCats = await prisma.cat.findMany({
         where: { ownerId: userId, gender: "F" },
+        include: { litterKitten: true },
         orderBy: { name: "asc" },
       });
 
       res.render("litters/new", {
         user: req.user,
         currentPath: req.path,
-        maleCats,
-        femaleCats,
+        maleCats: maleCats.filter(canAppearAsLitterParent),
+        femaleCats: femaleCats.filter(canAppearAsLitterParent),
         userId,
       });
     } catch (err) {
@@ -182,9 +193,10 @@ console.log("=======================");
       if (maleCatId) {
         const maleCat = await prisma.cat.findFirst({
           where: catOwnerWhere(maleCatId, "M"),
+          include: { litterKitten: true },
         });
 
-        if (!maleCat) {
+        if (!maleCat || !canAppearAsLitterParent(maleCat)) {
           throw requiredFieldError("Macho inválido para este usuário.");
         }
 
@@ -207,9 +219,10 @@ console.log("=======================");
       if (femaleCatId) {
         const femaleCat = await prisma.cat.findFirst({
           where: catOwnerWhere(femaleCatId, "F"),
+          include: { litterKitten: true },
         });
 
-        if (!femaleCat) {
+        if (!femaleCat || !canAppearAsLitterParent(femaleCat)) {
           throw requiredFieldError("Fêmea inválida para este usuário.");
         }
 

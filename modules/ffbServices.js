@@ -202,6 +202,19 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
     });
   }
 
+  async function ensureUserCat(req, catId) {
+    const parsedCatId = Number(catId);
+    if (!Number.isInteger(parsedCatId)) return null;
+
+    return prisma.cat.findFirst({
+      where: {
+        id: parsedCatId,
+        ownerId: req.session.userId,
+      },
+      select: { id: true },
+    });
+  }
+
   router.get(
     "/my-services/:id/correct",
     requireAuth,
@@ -332,10 +345,18 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
             req.files?.authorizationFile?.[0],
             "transfer-authorization"
           );
+          const selectedCat = req.body.catId
+            ? await ensureUserCat(req, req.body.catId)
+            : null;
+
+          if (req.body.catId && !selectedCat) {
+            return res.status(400).send("Gato inválido para este usuário.");
+          }
 
           await prisma.transferRequest.update({
             where: { serviceRequestId: service.id },
             data: {
+              ...(selectedCat ? { catId: selectedCat.id } : {}),
               oldOwnerName: cleanText(req.body.oldOwnerName) || service.transferRequest.oldOwnerName,
               newOwnerName: cleanText(req.body.newOwnerName) || service.transferRequest.newOwnerName,
               breedingStatus: cleanText(req.body.breedingStatus) || service.transferRequest.breedingStatus,
@@ -355,6 +376,13 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
         if (service.type === "Homologação de Títulos" && service.titleHomologation) {
           const certificates = parseJsonArray(req.body.certificatesJson || service.titleHomologation.certificatesJson);
           const certFiles = req.files?.certificatesFiles || [];
+          const selectedCat = req.body.catId
+            ? await ensureUserCat(req, req.body.catId)
+            : null;
+
+          if (req.body.catId && !selectedCat) {
+            return res.status(400).send("Gato inválido para este usuário.");
+          }
 
           certFiles.forEach((file, index) => {
             if (!certificates[index]) certificates[index] = {};
@@ -364,6 +392,7 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
           await prisma.titleHomologation.update({
             where: { serviceRequestId: service.id },
             data: {
+              ...(selectedCat ? { catId: selectedCat.id } : {}),
               requestedTitle: cleanText(req.body.requestedTitle) || service.titleHomologation.requestedTitle,
               certificatesJson: JSON.stringify(certificates),
             },
@@ -371,9 +400,18 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
         }
 
         if (service.type === "Homologação de Pedigree" && service.pedigreeHomologation) {
+          const selectedCat = req.body.catId
+            ? await ensureUserCat(req, req.body.catId)
+            : null;
+
+          if (req.body.catId && !selectedCat) {
+            return res.status(400).send("Gato inválido para este usuário.");
+          }
+
           await prisma.pedigreeHomologation.update({
             where: { serviceRequestId: service.id },
             data: {
+              ...(selectedCat ? { catId: selectedCat.id } : {}),
               homologationType:
                 cleanText(req.body.homologationType) ||
                 service.pedigreeHomologation.homologationType,
@@ -408,10 +446,18 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
           const newAttachments = (req.files?.attachments || []).map((file) =>
             uploadedPath(file, "second-copy")
           );
+          const selectedCat = req.body.catId
+            ? await ensureUserCat(req, req.body.catId)
+            : null;
+
+          if (req.body.catId && !selectedCat) {
+            return res.status(400).send("Gato inválido para este usuário.");
+          }
 
           await prisma.secondCopyRequest.update({
             where: { serviceRequestId: service.id },
             data: {
+              ...(selectedCat ? { catId: selectedCat.id } : {}),
               requestType: cleanText(req.body.requestType) || service.secondCopyRequest.requestType,
               details: cleanText(req.body.details),
               newValue: cleanText(req.body.newValue),

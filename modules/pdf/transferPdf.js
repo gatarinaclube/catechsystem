@@ -1,6 +1,7 @@
 const path = require("path");
 const fs = require("fs");
 const PDFDocument = require("pdfkit");
+const { applyPdfTheme } = require("./pdfTheme");
 
 /**
  * Gera o PDF do Pedido de Transferência
@@ -9,6 +10,7 @@ const PDFDocument = require("pdfkit");
 async function generateTransferPDF(service, transfer, cat, user, resStream) {
   const doc = new PDFDocument({ margin: 40 });
   doc.pipe(resStream);
+  applyPdfTheme(doc);
 
   const marginLeft = doc.page.margins.left;
   const usableWidth =

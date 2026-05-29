@@ -58,9 +58,27 @@
                   <div class="field"><label>BR/FFB macho</label><input name="maleFfbLo" value="<%= l.maleFfbLo || '' %>" /></div>
                   <div class="field"><label>BR/FFB fêmea</label><input name="femaleFfbLo" value="<%= l.femaleFfbLo || '' %>" /></div>
                 </div>
+                <div class="grid-2" style="margin-top:12px;">
+                  <div class="field">
+                    <label>Propriedade do macho</label>
+                    <select name="maleOwnership">
+                      <option value="OWNER" <%= l.maleOwnership !== 'NOT_OWNER' ? 'selected' : '' %>>Meu / do gatil</option>
+                      <option value="NOT_OWNER" <%= l.maleOwnership === 'NOT_OWNER' ? 'selected' : '' %>>Proprietário externo</option>
+                    </select>
+                  </div>
+                  <div class="field"><label>Gatil do proprietário externo</label><input name="externalOwnerCattery" value="<%= l.externalOwnerCattery || '' %>" /></div>
+                  <div class="field"><label>Nome do proprietário externo</label><input name="externalOwnerName" value="<%= l.externalOwnerName || '' %>" /></div>
+                  <div class="field"><label>E-mail do proprietário externo</label><input name="externalOwnerEmail" value="<%= l.externalOwnerEmail || '' %>" /></div>
+                  <div class="field"><label>CPF do proprietário externo</label><input name="externalOwnerCpf" value="<%= l.externalOwnerCpf || '' %>" /></div>
+                  <div class="field"><label>Telefone do proprietário externo</label><input name="externalOwnerPhone" value="<%= l.externalOwnerPhone || '' %>" /></div>
+                </div>
                 <div class="field" style="margin-top:12px;">
                   <label>Autorização do proprietário externo</label>
                   <input type="file" name="externalOwnerAuthorization" accept=".pdf,.jpg,.jpeg,.png" />
+                </div>
+                <div class="field" style="margin-top:12px;">
+                  <label>Observações gerais</label>
+                  <textarea name="historyNotes" rows="3" style="width:100%;"><%= l.historyNotes || '' %></textarea>
                 </div>
               </div>
 
@@ -83,10 +101,25 @@
               <div class="section">
                 <div class="section-title">Transferência</div>
                 <div class="grid-2">
+                  <div class="field">
+                    <label>Gato</label>
+                    <select name="catId">
+                      <% (cats || []).forEach(function(cat) { %>
+                        <option value="<%= cat.id %>" <%= String(t.catId) === String(cat.id) ? 'selected' : '' %>>
+                          <%= cat.name %><% if (cat.pedigreeNumber) { %> - <%= cat.pedigreeNumber %><% } %>
+                        </option>
+                      <% }) %>
+                    </select>
+                  </div>
                   <div class="field"><label>Antigo proprietário</label><input name="oldOwnerName" value="<%= t.oldOwnerName || '' %>" /></div>
                   <div class="field"><label>Novo proprietário</label><input name="newOwnerName" value="<%= t.newOwnerName || '' %>" /></div>
                   <div class="field"><label>Uso para reprodução</label><input name="breedingStatus" value="<%= t.breedingStatus || '' %>" /></div>
                   <div class="field"><label>Tipo de membro</label><input name="memberType" value="<%= t.memberType || '' %>" /></div>
+                  <div class="field"><label>Endereço</label><input name="address" value="<%= t.address || '' %>" /></div>
+                  <div class="field"><label>Bairro</label><input name="district" value="<%= t.district || '' %>" /></div>
+                  <div class="field"><label>Cidade</label><input name="city" value="<%= t.city || '' %>" /></div>
+                  <div class="field"><label>Estado</label><input name="state" value="<%= t.state || '' %>" /></div>
+                  <div class="field"><label>CEP</label><input name="cep" value="<%= t.cep || '' %>" /></div>
                   <div class="field"><label>E-mail</label><input name="email" value="<%= t.email || '' %>" /></div>
                   <div class="field"><label>Telefone</label><input name="phone" value="<%= t.phone || '' %>" /></div>
                 </div>
@@ -100,6 +133,16 @@
             <% if (service.type === "Homologação de Títulos" && service.titleHomologation) { const th = service.titleHomologation; %>
               <div class="section">
                 <div class="section-title">Homologação de Títulos</div>
+                <div class="field">
+                  <label>Gato</label>
+                  <select name="catId">
+                    <% (cats || []).forEach(function(cat) { %>
+                      <option value="<%= cat.id %>" <%= String(th.catId) === String(cat.id) ? 'selected' : '' %>>
+                        <%= cat.name %><% if (cat.pedigreeNumber) { %> - <%= cat.pedigreeNumber %><% } %>
+                      </option>
+                    <% }) %>
+                  </select>
+                </div>
                 <div class="field"><label>Título solicitado</label><input name="requestedTitle" value="<%= th.requestedTitle || '' %>" /></div>
                 <div class="field" style="margin-top:12px;"><label>Certificados adicionais/substitutos</label><input type="file" name="certificatesFiles" multiple accept=".pdf,.jpg,.jpeg,.png" /></div>
                 <textarea name="certificatesJson" rows="5" style="width:100%; margin-top:12px;"><%= th.certificatesJson || '[]' %></textarea>
@@ -109,6 +152,16 @@
             <% if (service.type === "Homologação de Pedigree" && service.pedigreeHomologation) { %>
               <div class="section">
                 <div class="section-title">Homologação de Pedigree</div>
+                <div class="field">
+                  <label>Gato</label>
+                  <select name="catId">
+                    <% (cats || []).forEach(function(cat) { %>
+                      <option value="<%= cat.id %>" <%= String(service.pedigreeHomologation.catId) === String(cat.id) ? 'selected' : '' %>>
+                        <%= cat.name %><% if (cat.pedigreeNumber) { %> - <%= cat.pedigreeNumber %><% } %>
+                      </option>
+                    <% }) %>
+                  </select>
+                </div>
                 <select name="homologationType">
                   <option value="NACIONAL" <%= service.pedigreeHomologation.homologationType === 'NACIONAL' ? 'selected' : '' %>>Homologação Nacional</option>
                   <option value="INTERNACIONAL" <%= service.pedigreeHomologation.homologationType === 'INTERNACIONAL' ? 'selected' : '' %>>Homologação Internacional</option>
@@ -132,6 +185,16 @@
             <% if (service.type === "Segunda Via e Alterações" && service.secondCopyRequest) { const sc = service.secondCopyRequest; %>
               <div class="section">
                 <div class="section-title">Segunda Via e Alterações</div>
+                <div class="field">
+                  <label>Gato</label>
+                  <select name="catId">
+                    <% (cats || []).forEach(function(cat) { %>
+                      <option value="<%= cat.id %>" <%= String(sc.catId) === String(cat.id) ? 'selected' : '' %>>
+                        <%= cat.name %><% if (cat.pedigreeNumber) { %> - <%= cat.pedigreeNumber %><% } %>
+                      </option>
+                    <% }) %>
+                  </select>
+                </div>
                 <div class="field"><label>Tipo de solicitação</label><input name="requestType" value="<%= sc.requestType || '' %>" /></div>
                 <div class="field" style="margin-top:12px;"><label>Detalhes</label><textarea name="details" rows="4" style="width:100%;"><%= sc.details || '' %></textarea></div>
                 <div class="field" style="margin-top:12px;"><label>Novo valor</label><input name="newValue" value="<%= sc.newValue || '' %>" /></div>

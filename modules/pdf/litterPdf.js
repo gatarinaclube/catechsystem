@@ -2,6 +2,7 @@ const path = require("path");
 const fs = require("fs");
 const PDFDocument = require("pdfkit");
 const archiver = require("archiver");
+const { applyPdfTheme } = require("./pdfTheme");
 
 // 🔤 Converte texto para "Title Case"
 // Ex: "TOMIFERR BENGAL" → "Tomiferr Bengal"
@@ -537,6 +538,7 @@ async function generateLitterAdminBundle(service, litter, kittens, sire, dam, re
     const stream = fs.createWriteStream(pdfPath);
     const doc = new PDFDocument({ margin: 40 });
     doc.pipe(stream);
+    applyPdfTheme(doc);
 
     drawLitterPdfContent(doc, service, litter, kittens, sire, dam);
 
@@ -675,6 +677,7 @@ async function generateLitterUserPDF(service, litter, kittens, sire, dam, res) {
 
     const doc = new PDFDocument({ margin: 40 });
     doc.pipe(res);
+    applyPdfTheme(doc);
 
     drawLitterPdfContent(doc, service, litter, kittens, sire, dam);
 
