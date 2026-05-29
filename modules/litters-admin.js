@@ -1,5 +1,6 @@
 const express = require("express");
 const { canViewAllData } = require("../utils/access");
+const { getCreationLimits, yearlyRange } = require("../utils/planLimits");
 
 const BREEDS = [
   "ABY","SOM","ACL","ACS","BAL","SIA","BEN","BLH","BSH","BML","BOM","BUR",
@@ -76,6 +77,53 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
   function ownerScope(req) {
     return canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId };
+  }
+
+  async function ensureLitterCreationLimits(req, newKittenCount = 0) {
+    if (canViewAllData(req.session?.userRole)) return;
+
+    const limits = getCreationLimits(req.session?.userRole);
+    const { start, end } = yearlyRange();
+
+    if (limits.littersPerYear !== null) {
+      const litterCount = await prisma.litter.count({
+        where: {
+          ownerId: req.session.userId,
+          createdAt: { gte: start, lt: end },
+        },
+      });
+
+      if (litterCount >= limits.littersPerYear) {
+        throw new Error(`Seu perfil permite até ${limits.littersPerYear} cadastros de ninhadas por ano.`);
+      }
+    }
+
+    if (limits.kittensPerYear !== null && newKittenCount > 0) {
+      await ensureKittenCreationLimit(req, newKittenCount);
+    }
+  }
+
+  async function ensureKittenCreationLimit(req, newKittenCount = 0) {
+    if (canViewAllData(req.session?.userRole)) return;
+
+    const limit = getCreationLimits(req.session?.userRole).kittensPerYear;
+    if (limit === null || newKittenCount <= 0) return;
+    const { start, end } = yearlyRange();
+
+    const kittenCount = await prisma.cat.count({
+      where: {
+        ownerId: req.session.userId,
+        OR: [
+          { kittenNumber: { not: null } },
+          { litterKitten: { isNot: null } },
+        ],
+        createdAt: { gte: start, lt: end },
+      },
+    });
+
+    if (kittenCount + newKittenCount > limit) {
+      throw new Error(`Seu perfil permite até ${limit} cadastros de filhotes por ano.`);
+    }
   }
 
   async function ensureLitterAccess(req, litterId) {
@@ -450,6 +498,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           [],
           kittenNameMaxLength
         );
+        await ensureLitterCreationLimits(req, kittens.length);
         await ensureUniqueMicrochips(kittens);
 
         const payload = {
@@ -557,6 +606,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           req.body,
           existingLitter.kittens,
           kittenNameMaxLength
+        );
+        await ensureKittenCreationLimit(
+          req,
+          Math.max(0, kittens.length - existingLitter.kittens.length)
         );
         await ensureUniqueMicrochips(kittens, existingLitter.id);
 

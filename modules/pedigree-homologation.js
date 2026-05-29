@@ -1,6 +1,11 @@
 const express = require("express");
 const multer = require("multer");
 const { isAdminRole, normalizeRole } = require("../utils/access");
+const {
+  notifyNewService,
+  notifyUserServiceConfirmation,
+} = require("../utils/adminNotifications");
+const { getFileUploadLimit, validateFilesForRole } = require("../utils/planLimits");
 
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
@@ -50,7 +55,10 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: { fileSize: getFileUploadLimit("ADMIN").bytes },
+});
 
   // ============================
   // SUBMISSÃO
@@ -66,6 +74,7 @@ router.post(
         console.log("🔥 ENTROU NO POST DE HOMOLOGAÇÃO DE PEDIGREE 🔥");
         console.log("DEBUG userId:", req.session.userId);
         console.log("DEBUG body:", req.body);
+        validateFilesForRole(req.file ? [req.file] : [], req.session?.userRole);
 
         const userId = req.session.userId;
         const {
@@ -158,6 +167,9 @@ if (
       authorizationFile: authorizationFilePath,
     },
   });
+
+  await notifyNewService(prisma, transferService);
+  await notifyUserServiceConfirmation(prisma, transferService);
 }
 
 
@@ -187,6 +199,8 @@ if (
         });
 
         console.log("✅ PedigreeHomologation criada");
+        await notifyNewService(prisma, service);
+        await notifyUserServiceConfirmation(prisma, service);
 
         return res.redirect("/my-services");
       } catch (err) {

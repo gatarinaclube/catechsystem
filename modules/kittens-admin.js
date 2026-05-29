@@ -1,5 +1,6 @@
 const express = require("express");
 const { canViewAllData } = require("../utils/access");
+const { getCreationLimits, yearlyRange } = require("../utils/planLimits");
 
 const BREEDS = [
   "ABY","SOM","ACL","ACS","BAL","SIA","BEN","BLH","BSH","BML","BOM","BUR",
@@ -92,6 +93,29 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
   function ownerScope(req) {
     return canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId };
+  }
+
+  async function ensureKittenLimit(req) {
+    if (canViewAllData(req.session?.userRole)) return;
+
+    const limit = getCreationLimits(req.session?.userRole).kittensPerYear;
+    if (limit === null) return;
+
+    const { start, end } = yearlyRange();
+    const currentCount = await prisma.cat.count({
+      where: {
+        ownerId: req.session.userId,
+        OR: [
+          { kittenNumber: { not: null } },
+          { litterKitten: { isNot: null } },
+        ],
+        createdAt: { gte: start, lt: end },
+      },
+    });
+
+    if (currentCount >= limit) {
+      throw new Error(`Seu perfil permite até ${limit} cadastros de filhotes por ano.`);
+    }
   }
 
   async function ensureCatAccess(req, catId) {
@@ -387,6 +411,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requirePermission("admin.kittens"),
     async (req, res) => {
       try {
+        await ensureKittenLimit(req);
         const data = await parsePayload(req);
         const kitten = await prisma.cat.create({ data });
         res.redirect(`/admin/kittens/${kitten.id}`);

@@ -107,6 +107,15 @@
           <div class="public-kitten-grid">
             <% litter.kittens.forEach(function(kitten) { %>
               <article class="public-kitten">
+                <div class="public-kitten-body">
+                  <div class="public-kitten-title-row">
+                    <h3><%= kitten.displayName %></h3>
+                    <span><%= kitten.sex === 'M' ? 'Macho' : 'Femea' %></span>
+                  </div>
+                  <% if (kitten.color) { %>
+                    <p><%= kitten.color %></p>
+                  <% } %>
+                </div>
                 <% if (kitten.photos.length) { %>
                   <div class="public-kitten-photos">
                     <button class="gallery-trigger public-kitten-main-trigger" type="button" data-gallery='<%- JSON.stringify(kitten.photos.map(function(photo) { return photo.path; })) %>' data-index="0" aria-label="Abrir fotos de <%= kitten.displayName %>">
@@ -123,15 +132,6 @@
                     <% } %>
                   </div>
                 <% } %>
-                <div class="public-kitten-body">
-                  <div class="public-kitten-title-row">
-                    <h3><%= kitten.displayName %></h3>
-                    <span><%= kitten.sex === 'M' ? 'Macho' : 'Femea' %></span>
-                  </div>
-                  <% if (kitten.color) { %>
-                    <p><%= kitten.color %></p>
-                  <% } %>
-                </div>
               </article>
             <% }) %>
           </div>

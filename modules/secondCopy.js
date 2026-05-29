@@ -3,6 +3,11 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const { isAdminRole, normalizeRole } = require("../utils/access");
+const {
+  notifyNewService,
+  notifyUserServiceConfirmation,
+} = require("../utils/adminNotifications");
+const { getFileUploadLimit, validateFilesForRole } = require("../utils/planLimits");
 
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
@@ -29,7 +34,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     },
   });
 
-  const upload = multer({ storage });
+  const upload = multer({
+    storage,
+    limits: { fileSize: getFileUploadLimit("ADMIN").bytes },
+  });
 
   // FORM
 router.get(
@@ -77,6 +85,8 @@ const newValueStr = Array.isArray(newValue)
   ? newValue.filter(Boolean).join(" | ")
   : (newValue || null);
 
+      validateFilesForRole(req.files || [], req.session?.userRole);
+
 
       const userId = req.session.userId;
 
@@ -107,6 +117,9 @@ const newValueStr = Array.isArray(newValue)
 ),
         },
       });
+
+      await notifyNewService(prisma, service);
+      await notifyUserServiceConfirmation(prisma, service);
 
       res.redirect("/my-services");
     }

@@ -1,5 +1,5 @@
 (function () {
-  const MAX_PHOTO_MB = 25;
+  const MAX_PHOTO_MB = 5;
   const MAX_PHOTO_BYTES = MAX_PHOTO_MB * 1024 * 1024;
   const root = document.getElementById("littersRoot");
   const form = document.getElementById("showcaseForm");

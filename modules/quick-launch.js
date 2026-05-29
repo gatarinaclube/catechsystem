@@ -3,7 +3,8 @@ const fs = require("fs");
 const multer = require("multer");
 const path = require("path");
 const { Prisma } = require("@prisma/client");
-const { canViewAllData } = require("../utils/access");
+const { canViewAllData, userCan } = require("../utils/access");
+const { getFileUploadLimit, validateFilesForRole } = require("../utils/planLimits");
 
 const OPTION_TYPES = ["CATEGORY", "SUPPLIER", "PAYMENT"];
 const OPTION_LABELS = {
@@ -100,7 +101,7 @@ function createUpload() {
         cb(null, `despesa-${unique}${ext}`);
       },
     }),
-    limits: { fileSize: 10 * 1024 * 1024 },
+    limits: { fileSize: getFileUploadLimit("ADMIN").bytes },
     fileFilter: (req, file, cb) => {
       const allowed = [
         "application/pdf",
@@ -152,6 +153,15 @@ module.exports = (prisma) => {
   const router = express.Router();
   const upload = createUpload();
   const columnCache = new Map();
+
+  router.use((req, res, next) => {
+    if (req.path.startsWith("/despesas/u/")) return next();
+    if (!req.session?.userId) return res.redirect("/login");
+    if (!userCan(req.session.userRole, "admin.quickLaunch")) {
+      return res.status(403).send("Seu perfil não possui acesso a este módulo.");
+    }
+    next();
+  });
 
   function ownerScope(req) {
     if (canViewAllData(req.session?.userRole)) return {};
@@ -396,6 +406,7 @@ module.exports = (prisma) => {
     if (!user) return res.status(404).send("Link de lançamento não encontrado.");
 
     try {
+      validateFilesForRole(req.file ? [req.file] : [], user.role);
       const data = buildExpenseFormData(req.body, req.file);
       await prisma.quickLaunchEntry.create({
         data: {
@@ -419,6 +430,7 @@ module.exports = (prisma) => {
 
   router.post("/despesas", upload.single("receipt"), async (req, res) => {
     try {
+      validateFilesForRole(req.file ? [req.file] : [], req.session?.userRole);
       const data = buildExpenseFormData(req.body, req.file);
       await prisma.quickLaunchEntry.create({
         data: {
@@ -599,6 +611,7 @@ module.exports = (prisma) => {
     if (!existing) return res.status(404).send("Despesa não encontrada.");
 
     try {
+      validateFilesForRole(req.file ? [req.file] : [], req.session?.userRole);
       const data = buildExpenseFormData(req.body, req.file, existing.receiptPath);
       await prisma.quickLaunchEntry.update({
         where: { id: existing.id },

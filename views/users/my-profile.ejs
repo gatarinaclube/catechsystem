@@ -24,17 +24,17 @@
       <div class="content">
 
         <div class="section">
-          <div class="section-title">Dados editáveis</div>
+          <div class="section-title">Informações do Usuário</div>
 
           <div class="grid-3">
             <div class="field">
               <label class="field-label">Nome</label>
-              <input type="text" name="name" value="<%= user.name || '' %>" />
+              <input type="text" value="<%= user.name || '' %>" readonly />
             </div>
 
             <div class="field">
               <label class="field-label">CPF</label>
-              <input type="text" name="cpf" value="<%= user.cpf || '' %>" />
+              <input type="text" value="<%= user.cpf || '' %>" readonly />
             </div>
 
             <div class="field">
@@ -76,31 +76,6 @@
               <input type="email" name="email" value="<%= user.email || '' %>" />
             </div>
           </div>
-        </div>
-
-        <div class="section">
-          <div class="section-title">Dados somente para visualização</div>
-
-          <div class="grid-3">
-            <div class="field">
-              <label class="field-label">Perfil</label>
-              <input type="text" value="<%= user.roleLabel || user.role %>" readonly />
-            </div>
-
-            <div class="field">
-              <label class="field-label">Clubes</label>
-              <input type="text" value="<%= user.clubs || '-' %>" readonly />
-            </div>
-
-            <div class="field">
-              <label class="field-label">Gatil FIFe</label>
-              <input type="text" value="<%= user.fifeCatteryName || 'Não informado' %>" readonly />
-            </div>
-          </div>
-
-          <p style="margin-top:12px; font-size:12px; color:var(--text-muted);">
-            Para alterar outras informações, entre em contato com o administrador.
-          </p>
         </div>
 
         <div class="footer">

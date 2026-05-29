@@ -18,6 +18,10 @@ const {
   userCan,
 } = require("./utils/access");
 const { sendStatusEmail } = require("./utils/mailer");
+const {
+  notifyNewUser,
+  notifyUserRegistrationConfirmation,
+} = require("./utils/adminNotifications");
 const { generateLitterAdminBundle, generateLitterUserPDF } = require("./modules/pdf/litterPdf");
 const { generateTransferPDF } = require("./modules/pdf/transferPdf");
 const { generateLitterAuthorizationPDF } = require("./modules/pdf/litterAuthorizationPdf");
@@ -467,7 +471,7 @@ const {
       clubsValue = clubs;
     }
 
-await prisma.user.create({
+const createdUser = await prisma.user.create({
   data: {
     name,
     address,
@@ -488,6 +492,8 @@ await prisma.user.create({
   },
 });
 
+await notifyNewUser(prisma, createdUser);
+await notifyUserRegistrationConfirmation(createdUser);
 
     return res.redirect("/login");
   } catch (err) {
@@ -872,8 +878,6 @@ app.post("/meus-dados", requireAuth, async (req, res) => {
     }
 
     const {
-      name,
-      cpf,
       country,
       address,
       city,
@@ -900,6 +904,7 @@ app.post("/meus-dados", requireAuth, async (req, res) => {
         cep,
         phones,
         email: normalizedEmail,
+        approvalStatus: "INDEFERIDO",
       },
     });
 
@@ -1052,7 +1057,7 @@ app.get("/services/autorizacao-transferencia-propriedade", requireAuth, requireP
 
 
 // ---------- DETALHE DE UM SERVIÇO ----------
-app.get("/my-services/:id", requireAuth, async (req, res) => {
+app.get("/my-services/:id", requireAuth, requirePermission("services.my"), async (req, res) => {
   try {
     const serviceId = parseInt(req.params.id, 10);
     const userId = req.session.userId;
@@ -1148,7 +1153,7 @@ app.get("/logout", (req, res) => {
 });
 
 // ---------- ROTAS DOS MÓDULOS ----------
-const catsRouter = require("./modules/cats")(prisma, requireAuth);
+const catsRouter = require("./modules/cats")(prisma, requireAuth, requirePermission);
 const littersRouter = require("./modules/litters")(
   prisma,
   requireAuth,
@@ -2160,7 +2165,7 @@ attachments.forEach((item, index) => {
 // ======================================================
 // GERAR APENAS PDF (USUÁRIO)
 // ======================================================
-app.get("/my-services/:id/pdf", requireAuth, async (req, res) => {
+app.get("/my-services/:id/pdf", requireAuth, requirePermission("services.my"), async (req, res) => {
   try {
     const serviceId = parseInt(req.params.id, 10);
     const userId = req.session.userId;

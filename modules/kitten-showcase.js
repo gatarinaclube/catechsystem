@@ -2,9 +2,13 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
+const {
+  getFileUploadLimit,
+  getCreationLimits,
+  validateFilesForRole,
+} = require("../utils/planLimits");
 
-const SHOWCASE_UPLOAD_LIMIT_MB = 25;
-const SHOWCASE_UPLOAD_LIMIT_BYTES = SHOWCASE_UPLOAD_LIMIT_MB * 1024 * 1024;
+const SHOWCASE_UPLOAD_LIMIT = getFileUploadLimit("ADMIN");
 
 const RESERVED_SLUGS = new Set([
   "admin",
@@ -45,7 +49,7 @@ function createUpload() {
         cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
       },
     }),
-    limits: { fileSize: SHOWCASE_UPLOAD_LIMIT_BYTES, files: 80 },
+    limits: { fileSize: SHOWCASE_UPLOAD_LIMIT.bytes, files: 80 },
     fileFilter: (req, file, cb) => {
       const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
       cb(allowed.includes(file.mimetype) ? null : new Error("Envie apenas imagens."), allowed.includes(file.mimetype));
@@ -221,7 +225,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         try {
           return renderAdmin(req, res, {
             status: 413,
-            error: `Uma das imagens ultrapassa ${SHOWCASE_UPLOAD_LIMIT_MB} MB. Reduza o tamanho da foto e tente novamente.`,
+            error: `Uma das imagens ultrapassa ${SHOWCASE_UPLOAD_LIMIT.label}. Reduza o tamanho da foto e tente novamente.`,
           });
         } catch (renderErr) {
           return next(renderErr);
@@ -274,6 +278,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         const settings = await getSettings(req.session.userId);
         const fallback = emptyShowcase(settings, req.user);
         const slug = slugify(payload.slug || fallback.slug);
+        validateFilesForRole(req.files || [], req.session.userRole);
         const logoUpload = uploaded.get("showcaseLogo")?.[0] || null;
 
         if (!slug || RESERVED_SLUGS.has(slug)) {
@@ -289,6 +294,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         }
 
         const litters = Array.isArray(payload.litters) ? payload.litters : [];
+        const showcaseLitterLimit = getCreationLimits(req.session.userRole).showcaseLitters;
+        if (showcaseLitterLimit !== null && litters.length > showcaseLitterLimit) {
+          throw new Error(`Seu perfil permite até ${showcaseLitterLimit} ninhada${showcaseLitterLimit === 1 ? "" : "s"} na vitrine por vez.`);
+        }
+
         for (const litter of litters) {
           if (!parseDate(litter.birthDate) || !parseDate(litter.deliveryForecast)) {
             throw new Error("Data de nascimento e previsão de entrega são obrigatórias em todas as ninhadas.");

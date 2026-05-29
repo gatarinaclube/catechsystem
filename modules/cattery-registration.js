@@ -1,5 +1,9 @@
 const express = require("express");
 const { isAdminRole, normalizeRole } = require("../utils/access");
+const {
+  notifyNewService,
+  notifyUserServiceConfirmation,
+} = require("../utils/adminNotifications");
 
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
@@ -50,7 +54,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         breeds,
       } = req.body;
 
-      await prisma.serviceRequest.create({
+      const service = await prisma.serviceRequest.create({
         data: {
           userId,
           type: "Registro de Gatil",
@@ -72,6 +76,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           },
         },
       });
+
+      await notifyNewService(prisma, service);
+      await notifyUserServiceConfirmation(prisma, service);
 
       res.redirect("/my-services");
     } catch (err) {

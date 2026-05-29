@@ -3,9 +3,18 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const {
+  notifyNewCat,
+  notifyUserCatConfirmation,
+} = require("../utils/adminNotifications");
+const {
+  getFileUploadLimit,
+  validateFilesForRole,
+} = require("../utils/planLimits");
 
-module.exports = (prisma, requireAuth) => {
+module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
+  router.use("/cats", requireAuth, requirePermission("cats.manage"));
 
   // --------- Helper para pegar dados do usuário logado (via sessão) ---------
   function getAuthInfo(req) {
@@ -53,6 +62,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
+  limits: { fileSize: getFileUploadLimit("ADMIN").bytes },
   fileFilter: (req, file, cb) => {
     cb(null, true);
   },
@@ -313,6 +323,7 @@ router.post(
 } = req.body;
 
       const files = req.files || {};
+      validateFilesForRole(Object.values(files).flat(), req.session?.userRole);
 
       const pedigreePath =
   files.pedigreeFile && files.pedigreeFile[0]
@@ -437,7 +448,7 @@ const otherDocsPath =
       }
 
       // --------- CRIA O GATO SE NÃO HOUVER DUPLICIDADE ---------
-      await prisma.cat.create({
+      const createdCat = await prisma.cat.create({
   data: {
     ownerId: userId,
     status: "NOVO",
@@ -487,9 +498,15 @@ const otherDocsPath =
   },
 });
 
+      await notifyNewCat(prisma, createdCat, req.user);
+      await notifyUserCatConfirmation(createdCat, req.user);
+
       res.redirect("/cats");
     } catch (err) {
       console.error("Erro ao criar gato:", err);
+      if (err.code === "UPLOAD_LIMIT" || err.code === "LIMIT_FILE_SIZE") {
+        return res.status(400).send(err.message || "Arquivo acima do limite permitido para seu perfil.");
+      }
       res.status(500).send("Erro ao criar gato");
     }
   }

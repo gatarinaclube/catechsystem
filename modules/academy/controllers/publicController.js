@@ -1,5 +1,9 @@
 const bcrypt = require("bcryptjs");
 const {
+  notifyNewUser,
+  notifyUserRegistrationConfirmation,
+} = require("../../../utils/adminNotifications");
+const {
   getEnrollment,
   getActiveSubscription,
   getAcademyAuthorForUser,
@@ -146,6 +150,8 @@ module.exports = (prisma) => ({
       });
       req.session.userId = user.id;
       req.session.userRole = user.role;
+      await notifyNewUser(prisma, user);
+      await notifyUserRegistrationConfirmation(user);
       return res.redirect("/academy/planos");
     } catch (err) {
       return renderPublic(req, res, "register", {

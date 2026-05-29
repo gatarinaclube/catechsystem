@@ -2,6 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const { getFileUploadLimit, validateFilesForRole } = require("../utils/planLimits");
 
 const MEMBERSHIP_OPTIONS = ["FIFe", "TICa", "WCF"];
 const EXAM_OPTIONS = ["PKDef", "PKD", "PRA", "HCM - Genético", "HCM - Doppler"];
@@ -32,7 +33,7 @@ function createLogoUploadMiddleware() {
 
   return multer({
     storage,
-    limits: { fileSize: 2 * 1024 * 1024 },
+    limits: { fileSize: getFileUploadLimit("ADMIN").bytes },
     fileFilter: (req, file, cb) => {
       const allowedTypes = ["image/png", "image/jpeg", "image/webp"];
       if (!allowedTypes.includes(file.mimetype)) {
@@ -159,6 +160,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       if (req.uploadError) {
         throw new Error(req.uploadError);
       }
+      validateFilesForRole(req.file ? [req.file] : [], req.session?.userRole);
 
       await prisma.$executeRaw`
         INSERT INTO "UserSettings" (

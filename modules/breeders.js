@@ -3,6 +3,11 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const { ROLES, canViewAllData, normalizeRole } = require("../utils/access");
+const {
+  getFileUploadLimit,
+  getCreationLimits,
+  validateFilesForRole,
+} = require("../utils/planLimits");
 
 const COUNTRIES = [
   "BR","AR","AT","BE","BG","BY","CA","CH","CL","CO","CY","CZ",
@@ -19,13 +24,6 @@ const BREEDS = [
 ];
 
 const EXAM_OPTIONS = ["PKDef", "PKD", "PRA", "HCM - Genético", "HCM - Doppler"];
-
-const DOCUMENT_UPLOAD_LIMITS = {
-  [ROLES.BASIC]: { bytes: 300 * 1024, label: "300 KB" },
-  [ROLES.MASTER]: { bytes: 700 * 1024, label: "700 KB" },
-  [ROLES.PREMIUM]: { bytes: 2 * 1024 * 1024, label: "2 MB" },
-  [ROLES.ADMIN]: { bytes: 5 * 1024 * 1024, label: "5 MB" },
-};
 
 function createUploadMiddleware() {
   const diskRoot =
@@ -47,7 +45,7 @@ function createUploadMiddleware() {
 
   return multer({
     storage,
-    limits: { fileSize: DOCUMENT_UPLOAD_LIMITS[ROLES.ADMIN].bytes },
+    limits: { fileSize: getFileUploadLimit(ROLES.ADMIN).bytes },
     fileFilter: (req, file, cb) => {
       if (file.mimetype !== "application/pdf") {
         return cb(new Error("Os documentos devem ser enviados exclusivamente em PDF."));
@@ -67,7 +65,7 @@ function safeJsonParse(value, fallback = {}) {
 }
 
 function getUploadLimit(role) {
-  return DOCUMENT_UPLOAD_LIMITS[normalizeRole(role)] || DOCUMENT_UPLOAD_LIMITS[ROLES.BASIC];
+  return getFileUploadLimit(role);
 }
 
 function normalizeExamKey(value) {
@@ -87,13 +85,7 @@ function parseExamList(value) {
 }
 
 function validateUploadedFiles(req) {
-  const limit = getUploadLimit(req.session?.userRole);
-  const oversized = (req.files || []).find((file) => file.size > limit.bytes);
-  if (!oversized) return;
-
-  const error = new Error(`O arquivo ${oversized.originalname} ultrapassa o limite de ${limit.label} do seu plano.`);
-  error.code = "UPLOAD_LIMIT";
-  throw error;
+  validateFilesForRole(req.files || [], req.session?.userRole);
 }
 
 function removeUploadedFiles(files = []) {
@@ -105,7 +97,7 @@ function removeUploadedFiles(files = []) {
 }
 
 function statusForError(err) {
-  return err.code === "DUPLICATE_MICROCHIP" || err.code === "UPLOAD_LIMIT" ? 400 : 500;
+  return ["DUPLICATE_MICROCHIP", "UPLOAD_LIMIT", "PLAN_LIMIT"].includes(err.code) ? 400 : 500;
 }
 
 function normalizeMicrochip(microchip) {
@@ -270,7 +262,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       if (err) {
         const uploadError = new Error(
           err.code === "LIMIT_FILE_SIZE"
-            ? `O arquivo ultrapassa o limite máximo de ${DOCUMENT_UPLOAD_LIMITS[ROLES.ADMIN].label}.`
+            ? `O arquivo ultrapassa o limite máximo de ${getFileUploadLimit(ROLES.ADMIN).label}.`
             : err.message || "Erro ao enviar documento."
         );
         uploadError.code = "UPLOAD_LIMIT";
@@ -282,6 +274,27 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
   function ownerScope(req) {
     return canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId };
+  }
+
+  async function ensureBreederLimit(req) {
+    if (canViewAllData(req.session?.userRole)) return;
+
+    const limit = getCreationLimits(req.session?.userRole).breeders;
+    if (limit === null) return;
+
+    const currentCount = await prisma.cat.count({
+      where: {
+        ownerId: req.session.userId,
+        kittenNumber: null,
+        litterKitten: { is: null },
+      },
+    });
+
+    if (currentCount >= limit) {
+      const error = new Error(`Seu perfil permite até ${limit} cadastros de reprodutores.`);
+      error.code = "PLAN_LIMIT";
+      throw error;
+    }
   }
 
   async function ensureCatAccess(req, catId) {
@@ -608,6 +621,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     handleUpload,
     async (req, res) => {
       try {
+        await ensureBreederLimit(req);
         const data = await parseBreederPayload(req);
         applyUploadedDocuments(req, data, null);
         const breeder = await prisma.cat.create({ data });
@@ -626,6 +640,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             cancelPath: "/breeders",
             error:
               err.code === "DUPLICATE_MICROCHIP" || err.code === "UPLOAD_LIMIT"
+                || err.code === "PLAN_LIMIT"
                 ? err.message
                 : "Erro ao salvar o reprodutor.",
           }

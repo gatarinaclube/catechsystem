@@ -1,5 +1,5 @@
 const express = require("express");
-const { canViewAllData } = require("../utils/access");
+const { canViewAllData, userCan } = require("../utils/access");
 
 const DEFAULT_PAYMENT_ACCOUNT = "";
 
@@ -207,6 +207,15 @@ function mapPaidRevenueRows(revenues, start, end) {
 
 module.exports = (prisma) => {
   const router = express.Router();
+
+  router.use((req, res, next) => {
+    if (!req.session?.userId) return res.redirect("/login");
+    const permission = req.path.startsWith("/vendas") ? "admin.sales" : "admin.revenues";
+    if (!userCan(req.session.userRole, permission)) {
+      return res.status(403).send("Seu perfil não possui acesso a este módulo.");
+    }
+    next();
+  });
 
   function ownerScope(req) {
     if (canViewAllData(req.session?.userRole)) return {};

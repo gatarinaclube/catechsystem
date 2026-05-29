@@ -16,6 +16,7 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 const multer = require("multer");
+const { getFileUploadLimit, validateFilesForRole } = require("../utils/planLimits");
 
 const upload = multer({
   storage: multer.diskStorage({
@@ -34,10 +35,15 @@ const upload = multer({
       cb(null, `${unique}-${safeName}`);
     },
   }),
+  limits: { fileSize: getFileUploadLimit("ADMIN").bytes },
 });
 
 const express = require("express");
 const { isAdminRole, normalizeRole } = require("../utils/access");
+const {
+  notifyNewService,
+  notifyUserServiceConfirmation,
+} = require("../utils/adminNotifications");
 
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
@@ -97,6 +103,7 @@ const parsedCertificates = certificates
 
 // 🔹 arquivos enviados (multer)
 const uploadedFiles = req.files || [];
+validateFilesForRole(uploadedFiles, req.session?.userRole);
 
 console.log("REQ.FILES:", uploadedFiles.map(f => ({
   fieldname: f.fieldname,
@@ -112,7 +119,7 @@ parsedCertificates.forEach((cert, index) => {
   }
 });
 
-await prisma.serviceRequest.create({
+const service = await prisma.serviceRequest.create({
   data: {
     userId,
     type: "Homologação de Títulos",
@@ -130,6 +137,9 @@ await prisma.serviceRequest.create({
     },
   },
 });
+
+await notifyNewService(prisma, service);
+await notifyUserServiceConfirmation(prisma, service);
 
       res.redirect("/my-services");
     } catch (err) {
