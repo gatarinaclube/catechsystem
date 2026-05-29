@@ -49,6 +49,7 @@ const crmRouterFactory = require("./modules/crm");
 const administrativeRouterFactory = require("./modules/administrative");
 const academyRouterFactory = require("./modules/academy");
 const kittenShowcaseRouterFactory = require("./modules/kitten-showcase");
+const gatarinaShowPhotosRouterFactory = require("./modules/gatarina-show-photos");
 const { isAcademyPaidEnrollment, isAcademyActiveSubscription } = require("./modules/academy/services/academyService");
 const {generateTitleHomologationPDF,} = require("./modules/pdf/titleHomologationPdf");
 const {generatePedigreeHomologationPDF,} = require("./modules/pdf/pedigreeHomologationPdf");
@@ -1372,6 +1373,13 @@ const kittenShowcaseRouter = kittenShowcaseRouterFactory(
   requirePermission
 );
 app.use(kittenShowcaseRouter);
+
+const gatarinaShowPhotosRouter = gatarinaShowPhotosRouterFactory(
+  prisma,
+  requireAuth,
+  requirePermission
+);
+app.use(gatarinaShowPhotosRouter);
 
 const academyRouter = academyRouterFactory(prisma);
 app.use(academyRouter);

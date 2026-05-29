@@ -61,6 +61,7 @@
         { href: "/cats", match: "/cats", icon: "🐾", label: (access && access.canViewAllCats) ? "Todos os gatos" : "Meus gatos", allowed: access && access.canManageCats },
         { href: "/services", match: "/services", icon: "🧾", label: "Serviços", allowed: access && access.canAccessServices },
         { href: "/ffb-services", match: "/ffb-services", icon: "🛠️", label: "Serviços FFB", allowed: access && access.canAccessFfbServices },
+        { href: "/admin/fotos-gatarina-2026", match: "/admin/fotos-gatarina-2026", icon: "📸", label: "Fotos Gatarina 2026", allowed: access && access.canManageGatarinaPhotos },
         { href: "/users", match: "/users", icon: "👥", label: "Usuários", allowed: access && access.canManageUsers },
         { href: "/settings", match: "/settings", icon: "⚙️", label: "Configurações", allowed: access && access.canAccessSettings },
       ].forEach(renderMenuItem); %>

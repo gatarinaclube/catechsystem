@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Fotos Gatarina Show 2026 - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/gatarina-show.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+      <main class="main">
+        <div class="header">
+          <div>
+            <div class="title-main">Fotos Gatarina Show 2026</div>
+            <div class="title-sub">Upload, preço e solicitações de fotos em alta qualidade.</div>
+          </div>
+          <div class="header-actions">
+            <a class="btn" href="<%= publicPath %>" target="_blank">Abrir página pública</a>
+          </div>
+        </div>
+
+        <div class="content">
+          <% if (success) { %>
+            <div class="section success-card">Alterações salvas.</div>
+          <% } %>
+          <% if (error) { %>
+            <div class="section alert-card"><%= error %></div>
+          <% } %>
+
+          <section class="section">
+            <div class="section-title">Configuração da página pública</div>
+            <form method="post" action="/admin/fotos-gatarina-2026/config" class="grid-3">
+              <div class="field">
+                <label class="field-label" for="title">Título</label>
+                <input id="title" name="title" value="<%= config.title || '' %>" required />
+              </div>
+              <div class="field">
+                <label class="field-label" for="price">Valor por foto</label>
+                <input id="price" name="price" value="<%= config.priceValue %>" inputmode="decimal" required />
+              </div>
+              <div class="field">
+                <label class="field-label" for="contactEmail">E-mail para pedidos</label>
+                <input id="contactEmail" name="contactEmail" type="email" value="<%= config.contactEmail || '' %>" placeholder="opcional" />
+              </div>
+              <label class="gatarina-toggle">
+                <input type="checkbox" name="published" <%= config.published ? 'checked' : '' %> />
+                <span>Página pública ativa</span>
+              </label>
+              <div class="gatarina-form-actions">
+                <button type="submit" class="btn btn-primary">Salvar configuração</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Enviar fotos</div>
+            <form id="gatarinaUploadForm" method="post" action="/admin/fotos-gatarina-2026/upload" enctype="multipart/form-data">
+              <div class="gatarina-upload-panel">
+                <div class="field">
+                  <label class="field-label" for="photoInput">Fotos em alta qualidade</label>
+                  <input id="photoInput" type="file" accept="image/jpeg,image/png,image/webp" multiple />
+                  <input id="compressedPhotos" name="photos" type="file" multiple hidden />
+                  <div class="section-note">As imagens são reduzidas no navegador antes do envio. Para 800 fotos, envie em lotes de até 100 por vez.</div>
+                </div>
+                <div class="gatarina-upload-status" id="uploadStatus">Nenhum arquivo selecionado.</div>
+                <button id="uploadButton" type="submit" class="btn btn-primary">Comprimir e enviar</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Solicitações recentes</div>
+            <div class="gatarina-request-list">
+              <% if (!requests.length) { %>
+                <div class="empty">Nenhuma solicitação recebida.</div>
+              <% } %>
+              <% requests.forEach((request) => { %>
+                <div class="gatarina-request-row">
+                  <div>
+                    <strong><%= request.customerName %></strong>
+                    <div class="item-sub"><%= request.customerEmail %><%= request.customerPhone ? ' • ' + request.customerPhone : '' %></div>
+                  </div>
+                  <div class="gatarina-request-meta">
+                    <%= request.quantity %> foto(s) • R$ <%= (Number(request.totalCents || 0) / 100).toFixed(2).replace('.', ',') %>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-title">Fotos publicadas</div>
+            <div class="gatarina-admin-grid">
+              <% if (!photos.length) { %>
+                <div class="empty">Nenhuma foto enviada ainda.</div>
+              <% } %>
+              <% photos.forEach((photo) => { %>
+                <article class="gatarina-admin-photo <%= photo.active ? '' : 'is-inactive' %>">
+                  <img src="<%= photo.filePath %>" alt="<%= photo.code %>" loading="lazy" />
+                  <div class="gatarina-admin-photo-body">
+                    <strong><%= photo.code %></strong>
+                    <div class="item-sub"><%= photo.originalName || 'foto' %></div>
+                    <div class="gatarina-photo-actions">
+                      <form method="post" action="/admin/fotos-gatarina-2026/fotos/<%= photo.id %>/toggle">
+                        <button class="btn" type="submit"><%= photo.active ? 'Ocultar' : 'Publicar' %></button>
+                      </form>
+                      <form method="post" action="/admin/fotos-gatarina-2026/fotos/<%= photo.id %>/delete" onsubmit="return confirm('Excluir esta foto?');">
+                        <button class="btn btn-danger" type="submit">Excluir</button>
+                      </form>
+                    </div>
+                  </div>
+                </article>
+              <% }) %>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+    <script src="/js/gatarina-show-admin.js"></script>
+  </body>
+</html>

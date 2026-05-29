@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><%= config.title %></title>
+    <link rel="stylesheet" href="/css/gatarina-show.css" />
+  </head>
+  <body class="gatarina-public-body">
+    <header class="gatarina-public-header">
+      <div>
+        <p>Gatarina Clube</p>
+        <h1><%= config.title %></h1>
+        <span>Escolha suas fotos favoritas e solicite os arquivos em alta qualidade.</span>
+      </div>
+      <div class="gatarina-price-box">
+        <small>Valor por foto</small>
+        <strong><%= config.priceLabel %></strong>
+      </div>
+    </header>
+
+    <% if (success) { %>
+      <div class="gatarina-public-message is-success">Solicitação enviada. Entraremos em contato por e-mail.</div>
+    <% } %>
+    <% if (error) { %>
+      <div class="gatarina-public-message is-error"><%= error %></div>
+    <% } %>
+
+    <main class="gatarina-public-shell">
+      <form id="photoRequestForm" method="post" action="/fotosgatarina2026/solicitar">
+        <div class="gatarina-public-grid">
+          <% if (!photos.length) { %>
+            <div class="gatarina-empty-public">As fotos ainda estão sendo preparadas.</div>
+          <% } %>
+          <% photos.forEach((photo) => { %>
+            <label class="gatarina-public-photo">
+              <input type="checkbox" name="photoIds" value="<%= photo.id %>" data-photo-checkbox data-code="<%= photo.code %>" />
+              <img src="<%= photo.filePath %>" alt="<%= photo.code %>" loading="lazy" draggable="false" />
+              <span><%= photo.code %></span>
+            </label>
+          <% }) %>
+        </div>
+
+        <aside class="gatarina-selection-panel">
+          <div class="gatarina-selection-head">
+            <div>
+              <strong>Fotos selecionadas</strong>
+              <span id="selectionCount">0 foto(s)</span>
+            </div>
+            <div id="selectionTotal"><%= config.priceLabel %></div>
+          </div>
+          <div id="selectionCodes" class="gatarina-selection-codes">Nenhuma foto selecionada.</div>
+          <div class="gatarina-public-form">
+            <input name="name" placeholder="Seu nome" required />
+            <input name="email" type="email" placeholder="Seu e-mail" required />
+            <input name="phone" placeholder="Telefone/WhatsApp" />
+            <textarea name="note" rows="3" placeholder="Observação"></textarea>
+            <button type="submit">Solicitar fotos em alta</button>
+          </div>
+        </aside>
+      </form>
+    </main>
+
+    <script>
+      window.__PHOTO_PRICE_CENTS__ = <%= Number(config.priceCents || 0) %>;
+    </script>
+    <script src="/js/gatarina-show-public.js"></script>
+  </body>
+</html>

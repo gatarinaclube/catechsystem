@@ -390,6 +390,51 @@ model CatteryShowcasePhoto {
   createdAt   DateTime @default(now())
 }
 
+model GatarinaPhotoGalleryConfig {
+  id           Int      @id @default(autoincrement())
+  eventKey     String   @unique
+  title        String   @default("Gatarina Show 2026")
+  priceCents   Int      @default(3000)
+  published    Boolean  @default(true)
+  contactEmail String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model GatarinaPhoto {
+  id           Int      @id @default(autoincrement())
+  eventKey     String
+  code         String
+  filePath     String
+  originalName String?
+  sizeBytes    Int?
+  sortOrder    Int      @default(0)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([eventKey, code])
+  @@index([eventKey, active, sortOrder])
+}
+
+model GatarinaPhotoRequest {
+  id                 Int      @id @default(autoincrement())
+  eventKey           String
+  customerName       String
+  customerEmail      String
+  customerPhone      String?
+  note               String?
+  selectedPhotosJson String
+  quantity           Int
+  unitPriceCents     Int
+  totalCents         Int
+  status             String   @default("PENDING")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([eventKey, createdAt])
+}
+
 model PasswordResetToken {
   id        Int      @id @default(autoincrement())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
