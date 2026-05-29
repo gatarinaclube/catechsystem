@@ -413,5 +413,43 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     }
   });
 
+  router.post("/admin/fotos-gatarina-2026/fotos/delete-selected", requireAuth, requirePermission("admin.gatarinaPhotos"), async (req, res, next) => {
+    try {
+      const selectedIds = Array.isArray(req.body.photoIds)
+        ? req.body.photoIds
+        : [req.body.photoIds].filter(Boolean);
+      const ids = selectedIds.map((id) => Number(id)).filter(Number.isInteger);
+
+      if (!ids.length) {
+        return res.redirect("/admin/fotos-gatarina-2026");
+      }
+
+      const rows = await prisma.$queryRaw`
+        SELECT "filePath"
+        FROM "GatarinaPhoto"
+        WHERE "eventKey" = ${EVENT_KEY}
+          AND "id" IN (${Prisma.join(ids)})
+      `;
+
+      await prisma.$executeRaw`
+        DELETE FROM "GatarinaPhoto"
+        WHERE "eventKey" = ${EVENT_KEY}
+          AND "id" IN (${Prisma.join(ids)})
+      `;
+
+      for (const row of rows) {
+        const relativePath = row.filePath?.replace(/^\/uploads\/+/, "");
+        if (relativePath) {
+          const absPath = path.join(process.env.UPLOADS_DIR || path.join(__dirname, "..", "public", "uploads"), relativePath);
+          fs.promises.unlink(absPath).catch(() => {});
+        }
+      }
+
+      res.redirect("/admin/fotos-gatarina-2026?ok=bulk-delete");
+    } catch (err) {
+      next(err);
+    }
+  });
+
   return router;
 };

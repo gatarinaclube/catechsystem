@@ -110,29 +110,54 @@
           </section>
 
           <section class="section">
-            <div class="section-title">Fotos publicadas</div>
-            <div class="gatarina-admin-grid">
-              <% if (!photos.length) { %>
-                <div class="empty">Nenhuma foto enviada ainda.</div>
+            <div class="gatarina-section-head">
+              <div class="section-title">Fotos publicadas</div>
+              <% if (photos.length) { %>
+                <div class="gatarina-bulk-actions">
+                  <button id="selectAllPhotos" type="button" class="btn">Selecionar todas</button>
+                  <button id="clearSelectedPhotos" type="button" class="btn">Limpar seleção</button>
+                  <button id="deleteSelectedPhotos" type="submit" form="bulkDeletePhotosForm" class="btn btn-danger" disabled>
+                    Excluir selecionadas
+                  </button>
+                </div>
               <% } %>
-              <% photos.forEach((photo) => { %>
-                <article class="gatarina-admin-photo <%= photo.active ? '' : 'is-inactive' %>">
-                  <img src="<%= photo.filePath %>" alt="<%= photo.code %>" loading="lazy" />
-                  <div class="gatarina-admin-photo-body">
-                    <strong><%= photo.code %></strong>
-                    <div class="item-sub"><%= photo.originalName || 'foto' %></div>
-                    <div class="gatarina-photo-actions">
-                      <form method="post" action="/admin/fotos-gatarina-2026/fotos/<%= photo.id %>/toggle">
-                        <button class="btn" type="submit"><%= photo.active ? 'Ocultar' : 'Publicar' %></button>
-                      </form>
-                      <form method="post" action="/admin/fotos-gatarina-2026/fotos/<%= photo.id %>/delete" onsubmit="return confirm('Excluir esta foto?');">
-                        <button class="btn btn-danger" type="submit">Excluir</button>
-                      </form>
-                    </div>
-                  </div>
-                </article>
-              <% }) %>
             </div>
+            <form id="bulkDeletePhotosForm" method="post" action="/admin/fotos-gatarina-2026/fotos/delete-selected">
+              <div class="gatarina-admin-grid">
+                <% if (!photos.length) { %>
+                  <div class="empty">Nenhuma foto enviada ainda.</div>
+                <% } %>
+                <% photos.forEach((photo) => { %>
+                  <article class="gatarina-admin-photo <%= photo.active ? '' : 'is-inactive' %>">
+                    <label class="gatarina-admin-select">
+                      <input type="checkbox" name="photoIds" value="<%= photo.id %>" data-admin-photo-checkbox />
+                      <span>Selecionar</span>
+                    </label>
+                    <img src="<%= photo.filePath %>" alt="<%= photo.code %>" loading="lazy" />
+                    <div class="gatarina-admin-photo-body">
+                      <strong><%= photo.code %></strong>
+                      <div class="item-sub"><%= photo.originalName || 'foto' %></div>
+                      <div class="gatarina-photo-actions">
+                        <button
+                          class="btn"
+                          type="submit"
+                          form="togglePhoto<%= photo.id %>"
+                        ><%= photo.active ? 'Ocultar' : 'Publicar' %></button>
+                        <button
+                          class="btn btn-danger"
+                          type="submit"
+                          form="deletePhoto<%= photo.id %>"
+                        >Excluir</button>
+                      </div>
+                    </div>
+                  </article>
+                <% }) %>
+              </div>
+            </form>
+            <% photos.forEach((photo) => { %>
+              <form id="togglePhoto<%= photo.id %>" method="post" action="/admin/fotos-gatarina-2026/fotos/<%= photo.id %>/toggle"></form>
+              <form id="deletePhoto<%= photo.id %>" method="post" action="/admin/fotos-gatarina-2026/fotos/<%= photo.id %>/delete" onsubmit="return confirm('Excluir esta foto?');"></form>
+            <% }) %>
           </section>
         </div>
       </main>

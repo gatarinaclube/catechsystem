@@ -5,8 +5,11 @@
   const status = document.getElementById("uploadStatus");
   const uploadButton = document.getElementById("uploadButton");
   const watermarkLogoPath = window.__GATARINA_WATERMARK_LOGO__ || "";
-
-  if (!form || !sourceInput || !compressedInput) return;
+  const bulkDeleteForm = document.getElementById("bulkDeletePhotosForm");
+  const selectAllButton = document.getElementById("selectAllPhotos");
+  const clearSelectedButton = document.getElementById("clearSelectedPhotos");
+  const deleteSelectedButton = document.getElementById("deleteSelectedPhotos");
+  const photoCheckboxes = Array.from(document.querySelectorAll("[data-admin-photo-checkbox]"));
 
   const MAX_WIDTH = 1800;
   const QUALITY = 0.72;
@@ -80,33 +83,69 @@
     });
   }
 
-  sourceInput.addEventListener("change", () => {
-    const count = sourceInput.files ? sourceInput.files.length : 0;
-    updateStatus(count ? `${count} arquivo(s) selecionado(s).` : "Nenhum arquivo selecionado.");
-  });
+  function syncBulkActions() {
+    if (!deleteSelectedButton) return;
+    const selectedCount = photoCheckboxes.filter((input) => input.checked).length;
+    deleteSelectedButton.disabled = selectedCount === 0;
+    deleteSelectedButton.textContent = selectedCount
+      ? `Excluir ${selectedCount} selecionada(s)`
+      : "Excluir selecionadas";
+  }
 
-  form.addEventListener("submit", async (event) => {
-    if (!sourceInput.files || !sourceInput.files.length) {
+  if (form && sourceInput && compressedInput) {
+    sourceInput.addEventListener("change", () => {
+      const count = sourceInput.files ? sourceInput.files.length : 0;
+      updateStatus(count ? `${count} arquivo(s) selecionado(s).` : "Nenhum arquivo selecionado.");
+    });
+
+    form.addEventListener("submit", async (event) => {
+      if (!sourceInput.files || !sourceInput.files.length) {
+        event.preventDefault();
+        updateStatus("Selecione pelo menos uma foto.");
+        return;
+      }
+
       event.preventDefault();
-      updateStatus("Selecione pelo menos uma foto.");
+      uploadButton.disabled = true;
+
+      try {
+        const files = Array.from(sourceInput.files);
+        const dataTransfer = new DataTransfer();
+        for (const [index, file] of files.entries()) {
+          dataTransfer.items.add(await compressFile(file, index, files.length));
+        }
+        compressedInput.files = dataTransfer.files;
+        updateStatus("Enviando fotos comprimidas...");
+        form.submit();
+      } catch (err) {
+        uploadButton.disabled = false;
+        updateStatus("Não foi possível comprimir as imagens. Tente enviar um lote menor.");
+      }
+    });
+  }
+
+  photoCheckboxes.forEach((input) => input.addEventListener("change", syncBulkActions));
+  selectAllButton?.addEventListener("click", () => {
+    photoCheckboxes.forEach((input) => {
+      input.checked = true;
+    });
+    syncBulkActions();
+  });
+  clearSelectedButton?.addEventListener("click", () => {
+    photoCheckboxes.forEach((input) => {
+      input.checked = false;
+    });
+    syncBulkActions();
+  });
+  bulkDeleteForm?.addEventListener("submit", (event) => {
+    const selectedCount = photoCheckboxes.filter((input) => input.checked).length;
+    if (!selectedCount) {
+      event.preventDefault();
       return;
     }
-
-    event.preventDefault();
-    uploadButton.disabled = true;
-
-    try {
-      const files = Array.from(sourceInput.files);
-      const dataTransfer = new DataTransfer();
-      for (const [index, file] of files.entries()) {
-        dataTransfer.items.add(await compressFile(file, index, files.length));
-      }
-      compressedInput.files = dataTransfer.files;
-      updateStatus("Enviando fotos comprimidas...");
-      form.submit();
-    } catch (err) {
-      uploadButton.disabled = false;
-      updateStatus("Não foi possível comprimir as imagens. Tente enviar um lote menor.");
+    if (!confirm(`Excluir ${selectedCount} foto(s) selecionada(s)?`)) {
+      event.preventDefault();
     }
   });
+  syncBulkActions();
 })();
