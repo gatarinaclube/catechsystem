@@ -6,9 +6,18 @@
   const lightbox = document.getElementById("photoLightbox");
   const lightboxImage = document.getElementById("lightboxImage");
   const lightboxCode = document.getElementById("lightboxCode");
+  const lightboxPosition = document.getElementById("lightboxPosition");
+  const lightboxSelect = document.getElementById("lightboxSelect");
   const lightboxDownload = document.getElementById("lightboxDownload");
+  const previewButtons = Array.from(document.querySelectorAll("[data-preview-src]"));
   const priceCents = Number(window.__PHOTO_PRICE_CENTS__ || 0);
   const watermarkLogoPath = window.__GATARINA_WATERMARK_LOGO__ || "";
+  const photos = previewButtons.map((button) => ({
+    id: button.dataset.previewId,
+    src: button.dataset.previewSrc,
+    code: button.dataset.previewCode,
+  }));
+  let currentIndex = 0;
   let watermarkLogoPromise = null;
 
   function money(cents) {
@@ -27,15 +36,33 @@
       : "Nenhuma foto selecionada.";
   }
 
-  function openLightbox(src, code) {
-    if (!lightbox || !lightboxImage || !lightboxCode || !lightboxDownload) return;
-    lightboxImage.src = src;
-    lightboxImage.alt = code;
-    lightboxCode.textContent = code;
-    lightboxDownload.href = src;
-    lightboxDownload.download = `${code}-baixa.jpg`;
-    lightboxDownload.dataset.photoSrc = src;
-    lightboxDownload.dataset.photoCode = code;
+  function getCheckboxById(id) {
+    return checkboxes.find((input) => input.value === String(id));
+  }
+
+  function renderLightboxPhoto() {
+    const photo = photos[currentIndex];
+    if (!photo || !lightboxImage || !lightboxCode || !lightboxDownload) return;
+    lightboxImage.src = photo.src;
+    lightboxImage.alt = photo.code;
+    lightboxCode.textContent = photo.code;
+    if (lightboxPosition) {
+      lightboxPosition.textContent = `${currentIndex + 1} de ${photos.length}`;
+    }
+    lightboxDownload.href = photo.src;
+    lightboxDownload.download = `${photo.code}-baixa.jpg`;
+    lightboxDownload.dataset.photoSrc = photo.src;
+    lightboxDownload.dataset.photoCode = photo.code;
+    if (lightboxSelect) {
+      const checkbox = getCheckboxById(photo.id);
+      lightboxSelect.checked = Boolean(checkbox?.checked);
+    }
+  }
+
+  function openLightbox(index) {
+    if (!lightbox || !photos.length) return;
+    currentIndex = index;
+    renderLightboxPhoto();
     lightbox.hidden = false;
     document.body.classList.add("is-lightbox-open");
   }
@@ -45,6 +72,20 @@
     lightbox.hidden = true;
     lightboxImage.src = "";
     document.body.classList.remove("is-lightbox-open");
+  }
+
+  function moveLightbox(direction) {
+    if (!photos.length || !lightbox || lightbox.hidden) return;
+    currentIndex = (currentIndex + direction + photos.length) % photos.length;
+    renderLightboxPhoto();
+  }
+
+  function syncLightboxSelection() {
+    const photo = photos[currentIndex];
+    const checkbox = photo ? getCheckboxById(photo.id) : null;
+    if (!checkbox || !lightboxSelect) return;
+    checkbox.checked = lightboxSelect.checked;
+    syncSelection();
   }
 
   function loadImageUrl(src) {
@@ -110,11 +151,14 @@
   }
 
   checkboxes.forEach((input) => input.addEventListener("change", syncSelection));
-  document.querySelectorAll("[data-preview-src]").forEach((button) => {
+  previewButtons.forEach((button, index) => {
     button.addEventListener("click", () => {
-      openLightbox(button.dataset.previewSrc, button.dataset.previewCode);
+      openLightbox(index);
     });
   });
+  document.querySelector("[data-lightbox-prev]")?.addEventListener("click", () => moveLightbox(-1));
+  document.querySelector("[data-lightbox-next]")?.addEventListener("click", () => moveLightbox(1));
+  lightboxSelect?.addEventListener("change", syncLightboxSelection);
   document.querySelectorAll("[data-close-lightbox]").forEach((button) => {
     button.addEventListener("click", closeLightbox);
   });
@@ -123,6 +167,8 @@
   });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeLightbox();
+    if (event.key === "ArrowLeft") moveLightbox(-1);
+    if (event.key === "ArrowRight") moveLightbox(1);
   });
   syncSelection();
 })();

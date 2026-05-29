@@ -11,7 +11,7 @@
       <div>
         <p>Gatarina Clube</p>
         <h1><%= config.title %></h1>
-        <span>Escolha suas fotos favoritas e solicite os arquivos em alta qualidade.</span>
+        <span>Escolha suas fotos favoritas e solicite os arquivos em alta qualidade, sem a marca d'água do Gatarina.</span>
       </div>
       <div class="gatarina-price-box">
         <small>Valor por foto</small>
@@ -40,6 +40,7 @@
                 class="gatarina-preview-button"
                 data-preview-src="<%= photo.filePath %>"
                 data-preview-code="<%= photo.code %>"
+                data-preview-id="<%= photo.id %>"
                 aria-label="Ampliar <%= photo.code %>"
               >
                 <img src="<%= photo.filePath %>" alt="<%= photo.code %>" loading="lazy" draggable="false" />
@@ -84,6 +85,8 @@
       <div class="gatarina-lightbox-backdrop" data-close-lightbox></div>
       <div class="gatarina-lightbox-dialog" role="dialog" aria-modal="true" aria-label="Foto ampliada">
         <button type="button" class="gatarina-lightbox-close" data-close-lightbox aria-label="Fechar">×</button>
+        <button type="button" class="gatarina-lightbox-nav is-prev" data-lightbox-prev aria-label="Foto anterior">‹</button>
+        <button type="button" class="gatarina-lightbox-nav is-next" data-lightbox-next aria-label="Próxima foto">›</button>
         <div class="gatarina-lightbox-image-wrap">
           <img id="lightboxImage" src="" alt="" />
           <% if (config.watermarkLogoPath) { %>
@@ -91,8 +94,17 @@
           <% } %>
         </div>
         <div class="gatarina-lightbox-footer">
-          <strong id="lightboxCode"></strong>
-          <a id="lightboxDownload" href="#" download data-download-low>Baixar baixa qualidade</a>
+          <div>
+            <strong id="lightboxCode"></strong>
+            <span id="lightboxPosition"></span>
+          </div>
+          <div class="gatarina-lightbox-actions">
+            <label class="gatarina-lightbox-select">
+              <input id="lightboxSelect" type="checkbox" />
+              <span>Selecionar esta foto</span>
+            </label>
+            <a id="lightboxDownload" href="#" download data-download-low>Baixar baixa qualidade</a>
+          </div>
         </div>
       </div>
     </div>
