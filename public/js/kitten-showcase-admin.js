@@ -53,7 +53,7 @@
 
   function updatePublicLink() {
     const slug = (slugInput.value || "").trim();
-    publicLinkButton.href = slug ? `/${slug}` : "#";
+    publicLinkButton.href = slug ? `/vitrine/${slug}` : "#";
   }
 
   function syncPaymentInstallments() {

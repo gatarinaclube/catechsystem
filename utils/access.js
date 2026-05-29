@@ -8,6 +8,13 @@ const ROLES = {
 
 const LEGACY_ROLE_MAP = {
   USER: ROLES.BASIC,
+  BASICO: ROLES.BASIC,
+  "BÁSICO": ROLES.BASIC,
+  BASIC: ROLES.BASIC,
+  PREMIUM: ROLES.PREMIUM,
+  MASTER: ROLES.MASTER,
+  ADMIN: ROLES.ADMIN,
+  CATBREED: ROLES.CATBREED,
 };
 
 const ROLE_LABELS = {
@@ -59,7 +66,8 @@ function normalizeRole(role) {
     return ROLES.BASIC;
   }
 
-  return LEGACY_ROLE_MAP[role] || role;
+  const normalized = String(role).trim().toUpperCase();
+  return LEGACY_ROLE_MAP[normalized] || normalized;
 }
 
 function getRoleLabel(role) {

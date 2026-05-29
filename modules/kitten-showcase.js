@@ -29,6 +29,7 @@ const RESERVED_SLUGS = new Set([
   "settings",
   "uploads",
   "users",
+  "vitrine",
   "vendas",
 ]);
 
@@ -206,7 +207,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const settings = await getSettings(req.session.userId);
     const showcase = await getShowcase(req.session.userId);
     const showcaseLitterLimit = getCreationLimits(req.session.userRole).showcaseLitters;
-    const publicBaseUrl = `${req.protocol}://${req.get("host")}`;
+    const publicBaseUrl = `${req.protocol}://${req.get("host")}/vitrine`;
 
     return res.status(options.status || 200).render("kitten-showcase/admin", {
       user: req.user,
@@ -444,10 +445,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     }
   );
 
-  router.get("/:slug", async (req, res, next) => {
+  async function renderPublicShowcase(req, res, next, rawSlug) {
     try {
-      const slug = slugify(req.params.slug);
-      if (!slug || slug !== req.params.slug || RESERVED_SLUGS.has(slug)) {
+      const slug = slugify(rawSlug);
+      if (!slug || slug !== rawSlug || RESERVED_SLUGS.has(slug)) {
         return next();
       }
 
@@ -492,6 +493,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     } catch (err) {
       next(err);
     }
+  }
+
+  router.get("/vitrine/:slug", async (req, res, next) => {
+    return renderPublicShowcase(req, res, next, req.params.slug);
+  });
+
+  router.get("/:slug", async (req, res, next) => {
+    return renderPublicShowcase(req, res, next, req.params.slug);
   });
 
   return router;
