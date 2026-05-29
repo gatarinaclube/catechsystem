@@ -35,8 +35,17 @@
           <% photos.forEach((photo) => { %>
             <label class="gatarina-public-photo">
               <input type="checkbox" name="photoIds" value="<%= photo.id %>" data-photo-checkbox data-code="<%= photo.code %>" />
-              <img src="<%= photo.filePath %>" alt="<%= photo.code %>" loading="lazy" draggable="false" />
-              <span><%= photo.code %></span>
+              <button
+                type="button"
+                class="gatarina-preview-button"
+                data-preview-src="<%= photo.filePath %>"
+                data-preview-code="<%= photo.code %>"
+                aria-label="Ampliar <%= photo.code %>"
+              >
+                <img src="<%= photo.filePath %>" alt="<%= photo.code %>" loading="lazy" draggable="false" />
+              </button>
+              <span class="gatarina-photo-code"><%= photo.code %></span>
+              <a class="gatarina-download-link" href="<%= photo.filePath %>" download="<%= photo.code %>-baixa.jpg">Baixar baixa qualidade</a>
             </label>
           <% }) %>
         </div>
@@ -60,6 +69,18 @@
         </aside>
       </form>
     </main>
+
+    <div class="gatarina-lightbox" id="photoLightbox" hidden>
+      <div class="gatarina-lightbox-backdrop" data-close-lightbox></div>
+      <div class="gatarina-lightbox-dialog" role="dialog" aria-modal="true" aria-label="Foto ampliada">
+        <button type="button" class="gatarina-lightbox-close" data-close-lightbox aria-label="Fechar">×</button>
+        <img id="lightboxImage" src="" alt="" />
+        <div class="gatarina-lightbox-footer">
+          <strong id="lightboxCode"></strong>
+          <a id="lightboxDownload" href="#" download>Baixar baixa qualidade</a>
+        </div>
+      </div>
+    </div>
 
     <script>
       window.__PHOTO_PRICE_CENTS__ = <%= Number(config.priceCents || 0) %>;

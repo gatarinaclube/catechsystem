@@ -168,7 +168,8 @@
 
 .gatarina-public-photo {
   position: relative;
-  display: block;
+  display: flex;
+  flex-direction: column;
   cursor: pointer;
   border-radius: 8px;
   overflow: hidden;
@@ -185,18 +186,39 @@
   height: 20px;
 }
 
-.gatarina-public-photo img {
+.gatarina-preview-button {
+  display: block;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.gatarina-preview-button img {
   display: block;
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
 }
 
-.gatarina-public-photo span {
+.gatarina-photo-code {
   display: block;
   padding: 8px 10px;
   font-size: 12px;
   font-weight: 700;
+}
+
+.gatarina-download-link {
+  display: block;
+  padding: 0 10px 10px;
+  color: #31513d;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.gatarina-download-link:hover {
+  text-decoration: underline;
 }
 
 .gatarina-public-photo:has(input:checked) {
@@ -263,6 +285,80 @@
   padding: 24px;
   border-radius: 8px;
   background: #ffffff;
+}
+
+.is-lightbox-open {
+  overflow: hidden;
+}
+
+.gatarina-lightbox[hidden] {
+  display: none;
+}
+
+.gatarina-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+}
+
+.gatarina-lightbox-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.82);
+}
+
+.gatarina-lightbox-dialog {
+  position: relative;
+  width: min(1100px, 100%);
+  max-height: calc(100vh - 44px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+.gatarina-lightbox-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.78);
+  color: #ffffff;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.gatarina-lightbox-dialog img {
+  display: block;
+  width: 100%;
+  max-height: calc(100vh - 120px);
+  object-fit: contain;
+  background: #111827;
+}
+
+.gatarina-lightbox-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #ffffff;
+}
+
+.gatarina-lightbox-footer a {
+  color: #31513d;
+  font-weight: 800;
+  text-decoration: none;
 }
 
 @media (max-width: 900px) {
