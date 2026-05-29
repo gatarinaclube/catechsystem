@@ -44,9 +44,6 @@
                 aria-label="Ampliar <%= photo.code %>"
               >
                 <img src="<%= photo.filePath %>" alt="<%= photo.code %>" loading="lazy" draggable="false" />
-                <% if (config.watermarkLogoPath) { %>
-                  <img class="gatarina-watermark-logo" src="<%= config.watermarkLogoPath %>" alt="" loading="lazy" />
-                <% } %>
               </button>
               <span class="gatarina-photo-code"><%= photo.code %></span>
               <a
@@ -89,9 +86,6 @@
         <button type="button" class="gatarina-lightbox-nav is-next" data-lightbox-next aria-label="Próxima foto">›</button>
         <div class="gatarina-lightbox-image-wrap">
           <img id="lightboxImage" src="" alt="" />
-          <% if (config.watermarkLogoPath) { %>
-            <img class="gatarina-lightbox-watermark" src="<%= config.watermarkLogoPath %>" alt="" />
-          <% } %>
         </div>
         <div class="gatarina-lightbox-footer">
           <div>

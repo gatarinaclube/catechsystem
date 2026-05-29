@@ -273,20 +273,6 @@
   object-fit: cover;
 }
 
-.gatarina-preview-button .gatarina-watermark-logo {
-  position: absolute;
-  left: 50%;
-  bottom: 7%;
-  width: min(24%, 110px);
-  height: auto;
-  max-height: 16%;
-  aspect-ratio: auto;
-  object-fit: contain;
-  transform: translateX(-50%);
-  opacity: 0.88;
-  pointer-events: none;
-}
-
 .gatarina-photo-code {
   display: block;
   padding: 8px 10px;
@@ -459,18 +445,6 @@
   width: 100%;
   max-height: calc(100vh - 120px);
   object-fit: contain;
-}
-
-.gatarina-lightbox-watermark {
-  position: absolute;
-  left: 50%;
-  bottom: 5%;
-  width: min(22%, 190px);
-  max-height: 14%;
-  object-fit: contain;
-  transform: translateX(-50%);
-  opacity: 0.88;
-  pointer-events: none;
 }
 
 .gatarina-lightbox-footer {
