@@ -195,7 +195,7 @@
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 8px;
   padding: 14px 18px;
-  min-width: 150px;
+  min-width: 230px;
 }
 
 .gatarina-price-box small {
@@ -204,9 +204,32 @@
 }
 
 .gatarina-price-box strong {
-  display: block;
-  margin-top: 4px;
-  font-size: 24px;
+  font-size: 14px;
+}
+
+.gatarina-price-box div,
+.gatarina-price-admin div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+.gatarina-price-admin {
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #ffffff;
+}
+
+.gatarina-price-admin span {
+  color: var(--text-muted);
+}
+
+.gatarina-price-admin strong {
+  color: var(--text-main);
+  text-align: right;
 }
 
 .gatarina-public-message {

@@ -10,7 +10,7 @@
   const lightboxSelect = document.getElementById("lightboxSelect");
   const lightboxDownload = document.getElementById("lightboxDownload");
   const previewButtons = Array.from(document.querySelectorAll("[data-preview-src]"));
-  const priceCents = Number(window.__PHOTO_PRICE_CENTS__ || 0);
+  const priceTiers = Array.isArray(window.__PHOTO_PRICE_TIERS__) ? window.__PHOTO_PRICE_TIERS__ : [];
   const photos = previewButtons.map((button) => ({
     id: button.dataset.previewId,
     src: button.dataset.previewSrc,
@@ -25,10 +25,18 @@
     }).format(cents / 100);
   }
 
+  function unitPriceCents(quantity) {
+    const tier = priceTiers.find((item) => (
+      quantity >= item.min && (item.max === null || quantity <= item.max)
+    ));
+    return Number(tier?.cents || 0);
+  }
+
   function syncSelection() {
     const selected = checkboxes.filter((input) => input.checked);
+    const unitPrice = unitPriceCents(selected.length);
     count.textContent = `${selected.length} foto(s)`;
-    total.textContent = money(selected.length * priceCents);
+    total.textContent = money(selected.length * unitPrice);
     codes.textContent = selected.length
       ? selected.map((input) => input.dataset.code).join(", ")
       : "Nenhuma foto selecionada.";

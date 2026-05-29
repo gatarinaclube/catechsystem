@@ -37,12 +37,13 @@
                 <input id="title" name="title" value="<%= config.title || '' %>" required />
               </div>
               <div class="field">
-                <label class="field-label" for="price">Valor por foto</label>
-                <input id="price" name="price" value="<%= config.priceValue %>" inputmode="decimal" required />
-              </div>
-              <div class="field">
                 <label class="field-label" for="contactEmail">E-mail para pedidos</label>
                 <input id="contactEmail" name="contactEmail" type="email" value="<%= config.contactEmail || '' %>" placeholder="opcional" />
+              </div>
+              <div class="gatarina-price-admin">
+                <% config.priceTable.forEach((row) => { %>
+                  <div><span><%= row.label %></span><strong><%= row.value %></strong></div>
+                <% }) %>
               </div>
               <label class="gatarina-toggle">
                 <input type="checkbox" name="published" <%= config.published ? 'checked' : '' %> />

@@ -59,14 +59,25 @@ function formatMoney(cents) {
   }).format(Number(cents || 0) / 100);
 }
 
-function parseMoneyToCents(value) {
-  const normalized = String(value || "")
-    .replace(/[^\d,.-]/g, "")
-    .replace(/\./g, "")
-    .replace(",", ".");
-  const number = Number(normalized);
-  if (!Number.isFinite(number) || number < 0) return 0;
-  return Math.round(number * 100);
+function photoUnitPriceCents(quantity) {
+  if (quantity <= 0) return 0;
+  if (quantity === 1) return 5000;
+  if (quantity <= 3) return 3500;
+  if (quantity <= 5) return 3000;
+  return 2000;
+}
+
+function photoTotalCents(quantity) {
+  return photoUnitPriceCents(quantity) * quantity;
+}
+
+function photoPriceTable() {
+  return [
+    { label: "1 foto", value: formatMoney(5000) },
+    { label: "2-3 fotos", value: `${formatMoney(3500)} cada` },
+    { label: "4-5 fotos", value: `${formatMoney(3000)} cada` },
+    { label: "A partir da 6ª foto", value: `${formatMoney(2000)} cada` },
+  ];
 }
 
 function splitEmails(value) {
@@ -107,16 +118,14 @@ async function getConfig(prisma) {
 
 async function saveConfig(prisma, body) {
   const title = String(body.title || "Gatarina Show 2026").trim();
-  const priceCents = parseMoneyToCents(body.price);
   const published = body.published === "on";
   const contactEmail = String(body.contactEmail || "").trim();
 
   await prisma.$executeRaw`
     INSERT INTO "GatarinaPhotoGalleryConfig" ("eventKey", "title", "priceCents", "published", "contactEmail", "updatedAt")
-    VALUES (${EVENT_KEY}, ${title}, ${priceCents}, ${published}, ${contactEmail || null}, CURRENT_TIMESTAMP)
+    VALUES (${EVENT_KEY}, ${title}, 3000, ${published}, ${contactEmail || null}, CURRENT_TIMESTAMP)
     ON CONFLICT ("eventKey") DO UPDATE SET
       "title" = EXCLUDED."title",
-      "priceCents" = EXCLUDED."priceCents",
       "published" = EXCLUDED."published",
       "contactEmail" = EXCLUDED."contactEmail",
       "updatedAt" = CURRENT_TIMESTAMP
@@ -164,7 +173,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       res.render("gatarina-show/public", {
         config: {
           ...config,
-          priceLabel: formatMoney(config.priceCents),
+          priceTable: photoPriceTable(),
         },
         photos: await listPublicPhotos(prisma),
         success: req.query.ok === "1",
@@ -185,7 +194,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       if (!ids.length) {
         return res.status(400).render("gatarina-show/public", {
-          config: { ...config, priceLabel: formatMoney(config.priceCents) },
+          config: { ...config, priceTable: photoPriceTable() },
           photos: await listPublicPhotos(prisma),
           success: false,
           error: "Selecione pelo menos uma foto.",
@@ -199,7 +208,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       if (!name || !email) {
         return res.status(400).render("gatarina-show/public", {
-          config: { ...config, priceLabel: formatMoney(config.priceCents) },
+          config: { ...config, priceTable: photoPriceTable() },
           photos: await listPublicPhotos(prisma),
           success: false,
           error: "Informe nome e e-mail.",
@@ -217,7 +226,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       if (!photos.length) {
         return res.status(400).render("gatarina-show/public", {
-          config: { ...config, priceLabel: formatMoney(config.priceCents) },
+          config: { ...config, priceTable: photoPriceTable() },
           photos: await listPublicPhotos(prisma),
           success: false,
           error: "As fotos selecionadas não estão disponíveis.",
@@ -229,7 +238,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         code: photo.code,
         filePath: photo.filePath,
       })));
-      const totalCents = Number(config.priceCents || 0) * photos.length;
+      const unitPriceCents = photoUnitPriceCents(photos.length);
+      const totalCents = photoTotalCents(photos.length);
 
       await prisma.$executeRaw`
         INSERT INTO "GatarinaPhotoRequest" (
@@ -238,7 +248,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         )
         VALUES (
           ${EVENT_KEY}, ${name}, ${email}, ${phone || null}, ${note || null},
-          ${selectedJson}, ${photos.length}, ${Number(config.priceCents || 0)}, ${totalCents}, CURRENT_TIMESTAMP
+          ${selectedJson}, ${photos.length}, ${unitPriceCents}, ${totalCents}, CURRENT_TIMESTAMP
         )
       `;
 
@@ -255,7 +265,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               <p><strong>E-mail:</strong> ${escapeHtml(email)}</p>
               <p><strong>Telefone:</strong> ${escapeHtml(phone || "-")}</p>
               <p><strong>Quantidade:</strong> ${photos.length}</p>
-              <p><strong>Valor unitário:</strong> ${formatMoney(config.priceCents)}</p>
+              <p><strong>Valor unitário:</strong> ${formatMoney(unitPriceCents)}</p>
               <p><strong>Total estimado:</strong> ${formatMoney(totalCents)}</p>
               ${note ? `<p><strong>Observação:</strong> ${escapeHtml(note)}</p>` : ""}
               <p><strong>Fotos solicitadas:</strong></p>
@@ -290,7 +300,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         currentPath: "/admin/fotos-gatarina-2026",
         config: {
           ...config,
-          priceValue: (Number(config.priceCents || 0) / 100).toFixed(2).replace(".", ","),
+          priceTable: photoPriceTable(),
         },
         photos,
         requests,
