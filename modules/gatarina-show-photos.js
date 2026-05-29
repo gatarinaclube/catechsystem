@@ -222,11 +222,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       await prisma.$executeRaw`
         INSERT INTO "GatarinaPhotoRequest" (
           "eventKey", "customerName", "customerEmail", "customerPhone", "note",
-          "selectedPhotosJson", "quantity", "unitPriceCents", "totalCents"
+          "selectedPhotosJson", "quantity", "unitPriceCents", "totalCents", "updatedAt"
         )
         VALUES (
           ${EVENT_KEY}, ${name}, ${email}, ${phone || null}, ${note || null},
-          ${selectedJson}, ${photos.length}, ${Number(config.priceCents || 0)}, ${totalCents}
+          ${selectedJson}, ${photos.length}, ${Number(config.priceCents || 0)}, ${totalCents}, CURRENT_TIMESTAMP
         )
       `;
 
@@ -324,8 +324,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           const code = `GS2026-${String(sortOrder).padStart(4, "0")}`;
           const filePath = `/uploads/gatarina-show-2026/${file.filename}`;
           await prisma.$executeRaw`
-            INSERT INTO "GatarinaPhoto" ("eventKey", "code", "filePath", "originalName", "sizeBytes", "sortOrder")
-            VALUES (${EVENT_KEY}, ${code}, ${filePath}, ${file.originalname || null}, ${file.size || null}, ${sortOrder})
+            INSERT INTO "GatarinaPhoto" ("eventKey", "code", "filePath", "originalName", "sizeBytes", "sortOrder", "updatedAt")
+            VALUES (${EVENT_KEY}, ${code}, ${filePath}, ${file.originalname || null}, ${file.size || null}, ${sortOrder}, CURRENT_TIMESTAMP)
           `;
         }
 
@@ -341,7 +341,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const id = Number(req.params.id);
       await prisma.$executeRaw`
         UPDATE "GatarinaPhoto"
-        SET "active" = NOT "active"
+        SET "active" = NOT "active",
+            "updatedAt" = CURRENT_TIMESTAMP
         WHERE "id" = ${id}
           AND "eventKey" = ${EVENT_KEY}
       `;
