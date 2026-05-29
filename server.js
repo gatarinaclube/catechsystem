@@ -75,6 +75,56 @@ function serviceZipName(service) {
   return `Serviço ${service.id} - ${service.type}.zip`;
 }
 
+function buildProfileAccessGroups(role) {
+  const groups = [
+    {
+      title: "Operacional",
+      modules: [
+        { label: "Vitrine de Filhotes", permission: "showcase.manage" },
+        { label: "Reprodutores", permission: "admin.breeders" },
+        { label: "Ninhadas", permission: "admin.litters" },
+        { label: "Filhotes", permission: "admin.kittens" },
+        { label: "Acasalamentos", permission: "admin.matings" },
+        { label: "Vacinação", permission: "admin.vaccinations" },
+        { label: "Vermifugação", permission: "admin.deworming" },
+        { label: "Pesagem", permission: "admin.weighing" },
+        { label: "Exames", permission: "admin.exams" },
+        { label: "Histórico", permission: "admin.history" },
+      ],
+    },
+    {
+      title: "Tático",
+      modules: [
+        { label: "CRM", permission: "admin.crm" },
+        { label: "Vendas", permission: "admin.sales" },
+      ],
+    },
+    {
+      title: "Estratégico",
+      modules: [
+        { label: "Receitas", permission: "admin.revenues" },
+        { label: "Despesas", permission: "admin.quickLaunch" },
+        { label: "Relatórios", permission: "admin.reports" },
+        { label: "Administrativo", permission: "admin.administrative" },
+      ],
+    },
+    {
+      title: "Academy",
+      modules: [
+        { label: "CatBreeder Pro", permission: "academy.access" },
+      ],
+    },
+  ];
+
+  return groups.map((group) => ({
+    ...group,
+    modules: group.modules.map((module) => ({
+      ...module,
+      allowed: userCan(role, module.permission),
+    })),
+  }));
+}
+
 function buildProfilePlanCards(currentRole) {
   return [ROLES.PREMIUM, ROLES.MASTER, ROLES.BASIC].map((role) => {
     const limits = getCreationLimits(role);
@@ -91,6 +141,7 @@ function buildProfilePlanCards(currentRole) {
       role,
       title: getRoleLabel(role),
       isCurrent: normalizeRole(currentRole) === role,
+      accessGroups: buildProfileAccessGroups(role),
       items: [
         { label: "Padreadores", value: limitLabel(limits.breeders) },
         { label: "Tamanho por arquivo", value: uploadLimit.label },
@@ -171,7 +222,8 @@ function requireAdmin(req, res, next) {
 
 function requirePermission(permission) {
   return (req, res, next) => {
-    if (!userCan(req.session?.userRole, permission)) {
+    const role = req.user?.role || req.session?.userRole;
+    if (!userCan(role, permission)) {
       return res
         .status(403)
         .send("Seu perfil não possui acesso a este módulo.");
@@ -255,6 +307,8 @@ app.use(async (req, res, next) => {
 app.get("/", (req, res) => {
   return res.redirect("/dashboard");
 });
+
+app.use(kittenShowcaseRouterFactory.publicRouter(prisma));
 
 // ---------- LOGIN ----------
 app.get("/login", (req, res) => {

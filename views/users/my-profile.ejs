@@ -106,6 +106,24 @@
                       </div>
                     <% }) %>
                   </div>
+
+                  <div class="profile-module-access">
+                    <% plan.accessGroups.forEach((group) => { %>
+                      <div class="profile-module-group">
+                        <div class="profile-module-group-title"><%= group.title %></div>
+                        <div class="profile-module-list">
+                          <% group.modules.forEach((module) => { %>
+                            <div class="profile-module-row">
+                              <span><%= module.label %></span>
+                              <strong class="<%= module.allowed ? 'is-allowed' : 'is-blocked' %>">
+                                <%= module.allowed ? 'Liberado' : 'Bloqueado' %>
+                              </strong>
+                            </div>
+                          <% }) %>
+                        </div>
+                      </div>
+                    <% }) %>
+                  </div>
                 </div>
               <% }) %>
             </div>

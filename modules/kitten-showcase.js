@@ -178,6 +178,66 @@ function publicKittenName(kitten, counters) {
   return `${sex} ${String(counters[kitten.sex]).padStart(2, "0")}`;
 }
 
+async function renderPublicShowcase(prisma, req, res, next, rawSlug) {
+  try {
+    const slug = slugify(rawSlug);
+    if (!slug || RESERVED_SLUGS.has(slug)) {
+      return next();
+    }
+
+    const showcase = await prisma.catteryKittenShowcase.findUnique({
+      where: { slug },
+      include: {
+        owner: { include: { settings: true } },
+        litters: {
+          where: { published: true },
+          orderBy: [{ birthDate: "asc" }, { id: "asc" }],
+          include: {
+            kittens: {
+              where: { available: true },
+              orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+              include: { photos: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }] } },
+            },
+          },
+        },
+      },
+    });
+
+    if (!showcase || !showcase.published) return next();
+
+    const litters = showcase.litters.map((litter) => {
+      const counters = { M: 0, F: 0 };
+      return {
+        ...litter,
+        birthDateLabel: publicDate(litter.birthDate),
+        deliveryForecastLabel: publicDate(litter.deliveryForecast),
+        kittens: sortPublicKittens(litter.kittens).map((kitten) => ({
+          ...kitten,
+          displayName: publicKittenName(kitten, counters),
+        })),
+      };
+    });
+
+    return res.render("kitten-showcase/public", {
+      showcase,
+      settings: showcase.owner?.settings || null,
+      litters,
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+function publicRouter(prisma) {
+  const router = express.Router();
+
+  router.get("/vitrine/:slug", async (req, res, next) => {
+    return renderPublicShowcase(prisma, req, res, next, req.params.slug);
+  });
+
+  return router;
+}
+
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
   const upload = createUpload();
@@ -445,63 +505,15 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     }
   );
 
-  async function renderPublicShowcase(req, res, next, rawSlug) {
-    try {
-      const slug = slugify(rawSlug);
-      if (!slug || slug !== rawSlug || RESERVED_SLUGS.has(slug)) {
-        return next();
-      }
-
-      const showcase = await prisma.catteryKittenShowcase.findUnique({
-        where: { slug },
-        include: {
-          owner: { include: { settings: true } },
-          litters: {
-            where: { published: true },
-            orderBy: [{ birthDate: "asc" }, { id: "asc" }],
-            include: {
-              kittens: {
-                where: { available: true },
-                orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
-                include: { photos: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }] } },
-              },
-            },
-          },
-        },
-      });
-
-      if (!showcase || !showcase.published) return next();
-
-      const litters = showcase.litters.map((litter) => {
-        const counters = { M: 0, F: 0 };
-        return {
-          ...litter,
-          birthDateLabel: publicDate(litter.birthDate),
-          deliveryForecastLabel: publicDate(litter.deliveryForecast),
-          kittens: sortPublicKittens(litter.kittens).map((kitten) => ({
-            ...kitten,
-            displayName: publicKittenName(kitten, counters),
-          })),
-        };
-      });
-
-      res.render("kitten-showcase/public", {
-        showcase,
-        settings: showcase.owner?.settings || null,
-        litters,
-      });
-    } catch (err) {
-      next(err);
-    }
-  }
-
   router.get("/vitrine/:slug", async (req, res, next) => {
-    return renderPublicShowcase(req, res, next, req.params.slug);
+    return renderPublicShowcase(prisma, req, res, next, req.params.slug);
   });
 
   router.get("/:slug", async (req, res, next) => {
-    return renderPublicShowcase(req, res, next, req.params.slug);
+    return renderPublicShowcase(prisma, req, res, next, req.params.slug);
   });
 
   return router;
 };
+
+module.exports.publicRouter = publicRouter;
