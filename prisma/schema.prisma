@@ -365,6 +365,7 @@ model CatteryShowcaseLitter {
   fatherPhoto String?
   fatherPhoto2 String?
   fatherColor String?
+  fatherNote  String?
   fatherPkdef String?
   fatherPra   String?
   fatherHcm   String?
@@ -373,6 +374,7 @@ model CatteryShowcaseLitter {
   motherPhoto String?
   motherPhoto2 String?
   motherColor String?
+  motherNote  String?
   motherPkdef String?
   motherPra   String?
   motherHcm   String?

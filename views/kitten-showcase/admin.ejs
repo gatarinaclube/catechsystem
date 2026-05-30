@@ -168,9 +168,17 @@
             <div class="content-sub">As ninhadas mais antigas aparecem primeiro no link público.</div>
           </div>
           <div class="actions">
+            <button type="button" class="btn" data-hide-litter>Ocultar</button>
             <button type="button" class="btn" data-remove-litter>Remover</button>
           </div>
         </div>
+
+        <button type="button" class="showcase-litter-summary" data-litter-summary>
+          <span data-litter-summary-title>Ninhada oculta</span>
+          <small data-litter-summary-sub>Editar ninhada</small>
+        </button>
+
+        <div class="showcase-litter-body" data-litter-body>
 
         <div class="grid-3">
           <div class="field">
@@ -210,6 +218,10 @@
               <div class="field"><label class="field-label">PRA</label><select data-field="fatherPra"><option value="">Não mostrar</option><option>N/N</option><option>N/PRA</option></select></div>
               <div class="field"><label class="field-label">HCM</label><input data-field="fatherHcm" type="text" placeholder="Negativo" /></div>
             </div>
+            <div class="field" style="margin-top:12px;">
+              <label class="field-label">Observação sobre o pai</label>
+              <textarea data-field="fatherNote" rows="3" placeholder="Ex.: temperamento, títulos, origem ou informação relevante"></textarea>
+            </div>
           </div>
 
           <div class="field-panel">
@@ -229,11 +241,16 @@
               <div class="field"><label class="field-label">PRA</label><select data-field="motherPra"><option value="">Não mostrar</option><option>N/N</option><option>N/PRA</option></select></div>
               <div class="field"><label class="field-label">HCM</label><input data-field="motherHcm" type="text" placeholder="Negativo" /></div>
             </div>
+            <div class="field" style="margin-top:12px;">
+              <label class="field-label">Observação sobre a mãe</label>
+              <textarea data-field="motherNote" rows="3" placeholder="Ex.: temperamento, maternidade, títulos ou informação relevante"></textarea>
+            </div>
           </div>
         </div>
 
         <div class="showcase-kittens" data-kittens></div>
         <button type="button" class="btn" data-add-kitten>+ filhote</button>
+        </div>
       </section>
     </template>
 

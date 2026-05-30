@@ -296,7 +296,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           ? "Ilimitado"
           : `${showcaseLitterLimit} ninhada${showcaseLitterLimit === 1 ? "" : "s"} por vez`,
         littersNote: showcaseLitterLimit === 1
-          ? "Seu perfil permite manter 1 ninhada na vitrine. Para incluir uma nova, remova a ninhada atual."
+          ? "Seu perfil permite manter 1 ninhada publicada na vitrine. Ninhadas ocultas ficam salvas e não entram neste limite."
           : null,
       },
       publicBaseUrl,
@@ -383,8 +383,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
         const litters = Array.isArray(payload.litters) ? payload.litters : [];
         const showcaseLitterLimit = getCreationLimits(req.session.userRole).showcaseLitters;
-        if (showcaseLitterLimit !== null && litters.length > showcaseLitterLimit) {
-          throw new Error(`Seu perfil permite até ${showcaseLitterLimit} ninhada${showcaseLitterLimit === 1 ? "" : "s"} na vitrine por vez.`);
+        const publishedLitters = litters.filter((litter) => litter.published !== false);
+        if (showcaseLitterLimit !== null && publishedLitters.length > showcaseLitterLimit) {
+          throw new Error(`Seu perfil permite até ${showcaseLitterLimit} ninhada${showcaseLitterLimit === 1 ? "" : "s"} publicada${showcaseLitterLimit === 1 ? "" : "s"} na vitrine por vez. Ninhadas ocultas não entram neste limite.`);
         }
 
         for (const litter of litters) {
@@ -474,6 +475,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
                 fatherPhoto: fatherPhotos[0] || null,
                 fatherPhoto2: fatherPhotos[1] || null,
                 fatherColor: compact(litter.fatherColor),
+                fatherNote: compact(litter.fatherNote),
                 fatherPkdef: compact(litter.fatherPkdef),
                 fatherPra: compact(litter.fatherPra),
                 fatherHcm: compact(litter.fatherHcm),
@@ -481,6 +483,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
                 motherPhoto: motherPhotos[0] || null,
                 motherPhoto2: motherPhotos[1] || null,
                 motherColor: compact(litter.motherColor),
+                motherNote: compact(litter.motherNote),
                 motherPkdef: compact(litter.motherPkdef),
                 motherPra: compact(litter.motherPra),
                 motherHcm: compact(litter.motherHcm),

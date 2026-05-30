@@ -112,8 +112,8 @@
 
           <div class="public-parent-grid">
             <% [
-              { label: 'Pai', name: litter.fatherName, photos: [litter.fatherPhoto, litter.fatherPhoto2].filter(Boolean), color: litter.fatherColor, pkdef: litter.fatherPkdef, pra: litter.fatherPra, hcm: litter.fatherHcm },
-              { label: 'Mãe', name: litter.motherName, photos: [litter.motherPhoto, litter.motherPhoto2].filter(Boolean), color: litter.motherColor, pkdef: litter.motherPkdef, pra: litter.motherPra, hcm: litter.motherHcm }
+              { label: 'Pai', name: litter.fatherName, photos: [litter.fatherPhoto, litter.fatherPhoto2].filter(Boolean), color: litter.fatherColor, note: litter.fatherNote, pkdef: litter.fatherPkdef, pra: litter.fatherPra, hcm: litter.fatherHcm },
+              { label: 'Mãe', name: litter.motherName, photos: [litter.motherPhoto, litter.motherPhoto2].filter(Boolean), color: litter.motherColor, note: litter.motherNote, pkdef: litter.motherPkdef, pra: litter.motherPra, hcm: litter.motherHcm }
             ].forEach(function(parent) { %>
               <article class="public-parent">
                 <% if (parent.photos.length) { %>
@@ -125,6 +125,9 @@
                 <div>
                   <p class="public-label"><%= parent.label %></p>
                   <h3><%= parent.name %></h3>
+                  <% if (parent.note) { %>
+                    <p class="public-parent-note"><%= parent.note %></p>
+                  <% } %>
                   <dl>
                     <% if (parent.color) { %><div><dt>Cor</dt><dd><%= parent.color %></dd></div><% } %>
                     <% if (parent.pkdef) { %><div><dt>PKDef</dt><dd><%= parent.pkdef %></dd></div><% } %>

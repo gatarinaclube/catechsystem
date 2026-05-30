@@ -368,6 +368,15 @@ body {
   line-height: 1.2;
 }
 
+.public-parent-note {
+  margin: 9px 0 0;
+  color: var(--showcase-text, #475569);
+  font-size: 14px;
+  line-height: 1.5;
+  opacity: 0.82;
+  white-space: pre-wrap;
+}
+
 .public-parent dl {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

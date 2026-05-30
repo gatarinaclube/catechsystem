@@ -45,13 +45,23 @@
   }
 
   function updateTitles() {
+    let visibleIndex = 0;
+    let hiddenIndex = 0;
     root.querySelectorAll("[data-litter]").forEach((litter, index) => {
       const title = litter.querySelector("[data-litter-title]");
-      title.textContent = `Ninhada ${index + 1}`;
+      const published = getValue(field(litter, "published")) !== false;
+      if (published) {
+        visibleIndex += 1;
+        title.textContent = `Ninhada ${visibleIndex}`;
+      } else {
+        hiddenIndex += 1;
+        title.textContent = `Ninhada oculta ${hiddenIndex}`;
+      }
       litter.querySelectorAll("[data-kitten]").forEach((kitten, kittenIndex) => {
         const kittenTitle = kitten.querySelector("[data-kitten-title]");
         kittenTitle.textContent = `Filhote ${kittenIndex + 1}`;
       });
+      syncLitterSummary(litter);
     });
   }
 
@@ -77,7 +87,19 @@
   }
 
   function litterLimitReached() {
-    return Number.isInteger(limits.litters) && root.querySelectorAll("[data-litter]").length >= limits.litters;
+    if (!Number.isInteger(limits.litters)) return false;
+    return publishedLitterCount() >= limits.litters;
+  }
+
+  function publishedLitterCount(exceptLitter) {
+    return Array.from(root.querySelectorAll("[data-litter]"))
+      .filter((litter) => litter !== exceptLitter)
+      .filter((litter) => getValue(field(litter, "published")) !== false)
+      .length;
+  }
+
+  function canPublishLitter(litter) {
+    return !Number.isInteger(limits.litters) || publishedLitterCount(litter) < limits.litters;
   }
 
   function syncLitterLimit() {
@@ -92,6 +114,41 @@
     const grid = litter.querySelector(`[data-parent-photo-grid="${type}"]`);
     if (!grid || !url) return;
     grid.appendChild(makeParentPhotoCard(url));
+  }
+
+  function syncLitterSummary(litter) {
+    const father = getValue(field(litter, "fatherName")) || "Padreador não informado";
+    const mother = getValue(field(litter, "motherName")) || "Matriz não informada";
+    const birthDate = getValue(field(litter, "birthDate"));
+    const title = litter.querySelector("[data-litter-summary-title]");
+    const subtitle = litter.querySelector("[data-litter-summary-sub]");
+    if (title) title.textContent = `${father} × ${mother}`;
+    if (subtitle) subtitle.textContent = birthDate ? `Nascimento: ${birthDate}` : "Clique para editar esta ninhada";
+  }
+
+  function setCollapsedControls(litter, collapsed) {
+    litter.querySelectorAll("[data-litter-body] input, [data-litter-body] select, [data-litter-body] textarea, [data-litter-body] button")
+      .forEach((control) => {
+        control.disabled = collapsed;
+      });
+  }
+
+  function syncLitterVisibility(litter, options = {}) {
+    const publishedInput = field(litter, "published");
+    const published = getValue(publishedInput) !== false;
+    litter.classList.toggle("is-hidden-litter", !published);
+
+    const hideButton = litter.querySelector("[data-hide-litter]");
+    if (hideButton) hideButton.textContent = published ? "Ocultar" : "Reativar";
+
+    if (!published && options.move !== false) {
+      root.appendChild(litter);
+    }
+
+    setCollapsedControls(litter, !published);
+    syncLitterSummary(litter);
+    updateTitles();
+    syncLitterLimit();
   }
 
   function filesAreWithinLimit(input) {
@@ -190,15 +247,31 @@
       "note",
       "fatherName",
       "fatherColor",
+      "fatherNote",
       "fatherPkdef",
       "fatherPra",
       "fatherHcm",
       "motherName",
       "motherColor",
+      "motherNote",
       "motherPkdef",
       "motherPra",
       "motherHcm",
     ].forEach((name) => setValue(field(node, name), data?.[name]));
+
+    ["birthDate", "fatherName", "motherName"].forEach((name) => {
+      const input = field(node, name);
+      if (input) input.addEventListener("input", () => syncLitterSummary(node));
+    });
+
+    const publishedInput = field(node, "published");
+    publishedInput.addEventListener("change", () => {
+      if (publishedInput.checked && !canPublishLitter(node)) {
+        publishedInput.checked = false;
+        alert(limits.littersNote || "O limite considera apenas ninhadas publicadas. Oculte uma ninhada para liberar espaço na vitrine.");
+      }
+      syncLitterVisibility(node);
+    });
 
     ["father", "mother"].forEach((type) => {
       const photoInput = node.querySelector(`[data-parent-photo="${type}"]`);
@@ -228,6 +301,23 @@
       syncLitterLimit();
     });
 
+    node.querySelector("[data-hide-litter]").addEventListener("click", () => {
+      const isPublished = getValue(publishedInput) !== false;
+      if (!isPublished && !canPublishLitter(node)) {
+        alert(limits.littersNote || "O limite considera apenas ninhadas publicadas. Oculte uma ninhada para liberar espaço na vitrine.");
+        return;
+      }
+      publishedInput.checked = !isPublished;
+      syncLitterVisibility(node);
+    });
+
+    node.querySelector("[data-litter-summary]").addEventListener("click", () => {
+      if (!node.classList.contains("is-hidden-litter")) return;
+      node.classList.remove("is-hidden-litter");
+      setCollapsedControls(node, false);
+      syncLitterSummary(node);
+    });
+
     node.querySelector("[data-add-kitten]").addEventListener("click", () => {
       addKitten(node, { sex: "M", available: true, photos: [] });
     });
@@ -235,6 +325,7 @@
     root.appendChild(node);
     const kittens = data?.kittens && data.kittens.length ? data.kittens : [{ sex: "M", available: true, photos: [] }];
     kittens.forEach((kitten) => addKitten(node, kitten));
+    syncLitterVisibility(node, { move: false });
     updateTitles();
     syncLitterLimit();
   }
@@ -251,6 +342,7 @@
         .map((card) => card.dataset.path)
         .filter(Boolean),
       fatherColor: getValue(field(litter, "fatherColor")),
+      fatherNote: getValue(field(litter, "fatherNote")),
       fatherPkdef: getValue(field(litter, "fatherPkdef")),
       fatherPra: getValue(field(litter, "fatherPra")),
       fatherHcm: getValue(field(litter, "fatherHcm")),
@@ -259,6 +351,7 @@
         .map((card) => card.dataset.path)
         .filter(Boolean),
       motherColor: getValue(field(litter, "motherColor")),
+      motherNote: getValue(field(litter, "motherNote")),
       motherPkdef: getValue(field(litter, "motherPkdef")),
       motherPra: getValue(field(litter, "motherPra")),
       motherHcm: getValue(field(litter, "motherHcm")),
@@ -275,7 +368,11 @@
       })),
     }));
 
-    litters.sort((a, b) => (a.birthDate || "").localeCompare(b.birthDate || ""));
+    litters.sort((a, b) => {
+      const publishedOrder = Number(a.published === false) - Number(b.published === false);
+      if (publishedOrder !== 0) return publishedOrder;
+      return (a.birthDate || "").localeCompare(b.birthDate || "");
+    });
 
     return {
       title: document.getElementById("title").value.trim(),
@@ -300,7 +397,7 @@
 
   addLitterButton.addEventListener("click", () => {
     if (litterLimitReached()) {
-      alert(limits.littersNote || "Remova uma ninhada para incluir outra.");
+      alert(limits.littersNote || "O limite considera apenas ninhadas publicadas. Oculte uma ninhada para liberar espaço na vitrine.");
       syncLitterLimit();
       return;
     }
