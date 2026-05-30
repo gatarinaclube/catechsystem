@@ -56,6 +56,12 @@ function parseOptionalInt(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+function requiredFieldError(message) {
+  const error = new Error(message);
+  error.status = 400;
+  return error;
+}
+
 function normalizeKittenRows(kittens) {
   if (Array.isArray(kittens)) {
     return kittens;
@@ -104,6 +110,7 @@ const correctionStorage = multer.diskStorage({
       externalOwnerAuthorization: "litters",
       authorizationFile: "transfer-authorization",
       transferAuthorizationFile: "pedigree-homologation",
+      kittenPedigreeFile: "cats",
       certificatesFiles: "title-certificates",
       attachments: "second-copy",
     };
@@ -134,6 +141,27 @@ function parseJsonArray(value) {
   } catch {
     return [];
   }
+}
+
+function isKittenFromLitter(cat) {
+  return Boolean(cat?.kittenNumber || cat?.litterKitten);
+}
+
+function canAppearAsLitterParent(cat) {
+  if (!isKittenFromLitter(cat)) return true;
+  return cat.breedingProspect === true;
+}
+
+function isBreederCat(cat) {
+  return !isKittenFromLitter(cat) || cat.breedingProspect === true;
+}
+
+function transferCategoryForCat(cat) {
+  const categories = [];
+  if (cat.gender === "M" && isBreederCat(cat)) categories.push("SIRE");
+  if (cat.gender === "F" && isBreederCat(cat)) categories.push("DAM");
+  if (isKittenFromLitter(cat)) categories.push("KITTEN");
+  return categories.join(" ");
 }
 
 
@@ -231,10 +259,20 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
           return res.redirect(`/my-services/${service.id}`);
         }
 
-        const cats = await prisma.cat.findMany({
+        const catsRaw = await prisma.cat.findMany({
           where: { ownerId: req.session.userId },
+          include: { litterKitten: true },
           orderBy: { name: "asc" },
         });
+        const cats = catsRaw.map((cat) => ({
+          ...cat,
+          transferCategories: transferCategoryForCat(cat),
+          isKittenFromLitter: isKittenFromLitter(cat),
+        }));
+        const maleCats = catsRaw
+          .filter((cat) => cat.gender === "M" && canAppearAsLitterParent(cat));
+        const femaleCats = catsRaw
+          .filter((cat) => cat.gender === "F" && canAppearAsLitterParent(cat));
 
         return res.render("services/correct-service", {
           user: req.user || req.session.user,
@@ -242,6 +280,8 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
           service,
           pendingStatus: latestStatus(service),
           cats,
+          maleCats,
+          femaleCats,
         });
       } catch (err) {
         console.error("Erro ao abrir correção de serviço:", err);
@@ -256,6 +296,7 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
     correctionUpload.fields([
       { name: "externalOwnerAuthorization", maxCount: 1 },
       { name: "authorizationFile", maxCount: 1 },
+      { name: "kittenPedigreeFile", maxCount: 1 },
       { name: "transferAuthorizationFile", maxCount: 1 },
       { name: "certificatesFiles", maxCount: 12 },
       { name: "attachments", maxCount: 5 },
@@ -286,6 +327,10 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
             req.files?.externalOwnerAuthorization?.[0],
             "litters"
           );
+
+          if (!Number.isInteger(litterCount) || litterCount < 1 || litterCount > 9) {
+            throw requiredFieldError("Informe um número de filhotes entre 1 e 9.");
+          }
 
           await prisma.litter.update({
             where: { id: service.litter.id },
@@ -320,24 +365,62 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
           });
 
           const kittenRows = normalizeKittenRows(req.body.kittens);
-          for (let i = 0; i < kittenRows.length; i++) {
+          for (let i = 0; i < litterCount; i++) {
             const row = kittenRows[i];
-            if (!row) continue;
+            if (!row) {
+              throw requiredFieldError(`Preencha os dados do filhote ${i + 1}.`);
+            }
 
-            await prisma.litterKitten.updateMany({
+            if (!cleanText(row.breed)) {
+              throw requiredFieldError(`Informe a raça do filhote ${i + 1}.`);
+            }
+
+            if (!cleanText(row.emsEyes)) {
+              throw requiredFieldError(`Informe a cor/EMS do filhote ${i + 1}.`);
+            }
+
+            if (!cleanText(row.sex)) {
+              throw requiredFieldError(`Informe o sexo do filhote ${i + 1}.`);
+            }
+
+            const existingKitten = await prisma.litterKitten.findFirst({
               where: { litterId: service.litter.id, index: i + 1 },
-              data: {
-                name: cleanText(row.name),
-                breed: cleanText(row.breed),
-                emsEyes: cleanText(row.emsEyes),
-                sex: cleanText(row.sex),
-                microchip: row.microchip
-                  ? String(row.microchip).replace(/\D/g, "").slice(0, 15)
-                  : null,
-                breeding: cleanText(row.breeding),
-              },
+              select: { id: true },
             });
+
+            const kittenData = {
+              name: cleanText(row.name),
+              breed: cleanText(row.breed),
+              emsEyes: cleanText(row.emsEyes),
+              sex: cleanText(row.sex),
+              microchip: row.microchip
+                ? String(row.microchip).replace(/\D/g, "").slice(0, 15)
+                : null,
+              breeding: cleanText(row.breeding),
+            };
+
+            if (existingKitten) {
+              await prisma.litterKitten.update({
+                where: { id: existingKitten.id },
+                data: kittenData,
+              });
+            } else {
+              await prisma.litterKitten.create({
+                data: {
+                  litterId: service.litter.id,
+                  index: i + 1,
+                  ...kittenData,
+                },
+              });
+            }
           }
+
+          await prisma.litterKitten.deleteMany({
+            where: {
+              litterId: service.litter.id,
+              index: { gt: litterCount },
+            },
+          });
         }
 
         if (service.type === "Transferência de Propriedade" && service.transferRequest) {
@@ -345,29 +428,96 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
             req.files?.authorizationFile?.[0],
             "transfer-authorization"
           );
+          const kittenPedigreeFile = uploadedPath(
+            req.files?.kittenPedigreeFile?.[0],
+            "cats"
+          );
           const selectedCat = req.body.catId
-            ? await ensureUserCat(req, req.body.catId)
+            ? await prisma.cat.findFirst({
+                where: {
+                  id: Number(req.body.catId),
+                  ownerId: req.session.userId,
+                },
+                include: { litterKitten: true },
+              })
             : null;
 
           if (req.body.catId && !selectedCat) {
             return res.status(400).send("Gato inválido para este usuário.");
           }
 
+          const transferCatType = cleanText(req.body.transferCatType);
+          if (!["SIRE", "DAM", "KITTEN"].includes(transferCatType)) {
+            throw requiredFieldError("Informe se a transferência é de Padreador, Matriz ou Filhote.");
+          }
+
+          if (selectedCat) {
+            if (transferCatType === "SIRE" && (selectedCat.gender !== "M" || !isBreederCat(selectedCat))) {
+              throw requiredFieldError("Selecione um padreador válido.");
+            }
+
+            if (transferCatType === "DAM" && (selectedCat.gender !== "F" || !isBreederCat(selectedCat))) {
+              throw requiredFieldError("Selecione uma matriz válida.");
+            }
+
+            if (transferCatType === "KITTEN" && !isKittenFromLitter(selectedCat)) {
+              throw requiredFieldError("Selecione um filhote proveniente de registro de ninhada.");
+            }
+
+            if ((transferCatType === "SIRE" || transferCatType === "DAM") && !selectedCat.pedigreeFile) {
+              throw requiredFieldError("O pedigree precisa estar anexado no cadastro do gato antes da transferência.");
+            }
+
+            if (transferCatType === "KITTEN") {
+              const kittenPedigreeNumber = cleanText(req.body.kittenPedigreeNumber);
+              if (!kittenPedigreeNumber && !selectedCat.pedigreeNumber) {
+                throw requiredFieldError("Informe o número de registro FIFe do filhote.");
+              }
+
+              if (!kittenPedigreeFile && !selectedCat.pedigreeFile) {
+                throw requiredFieldError("Anexe o pedigree do filhote.");
+              }
+
+              await prisma.cat.update({
+                where: { id: selectedCat.id },
+                data: {
+                  ...(kittenPedigreeNumber ? { pedigreeNumber: kittenPedigreeNumber } : {}),
+                  ...(kittenPedigreeFile ? { pedigreeFile: kittenPedigreeFile } : {}),
+                },
+              });
+            }
+          }
+
+          const currentUserName = req.user?.name || req.session?.user?.name || "";
+          const oldOwnerType = req.body.oldOwnerType === "OTHER" ? "OTHER" : "ME";
+          const finalOldOwnerName =
+            oldOwnerType === "ME"
+              ? currentUserName
+              : cleanText(req.body.oldOwnerName) || service.transferRequest.oldOwnerName;
+          const finalNewOwnerName =
+            oldOwnerType === "ME"
+              ? cleanText(req.body.newOwnerName) || service.transferRequest.newOwnerName
+              : currentUserName || service.transferRequest.newOwnerName;
+
+          if (oldOwnerType === "OTHER" && !authFile && !service.transferRequest.authorizationFile) {
+            throw requiredFieldError("Documento do antigo proprietário é obrigatório quando selecionado 'Outro'.");
+          }
+
           await prisma.transferRequest.update({
             where: { serviceRequestId: service.id },
             data: {
               ...(selectedCat ? { catId: selectedCat.id } : {}),
-              oldOwnerName: cleanText(req.body.oldOwnerName) || service.transferRequest.oldOwnerName,
-              newOwnerName: cleanText(req.body.newOwnerName) || service.transferRequest.newOwnerName,
+              oldOwnerName: finalOldOwnerName,
+              newOwnerName: finalNewOwnerName,
               breedingStatus: cleanText(req.body.breedingStatus) || service.transferRequest.breedingStatus,
-              memberType: cleanText(req.body.memberType),
-              address: cleanText(req.body.address),
-              district: cleanText(req.body.district),
-              city: cleanText(req.body.city),
-              state: cleanText(req.body.state),
-              cep: cleanText(req.body.cep),
-              email: cleanText(req.body.email),
-              phone: cleanText(req.body.phone),
+              memberType: oldOwnerType === "ME" ? cleanText(req.body.memberType) : null,
+              address: oldOwnerType === "ME" && req.body.memberType === "NAO_FIFE" ? cleanText(req.body.address) : null,
+              district: oldOwnerType === "ME" && req.body.memberType === "NAO_FIFE" ? cleanText(req.body.district) : null,
+              city: oldOwnerType === "ME" && req.body.memberType === "NAO_FIFE" ? cleanText(req.body.city) : null,
+              state: oldOwnerType === "ME" && req.body.memberType === "NAO_FIFE" ? cleanText(req.body.state) : null,
+              cep: oldOwnerType === "ME" && req.body.memberType === "NAO_FIFE" ? cleanText(req.body.cep) : null,
+              email: oldOwnerType === "ME" && req.body.memberType === "NAO_FIFE" ? cleanText(req.body.email) : null,
+              phone: oldOwnerType === "ME" && req.body.memberType === "NAO_FIFE" ? cleanText(req.body.phone) : null,
               ...(authFile ? { authorizationFile: authFile } : {}),
             },
           });
@@ -482,6 +632,9 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
         return res.redirect(`/my-services/${service.id}`);
       } catch (err) {
         console.error("Erro ao salvar correção de serviço:", err);
+        if (err.status) {
+          return res.status(err.status).send(err.message);
+        }
         return res
           .status(err.code === "UPLOAD_LIMIT" ? 400 : 500)
           .send(err.code === "UPLOAD_LIMIT" ? err.message : "Erro ao salvar correção do serviço");

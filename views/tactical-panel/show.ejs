@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="refresh" content="60" />
+    <title>Painel do Gatil - CaTech</title>
+    <link rel="stylesheet" href="/css/tactical-panel.css" />
+  </head>
+  <body>
+    <main class="panel-screen">
+      <header class="panel-topbar">
+        <div>
+          <div class="panel-kicker">CaTech · Painel do Gatil</div>
+          <h1><%= user.fifeCatteryName || user.name %></h1>
+        </div>
+        <div class="panel-clock">
+          <div id="panelDate">--/--/----</div>
+          <strong id="panelTime">--:--</strong>
+        </div>
+      </header>
+
+      <section class="panel-summary" aria-label="Resumo">
+        <div>
+          <span>Gatos monitorados</span>
+          <strong><%= panel.summary.cats %></strong>
+        </div>
+        <div>
+          <span>Alertas ativos</span>
+          <strong><%= panel.summary.alerts %></strong>
+        </div>
+        <div>
+          <span>Vacinas vencidas</span>
+          <strong><%= panel.summary.overdueVaccines %></strong>
+        </div>
+        <div>
+          <span>Exames vencidos</span>
+          <strong><%= panel.summary.overdueExams %></strong>
+        </div>
+      </section>
+
+      <section class="panel-grid">
+        <article class="panel-card panel-card-large">
+          <div class="card-head">
+            <h2>Medicações</h2>
+            <span><%= panel.medications.length %></span>
+          </div>
+          <% if (!panel.medications.length) { %>
+            <div class="empty-state">Nenhuma medicação ativa.</div>
+          <% } else { %>
+            <div class="alert-list">
+              <% panel.medications.forEach(function(item) { %>
+                <div class="alert-row">
+                  <div>
+                    <strong><%= item.catName %></strong>
+                    <span><%= item.medication %><% if (item.dosage) { %> · <%= item.dosage %><% } %><% if (item.schedule) { %> · <%= item.schedule %><% } %></span>
+                  </div>
+                  <em><%= item.endDateLabel %></em>
+                </div>
+              <% }); %>
+            </div>
+          <% } %>
+        </article>
+
+        <article class="panel-card panel-card-large">
+          <div class="card-head">
+            <h2>Vacinas</h2>
+            <span>15 dias</span>
+          </div>
+          <% if (!panel.vaccines.length) { %>
+            <div class="empty-state">Nenhuma vacina vencida ou próxima.</div>
+          <% } else { %>
+            <div class="alert-list">
+              <% panel.vaccines.forEach(function(item) { %>
+                <div class="alert-row is-<%= item.status.tone %>">
+                  <div>
+                    <strong><%= item.catName %></strong>
+                    <span><%= item.type %> · <%= item.dateLabel %></span>
+                  </div>
+                  <em><%= item.status.label %></em>
+                </div>
+              <% }); %>
+            </div>
+          <% } %>
+        </article>
+
+        <article class="panel-card">
+          <div class="card-head">
+            <h2>Acasalamentos</h2>
+            <span>liberadas</span>
+          </div>
+          <% if (!panel.matings.length) { %>
+            <div class="empty-state">Nenhuma gata liberada no período.</div>
+          <% } else { %>
+            <div class="alert-list compact">
+              <% panel.matings.forEach(function(item) { %>
+                <div class="alert-row is-<%= item.status.tone %>">
+                  <div>
+                    <strong><%= item.catName %></strong>
+                    <span>Próxima cruza · <%= item.dateLabel %></span>
+                  </div>
+                  <em><%= item.status.label %></em>
+                </div>
+              <% }); %>
+            </div>
+          <% } %>
+        </article>
+
+        <article class="panel-card">
+          <div class="card-head">
+            <h2>Exames</h2>
+            <span>5 próximos</span>
+          </div>
+          <% if (!panel.exams.length) { %>
+            <div class="empty-state">Nenhum exame vencido ou próximo.</div>
+          <% } else { %>
+            <div class="alert-list compact">
+              <% panel.exams.forEach(function(item) { %>
+                <div class="alert-row is-<%= item.status.tone %>">
+                  <div>
+                    <strong><%= item.catName %></strong>
+                    <span><%= item.type %> · <%= item.dateLabel %></span>
+                  </div>
+                  <em><%= item.status.label %></em>
+                </div>
+              <% }); %>
+            </div>
+          <% } %>
+        </article>
+      </section>
+
+      <footer class="panel-footer">
+        <span>Atualiza automaticamente a cada 60 segundos</span>
+        <span>Gerado em <%= generatedAt.toLocaleString("pt-BR") %></span>
+      </footer>
+    </main>
+
+    <script>
+      function updateClock() {
+        const now = new Date();
+        document.getElementById("panelDate").textContent = now.toLocaleDateString("pt-BR", {
+          weekday: "long",
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        });
+        document.getElementById("panelTime").textContent = now.toLocaleTimeString("pt-BR", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        });
+      }
+
+      updateClock();
+      setInterval(updateClock, 1000);
+    </script>
+  </body>
+</html>

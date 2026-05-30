@@ -39,25 +39,60 @@
 
             <% if (service.type === "Registro de Ninhada" && service.litter) { const l = service.litter; %>
               <div class="section">
-                <div class="section-title">Dados da ninhada</div>
+                <div class="section-title"><strong>Dados da fêmea</strong></div>
                 <div class="grid-2">
-                  <div class="field"><label>Gatil</label><input name="catteryName" value="<%= l.catteryName || '' %>" /></div>
-                  <div class="field"><label>País</label><input name="catteryCountry" value="<%= l.catteryCountry || '' %>" /></div>
-                  <div class="field"><label>Nascimento</label><input type="date" name="litterBirthDate" value="<%= l.litterBirthDate ? new Date(l.litterBirthDate).toISOString().slice(0,10) : '' %>" /></div>
-                  <div class="field"><label>Quantidade</label><input type="number" name="litterCount" min="1" max="9" value="<%= l.litterCount || '' %>" /></div>
+                  <div class="field">
+                    <label class="field-label" for="femaleCatId">Selecionar fêmea</label>
+                    <select id="femaleCatId" name="femaleCatId">
+                      <option value="">Selecione uma fêmea...</option>
+                      <% (femaleCats || []).forEach(function(c) { %>
+                        <option
+                          value="<%= c.id %>"
+                          data-name="<%= c.name || '' %>"
+                          data-breed="<%= c.breed || '' %>"
+                          data-ems="<%= c.emsCode || '' %>"
+                          data-microchip="<%= c.microchip || '' %>"
+                          <%= l.femaleMicrochip && c.microchip === l.femaleMicrochip ? 'selected' : '' %>
+                        >
+                          <%= c.name %><% if (c.pedigreeNumber) { %> - <%= c.pedigreeNumber %><% } %>
+                        </option>
+                      <% }); %>
+                    </select>
+                  </div>
                 </div>
+                <input type="hidden" id="femaleName" name="femaleName" value="<%= l.femaleName || '' %>" />
+                <input type="hidden" id="femaleBreed" name="femaleBreed" value="<%= l.femaleBreed || '' %>" />
+                <input type="hidden" id="femaleEms" name="femaleEms" value="<%= l.femaleEms || '' %>" />
+                <input type="hidden" id="femaleMicrochip" name="femaleMicrochip" value="<%= l.femaleMicrochip || '' %>" />
+              </div>
+
+              <div class="section">
+                <div class="section-title"><strong>Dados do macho</strong></div>
                 <div class="grid-2" style="margin-top:12px;">
-                  <div class="field"><label>Macho</label><input name="maleName" value="<%= l.maleName || '' %>" /></div>
-                  <div class="field"><label>Fêmea</label><input name="femaleName" value="<%= l.femaleName || '' %>" /></div>
-                  <div class="field"><label>Raça do macho</label><input name="maleBreed" value="<%= l.maleBreed || '' %>" /></div>
-                  <div class="field"><label>Raça da fêmea</label><input name="femaleBreed" value="<%= l.femaleBreed || '' %>" /></div>
-                  <div class="field"><label>EMS macho</label><input name="maleEms" value="<%= l.maleEms || '' %>" /></div>
-                  <div class="field"><label>EMS fêmea</label><input name="femaleEms" value="<%= l.femaleEms || '' %>" /></div>
-                  <div class="field"><label>Microchip macho</label><input name="maleMicrochip" value="<%= l.maleMicrochip || '' %>" /></div>
-                  <div class="field"><label>Microchip fêmea</label><input name="femaleMicrochip" value="<%= l.femaleMicrochip || '' %>" /></div>
+                  <div class="field">
+                    <label class="field-label" for="maleCatId">Selecionar macho</label>
+                    <select id="maleCatId" name="maleCatId">
+                      <option value="">Selecione um macho...</option>
+                      <% (maleCats || []).forEach(function(c) { %>
+                        <option
+                          value="<%= c.id %>"
+                          data-name="<%= c.name || '' %>"
+                          data-breed="<%= c.breed || '' %>"
+                          data-ems="<%= c.emsCode || '' %>"
+                          data-microchip="<%= c.microchip || '' %>"
+                          <%= l.maleMicrochip && c.microchip === l.maleMicrochip ? 'selected' : '' %>
+                        >
+                          <%= c.name %><% if (c.pedigreeNumber) { %> - <%= c.pedigreeNumber %><% } %>
+                        </option>
+                      <% }); %>
+                    </select>
+                  </div>
                   <div class="field"><label>BR/FFB macho</label><input name="maleFfbLo" value="<%= l.maleFfbLo || '' %>" /></div>
-                  <div class="field"><label>BR/FFB fêmea</label><input name="femaleFfbLo" value="<%= l.femaleFfbLo || '' %>" /></div>
                 </div>
+                <input type="hidden" id="maleName" name="maleName" value="<%= l.maleName || '' %>" />
+                <input type="hidden" id="maleBreed" name="maleBreed" value="<%= l.maleBreed || '' %>" />
+                <input type="hidden" id="maleEms" name="maleEms" value="<%= l.maleEms || '' %>" />
+                <input type="hidden" id="maleMicrochip" name="maleMicrochip" value="<%= l.maleMicrochip || '' %>" />
                 <div class="grid-2" style="margin-top:12px;">
                   <div class="field">
                     <label>Propriedade do macho</label>
@@ -66,15 +101,18 @@
                       <option value="NOT_OWNER" <%= l.maleOwnership === 'NOT_OWNER' ? 'selected' : '' %>>Proprietário externo</option>
                     </select>
                   </div>
+                  <div class="field"><label>BR/FFB fêmea</label><input name="femaleFfbLo" value="<%= l.femaleFfbLo || '' %>" /></div>
+                </div>
+                <div id="maleNotOwnerBlock" class="grid-2" style="margin-top:12px;">
                   <div class="field"><label>Gatil do proprietário externo</label><input name="externalOwnerCattery" value="<%= l.externalOwnerCattery || '' %>" /></div>
                   <div class="field"><label>Nome do proprietário externo</label><input name="externalOwnerName" value="<%= l.externalOwnerName || '' %>" /></div>
                   <div class="field"><label>E-mail do proprietário externo</label><input name="externalOwnerEmail" value="<%= l.externalOwnerEmail || '' %>" /></div>
                   <div class="field"><label>CPF do proprietário externo</label><input name="externalOwnerCpf" value="<%= l.externalOwnerCpf || '' %>" /></div>
                   <div class="field"><label>Telefone do proprietário externo</label><input name="externalOwnerPhone" value="<%= l.externalOwnerPhone || '' %>" /></div>
-                </div>
-                <div class="field" style="margin-top:12px;">
-                  <label>Autorização do proprietário externo</label>
-                  <input type="file" name="externalOwnerAuthorization" accept=".pdf,.jpg,.jpeg,.png" />
+                  <div class="field">
+                    <label>Autorização do proprietário externo</label>
+                    <input type="file" name="externalOwnerAuthorization" accept=".pdf,.jpg,.jpeg,.png" />
+                  </div>
                 </div>
                 <div class="field" style="margin-top:12px;">
                   <label>Observações gerais</label>
@@ -83,38 +121,127 @@
               </div>
 
               <div class="section">
-                <div class="section-title">Filhotes</div>
-                <% (l.kittens || []).forEach(function(k, index) { %>
-                  <div class="grid-3" style="margin-bottom:10px;">
-                    <div class="field"><label>Nome <%= index + 1 %></label><input name="kittens[<%= index %>][name]" value="<%= k.name || '' %>" /></div>
-                    <div class="field"><label>Raça</label><input name="kittens[<%= index %>][breed]" value="<%= k.breed || '' %>" /></div>
-                    <div class="field"><label>EMS</label><input name="kittens[<%= index %>][emsEyes]" value="<%= k.emsEyes || '' %>" /></div>
-                    <div class="field"><label>Sexo</label><input name="kittens[<%= index %>][sex]" value="<%= k.sex || '' %>" /></div>
-                    <div class="field"><label>Microchip</label><input name="kittens[<%= index %>][microchip]" value="<%= k.microchip || '' %>" /></div>
-                    <div class="field"><label>Breeding</label><input name="kittens[<%= index %>][breeding]" value="<%= k.breeding || '' %>" /></div>
+                <div class="section-title"><strong>Dados da ninhada</strong></div>
+                <div class="grid-3">
+                  <div class="field"><label>País</label><input name="catteryCountry" value="<%= l.catteryCountry || '' %>" /></div>
+                  <div class="field"><label>Nascimento</label><input type="date" name="litterBirthDate" value="<%= l.litterBirthDate ? new Date(l.litterBirthDate).toISOString().slice(0,10) : '' %>" required /></div>
+                  <div class="field"><label>Nome do Gatil</label><input name="catteryName" maxlength="15" value="<%= l.catteryName || '' %>" required /></div>
+                  <div class="field"><label>Número total de filhotes</label><input id="litterCount" type="number" name="litterCount" min="1" max="9" value="<%= l.litterCount || (l.kittens || []).length || 1 %>" required /></div>
+                </div>
+              </div>
+
+              <div class="section">
+                <div class="section-title"><strong>Dados dos filhotes</strong></div>
+                <% for (let index = 0; index < 9; index++) { const k = (l.kittens || [])[index] || {}; %>
+                  <div class="kitten-block" data-index="<%= index + 1 %>" style="margin-bottom:12px;">
+                    <div class="kitten-header">Filhote <%= index + 1 %></div>
+                    <div class="grid-3">
+                      <div class="field"><label>Nome</label><input name="kittens[<%= index %>][name]" value="<%= k.name || '' %>" /></div>
+                      <div class="field"><label>Raça</label><input name="kittens[<%= index %>][breed]" value="<%= k.breed || '' %>" data-required-when-visible="true" /></div>
+                      <div class="field"><label>EMS / Cor</label><input name="kittens[<%= index %>][emsEyes]" value="<%= k.emsEyes || '' %>" data-required-when-visible="true" /></div>
+                      <div class="field">
+                        <label>Sexo</label>
+                        <select name="kittens[<%= index %>][sex]" data-required-when-visible="true">
+                          <option value="">Selecione...</option>
+                          <option value="M" <%= k.sex === 'M' ? 'selected' : '' %>>Macho</option>
+                          <option value="F" <%= k.sex === 'F' ? 'selected' : '' %>>Fêmea</option>
+                        </select>
+                      </div>
+                      <div class="field"><label>Microchip</label><input class="kitten-microchip" name="kittens[<%= index %>][microchip]" value="<%= k.microchip || '' %>" /></div>
+                      <div class="field field-checkbox">
+                        <label class="checkbox-label">
+                          <input type="checkbox" name="kittens[<%= index %>][breeding]" value="Breeding" <%= k.breeding ? 'checked' : '' %> />
+                          Uso para Reprodução
+                        </label>
+                      </div>
+                    </div>
                   </div>
-                <% }) %>
+                <% } %>
               </div>
             <% } %>
 
-            <% if (service.type === "Transferência de Propriedade" && service.transferRequest) { const t = service.transferRequest; %>
+            <% if (service.type === "Transferência de Propriedade" && service.transferRequest) { const t = service.transferRequest; const selectedTransferCat = (cats || []).find(function(cat) { return String(cat.id) === String(t.catId); }) || {}; const inferredOldOwnerType = user && t.oldOwnerName === user.name ? 'ME' : 'OTHER'; %>
               <div class="section">
                 <div class="section-title">Transferência</div>
                 <div class="grid-2">
                   <div class="field">
-                    <label>Gato</label>
-                    <select name="catId">
-                      <% (cats || []).forEach(function(cat) { %>
-                        <option value="<%= cat.id %>" <%= String(t.catId) === String(cat.id) ? 'selected' : '' %>>
-                          <%= cat.name %><% if (cat.pedigreeNumber) { %> - <%= cat.pedigreeNumber %><% } %>
-                        </option>
-                      <% }) %>
+                    <label>Tipo de gato</label>
+                    <select id="transferCatType" name="transferCatType" required>
+                      <option value="">Selecione...</option>
+                      <option value="SIRE">Padreador</option>
+                      <option value="DAM">Matriz</option>
+                      <option value="KITTEN">Filhote</option>
                     </select>
                   </div>
-                  <div class="field"><label>Antigo proprietário</label><input name="oldOwnerName" value="<%= t.oldOwnerName || '' %>" /></div>
-                  <div class="field"><label>Novo proprietário</label><input name="newOwnerName" value="<%= t.newOwnerName || '' %>" /></div>
-                  <div class="field"><label>Uso para reprodução</label><input name="breedingStatus" value="<%= t.breedingStatus || '' %>" /></div>
-                  <div class="field"><label>Tipo de membro</label><input name="memberType" value="<%= t.memberType || '' %>" /></div>
+                  <div class="field">
+                    <label>Gato</label>
+                    <select id="catId" name="catId" required>
+                      <option value="">Selecione o gato...</option>
+                      <% (cats || []).forEach(function(cat) { %>
+                        <option
+                          value="<%= cat.id %>"
+                          data-categories="<%= cat.transferCategories || '' %>"
+                          data-pedigree-number="<%= cat.pedigreeNumber || '' %>"
+                          <%= String(t.catId) === String(cat.id) ? 'selected' : '' %>
+                        >
+                          <%= cat.name %><% if (cat.pedigreeNumber) { %> - <%= cat.pedigreeNumber %><% } %>
+                        </option>
+                      <% }); %>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Uso para reprodução</label>
+                    <select name="breedingStatus">
+                      <option value="">Selecione...</option>
+                      <option value="BREEDING" <%= t.breedingStatus === 'BREEDING' ? 'selected' : '' %>>Breeding</option>
+                      <option value="NOT_FOR_BREEDING" <%= t.breedingStatus === 'NOT_FOR_BREEDING' ? 'selected' : '' %>>Not for Breeding</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div id="kittenPedigreeBlock" class="grid-2" style="display:none; margin-top:12px;">
+                  <div class="field">
+                    <label>Número de registro FIFe do filhote</label>
+                    <input id="kittenPedigreeNumber" name="kittenPedigreeNumber" value="<%= selectedTransferCat.pedigreeNumber || '' %>" maxlength="20" />
+                  </div>
+                  <div class="field">
+                    <label>Pedigree do filhote</label>
+                    <input id="kittenPedigreeFile" type="file" name="kittenPedigreeFile" accept=".pdf,.jpg,.jpeg,.png" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="section">
+                <div class="section-title">Proprietários</div>
+                <div class="grid-3">
+                  <div class="field">
+                    <label>Antigo proprietário</label>
+                    <select id="oldOwnerType" name="oldOwnerType">
+                      <option value="ME" <%= inferredOldOwnerType === 'ME' ? 'selected' : '' %>>Eu mesmo</option>
+                      <option value="OTHER" <%= inferredOldOwnerType === 'OTHER' ? 'selected' : '' %>>Outro</option>
+                    </select>
+                  </div>
+                  <div class="field" id="oldOwnerNameBlock">
+                    <label>Nome do antigo proprietário</label>
+                    <input name="oldOwnerName" value="<%= t.oldOwnerName || '' %>" />
+                  </div>
+                  <div class="field"><label>Novo proprietário</label><input id="newOwnerName" name="newOwnerName" value="<%= t.newOwnerName || '' %>" /></div>
+                  <div class="field">
+                    <label>Tipo de membro</label>
+                    <select id="memberType" name="memberType">
+                      <option value="">Selecione...</option>
+                      <option value="FIFE" <%= t.memberType === 'FIFE' ? 'selected' : '' %>>Membro FIFe</option>
+                      <option value="NAO_FIFE" <%= t.memberType === 'NAO_FIFE' ? 'selected' : '' %>>Membro Não FIFe</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div id="transferAuthorizationBlock" class="field" style="margin-top:12px;">
+                  <label>Documento / autorização do antigo proprietário</label>
+                  <input type="file" name="authorizationFile" accept=".pdf,.jpg,.jpeg,.png" />
+                </div>
+
+                <div id="extraFields" class="grid-2" style="margin-top:12px;">
                   <div class="field"><label>Endereço</label><input name="address" value="<%= t.address || '' %>" /></div>
                   <div class="field"><label>Bairro</label><input name="district" value="<%= t.district || '' %>" /></div>
                   <div class="field"><label>Cidade</label><input name="city" value="<%= t.city || '' %>" /></div>
@@ -122,10 +249,6 @@
                   <div class="field"><label>CEP</label><input name="cep" value="<%= t.cep || '' %>" /></div>
                   <div class="field"><label>E-mail</label><input name="email" value="<%= t.email || '' %>" /></div>
                   <div class="field"><label>Telefone</label><input name="phone" value="<%= t.phone || '' %>" /></div>
-                </div>
-                <div class="field" style="margin-top:12px;">
-                  <label>Documento / autorização</label>
-                  <input type="file" name="authorizationFile" accept=".pdf,.jpg,.jpeg,.png" />
                 </div>
               </div>
             <% } %>
@@ -140,7 +263,7 @@
                       <option value="<%= cat.id %>" <%= String(th.catId) === String(cat.id) ? 'selected' : '' %>>
                         <%= cat.name %><% if (cat.pedigreeNumber) { %> - <%= cat.pedigreeNumber %><% } %>
                       </option>
-                    <% }) %>
+                    <% }); %>
                   </select>
                 </div>
                 <div class="field"><label>Título solicitado</label><input name="requestedTitle" value="<%= th.requestedTitle || '' %>" /></div>
@@ -159,7 +282,7 @@
                       <option value="<%= cat.id %>" <%= String(service.pedigreeHomologation.catId) === String(cat.id) ? 'selected' : '' %>>
                         <%= cat.name %><% if (cat.pedigreeNumber) { %> - <%= cat.pedigreeNumber %><% } %>
                       </option>
-                    <% }) %>
+                    <% }); %>
                   </select>
                 </div>
                 <select name="homologationType">
@@ -192,7 +315,7 @@
                       <option value="<%= cat.id %>" <%= String(sc.catId) === String(cat.id) ? 'selected' : '' %>>
                         <%= cat.name %><% if (cat.pedigreeNumber) { %> - <%= cat.pedigreeNumber %><% } %>
                       </option>
-                    <% }) %>
+                    <% }); %>
                   </select>
                 </div>
                 <div class="field"><label>Tipo de solicitação</label><input name="requestType" value="<%= sc.requestType || '' %>" /></div>
@@ -210,5 +333,148 @@
         </form>
       </main>
     </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      function digits(value) {
+        return String(value || "").replace(/\D/g, "").slice(0, 15);
+      }
+
+      function formatMicrochip(value) {
+        const d = digits(value);
+        return (d.match(/.{1,3}/g) || []).join(".");
+      }
+
+      function syncCatSelect(selectId, fields) {
+        const select = document.getElementById(selectId);
+        if (!select) return;
+
+        function sync() {
+          const opt = select.options[select.selectedIndex];
+          if (!opt || !opt.dataset) return;
+          Object.entries(fields).forEach(([fieldId, datasetKey]) => {
+            const input = document.getElementById(fieldId);
+            if (!input) return;
+            const value = opt.dataset[datasetKey] || "";
+            input.value = datasetKey === "microchip" ? formatMicrochip(value) : value;
+          });
+        }
+
+        select.addEventListener("change", sync);
+        if (select.value) sync();
+      }
+
+      syncCatSelect("maleCatId", {
+        maleName: "name",
+        maleBreed: "breed",
+        maleEms: "ems",
+        maleMicrochip: "microchip",
+      });
+
+      syncCatSelect("femaleCatId", {
+        femaleName: "name",
+        femaleBreed: "breed",
+        femaleEms: "ems",
+        femaleMicrochip: "microchip",
+      });
+
+      const maleOwnershipRadios = document.querySelectorAll('select[name="maleOwnership"], input[name="maleOwnership"]');
+      const maleBlock = document.getElementById("maleNotOwnerBlock");
+      function refreshMaleOwnerBlock() {
+        const select = document.querySelector('select[name="maleOwnership"]');
+        const isNotOwner = select ? select.value === "NOT_OWNER" : false;
+        if (maleBlock) maleBlock.style.display = isNotOwner ? "grid" : "none";
+      }
+      maleOwnershipRadios.forEach((item) => item.addEventListener("change", refreshMaleOwnerBlock));
+      refreshMaleOwnerBlock();
+
+      const litterCountInput = document.getElementById("litterCount");
+      const kittenBlocks = document.querySelectorAll(".kitten-block");
+      function refreshKittenBlocks() {
+        const count = Math.max(1, Math.min(9, Number(litterCountInput?.value || 1)));
+        kittenBlocks.forEach((block) => {
+          const index = Number(block.dataset.index);
+          const visible = index <= count;
+          block.style.display = visible ? "" : "none";
+          block.querySelectorAll("[data-required-when-visible='true']").forEach((field) => {
+            field.required = visible;
+          });
+        });
+      }
+      if (litterCountInput) {
+        litterCountInput.addEventListener("input", refreshKittenBlocks);
+        litterCountInput.addEventListener("change", refreshKittenBlocks);
+        refreshKittenBlocks();
+      }
+
+      document.querySelectorAll(".kitten-microchip").forEach((input) => {
+        input.addEventListener("input", () => {
+          input.value = formatMicrochip(input.value);
+        });
+      });
+
+      const transferType = document.getElementById("transferCatType");
+      const transferCat = document.getElementById("catId");
+      if (transferType && transferCat) {
+        const kittenBlock = document.getElementById("kittenPedigreeBlock");
+        const kittenNumber = document.getElementById("kittenPedigreeNumber");
+        const kittenFile = document.getElementById("kittenPedigreeFile");
+        const selectedOption = transferCat.options[transferCat.selectedIndex];
+        const selectedCategories = String(selectedOption?.dataset?.categories || "");
+        if (selectedCategories.includes("KITTEN")) transferType.value = "KITTEN";
+        else if (selectedCategories.includes("SIRE")) transferType.value = "SIRE";
+        else if (selectedCategories.includes("DAM")) transferType.value = "DAM";
+
+        const options = Array.from(transferCat.querySelectorAll("option")).filter((option) => option.value);
+        function filterTransferCats() {
+          const type = transferType.value;
+          options.forEach((option) => {
+            const visible = !type || String(option.dataset.categories || "").split(/\s+/).includes(type);
+            option.hidden = !visible;
+            option.disabled = !visible;
+          });
+          const current = transferCat.options[transferCat.selectedIndex];
+          if (current && current.disabled) transferCat.value = "";
+          const isKitten = type === "KITTEN";
+          if (kittenBlock) kittenBlock.style.display = isKitten ? "grid" : "none";
+          if (kittenNumber) kittenNumber.required = isKitten;
+          if (kittenFile) kittenFile.required = isKitten && !kittenNumber?.value;
+        }
+        transferType.addEventListener("change", filterTransferCats);
+        filterTransferCats();
+      }
+
+      const oldOwnerType = document.getElementById("oldOwnerType");
+      const oldOwnerNameBlock = document.getElementById("oldOwnerNameBlock");
+      const transferAuthorizationBlock = document.getElementById("transferAuthorizationBlock");
+      const memberType = document.getElementById("memberType");
+      const extraFields = document.getElementById("extraFields");
+
+      function refreshTransferOwnerFields() {
+        if (!oldOwnerType) return;
+        const isOther = oldOwnerType.value === "OTHER";
+        if (oldOwnerNameBlock) oldOwnerNameBlock.style.display = isOther ? "" : "none";
+        if (transferAuthorizationBlock) transferAuthorizationBlock.style.display = isOther ? "" : "none";
+        if (memberType) memberType.closest(".field").style.display = isOther ? "none" : "";
+        if (extraFields) {
+          extraFields.style.display = !isOther && memberType?.value === "NAO_FIFE" ? "grid" : "none";
+        }
+      }
+
+      if (oldOwnerType) {
+        oldOwnerType.addEventListener("change", refreshTransferOwnerFields);
+        memberType?.addEventListener("change", refreshTransferOwnerFields);
+        refreshTransferOwnerFields();
+      }
+
+      document.querySelectorAll("form").forEach((form) => {
+        form.addEventListener("submit", () => {
+          const submitBtn = form.querySelector("button[type='submit']");
+          if (!submitBtn) return;
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Processando...";
+        });
+      });
+    });
+  </script>
   </body>
 </html>

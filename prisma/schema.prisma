@@ -41,6 +41,7 @@ model User {
   phones   String?
   email    String  @unique
   expensePublicToken String? @unique
+  dashboardPublicToken String? @unique
   cpf      String?
   password String
   role     UserRole @default(BASIC)

@@ -46,6 +46,7 @@ const quickLaunchRouterFactory = require("./modules/quick-launch");
 const reportsRouterFactory = require("./modules/reports");
 const revenuesRouterFactory = require("./modules/revenues");
 const crmRouterFactory = require("./modules/crm");
+const tacticalPanelRouterFactory = require("./modules/tactical-panel");
 const administrativeRouterFactory = require("./modules/administrative");
 const academyRouterFactory = require("./modules/academy");
 const kittenShowcaseRouterFactory = require("./modules/kitten-showcase");
@@ -132,6 +133,7 @@ function buildProfileAccessGroups(role) {
       modules: [
         { label: "CRM", permission: "admin.crm" },
         { label: "Vendas", permission: "admin.sales" },
+        { label: "Painel", permission: "admin.tacticalPanel" },
       ],
     },
     {
@@ -1400,6 +1402,13 @@ const historyAdminRouter = historyAdminRouterFactory(
   requirePermission
 );
 app.use(historyAdminRouter);
+
+const tacticalPanelRouter = tacticalPanelRouterFactory(
+  prisma,
+  requireAuth,
+  requirePermission
+);
+app.use(tacticalPanelRouter);
 
 const kittenShowcaseRouter = kittenShowcaseRouterFactory(
   prisma,

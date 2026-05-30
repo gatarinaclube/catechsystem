@@ -8,6 +8,8 @@ function drawPageChrome(doc) {
   const left = margins.left;
   const right = width - margins.right;
   const bottom = height - margins.bottom;
+  const currentX = doc.x;
+  const currentY = doc.y;
 
   doc.save();
 
@@ -47,6 +49,8 @@ function drawPageChrome(doc) {
     });
 
   doc.restore();
+  doc.x = currentX;
+  doc.y = currentY;
 }
 
 function applyPdfTheme(doc) {
