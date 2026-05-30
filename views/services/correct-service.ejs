@@ -37,7 +37,10 @@
               <textarea name="description" rows="3" style="width:100%;"><%= service.description || "" %></textarea>
             </div>
 
-            <% if (service.type === "Registro de Ninhada" && service.litter) { const l = service.litter; %>
+            <% let renderedSpecificForm = false; %>
+
+            <% if (String(service.type || '').toLowerCase().includes('ninhada') && service.litter) { const l = service.litter; %>
+              <% renderedSpecificForm = true; %>
               <div class="section">
                 <div class="section-title"><strong>Dados da fêmea</strong></div>
                 <div class="grid-2">
@@ -161,6 +164,7 @@
             <% } %>
 
             <% if (service.type === "Transferência de Propriedade" && service.transferRequest) { const t = service.transferRequest; const selectedTransferCat = (cats || []).find(function(cat) { return String(cat.id) === String(t.catId); }) || {}; const inferredOldOwnerType = user && t.oldOwnerName === user.name ? 'ME' : 'OTHER'; %>
+              <% renderedSpecificForm = true; %>
               <div class="section">
                 <div class="section-title">Transferência</div>
                 <div class="grid-2">
@@ -253,12 +257,14 @@
               </div>
             <% } %>
 
-            <% if (service.type === "Homologação de Títulos" && service.titleHomologation) { const th = service.titleHomologation; %>
+            <% if (service.type === "Homologação de Títulos" && service.titleHomologation) { const th = service.titleHomologation; let certificates = []; try { certificates = JSON.parse(th.certificatesJson || '[]'); } catch(e) {} const titleOptions = ['KCH','JCH','JW','CH','PR','IC','IP','GIC','GIP','SC','SP','DSM','DVM','DM','NW','AW','WW','SW','BW','MW','NSW']; %>
+              <% renderedSpecificForm = true; %>
               <div class="section">
                 <div class="section-title">Homologação de Títulos</div>
                 <div class="field">
                   <label>Gato</label>
                   <select name="catId">
+                    <option value="">Selecione o gato...</option>
                     <% (cats || []).forEach(function(cat) { %>
                       <option value="<%= cat.id %>" <%= String(th.catId) === String(cat.id) ? 'selected' : '' %>>
                         <%= cat.name %><% if (cat.pedigreeNumber) { %> - <%= cat.pedigreeNumber %><% } %>
@@ -266,13 +272,38 @@
                     <% }); %>
                   </select>
                 </div>
-                <div class="field"><label>Título solicitado</label><input name="requestedTitle" value="<%= th.requestedTitle || '' %>" /></div>
-                <div class="field" style="margin-top:12px;"><label>Certificados adicionais/substitutos</label><input type="file" name="certificatesFiles" multiple accept=".pdf,.jpg,.jpeg,.png" /></div>
-                <textarea name="certificatesJson" rows="5" style="width:100%; margin-top:12px;"><%= th.certificatesJson || '[]' %></textarea>
+                <div class="field" style="margin-top:12px;">
+                  <label>Título solicitado</label>
+                  <select name="requestedTitle">
+                    <option value="">Selecione...</option>
+                    <% titleOptions.forEach(function(option) { %>
+                      <option value="<%= option %>" <%= th.requestedTitle === option ? 'selected' : '' %>><%= option %></option>
+                    <% }); %>
+                  </select>
+                </div>
+                <div class="section" style="margin-top:12px;">
+                  <div class="section-title">Certificados</div>
+                  <% if (!certificates.length) { certificates = [{ date: '', judge: '', file: '' }]; } %>
+                  <% certificates.forEach(function(cert, index) { %>
+                    <div class="grid-3" style="margin-bottom:10px;">
+                      <div class="field"><label>Data</label><input type="date" name="certificates[<%= index %>][date]" value="<%= cert.date || '' %>" /></div>
+                      <div class="field"><label>Juiz</label><input name="certificates[<%= index %>][judge]" value="<%= cert.judge || '' %>" /></div>
+                      <div class="field">
+                        <label>Certificado</label>
+                        <% if (cert.file) { %>
+                          <a href="<%= cert.file %>" target="_blank" style="display:block; margin-bottom:6px;">Arquivo atual</a>
+                          <input type="hidden" name="certificates[<%= index %>][file]" value="<%= cert.file %>" />
+                        <% } %>
+                        <input type="file" name="certFile_<%= index %>" accept=".pdf,.jpg,.jpeg,.png" />
+                      </div>
+                    </div>
+                  <% }); %>
+                </div>
               </div>
             <% } %>
 
             <% if (service.type === "Homologação de Pedigree" && service.pedigreeHomologation) { %>
+              <% renderedSpecificForm = true; %>
               <div class="section">
                 <div class="section-title">Homologação de Pedigree</div>
                 <div class="field">
@@ -293,6 +324,7 @@
             <% } %>
 
             <% if (service.type === "Registro de Gatil" && service.catteryRegistration) { const c = service.catteryRegistration; let breeds = []; try { breeds = JSON.parse(c.breedsJson || '[]'); } catch(e) {} %>
+              <% renderedSpecificForm = true; %>
               <div class="section">
                 <div class="section-title">Registro de Gatil</div>
                 <div class="grid-2">
@@ -305,23 +337,62 @@
               </div>
             <% } %>
 
-            <% if (service.type === "Segunda Via e Alterações" && service.secondCopyRequest) { const sc = service.secondCopyRequest; %>
+            <% if (service.type === "Segunda Via e Alterações" && service.secondCopyRequest) { const sc = service.secondCopyRequest; const secondCopyOptions = [
+              ['PEDIGREE_SECOND_COPY', 'Pedigree (Segunda Via)'],
+              ['TITLE_DIPLOMA_SECOND_COPY', 'Diploma de Título (Segunda Via)'],
+              ['OWNERSHIP_DOC_SECOND_COPY', 'Documento de Propriedade (Segunda Via)'],
+              ['CATTERY_SECOND_COPY', 'Registro de Gatil (Segunda Via)'],
+              ['CHANGE_TO_NOT_BREEDING', 'Mudança de For Breeding para Not For Breeding'],
+              ['CHANGE_TO_BREEDING', 'Mudança de Not For Breeding para For Breeding'],
+              ['CHANGE_COLOR', 'Mudança de Cor'],
+              ['FIX_MICROCHIP', 'Corrigir Microchip'],
+              ['FIX_SEX', 'Corrigir Sexo'],
+              ['OTHER', 'Outros'],
+            ]; %>
+              <% renderedSpecificForm = true; %>
               <div class="section">
                 <div class="section-title">Segunda Via e Alterações</div>
                 <div class="field">
+                  <label>Tipo de solicitação</label>
+                  <select id="secondCopyRequestType" name="requestType">
+                    <option value="">Selecione...</option>
+                    <% secondCopyOptions.forEach(function(option) { %>
+                      <option value="<%= option[0] %>" <%= sc.requestType === option[0] ? 'selected' : '' %>><%= option[1] %></option>
+                    <% }); %>
+                  </select>
+                </div>
+                <div class="field" id="secondCopyCatBlock" style="margin-top:12px;">
                   <label>Gato</label>
-                  <select name="catId">
+                  <select id="secondCopyCatId" name="catId">
+                    <option value="">Selecione o gato...</option>
                     <% (cats || []).forEach(function(cat) { %>
-                      <option value="<%= cat.id %>" <%= String(sc.catId) === String(cat.id) ? 'selected' : '' %>>
+                      <option
+                        value="<%= cat.id %>"
+                        data-breed="<%= cat.breed || '' %>"
+                        data-ems="<%= cat.colorEms || cat.emsCode || '' %>"
+                        <%= String(sc.catId) === String(cat.id) ? 'selected' : '' %>
+                      >
                         <%= cat.name %><% if (cat.pedigreeNumber) { %> - <%= cat.pedigreeNumber %><% } %>
                       </option>
                     <% }); %>
                   </select>
                 </div>
-                <div class="field"><label>Tipo de solicitação</label><input name="requestType" value="<%= sc.requestType || '' %>" /></div>
+                <div id="secondCopyColorInfo" class="grid-2" style="display:none; margin-top:12px;">
+                  <div class="field"><label>Raça atual</label><input id="secondCopyCurrentBreed" readonly /></div>
+                  <div class="field"><label>Cor / EMS atual</label><input id="secondCopyCurrentEms" readonly /></div>
+                </div>
                 <div class="field" style="margin-top:12px;"><label>Detalhes</label><textarea name="details" rows="4" style="width:100%;"><%= sc.details || '' %></textarea></div>
                 <div class="field" style="margin-top:12px;"><label>Novo valor</label><input name="newValue" value="<%= sc.newValue || '' %>" /></div>
                 <div class="field" style="margin-top:12px;"><label>Anexos complementares</label><input type="file" name="attachments" multiple accept=".pdf,.jpg,.jpeg,.png" /></div>
+              </div>
+            <% } %>
+
+            <% if (!renderedSpecificForm) { %>
+              <div class="section">
+                <div class="section-title">Dados do serviço</div>
+                <div class="field-value" style="color:#b91c1c; font-weight:600;">
+                  Não foi possível localizar os dados completos vinculados a este serviço. Verifique se o serviço possui vínculo com a ninhada, gato ou solicitação original.
+                </div>
               </div>
             <% } %>
           </div>
@@ -464,6 +535,41 @@
         oldOwnerType.addEventListener("change", refreshTransferOwnerFields);
         memberType?.addEventListener("change", refreshTransferOwnerFields);
         refreshTransferOwnerFields();
+      }
+
+      const secondCopyType = document.getElementById("secondCopyRequestType");
+      const secondCopyCatBlock = document.getElementById("secondCopyCatBlock");
+      const secondCopyCat = document.getElementById("secondCopyCatId");
+      const secondCopyColorInfo = document.getElementById("secondCopyColorInfo");
+      const secondCopyCurrentBreed = document.getElementById("secondCopyCurrentBreed");
+      const secondCopyCurrentEms = document.getElementById("secondCopyCurrentEms");
+      const secondCopyCatRequiredTypes = new Set([
+        "PEDIGREE_SECOND_COPY",
+        "TITLE_DIPLOMA_SECOND_COPY",
+        "OWNERSHIP_DOC_SECOND_COPY",
+        "CHANGE_TO_NOT_BREEDING",
+        "CHANGE_TO_BREEDING",
+        "CHANGE_COLOR",
+        "FIX_MICROCHIP",
+        "FIX_SEX",
+      ]);
+
+      function refreshSecondCopyFields() {
+        if (!secondCopyType) return;
+        const requiresCat = secondCopyCatRequiredTypes.has(secondCopyType.value);
+        if (secondCopyCatBlock) secondCopyCatBlock.style.display = requiresCat ? "" : "none";
+        if (secondCopyCat) secondCopyCat.required = requiresCat;
+        const showColor = secondCopyType.value === "CHANGE_COLOR";
+        if (secondCopyColorInfo) secondCopyColorInfo.style.display = showColor ? "grid" : "none";
+        const selected = secondCopyCat?.options[secondCopyCat.selectedIndex];
+        if (secondCopyCurrentBreed) secondCopyCurrentBreed.value = selected?.dataset?.breed || "";
+        if (secondCopyCurrentEms) secondCopyCurrentEms.value = selected?.dataset?.ems || "";
+      }
+
+      if (secondCopyType) {
+        secondCopyType.addEventListener("change", refreshSecondCopyFields);
+        secondCopyCat?.addEventListener("change", refreshSecondCopyFields);
+        refreshSecondCopyFields();
       }
 
       document.querySelectorAll("form").forEach((form) => {

@@ -93,6 +93,11 @@ function isServicePendingCorrection(service) {
   return latestStatus(service)?.status === "COM_PENDENCIA";
 }
 
+function isLitterService(service) {
+  const type = String(service?.type || "").toLowerCase();
+  return type.includes("ninhada");
+}
+
 const UPLOADS_ROOT =
   process.env.UPLOADS_DIR || path.join(__dirname, "..", "public", "uploads");
 
@@ -141,6 +146,29 @@ function parseJsonArray(value) {
   } catch {
     return [];
   }
+}
+
+function parseStructuredRows(value) {
+  if (Array.isArray(value)) return value;
+  if (value && typeof value === "object") {
+    return Object.keys(value)
+      .sort((a, b) => Number(a) - Number(b))
+      .map((key) => value[key]);
+  }
+  return [];
+}
+
+function secondCopyRequiresCat(requestType) {
+  return new Set([
+    "PEDIGREE_SECOND_COPY",
+    "TITLE_DIPLOMA_SECOND_COPY",
+    "OWNERSHIP_DOC_SECOND_COPY",
+    "CHANGE_TO_NOT_BREEDING",
+    "CHANGE_TO_BREEDING",
+    "CHANGE_COLOR",
+    "FIX_MICROCHIP",
+    "FIX_SEX",
+  ]).has(requestType);
 }
 
 function isKittenFromLitter(cat) {
@@ -213,7 +241,7 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
   }
 
   async function findUserCorrectionService(req, serviceId) {
-    return prisma.serviceRequest.findFirst({
+    const service = await prisma.serviceRequest.findFirst({
       where: {
         id: serviceId,
         userId: req.session.userId,
@@ -228,6 +256,28 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
         secondCopyRequest: true,
       },
     });
+
+    if (!service) return null;
+
+    if (isLitterService(service) && !service.litter) {
+      const litterId = getLitterIdFromService(service);
+      if (litterId) {
+        const litter = await prisma.litter.findFirst({
+          where: {
+            id: litterId,
+            ownerId: req.session.userId,
+          },
+          include: { kittens: { orderBy: { index: "asc" } } },
+        });
+
+        if (litter) {
+          service.litter = litter;
+          service.litterId = litter.id;
+        }
+      }
+    }
+
+    return service;
   }
 
   async function ensureUserCat(req, catId) {
@@ -299,6 +349,18 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
       { name: "kittenPedigreeFile", maxCount: 1 },
       { name: "transferAuthorizationFile", maxCount: 1 },
       { name: "certificatesFiles", maxCount: 12 },
+      { name: "certFile_0", maxCount: 1 },
+      { name: "certFile_1", maxCount: 1 },
+      { name: "certFile_2", maxCount: 1 },
+      { name: "certFile_3", maxCount: 1 },
+      { name: "certFile_4", maxCount: 1 },
+      { name: "certFile_5", maxCount: 1 },
+      { name: "certFile_6", maxCount: 1 },
+      { name: "certFile_7", maxCount: 1 },
+      { name: "certFile_8", maxCount: 1 },
+      { name: "certFile_9", maxCount: 1 },
+      { name: "certFile_10", maxCount: 1 },
+      { name: "certFile_11", maxCount: 1 },
       { name: "attachments", maxCount: 5 },
     ]),
     async (req, res) => {
@@ -319,8 +381,11 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
 
         const description = cleanText(req.body.description) || service.description;
         const serviceData = { description, status: "ENVIADO_GATARINA" };
+        if (isLitterService(service) && service.litter) {
+          serviceData.litterId = service.litter.id;
+        }
 
-        if (service.type === "Registro de Ninhada" && service.litter) {
+        if (isLitterService(service) && service.litter) {
           const litterBirthDate = parseDateInput(req.body.litterBirthDate);
           const litterCount = parseOptionalInt(req.body.litterCount);
           const authFile = uploadedPath(
@@ -524,7 +589,10 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
         }
 
         if (service.type === "Homologação de Títulos" && service.titleHomologation) {
-          const certificates = parseJsonArray(req.body.certificatesJson || service.titleHomologation.certificatesJson);
+          const submittedCertificates = parseStructuredRows(req.body.certificates);
+          const certificates = submittedCertificates.length
+            ? submittedCertificates
+            : parseJsonArray(req.body.certificatesJson || service.titleHomologation.certificatesJson);
           const certFiles = req.files?.certificatesFiles || [];
           const selectedCat = req.body.catId
             ? await ensureUserCat(req, req.body.catId)
@@ -537,6 +605,12 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
           certFiles.forEach((file, index) => {
             if (!certificates[index]) certificates[index] = {};
             certificates[index].file = uploadedPath(file, "title-certificates");
+          });
+          certificates.forEach((certificate, index) => {
+            const replacement = req.files?.[`certFile_${index}`]?.[0];
+            if (replacement) {
+              certificate.file = uploadedPath(replacement, "title-certificates");
+            }
           });
 
           await prisma.titleHomologation.update({
@@ -603,12 +677,16 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
           if (req.body.catId && !selectedCat) {
             return res.status(400).send("Gato inválido para este usuário.");
           }
+          const requestType = cleanText(req.body.requestType) || service.secondCopyRequest.requestType;
+          if (secondCopyRequiresCat(requestType) && !selectedCat && !service.secondCopyRequest.catId) {
+            throw requiredFieldError("Selecione o gato para este tipo de solicitação.");
+          }
 
           await prisma.secondCopyRequest.update({
             where: { serviceRequestId: service.id },
             data: {
-              ...(selectedCat ? { catId: selectedCat.id } : {}),
-              requestType: cleanText(req.body.requestType) || service.secondCopyRequest.requestType,
+              catId: selectedCat ? selectedCat.id : secondCopyRequiresCat(requestType) ? service.secondCopyRequest.catId : null,
+              requestType,
               details: cleanText(req.body.details),
               newValue: cleanText(req.body.newValue),
               attachmentsJson: JSON.stringify([...existingAttachments, ...newAttachments]),

@@ -916,8 +916,8 @@ model SecondCopyRequest {
   id               Int      @id @default(autoincrement())
   serviceRequestId Int      @unique
 
-  catId            Int
-  cat              Cat      @relation(fields: [catId], references: [id])
+  catId            Int?
+  cat              Cat?     @relation(fields: [catId], references: [id])
 
   requestType      String
   details          String?

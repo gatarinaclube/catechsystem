@@ -1,0 +1,2 @@
+ALTER TABLE "SecondCopyRequest"
+ALTER COLUMN "catId" DROP NOT NULL;
