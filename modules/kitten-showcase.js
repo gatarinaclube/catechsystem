@@ -9,6 +9,12 @@ const {
 } = require("../utils/planLimits");
 
 const SHOWCASE_UPLOAD_LIMIT = getFileUploadLimit("ADMIN");
+const DEFAULT_SHOWCASE_THEME = {
+  backgroundColor: "#f5f7f3",
+  cardColor: "#ffffff",
+  textColor: "#1f2933",
+  accentColor: "#8a5a20",
+};
 
 const RESERVED_SLUGS = new Set([
   "admin",
@@ -113,6 +119,12 @@ function normalizeInstallments(value) {
   return Math.min(number, 24);
 }
 
+function normalizeColor(value, fallback) {
+  const text = compact(value);
+  if (!text) return fallback;
+  return /^#[0-9a-f]{6}$/i.test(text) ? text : fallback;
+}
+
 function filesByField(files) {
   const map = new Map();
   for (const file of files || []) {
@@ -129,6 +141,7 @@ function emptyShowcase(settings, user) {
     title: catteryName,
     intro: "",
     logoPath: settings?.logoPath || "",
+    ...DEFAULT_SHOWCASE_THEME,
     websiteUrl: "",
     instagramUrl: "",
     whatsappUrl: "",
@@ -149,6 +162,10 @@ function shapeShowcase(showcase, settings, user) {
     ...showcase,
     slug: showcase.slug || fallback.slug,
     title: showcase.title || fallback.title,
+    backgroundColor: showcase.backgroundColor || fallback.backgroundColor,
+    cardColor: showcase.cardColor || fallback.cardColor,
+    textColor: showcase.textColor || fallback.textColor,
+    accentColor: showcase.accentColor || fallback.accentColor,
     litters: (showcase.litters || []).map((litter) => ({
       ...litter,
       birthDate: formatDateInput(litter.birthDate),
@@ -392,6 +409,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               title: compact(payload.title) || fallback.title,
               intro: compact(payload.intro),
               logoPath: logoUpload || compact(payload.logoPath),
+              backgroundColor: normalizeColor(payload.backgroundColor, DEFAULT_SHOWCASE_THEME.backgroundColor),
+              cardColor: normalizeColor(payload.cardColor, DEFAULT_SHOWCASE_THEME.cardColor),
+              textColor: normalizeColor(payload.textColor, DEFAULT_SHOWCASE_THEME.textColor),
+              accentColor: normalizeColor(payload.accentColor, DEFAULT_SHOWCASE_THEME.accentColor),
               websiteUrl: normalizeUrl(payload.websiteUrl),
               instagramUrl: normalizeUrl(payload.instagramUrl),
               whatsappUrl: normalizeWhatsappUrl(payload.whatsappUrl),
@@ -409,6 +430,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               title: compact(payload.title) || fallback.title,
               intro: compact(payload.intro),
               logoPath: logoUpload || compact(payload.logoPath),
+              backgroundColor: normalizeColor(payload.backgroundColor, DEFAULT_SHOWCASE_THEME.backgroundColor),
+              cardColor: normalizeColor(payload.cardColor, DEFAULT_SHOWCASE_THEME.cardColor),
+              textColor: normalizeColor(payload.textColor, DEFAULT_SHOWCASE_THEME.textColor),
+              accentColor: normalizeColor(payload.accentColor, DEFAULT_SHOWCASE_THEME.accentColor),
               websiteUrl: normalizeUrl(payload.websiteUrl),
               instagramUrl: normalizeUrl(payload.instagramUrl),
               whatsappUrl: normalizeWhatsappUrl(payload.whatsappUrl),
@@ -444,6 +469,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
                 birthDate: parseDate(litter.birthDate),
                 deliveryForecast: parseDate(litter.deliveryForecast),
                 published: litter.published !== false,
+                note: compact(litter.note),
                 fatherName: compact(litter.fatherName),
                 fatherPhoto: fatherPhotos[0] || null,
                 fatherPhoto2: fatherPhotos[1] || null,
@@ -469,6 +495,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
                   litterId: savedLitter.id,
                   name: compact(kitten.name),
                   color: compact(kitten.color),
+                  note: compact(kitten.note),
                   sex: kitten.sex,
                   available: kitten.available !== false,
                   sortOrder: kittenIndex,

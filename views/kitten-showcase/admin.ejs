@@ -53,6 +53,34 @@
                   <input id="showcaseLogo" name="showcaseLogo" type="file" accept="image/*" />
                   <input id="logoPath" type="hidden" value="<%= showcase.logoPath || '' %>" />
                 </div>
+                <div class="showcase-theme-editor">
+                  <div class="content-title">Visual da página pública</div>
+                  <div class="showcase-color-grid">
+                    <label class="showcase-color-field">
+                      <span>Fundo</span>
+                      <input id="backgroundColor" type="color" value="<%= showcase.backgroundColor || '#f5f7f3' %>" />
+                    </label>
+                    <label class="showcase-color-field">
+                      <span>Quadros</span>
+                      <input id="cardColor" type="color" value="<%= showcase.cardColor || '#ffffff' %>" />
+                    </label>
+                    <label class="showcase-color-field">
+                      <span>Escritas</span>
+                      <input id="textColor" type="color" value="<%= showcase.textColor || '#1f2933' %>" />
+                    </label>
+                    <label class="showcase-color-field">
+                      <span>Destaque</span>
+                      <input id="accentColor" type="color" value="<%= showcase.accentColor || '#8a5a20' %>" />
+                    </label>
+                  </div>
+                  <div class="showcase-theme-preview" id="showcaseThemePreview">
+                    <div>
+                      <strong>Nome do gatil</strong>
+                      <span>Quadro da vitrine</span>
+                    </div>
+                    <em>Disponível</em>
+                  </div>
+                </div>
               </div>
 
               <div class="showcase-header-fields">
@@ -159,6 +187,11 @@
           </label>
         </div>
 
+        <div class="field" style="margin-top:12px;">
+          <label class="field-label">Observação sobre a ninhada</label>
+          <textarea data-field="note" rows="3" placeholder="Ex.: informações gerais, previsão, condições ou detalhes importantes"></textarea>
+        </div>
+
         <div class="showcase-parent-grid">
           <div class="field-panel">
             <div class="content-title">Pai</div>
@@ -238,6 +271,10 @@
             <label class="field-label">Fotos do filhote</label>
             <input data-photo-input type="file" multiple accept="image/*" />
           </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Observação sobre o filhote</label>
+          <textarea data-kitten-field="note" rows="3" placeholder="Ex.: personalidade, preferência, condição de reserva ou detalhe individual"></textarea>
         </div>
         <div class="showcase-photo-grid" data-photo-grid></div>
       </article>

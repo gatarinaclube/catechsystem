@@ -322,6 +322,10 @@ model CatteryKittenShowcase {
   title       String?
   intro       String?
   logoPath    String?
+  backgroundColor String?
+  cardColor   String?
+  textColor   String?
+  accentColor String?
   websiteUrl  String?
   instagramUrl String?
   whatsappUrl String?
@@ -343,6 +347,7 @@ model CatteryShowcaseLitter {
   birthDate   DateTime
   deliveryForecast DateTime
   published   Boolean @default(true)
+  note        String?
 
   fatherName  String
   fatherPhoto String?
@@ -373,6 +378,7 @@ model CatteryShowcaseKitten {
   litterId    Int
   name        String?
   color       String?
+  note        String?
   sex         String
   available   Boolean  @default(true)
   sortOrder   Int      @default(0)

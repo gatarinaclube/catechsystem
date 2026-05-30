@@ -11,6 +11,10 @@
   const publicLinkButton = document.getElementById("publicLinkButton");
   const paymentCardInstallments = document.getElementById("paymentCardInstallments");
   const paymentInstallmentsField = document.getElementById("paymentInstallmentsField");
+  const themePreview = document.getElementById("showcaseThemePreview");
+  const themeColorInputs = ["backgroundColor", "cardColor", "textColor", "accentColor"]
+    .map((id) => document.getElementById(id))
+    .filter(Boolean);
   const initial = window.__SHOWCASE__ || {};
   const limits = window.__SHOWCASE_LIMITS__ || {};
 
@@ -58,6 +62,18 @@
 
   function syncPaymentInstallments() {
     paymentInstallmentsField.style.display = paymentCardInstallments.checked ? "flex" : "none";
+  }
+
+  function syncThemePreview() {
+    if (!themePreview) return;
+    const background = document.getElementById("backgroundColor")?.value || "#f5f7f3";
+    const card = document.getElementById("cardColor")?.value || "#ffffff";
+    const text = document.getElementById("textColor")?.value || "#1f2933";
+    const accent = document.getElementById("accentColor")?.value || "#8a5a20";
+    themePreview.style.setProperty("--preview-bg", background);
+    themePreview.style.setProperty("--preview-card", card);
+    themePreview.style.setProperty("--preview-text", text);
+    themePreview.style.setProperty("--preview-accent", accent);
   }
 
   function litterLimitReached() {
@@ -132,6 +148,7 @@
     node.dataset.key = key;
     setValue(kittenField(node, "name"), data?.name);
     setValue(kittenField(node, "color"), data?.color);
+    setValue(kittenField(node, "note"), data?.note);
     setValue(kittenField(node, "sex"), data?.sex || "M");
     setValue(kittenField(node, "available"), data?.available !== false);
 
@@ -170,6 +187,7 @@
       "birthDate",
       "deliveryForecast",
       "published",
+      "note",
       "fatherName",
       "fatherColor",
       "fatherPkdef",
@@ -227,6 +245,7 @@
       birthDate: getValue(field(litter, "birthDate")),
       deliveryForecast: getValue(field(litter, "deliveryForecast")),
       published: getValue(field(litter, "published")),
+      note: getValue(field(litter, "note")),
       fatherName: getValue(field(litter, "fatherName")),
       fatherPhotos: Array.from(litter.querySelectorAll('[data-parent-photo-grid="father"] .showcase-photo-card:not(.is-new)'))
         .map((card) => card.dataset.path)
@@ -247,6 +266,7 @@
         key: kitten.dataset.key,
         name: getValue(kittenField(kitten, "name")),
         color: getValue(kittenField(kitten, "color")),
+        note: getValue(kittenField(kitten, "note")),
         sex: getValue(kittenField(kitten, "sex")),
         available: getValue(kittenField(kitten, "available")),
         photos: Array.from(kitten.querySelectorAll(".showcase-photo-card:not(.is-new)"))
@@ -262,6 +282,10 @@
       slug: slugInput.value.trim(),
       intro: document.getElementById("intro").value.trim(),
       logoPath: document.getElementById("logoPath").value.trim(),
+      backgroundColor: document.getElementById("backgroundColor").value,
+      cardColor: document.getElementById("cardColor").value,
+      textColor: document.getElementById("textColor").value,
+      accentColor: document.getElementById("accentColor").value,
       websiteUrl: document.getElementById("websiteUrl").value.trim(),
       instagramUrl: document.getElementById("instagramUrl").value.trim(),
       whatsappUrl: document.getElementById("whatsappUrl").value.trim(),
@@ -284,6 +308,7 @@
   });
   slugInput.addEventListener("input", updatePublicLink);
   paymentCardInstallments.addEventListener("change", syncPaymentInstallments);
+  themeColorInputs.forEach((input) => input.addEventListener("input", syncThemePreview));
   form.addEventListener("submit", (event) => {
     const oversized = Array.from(form.querySelectorAll('input[type="file"]'))
       .some((input) => !filesAreWithinLimit(input));
@@ -302,5 +327,6 @@
   }
   updatePublicLink();
   syncPaymentInstallments();
+  syncThemePreview();
   syncLitterLimit();
 })();
