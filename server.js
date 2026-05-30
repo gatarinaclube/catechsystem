@@ -18,7 +18,11 @@ const {
   buildAccessContext,
   userCan,
 } = require("./utils/access");
-const { getCreationLimits, getFileUploadLimit } = require("./utils/planLimits");
+const {
+  getCreationLimits,
+  getFileUploadLimit,
+  loadPlanLimitOverrides,
+} = require("./utils/planLimits");
 const { sendStatusEmail } = require("./utils/mailer");
 const {
   notifyNewUser,
@@ -170,7 +174,7 @@ function buildProfilePlanCards(currentRole) {
     const showcaseLitterLabel = limits.showcaseLitters === null
       ? "Ilimitado"
       : `${limits.showcaseLitters} ninhada${limits.showcaseLitters === 1 ? "" : "s"} por vez`;
-    const showcaseLitterNote = role === ROLES.BASIC
+    const showcaseLitterNote = limits.showcaseLitters === 1
       ? "Para incluir uma nova ninhada, exclua a ninhada atual da vitrine."
       : null;
 
@@ -980,6 +984,7 @@ app.get("/meus-dados", requireAuth, async (req, res) => {
     }
 
     const user = req.user;
+    await loadPlanLimitOverrides(prisma);
 
     res.render("users/my-profile", {
       user,
@@ -2441,6 +2446,8 @@ app.use((req, res) => {
 
 // ---------- INICIALIZAÇÃO DO SERVIDOR ----------
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+loadPlanLimitOverrides(prisma).finally(() => {
+  app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
+  });
 });

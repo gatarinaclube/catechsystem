@@ -2,7 +2,14 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const { getFileUploadLimit, validateFilesForRole } = require("../utils/planLimits");
+const { isAdminRole } = require("../utils/access");
+const {
+  MANAGED_PLAN_ROLES,
+  getFileUploadLimit,
+  getPlanLimitRows,
+  setPlanLimitOverrides,
+  validateFilesForRole,
+} = require("../utils/planLimits");
 
 const MEMBERSHIP_OPTIONS = ["FIFe", "TICa", "WCF"];
 const EXAM_OPTIONS = ["PKDef", "PKD", "PRA", "HCM - Genético", "HCM - Doppler"];
@@ -67,6 +74,32 @@ function parseJsonList(value) {
   }
 }
 
+function parseNullableInteger(value) {
+  if (value === null || value === undefined || String(value).trim() === "") return null;
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 0) return null;
+  return Math.floor(number);
+}
+
+function parseUploadLimitKb(value) {
+  if (value === null || value === undefined || String(value).trim() === "") return null;
+  const normalized = String(value).replace(",", ".");
+  const number = Number(normalized);
+  if (!Number.isFinite(number) || number <= 0) return null;
+  return Math.round(number * 1024);
+}
+
+function buildPlanLimitRows(body) {
+  return MANAGED_PLAN_ROLES.map((role) => ({
+    role,
+    uploadLimitKb: parseUploadLimitKb(body[`plan_${role}_uploadLimitMb`]),
+    breeders: parseNullableInteger(body[`plan_${role}_breeders`]),
+    showcaseLitters: parseNullableInteger(body[`plan_${role}_showcaseLitters`]),
+    littersPerYear: parseNullableInteger(body[`plan_${role}_littersPerYear`]),
+    kittensPerYear: parseNullableInteger(body[`plan_${role}_kittensPerYear`]),
+  }));
+}
+
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
   const logoUpload = createLogoUploadMiddleware();
@@ -122,6 +155,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         membershipOptions: MEMBERSHIP_OPTIONS,
         breedOptions: BREED_OPTIONS,
         examOptions: EXAM_OPTIONS,
+        planLimits: isAdminRole(req.session.userRole) ? getPlanLimitRows() : [],
+        canManagePlanLimits: isAdminRole(req.session.userRole),
         success: req.query.saved === "1",
         error: null,
       });
@@ -155,6 +190,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       breeds: filterAllowed(req.body.breeds, BREED_OPTIONS),
       exams: filterAllowed(req.body.exams, EXAM_OPTIONS),
     };
+    const canManagePlanLimits = isAdminRole(req.session.userRole);
+    const planLimits = canManagePlanLimits ? buildPlanLimitRows(req.body) : getPlanLimitRows();
 
     try {
       if (req.uploadError) {
@@ -214,6 +251,23 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           "updatedAt" = CURRENT_TIMESTAMP
       `;
 
+      if (canManagePlanLimits) {
+        for (const row of planLimits) {
+          await prisma.rolePlanLimit.upsert({
+            where: { role: row.role },
+            update: {
+              uploadLimitKb: row.uploadLimitKb,
+              breeders: row.breeders,
+              showcaseLitters: row.showcaseLitters,
+              littersPerYear: row.littersPerYear,
+              kittensPerYear: row.kittensPerYear,
+            },
+            create: row,
+          });
+        }
+        setPlanLimitOverrides(planLimits);
+      }
+
       res.redirect("/settings?saved=1");
     } catch (err) {
       console.error("Erro ao salvar configurações:", err);
@@ -224,6 +278,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         membershipOptions: MEMBERSHIP_OPTIONS,
         breedOptions: BREED_OPTIONS,
         examOptions: EXAM_OPTIONS,
+        planLimits,
+        canManagePlanLimits,
         success: false,
         error: "Erro ao salvar configurações.",
       });

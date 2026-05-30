@@ -83,10 +83,42 @@
         max-height: 100%;
         object-fit: contain;
       }
+      .plan-limit-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 14px;
+        font-size: 13px;
+      }
+      .plan-limit-table th,
+      .plan-limit-table td {
+        border-bottom: 1px solid var(--border-soft);
+        padding: 10px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+      .plan-limit-table th {
+        color: var(--text-muted);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .plan-limit-table input {
+        min-width: 92px;
+      }
+      .plan-limit-profile {
+        font-weight: 800;
+        color: var(--text-main);
+      }
       @media (max-width: 700px) {
         .breed-picker,
         .logo-panel {
           grid-template-columns: 1fr;
+        }
+        .plan-limit-table {
+          display: block;
+          overflow-x: auto;
+          white-space: nowrap;
         }
       }
     </style>
@@ -235,6 +267,56 @@
               <% }) %>
             </div>
           </div>
+
+          <% if (canManagePlanLimits) { %>
+            <div class="content-card" style="margin-bottom:18px;">
+              <div class="content-title">Limites dos perfis</div>
+              <div class="section-note">
+                As alterações abaixo valem automaticamente para todos os usuários do respectivo perfil.
+                Deixe os campos de quantidade em branco para permitir uso ilimitado.
+              </div>
+              <table class="plan-limit-table">
+                <thead>
+                  <tr>
+                    <th>Perfil</th>
+                    <th>Arquivo máx. (MB)</th>
+                    <th>Padreadores</th>
+                    <th>Ninhadas na vitrine</th>
+                    <th>Ninhadas por ano</th>
+                    <th>Filhotes por ano</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% planLimits.forEach(function(plan) { %>
+                    <tr>
+                      <td class="plan-limit-profile"><%= plan.label %></td>
+                      <td>
+                        <input
+                          name="plan_<%= plan.role %>_uploadLimitMb"
+                          type="number"
+                          min="0.1"
+                          step="0.1"
+                          value="<%= plan.uploadLimitMb || '' %>"
+                        />
+                      </td>
+                      <td>
+                        <input name="plan_<%= plan.role %>_breeders" type="number" min="0" step="1" value="<%= plan.breeders ?? '' %>" />
+                      </td>
+                      <td>
+                        <input name="plan_<%= plan.role %>_showcaseLitters" type="number" min="0" step="1" value="<%= plan.showcaseLitters ?? '' %>" />
+                      </td>
+                      <td>
+                        <input name="plan_<%= plan.role %>_littersPerYear" type="number" min="0" step="1" value="<%= plan.littersPerYear ?? '' %>" />
+                      </td>
+                      <td>
+                        <input name="plan_<%= plan.role %>_kittensPerYear" type="number" min="0" step="1" value="<%= plan.kittensPerYear ?? '' %>" />
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
 
           <div class="form-actions" style="text-align:right;">
             <button type="submit" class="btn btn-primary">Salvar</button>
