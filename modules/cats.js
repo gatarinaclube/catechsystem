@@ -34,6 +34,151 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     );
   }
 
+  function cleanText(value) {
+    const text = String(value || "").trim();
+    return text || null;
+  }
+
+  function normalizeKey(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "");
+  }
+
+  function splitCsvLine(line) {
+    const cells = [];
+    let current = "";
+    let insideQuotes = false;
+
+    for (let i = 0; i < line.length; i += 1) {
+      const char = line[i];
+      const next = line[i + 1];
+
+      if (char === '"' && next === '"') {
+        current += '"';
+        i += 1;
+      } else if (char === '"') {
+        insideQuotes = !insideQuotes;
+      } else if ((char === "," || char === ";") && !insideQuotes) {
+        cells.push(current.trim());
+        current = "";
+      } else {
+        current += char;
+      }
+    }
+
+    cells.push(current.trim());
+    return cells;
+  }
+
+  function parseCsv(text) {
+    const lines = String(text || "")
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (lines.length < 2) return [];
+
+    const headers = splitCsvLine(lines[0]);
+    return lines.slice(1).map((line) => {
+      const cells = splitCsvLine(line);
+      return headers.reduce((row, header, index) => {
+        row[header] = cells[index] || "";
+        return row;
+      }, {});
+    });
+  }
+
+  function parseImportPayload(rawText) {
+    const text = String(rawText || "").trim();
+    if (!text) return [];
+
+    if (text.startsWith("[") || text.startsWith("{")) {
+      const parsed = JSON.parse(text);
+      return Array.isArray(parsed) ? parsed : [parsed];
+    }
+
+    return parseCsv(text);
+  }
+
+  function pick(row, aliases) {
+    const normalizedRow = Object.entries(row || {}).reduce((acc, [key, value]) => {
+      acc[normalizeKey(key)] = value;
+      return acc;
+    }, {});
+
+    for (const alias of aliases) {
+      const value = normalizedRow[normalizeKey(alias)];
+      if (value !== undefined && String(value).trim() !== "") return String(value).trim();
+    }
+
+    return "";
+  }
+
+  function parseImportDate(value) {
+    const text = cleanText(value);
+    if (!text) return null;
+
+    const iso = new Date(text);
+    if (!Number.isNaN(iso.getTime())) return iso;
+
+    const match = text.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/);
+    if (!match) return null;
+
+    const [, day, month, year] = match;
+    const fullYear = year.length === 2 ? `20${year}` : year;
+    const parsed = new Date(Number(fullYear), Number(month) - 1, Number(day));
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  function normalizeGender(value) {
+    const text = normalizeKey(value);
+    if (["m", "macho", "male"].includes(text)) return "M";
+    if (["f", "femea", "feminha", "female"].includes(text)) return "F";
+    return null;
+  }
+
+  function normalizeBoolean(value) {
+    const text = normalizeKey(value);
+    return ["sim", "s", "yes", "y", "true", "1", "castrado", "neutered"].includes(text);
+  }
+
+  function normalizeImportCat(row, ownerId) {
+    const microchipDigits = pick(row, ["microchip", "micro chip", "chip", "transponder"])
+      .replace(/\D/g, "")
+      .slice(0, 15) || null;
+
+    return {
+      ownerId,
+      status: "NOVO",
+      country: cleanText(pick(row, ["pais", "país", "country"])) || "BR",
+      titleBeforeName: cleanText(pick(row, ["titulos antes", "títulos antes", "title before", "prefixo"])),
+      titleAfterName: cleanText(pick(row, ["titulos depois", "títulos depois", "title after", "sufixo"])),
+      name: cleanText(pick(row, ["nome", "nome do gato", "name", "cat name"])),
+      microchip: microchipDigits,
+      birthDate: parseImportDate(pick(row, ["nascimento", "data nascimento", "data de nascimento", "birthdate", "birth date", "dob"])),
+      gender: normalizeGender(pick(row, ["sexo", "sex", "gender"])),
+      neutered: normalizeBoolean(pick(row, ["castrado", "neutered", "altered"])),
+      breed: cleanText(pick(row, ["raca", "raça", "breed"])),
+      emsCode: cleanText(pick(row, ["ems", "codigo ems", "código ems", "cor", "color"])),
+      fifeStatus: cleanText(pick(row, ["membro", "fife status", "status fife"])),
+      pedigreeType: cleanText(pick(row, ["tipo registro", "tipo de registro", "pedigree type", "register type"])),
+      pedigreeNumber: cleanText(pick(row, ["pedigree", "numero pedigree", "número pedigree", "registro", "registration"])),
+      pedigreePending: normalizeBoolean(pick(row, ["registro pendente", "pedigree pendente", "pending"])),
+      breederType: "OTHER",
+      breederName: cleanText(pick(row, ["criador", "breeder"])),
+      ownershipType: cleanText(pick(row, ["propriedade", "ownership"])) || "OWNER",
+      fatherName: cleanText(pick(row, ["pai", "nome pai", "father", "sire"])),
+      fatherEmsCode: cleanText(pick(row, ["ems pai", "cor pai", "father ems", "sire ems"])),
+      fatherBreed: cleanText(pick(row, ["raca pai", "raça pai", "father breed", "sire breed"])),
+      motherName: cleanText(pick(row, ["mae", "mãe", "nome mae", "nome mãe", "mother", "dam"])),
+      motherEmsCode: cleanText(pick(row, ["ems mae", "ems mãe", "cor mae", "cor mãe", "mother ems", "dam ems"])),
+      motherBreed: cleanText(pick(row, ["raca mae", "raça mãe", "mother breed", "dam breed"])),
+    };
+  }
+
 // --------- CONFIGURAÇÃO DO MULTER ---------
 
 // Produção (Render Disk): UPLOADS_DIR=/var/data  -> salva em /var/data/uploads/cats
@@ -177,6 +322,94 @@ router.get("/cats/new", requireAuth, async (req, res) => {
   } catch (err) {
     console.error("Erro ao abrir formulário de novo gato:", err);
     res.status(500).send("Erro ao abrir formulário de novo gato");
+  }
+});
+
+// --------- IMPORTAÇÃO DE OUTRO SISTEMA ---------
+router.get("/cats/import", requireAuth, async (req, res) => {
+  const { userId, role } = getAuthInfo(req);
+
+  try {
+    const userFromDb = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+    const user = userFromDb ? { ...userFromDb, role } : { id: userId, role };
+
+    res.render("cats/import", {
+      user,
+      currentPath: "/cats/import",
+      result: null,
+      error: null,
+      rawText: "",
+    });
+  } catch (err) {
+    console.error("Erro ao abrir importação de gatos:", err);
+    res.status(500).send("Erro ao abrir importação de gatos");
+  }
+});
+
+router.post("/cats/import", requireAuth, async (req, res) => {
+  const { userId, role } = getAuthInfo(req);
+  const rawText = req.body.importData || "";
+  const userFromDb = await prisma.user.findUnique({ where: { id: userId } });
+  const user = userFromDb ? { ...userFromDb, role } : { id: userId, role };
+
+  try {
+    const rows = parseImportPayload(rawText);
+    const result = {
+      total: rows.length,
+      created: 0,
+      skipped: [],
+    };
+
+    if (!rows.length) {
+      throw new Error("Cole um CSV ou JSON com pelo menos um gato para importar.");
+    }
+
+    for (const [index, row] of rows.entries()) {
+      const data = normalizeImportCat(row, userId);
+
+      if (!data.name) {
+        result.skipped.push({ row: index + 1, reason: "Sem nome do gato." });
+        continue;
+      }
+
+      if (data.microchip) {
+        const existing = await prisma.cat.findUnique({
+          where: { microchip: data.microchip },
+          select: { id: true, name: true },
+        });
+
+        if (existing) {
+          result.skipped.push({
+            row: index + 1,
+            name: data.name,
+            reason: `Microchip já cadastrado em ${existing.name || `gato #${existing.id}`}.`,
+          });
+          continue;
+        }
+      }
+
+      await prisma.cat.create({ data });
+      result.created += 1;
+    }
+
+    res.render("cats/import", {
+      user,
+      currentPath: "/cats/import",
+      result,
+      error: null,
+      rawText,
+    });
+  } catch (err) {
+    console.error("Erro ao importar gatos:", err);
+    res.status(400).render("cats/import", {
+      user,
+      currentPath: "/cats/import",
+      result: null,
+      error: err.message || "Não foi possível importar os dados.",
+      rawText,
+    });
   }
 });
 

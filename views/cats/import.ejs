@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Importar gatos - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <style>
+      .import-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 18px;
+      }
+      .import-textarea {
+        min-height: 360px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 13px;
+      }
+      .import-example {
+        white-space: pre-wrap;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+      .import-result-list {
+        margin: 12px 0 0;
+        padding-left: 18px;
+        color: var(--text-muted);
+        font-size: 13px;
+      }
+      @media (max-width: 900px) {
+        .import-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Importar cadastro de gatos</h2>
+            <div class="welcome-sub">
+              Traga dados exportados de outro sistema, como o CatClubSystem, por CSV ou JSON.
+            </div>
+          </div>
+          <div class="actions">
+            <a href="/cats" class="btn">Voltar aos gatos</a>
+            <a href="/cats/new" class="btn btn-primary">Cadastrar manualmente</a>
+          </div>
+        </div>
+
+        <% if (error) { %>
+          <div class="content-card" style="border-left:4px solid #b91c1c; margin-bottom:18px;">
+            <div class="content-sub"><%= error %></div>
+          </div>
+        <% } %>
+
+        <% if (result) { %>
+          <div class="content-card" style="border-left:4px solid #16a34a; margin-bottom:18px;">
+            <div class="content-title">Importação concluída</div>
+            <div class="content-sub">
+              <strong><%= result.created %></strong> gato(s) importado(s) de <strong><%= result.total %></strong> linha(s).
+            </div>
+            <% if (result.skipped.length) { %>
+              <ul class="import-result-list">
+                <% result.skipped.forEach(function(item) { %>
+                  <li>Linha <%= item.row %><%= item.name ? ` (${item.name})` : '' %>: <%= item.reason %></li>
+                <% }) %>
+              </ul>
+            <% } %>
+          </div>
+        <% } %>
+
+        <div class="import-layout">
+          <form class="content-card" method="post" action="/cats/import">
+            <div class="content-title">Dados para importar</div>
+            <div class="section-note">
+              Cole aqui o arquivo CSV exportado do outro sistema ou um JSON. O sistema cria os gatos em análise e ignora microchips já cadastrados.
+            </div>
+
+            <div class="field" style="margin-top:14px;">
+              <label class="field-label" for="importData">CSV ou JSON</label>
+              <textarea id="importData" class="import-textarea" name="importData" required><%= rawText || '' %></textarea>
+            </div>
+
+            <div class="form-actions" style="margin-top:16px; text-align:right;">
+              <button class="btn btn-primary" type="submit">Importar gatos</button>
+            </div>
+          </form>
+
+          <aside class="content-card">
+            <div class="content-title">Colunas reconhecidas</div>
+            <div class="section-note">
+              Os nomes podem estar em português ou inglês. Use ponto e vírgula ou vírgula como separador.
+            </div>
+            <div class="import-example">nome;microchip;sexo;data de nascimento;raça;ems;pedigree;tipo de registro;pai;mãe
+Gato Exemplo;985141000000000;M;15/01/2024;BEN;BEN n 24;LO 12345;LO;Pai Exemplo;Mãe Exemplo</div>
+
+            <div class="section-note" style="margin-top:14px;">
+              Também são aceitos campos como país, títulos antes/depois, criador, cor, father, mother, sire, dam, birthdate e registration.
+            </div>
+          </aside>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
