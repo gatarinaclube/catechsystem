@@ -69,6 +69,7 @@ model User {
   revenueEntries RevenueEntry[]
   crmEmailContacts CrmEmailContact[]
   crmEmailCampaigns CrmEmailCampaign[]
+  crmEmailDrafts CrmEmailDraft[]
   financialAccountSettings FinancialAccountSetting[]
   financialTransfers FinancialTransfer[]
   passwordResetTokens PasswordResetToken[]
@@ -572,9 +573,23 @@ model CrmEmailContact {
   email     String
   name      String?
   source    String?
+  unsubscribeToken String? @unique
   createdAt DateTime @default(now())
 
   @@unique([ownerId, email])
+}
+
+model CrmEmailDraft {
+  id        Int      @id @default(autoincrement())
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId   Int
+  title     String
+  subject   String
+  bodyText  String
+  ctaJson   String?
+  styleJson String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model CrmEmailCampaign {

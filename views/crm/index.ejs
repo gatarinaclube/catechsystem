@@ -190,16 +190,18 @@
         <% } %>
 
         <% if (activeTab === 'marketing') { %>
-          <div class="content-card" style="margin-bottom:18px;">
-            <div class="history-section-head" style="margin-bottom:12px;">
+          <details class="content-card" style="margin-bottom:18px;" <%= smtpSettings.isComplete ? '' : 'open' %>>
+            <summary class="history-section-head" style="margin-bottom:12px; cursor:pointer;">
               <div>
                 <div class="content-title">Configuração do Remetente</div>
-                <div class="content-sub">Quando preenchida, esta configuração será usada somente nos seus envios de e-mail marketing.</div>
+                <div class="content-sub">
+                  <%= smtpSettings.isComplete ? `${smtpSettings.fromName || 'Remetente'} · ${smtpSettings.fromEmail || ''}` : 'Configure o remetente dos seus envios.' %>
+                </div>
               </div>
               <span class="status-pill <%= smtpSettings.isComplete ? 'is-green' : 'is-yellow' %>">
                 <%= smtpSettings.isComplete ? 'SMTP próprio ativo' : 'Usando SMTP padrão' %>
               </span>
-            </div>
+            </summary>
             <form method="post" action="/crm/marketing/smtp">
               <div class="grid-2">
                 <div class="field">
@@ -251,11 +253,13 @@
             <form method="post" action="/crm/marketing/smtp/testar" style="margin-top:10px; text-align:right;">
               <button type="submit" class="btn" <%= smtpSettings.isComplete ? '' : 'disabled' %>>Enviar teste</button>
             </form>
-          </div>
+          </details>
 
-          <div class="content-card" style="margin-bottom:18px;">
-            <div class="content-title">Layout do E-mail</div>
-            <div class="content-sub">Configuração visual padrão para as campanhas deste usuário.</div>
+          <details class="content-card" style="margin-bottom:18px;" <%= marketingTemplate ? '' : 'open' %>>
+            <summary style="cursor:pointer;">
+              <div class="content-title">Layout do E-mail</div>
+              <div class="content-sub">Fonte, cores, links padrão e rodapé.</div>
+            </summary>
             <form method="post" action="/crm/marketing/template" style="margin-top:16px;">
               <div class="grid-3">
                 <div class="field">
@@ -307,100 +311,143 @@
                 <button type="submit" class="btn btn-primary">Salvar layout</button>
               </div>
             </form>
-          </div>
+          </details>
 
-          <div class="content-card" style="margin-bottom:18px;">
-            <div class="content-title">Prévia do E-mail</div>
-            <div class="content-sub">Simulação aproximada do layout que o destinatário verá.</div>
-            <div style="margin-top:14px; background:<%= marketingTemplate.backgroundColor %>; padding:22px; border-radius:8px;">
-              <div style="max-width:680px; margin:0 auto; background:<%= marketingTemplate.cardColor %>; border:1px solid var(--border-soft); border-radius:8px; overflow:hidden;">
-                <div style="height:130px; background:linear-gradient(135deg, <%= marketingTemplate.accentColor %>, #111827); color:#ffffff; display:flex; align-items:center; justify-content:center; font-weight:800;">
-                  Imagem da campanha
-                </div>
-                <div style="padding:24px; color:<%= marketingTemplate.textColor %>; font-family:<%= marketingTemplate.fontFamily %>;">
-                  <div style="width:54px; height:4px; background:<%= marketingTemplate.accentColor %>; border-radius:99px; margin-bottom:16px;"></div>
-                  <h3 style="margin:0 0 12px; font-size:22px;">Assunto da campanha</h3>
-                  <p style="margin:0 0 12px;">Aqui aparecerá o texto principal do e-mail, com espaçamento confortável e leitura clara.</p>
-                  <div style="text-align:center; margin-top:18px;">
-                    <span style="display:inline-block; padding:11px 16px; border-radius:6px; background:<%= marketingTemplate.accentColor %>; color:#ffffff; font-weight:700;">Botão de ação</span>
-                  </div>
-                </div>
-                <div style="padding:14px 18px; background:#f9fafb; color:#6b7280; font-size:12px; text-align:center;">
-                  <%= marketingTemplate.footerText %>
-                </div>
+          <div class="content-card module-list-card" style="margin-bottom:18px;">
+            <div class="history-section-head" style="margin-bottom:12px;">
+              <div>
+                <div class="content-title">E-mails Salvos</div>
+                <div class="content-sub">Modelos que podem ser carregados, editados e enviados novamente.</div>
               </div>
+              <span class="status-pill is-blue"><%= drafts.length %></span>
             </div>
+            <% if (!drafts.length) { %>
+              <div class="empty">Nenhum e-mail salvo.</div>
+            <% } else { %>
+              <div class="record-list">
+                <% drafts.forEach(function(draft) { %>
+                  <div class="record-row">
+                    <div class="record-main">
+                      <div class="record-title"><%= draft.title %></div>
+                      <div class="record-sub">
+                        <%= draft.subject %>
+                        · Atualizado em <%= draft.updatedAtLabel || '-' %>
+                      </div>
+                    </div>
+                    <div class="record-meta" style="display:flex; gap:8px; align-items:center;">
+                      <a href="/crm?tab=marketing&draftId=<%= draft.id %>" class="btn">Usar</a>
+                      <form method="post" action="/crm/marketing/drafts/<%= draft.id %>/excluir" onsubmit="return confirm('Excluir este e-mail salvo?');">
+                        <button type="submit" class="btn">Excluir</button>
+                      </form>
+                    </div>
+                  </div>
+                <% }) %>
+              </div>
+            <% } %>
           </div>
 
           <div class="content-card" style="margin-bottom:18px;">
             <div class="content-title">Enviar E-mail Marketing</div>
             <div class="content-sub">O envio será feito apenas para os contatos cadastrados na aba Contatos de e-mail.</div>
-            <form method="post" action="/crm/marketing/enviar" enctype="multipart/form-data" style="margin-top:16px;">
-              <div class="field">
-                <label class="field-label" for="marketingSubject">Assunto</label>
-                <input id="marketingSubject" name="subject" type="text" maxlength="160" required />
-              </div>
-              <div class="field" style="margin-top:12px;">
-                <label class="field-label" for="marketingImage">Imagem da campanha</label>
-                <input id="marketingImage" name="marketingImage" type="file" accept="image/*" />
-              </div>
-              <div class="field" style="margin-top:12px;">
-                <label class="field-label" for="marketingAttachments">Anexos</label>
-                <input id="marketingAttachments" name="marketingAttachments" type="file" multiple />
-                <div class="section-note">Podem ser enviados até 5 anexos, com até 8 MB cada.</div>
-              </div>
-              <div class="field" style="margin-top:12px;">
-                <label class="field-label" for="marketingBody">Texto</label>
-                <textarea id="marketingBody" name="bodyText" rows="8" required placeholder="Escreva o texto que será enviado no e-mail."></textarea>
-              </div>
-              <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border-soft);">
-                <div class="content-title">Botões do e-mail</div>
-                <div class="grid-2" style="margin-top:12px;">
-                  <div class="field">
-                    <label class="field-label" for="websiteButtonLabel">Texto do botão Site</label>
-                    <input id="websiteButtonLabel" name="websiteButtonLabel" type="text" value="Site" />
+            <div class="grid-2" style="margin-top:16px; align-items:start;">
+              <form method="post" action="/crm/marketing/enviar" enctype="multipart/form-data">
+                <input type="hidden" name="draftId" value="<%= selectedDraft.id || '' %>" />
+                <div class="field">
+                  <label class="field-label" for="draftTitle">Nome para salvar/reutilizar</label>
+                  <input id="draftTitle" name="draftTitle" type="text" value="<%= selectedDraft.title || '' %>" placeholder="Ex.: Campanha filhotes disponíveis" />
+                </div>
+                <div class="field">
+                  <label class="field-label" for="marketingSubject">Assunto</label>
+                  <input id="marketingSubject" name="subject" type="text" maxlength="160" value="<%= selectedDraft.subject || '' %>" required />
+                </div>
+                <div class="field" style="margin-top:12px;">
+                  <label class="field-label" for="marketingImage">Imagem da campanha</label>
+                  <input id="marketingImage" name="marketingImage" type="file" accept="image/*" />
+                </div>
+                <div class="field" style="margin-top:12px;">
+                  <label class="field-label" for="marketingAttachments">Anexos</label>
+                  <input id="marketingAttachments" name="marketingAttachments" type="file" multiple />
+                  <div class="section-note">Podem ser enviados até 5 anexos, com até 8 MB cada.</div>
+                </div>
+                <div class="field" style="margin-top:12px;">
+                  <label class="field-label" for="marketingBody">Texto</label>
+                  <textarea id="marketingBody" name="bodyText" rows="8" required placeholder="Escreva o texto que será enviado no e-mail."><%= selectedDraft.bodyText || '' %></textarea>
+                </div>
+                <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border-soft);">
+                  <div class="content-title">Botões do e-mail</div>
+                  <div class="grid-2" style="margin-top:12px;">
+                    <div class="field">
+                      <label class="field-label" for="websiteButtonLabel">Texto do botão Site</label>
+                      <input id="websiteButtonLabel" name="websiteButtonLabel" type="text" value="<%= selectedDraft.websiteButtonLabel || 'Site' %>" />
+                    </div>
+                    <div class="field">
+                      <label class="field-label" for="websiteButtonUrl">Link do site</label>
+                      <input id="websiteButtonUrl" name="websiteButtonUrl" type="url" value="<%= selectedDraft.websiteButtonUrl || marketingTemplate.websiteUrl || '' %>" placeholder="https://..." />
+                    </div>
                   </div>
-                  <div class="field">
-                    <label class="field-label" for="websiteButtonUrl">Link do site</label>
-                    <input id="websiteButtonUrl" name="websiteButtonUrl" type="url" value="<%= marketingTemplate.websiteUrl || '' %>" placeholder="https://..." />
+                  <div class="grid-2" style="margin-top:12px;">
+                    <div class="field">
+                      <label class="field-label" for="instagramButtonLabel">Texto do botão Instagram</label>
+                      <input id="instagramButtonLabel" name="instagramButtonLabel" type="text" value="<%= selectedDraft.instagramButtonLabel || 'Instagram' %>" />
+                    </div>
+                    <div class="field">
+                      <label class="field-label" for="instagramButtonUrl">Link do Instagram</label>
+                      <input id="instagramButtonUrl" name="instagramButtonUrl" type="url" value="<%= selectedDraft.instagramButtonUrl || marketingTemplate.instagramUrl || '' %>" placeholder="https://instagram.com/..." />
+                    </div>
+                  </div>
+                  <div class="grid-2" style="margin-top:12px;">
+                    <div class="field">
+                      <label class="field-label" for="whatsappButtonLabel">Texto do botão WhatsApp</label>
+                      <input id="whatsappButtonLabel" name="whatsappButtonLabel" type="text" value="<%= selectedDraft.whatsappButtonLabel || 'WhatsApp' %>" />
+                    </div>
+                    <div class="field">
+                      <label class="field-label" for="whatsappButtonUrl">Link do WhatsApp</label>
+                      <input id="whatsappButtonUrl" name="whatsappButtonUrl" type="url" value="<%= selectedDraft.whatsappButtonUrl || marketingTemplate.whatsappUrl || '' %>" placeholder="https://wa.me/..." />
+                    </div>
+                  </div>
+                  <div class="grid-2" style="margin-top:12px;">
+                    <div class="field">
+                      <label class="field-label" for="extraButtonLabel">Texto de botão extra</label>
+                      <input id="extraButtonLabel" name="extraButtonLabel" type="text" value="<%= selectedDraft.extraButtonLabel || '' %>" placeholder="Ex.: Ver filhotes" />
+                    </div>
+                    <div class="field">
+                      <label class="field-label" for="extraButtonUrl">Link de botão extra</label>
+                      <input id="extraButtonUrl" name="extraButtonUrl" type="url" value="<%= selectedDraft.extraButtonUrl || '' %>" placeholder="https://..." />
+                    </div>
                   </div>
                 </div>
-                <div class="grid-2" style="margin-top:12px;">
-                  <div class="field">
-                    <label class="field-label" for="instagramButtonLabel">Texto do botão Instagram</label>
-                    <input id="instagramButtonLabel" name="instagramButtonLabel" type="text" value="Instagram" />
-                  </div>
-                  <div class="field">
-                    <label class="field-label" for="instagramButtonUrl">Link do Instagram</label>
-                    <input id="instagramButtonUrl" name="instagramButtonUrl" type="url" value="<%= marketingTemplate.instagramUrl || '' %>" placeholder="https://instagram.com/..." />
-                  </div>
+                <div class="form-actions" style="text-align:right; margin-top:12px;">
+                  <span class="status-pill is-green" style="margin-right:8px;"><%= emailContacts.length %> destinatário(s)</span>
+                  <button type="submit" class="btn" formaction="/crm/marketing/drafts">
+                    <%= selectedDraft.id ? 'Atualizar e-mail salvo' : 'Salvar e-mail' %>
+                  </button>
+                  <button type="submit" class="btn btn-primary" <%= emailContacts.length ? '' : 'disabled' %>>Enviar campanha</button>
                 </div>
-                <div class="grid-2" style="margin-top:12px;">
-                  <div class="field">
-                    <label class="field-label" for="whatsappButtonLabel">Texto do botão WhatsApp</label>
-                    <input id="whatsappButtonLabel" name="whatsappButtonLabel" type="text" value="WhatsApp" />
-                  </div>
-                  <div class="field">
-                    <label class="field-label" for="whatsappButtonUrl">Link do WhatsApp</label>
-                    <input id="whatsappButtonUrl" name="whatsappButtonUrl" type="url" value="<%= marketingTemplate.whatsappUrl || '' %>" placeholder="https://wa.me/..." />
-                  </div>
-                </div>
-                <div class="grid-2" style="margin-top:12px;">
-                  <div class="field">
-                    <label class="field-label" for="extraButtonLabel">Texto de botão extra</label>
-                    <input id="extraButtonLabel" name="extraButtonLabel" type="text" placeholder="Ex.: Ver filhotes" />
-                  </div>
-                  <div class="field">
-                    <label class="field-label" for="extraButtonUrl">Link de botão extra</label>
-                    <input id="extraButtonUrl" name="extraButtonUrl" type="url" placeholder="https://..." />
+              </form>
+
+              <div>
+                <div class="content-title">Prévia do E-mail</div>
+                <div class="content-sub">Atualiza conforme você monta a campanha.</div>
+                <div id="emailPreviewShell" style="margin-top:14px; background:<%= marketingTemplate.backgroundColor %>; padding:22px; border-radius:8px;">
+                  <div id="emailPreviewCard" style="max-width:680px; margin:0 auto; background:<%= marketingTemplate.cardColor %>; border:1px solid var(--border-soft); border-radius:8px; overflow:hidden;">
+                    <div id="emailPreviewImageWrap" style="height:130px; background:linear-gradient(135deg, <%= marketingTemplate.accentColor %>, #111827); color:#ffffff; display:flex; align-items:center; justify-content:center; font-weight:800;">
+                      <img id="emailPreviewImage" alt="" style="display:none; width:100%; height:100%; object-fit:cover;" />
+                      <span id="emailPreviewImageText">Imagem da campanha</span>
+                    </div>
+                    <div id="emailPreviewBody" style="padding:24px; color:<%= marketingTemplate.textColor %>; font-family:<%= marketingTemplate.fontFamily %>;">
+                      <div id="emailPreviewAccent" style="width:54px; height:4px; background:<%= marketingTemplate.accentColor %>; border-radius:99px; margin-bottom:16px;"></div>
+                      <h3 id="emailPreviewSubject" style="margin:0 0 12px; font-size:22px;">Assunto da campanha</h3>
+                      <div id="emailPreviewText" style="margin:0 0 12px;">Aqui aparecerá o texto principal do e-mail, com espaçamento confortável e leitura clara.</div>
+                      <div id="emailPreviewButtons" style="text-align:center; margin-top:18px;"></div>
+                    </div>
+                    <div id="emailPreviewFooter" style="padding:14px 18px; background:#f9fafb; color:#6b7280; font-size:12px; text-align:center;">
+                      <%= marketingTemplate.footerText %><br />
+                      <span style="text-decoration:underline;">Não quero mais receber estes e-mails</span>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div class="form-actions" style="text-align:right; margin-top:12px;">
-                <span class="status-pill is-green" style="margin-right:8px;"><%= emailContacts.length %> destinatário(s)</span>
-                <button type="submit" class="btn btn-primary" <%= emailContacts.length ? '' : 'disabled' %>>Enviar campanha</button>
-              </div>
-            </form>
+            </div>
           </div>
 
           <div class="content-card module-list-card">
@@ -442,5 +489,112 @@
         <% } %>
       </main>
     </div>
+    <% if (activeTab === 'marketing') { %>
+      <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          const template = <%- JSON.stringify(marketingTemplate) %>;
+          const fields = {
+            subject: document.getElementById("marketingSubject"),
+            body: document.getElementById("marketingBody"),
+            image: document.getElementById("marketingImage"),
+            websiteLabel: document.getElementById("websiteButtonLabel"),
+            websiteUrl: document.getElementById("websiteButtonUrl"),
+            instagramLabel: document.getElementById("instagramButtonLabel"),
+            instagramUrl: document.getElementById("instagramButtonUrl"),
+            whatsappLabel: document.getElementById("whatsappButtonLabel"),
+            whatsappUrl: document.getElementById("whatsappButtonUrl"),
+            extraLabel: document.getElementById("extraButtonLabel"),
+            extraUrl: document.getElementById("extraButtonUrl"),
+          };
+          const preview = {
+            shell: document.getElementById("emailPreviewShell"),
+            card: document.getElementById("emailPreviewCard"),
+            image: document.getElementById("emailPreviewImage"),
+            imageText: document.getElementById("emailPreviewImageText"),
+            body: document.getElementById("emailPreviewBody"),
+            accent: document.getElementById("emailPreviewAccent"),
+            subject: document.getElementById("emailPreviewSubject"),
+            text: document.getElementById("emailPreviewText"),
+            buttons: document.getElementById("emailPreviewButtons"),
+            footer: document.getElementById("emailPreviewFooter"),
+          };
+
+          function escapeText(value) {
+            return String(value || "")
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;")
+              .replace(/"/g, "&quot;")
+              .replace(/'/g, "&#039;");
+          }
+
+          function normalizeUrl(value) {
+            const text = String(value || "").trim();
+            if (!text) return "";
+            return /^https?:\/\//i.test(text) ? text : "https://" + text;
+          }
+
+          function collectButtons() {
+            return [
+              { label: fields.websiteLabel.value || "Site", url: normalizeUrl(fields.websiteUrl.value || template.websiteUrl) },
+              { label: fields.instagramLabel.value || "Instagram", url: normalizeUrl(fields.instagramUrl.value || template.instagramUrl) },
+              { label: fields.whatsappLabel.value || "WhatsApp", url: normalizeUrl(fields.whatsappUrl.value || template.whatsappUrl) },
+              { label: fields.extraLabel.value, url: normalizeUrl(fields.extraUrl.value) },
+            ].filter((button) => button.label && button.url);
+          }
+
+          function renderButtons() {
+            const buttons = collectButtons();
+            preview.buttons.innerHTML = buttons.map((button) => (
+              '<span style="display:inline-block; margin:4px; padding:11px 16px; border-radius:6px; background:' +
+              template.accentColor +
+              '; color:#ffffff; font-weight:700;">' +
+              escapeText(button.label) +
+              '</span>'
+            )).join("");
+          }
+
+          function updatePreview() {
+            preview.shell.style.background = template.backgroundColor;
+            preview.card.style.background = template.cardColor;
+            preview.body.style.color = template.textColor;
+            preview.body.style.fontFamily = template.fontFamily;
+            preview.accent.style.background = template.accentColor;
+            preview.subject.textContent = fields.subject.value || "Assunto da campanha";
+            const text = fields.body.value || "Aqui aparecerá o texto principal do e-mail, com espaçamento confortável e leitura clara.";
+            preview.text.innerHTML = escapeText(text).replace(/\n/g, "<br>");
+            preview.footer.innerHTML = escapeText(template.footerText) + '<br><span style="text-decoration:underline;">Não quero mais receber estes e-mails</span>';
+            renderButtons();
+          }
+
+          Object.values(fields).forEach((field) => {
+            if (field && field !== fields.image) {
+              field.addEventListener("input", updatePreview);
+            }
+          });
+
+          if (fields.image) {
+            fields.image.addEventListener("change", function () {
+              const file = fields.image.files && fields.image.files[0];
+              if (!file) {
+                preview.image.style.display = "none";
+                preview.imageText.style.display = "inline";
+                updatePreview();
+                return;
+              }
+              const reader = new FileReader();
+              reader.onload = function (event) {
+                preview.image.src = event.target.result;
+                preview.image.style.display = "block";
+                preview.imageText.style.display = "none";
+              };
+              reader.readAsDataURL(file);
+            });
+          }
+
+          updatePreview();
+        });
+      </script>
+    <% } %>
   </body>
 </html>

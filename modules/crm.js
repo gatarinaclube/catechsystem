@@ -140,7 +140,55 @@ function buildButtons(buttons, accentColor) {
   `;
 }
 
-function buildMarketingHtml({ subject, bodyText, imageUrl, template, buttons, trackingPixelUrl = "" }) {
+function generateToken() {
+  return crypto.randomBytes(24).toString("hex");
+}
+
+function parseJson(value, fallback = null) {
+  try {
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function buildCampaignButtons(body, template) {
+  return [
+    { key: "website", label: cleanText(body.websiteButtonLabel) || "Site", url: normalizeUrl(body.websiteButtonUrl || template.websiteUrl) },
+    { key: "instagram", label: cleanText(body.instagramButtonLabel) || "Instagram", url: normalizeUrl(body.instagramButtonUrl || template.instagramUrl) },
+    { key: "whatsapp", label: cleanText(body.whatsappButtonLabel) || "WhatsApp", url: normalizeUrl(body.whatsappButtonUrl || template.whatsappUrl) },
+    { key: "extra", label: cleanText(body.extraButtonLabel), url: normalizeUrl(body.extraButtonUrl) },
+  ].filter((button) => button.url && button.label);
+}
+
+function shapeDraft(draft) {
+  const buttons = parseJson(draft?.ctaJson, []) || [];
+  const byKey = (key) => buttons.find((button) => button.key === key) || {};
+  return {
+    id: draft?.id || null,
+    title: draft?.title || "",
+    subject: draft?.subject || "",
+    bodyText: draft?.bodyText || "",
+    websiteButtonLabel: byKey("website").label || "Site",
+    websiteButtonUrl: byKey("website").url || "",
+    instagramButtonLabel: byKey("instagram").label || "Instagram",
+    instagramButtonUrl: byKey("instagram").url || "",
+    whatsappButtonLabel: byKey("whatsapp").label || "WhatsApp",
+    whatsappButtonUrl: byKey("whatsapp").url || "",
+    extraButtonLabel: byKey("extra").label || "",
+    extraButtonUrl: byKey("extra").url || "",
+  };
+}
+
+function buildMarketingHtml({
+  subject,
+  bodyText,
+  imageUrl,
+  template,
+  buttons,
+  trackingPixelUrl = "",
+  unsubscribeUrl = "",
+}) {
   const paragraphs = escapeHtml(bodyText)
     .split(/\n{2,}/)
     .map((paragraph) => paragraph.replace(/\n/g, "<br>"))
@@ -174,6 +222,7 @@ function buildMarketingHtml({ subject, bodyText, imageUrl, template, buttons, tr
             <tr>
               <td style="padding:18px 28px;background:#f9fafb;font-family:${safeTemplate.fontFamily};color:#6b7280;font-size:12px;line-height:1.5;text-align:center;">
                 ${escapeHtml(safeTemplate.footerText)}
+                ${unsubscribeUrl ? `<br><a href="${escapeHtml(unsubscribeUrl)}" style="color:#6b7280;text-decoration:underline;">Não quero mais receber estes e-mails</a>` : ""}
               </td>
             </tr>
           </table>
@@ -341,7 +390,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   }
 
   router.get("/crm", requireAuth, requirePermission("admin.crm"), async (req, res) => {
-    const [clients, emailContacts, campaigns, userSettings] = await Promise.all([
+    const [clients, emailContacts, campaigns, drafts, userSettings] = await Promise.all([
       prisma.revenueClient.findMany({
         where: clientScope(req),
         orderBy: { fullName: "asc" },
@@ -360,10 +409,18 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         orderBy: { sentAt: "desc" },
         take: 10,
       }),
+      prisma.crmEmailDraft.findMany({
+        where: marketingScope(req),
+        orderBy: { updatedAt: "desc" },
+      }),
       prisma.userSettings.findUnique({
         where: { userId: req.session.userId },
       }),
     ]);
+    const selectedDraftId = req.query.draftId ? Number(req.query.draftId) : null;
+    const selectedDraft = selectedDraftId
+      ? drafts.find((draft) => draft.id === selectedDraftId)
+      : null;
     const mappedClients = clients.map((client) => ({
       ...client,
       createdAtLabel: formatDateLabel(client.createdAt),
@@ -387,6 +444,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           ? Math.round((campaign.openedCount / campaign.deliveredCount) * 100)
           : 0,
       })),
+      drafts: drafts.map((draft) => ({
+        ...draft,
+        updatedAtLabel: formatDateLabel(draft.updatedAt),
+      })),
+      selectedDraft: shapeDraft(selectedDraft),
       smtpSettings: shapeSmtpSettings(userSettings),
       marketingTemplate: shapeMarketingTemplate(userSettings),
       marketingFonts: MARKETING_FONTS,
@@ -440,6 +502,20 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     res.end(OPEN_PIXEL);
   });
 
+  router.get("/crm/marketing/descadastrar/:token", async (req, res) => {
+    try {
+      await prisma.crmEmailContact.deleteMany({
+        where: { unsubscribeToken: req.params.token },
+      });
+      res
+        .status(200)
+        .send("<!doctype html><html><head><meta charset=\"utf-8\"><title>Descadastro realizado</title></head><body style=\"font-family:Arial,sans-serif;padding:32px;color:#1f2933;\"><h1>Descadastro realizado</h1><p>Seu e-mail foi removido da lista de e-mail marketing.</p></body></html>");
+    } catch (err) {
+      console.error("Erro ao descadastrar e-mail marketing:", err);
+      res.status(500).send("Erro ao remover e-mail da lista.");
+    }
+  });
+
   router.post("/crm/emails", requireAuth, requirePermission("admin.crm"), async (req, res) => {
     const emails = extractEmails(req.body.emails || req.body.email);
     const name = cleanText(req.body.name) || null;
@@ -457,6 +533,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             email,
             name: emails.length === 1 ? name : null,
             source: emails.length === 1 ? "manual" : "importacao",
+            unsubscribeToken: generateToken(),
           },
         });
         created += 1;
@@ -517,12 +594,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           where: { userId: req.session.userId },
         });
         const template = shapeMarketingTemplate(settings);
-        const buttons = [
-          { label: cleanText(req.body.websiteButtonLabel) || "Site", url: normalizeUrl(req.body.websiteButtonUrl || template.websiteUrl) },
-          { label: cleanText(req.body.instagramButtonLabel) || "Instagram", url: normalizeUrl(req.body.instagramButtonUrl || template.instagramUrl) },
-          { label: cleanText(req.body.whatsappButtonLabel) || "WhatsApp", url: normalizeUrl(req.body.whatsappButtonUrl || template.whatsappUrl) },
-          { label: cleanText(req.body.extraButtonLabel), url: normalizeUrl(req.body.extraButtonUrl) },
-        ].filter((button) => button.url && button.label);
+        const buttons = buildCampaignButtons(req.body, template);
         const smtpConfig = buildUserSmtpConfig(settings);
         const attachments = attachmentFiles.map((file) => ({
           filename: file.originalname,
@@ -544,6 +616,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         let failed = 0;
 
         for (const contact of contacts) {
+          let unsubscribeToken = contact.unsubscribeToken;
+          if (!unsubscribeToken) {
+            unsubscribeToken = generateToken();
+            await prisma.crmEmailContact.update({
+              where: { id: contact.id },
+              data: { unsubscribeToken },
+            });
+          }
           const token = crypto.randomBytes(24).toString("hex");
           const recipient = await prisma.crmEmailCampaignRecipient.create({
             data: {
@@ -555,7 +635,16 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
           try {
             const trackingPixelUrl = buildAbsoluteUrl(req, `/crm/marketing/open/${token}.gif`);
-            const html = buildMarketingHtml({ subject, bodyText, imageUrl, template, buttons, trackingPixelUrl });
+            const unsubscribeUrl = buildAbsoluteUrl(req, `/crm/marketing/descadastrar/${unsubscribeToken}`);
+            const html = buildMarketingHtml({
+              subject,
+              bodyText,
+              imageUrl,
+              template,
+              buttons,
+              trackingPixelUrl,
+              unsubscribeUrl,
+            });
             await sendStatusEmail({
               to: contact.email,
               subject,
@@ -635,6 +724,77 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     } catch (err) {
       res.redirect(`/crm?tab=marketing&error=${encodeURIComponent(err.message || "Erro ao salvar layout.")}`);
     }
+  });
+
+  router.post(
+    "/crm/marketing/drafts",
+    requireAuth,
+    requirePermission("admin.crm"),
+    upload.fields([
+      { name: "marketingImage", maxCount: 1 },
+      { name: "marketingAttachments", maxCount: 5 },
+    ]),
+    async (req, res) => {
+      try {
+      const title = cleanText(req.body.draftTitle);
+      const subject = cleanText(req.body.subject);
+      const bodyText = cleanText(req.body.bodyText);
+      const settings = await prisma.userSettings.findUnique({
+        where: { userId: req.session.userId },
+      });
+      const template = shapeMarketingTemplate(settings);
+      const buttons = buildCampaignButtons(req.body, template);
+      const draftId = req.body.draftId ? Number(req.body.draftId) : null;
+
+      if (!title || !subject || !bodyText) {
+        return res.redirect("/crm?tab=marketing&error=Informe nome do modelo, assunto e texto para salvar.");
+      }
+
+      if (draftId) {
+        const result = await prisma.crmEmailDraft.updateMany({
+          where: { id: draftId, ownerId: req.session.userId },
+          data: {
+            title,
+            subject,
+            bodyText,
+            ctaJson: JSON.stringify(buttons),
+            styleJson: JSON.stringify(template),
+          },
+        });
+
+        if (!result.count) {
+          return res.redirect("/crm?tab=marketing&error=Modelo não encontrado.");
+        }
+
+        return res.redirect(`/crm?tab=marketing&draftId=${draftId}&success=Modelo atualizado.`);
+      }
+
+      const draft = await prisma.crmEmailDraft.create({
+        data: {
+          ownerId: req.session.userId,
+          title,
+          subject,
+          bodyText,
+          ctaJson: JSON.stringify(buttons),
+          styleJson: JSON.stringify(template),
+        },
+      });
+
+      res.redirect(`/crm?tab=marketing&draftId=${draft.id}&success=E-mail salvo para reutilização.`);
+    } catch (err) {
+        res.redirect(`/crm?tab=marketing&error=${encodeURIComponent(err.message || "Erro ao salvar modelo.")}`);
+      }
+    }
+  );
+
+  router.post("/crm/marketing/drafts/:id/excluir", requireAuth, requirePermission("admin.crm"), async (req, res) => {
+    await prisma.crmEmailDraft.deleteMany({
+      where: {
+        id: Number(req.params.id),
+        ownerId: req.session.userId,
+      },
+    });
+    res.redirect("/crm?tab=marketing&success=Modelo removido.");
   });
 
   router.post("/crm/marketing/smtp", requireAuth, requirePermission("admin.crm"), async (req, res) => {
