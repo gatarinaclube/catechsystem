@@ -385,7 +385,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     if (!normalized) return;
 
     const clients = await prisma.revenueClient.findMany({
-      where: clientScope(req),
+      where: {
+        ownerId: req.session?.userId || null,
+        deletedAt: null,
+      },
       select: { id: true, document: true },
     });
     const duplicate = clients.find((client) =>

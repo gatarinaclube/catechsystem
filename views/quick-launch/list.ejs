@@ -11,9 +11,18 @@
     <main class="quick-shell">
       <header class="quick-header">
         <h1 class="quick-title">Despesas Lançadas</h1>
+        <div class="quick-subtitle">Consulte as despesas e lance novos pagamentos quando necessário.</div>
       </header>
 
-      <form class="quick-card quick-filter-card" method="get" action="/despesas/lista">
+      <% if (success) { %>
+        <div class="message message-success" style="margin-bottom:12px;">Despesa salva.</div>
+      <% } %>
+
+      <div class="quick-card quick-filter-card">
+        <a class="btn" href="/despesas/novo">Lançar despesa</a>
+      </div>
+
+      <form class="quick-card quick-filter-card" method="get" action="/despesas">
         <div class="field">
           <label for="month">Mês</label>
           <input id="month" name="month" type="month" value="<%= month %>" />
@@ -43,16 +52,16 @@
 
       <div class="quick-pagination">
         <% if (hasPreviousPage) { %>
-          <a class="btn" href="/despesas/lista?month=<%= month %>&page=<%= page - 1 %>">Anterior</a>
+          <a class="btn" href="/despesas?month=<%= month %>&page=<%= page - 1 %>">Anterior</a>
         <% } %>
         <span>Página <%= page %> de <%= totalPages %></span>
         <% if (hasNextPage) { %>
-          <a class="btn" href="/despesas/lista?month=<%= month %>&page=<%= page + 1 %>">Próxima</a>
+          <a class="btn" href="/despesas?month=<%= month %>&page=<%= page + 1 %>">Próxima</a>
         <% } %>
       </div>
 
       <div class="quick-footer">
-        <a class="quick-options-link" href="/despesas" title="Voltar para despesas">←</a>
+        <a class="quick-options-link" href="/administrativo" title="Administrativo">←</a>
         <a class="quick-options-link" href="/dashboard" title="Página inicial">⌂</a>
       </div>
     </main>

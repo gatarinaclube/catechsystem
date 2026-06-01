@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Contas a Receber - Administrativo</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Contas a Receber</h2>
+            <div class="welcome-sub">Gatos com valores em aberto nas vendas cadastradas.</div>
+          </div>
+          <div class="actions">
+            <a href="/vendas" class="btn btn-primary">Receitas/Vendas</a>
+            <a href="/administrativo" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <div class="metric-grid" style="margin-bottom:18px;">
+          <div class="metric-card is-yellow">
+            <div class="metric-label">Gatos a receber</div>
+            <div class="metric-value"><%= receivables.length %></div>
+            <div class="metric-note">Vendas com parcelas em aberto</div>
+          </div>
+          <div class="metric-card is-green">
+            <div class="metric-label">Total em aberto</div>
+            <div class="metric-value" style="font-size:22px;">R$ <%= totalOpenLabel %></div>
+            <div class="metric-note">Soma das parcelas pendentes</div>
+          </div>
+        </div>
+
+        <div class="content-card module-list-card">
+          <div class="history-section-head" style="margin-bottom:12px;">
+            <div>
+              <div class="content-title">Lista de gatos a receber</div>
+              <div class="content-sub">Clique em uma venda para editar parcelas ou marcar pagamentos.</div>
+            </div>
+            <span class="status-pill is-purple"><%= receivables.length %></span>
+          </div>
+
+          <% if (!receivables.length) { %>
+            <div class="empty">Nenhum gato com valor a receber.</div>
+          <% } else { %>
+            <div class="record-list">
+              <% receivables.forEach(function(row) { %>
+                <a class="record-row" href="/vendas/<%= row.id %>" style="text-decoration:none;">
+                  <div class="record-main">
+                    <div class="record-title"><%= row.kittenLabel %></div>
+                    <div class="record-sub">
+                      Cliente: <%= row.clientLabel %>
+                      <% if (row.clientContact) { %> · <%= row.clientContact %><% } %>
+                    </div>
+                    <div class="record-sub">
+                      Próxima parcela: <%= row.nextParcelLabel %> · <%= row.nextAmountLabel %> · <%= row.nextDueDateLabel %>
+                    </div>
+                  </div>
+                  <div class="record-meta">
+                    <span class="status-pill <%= row.statusClass %>"><%= row.statusLabel %></span>
+                    <div style="margin-top:6px;">Aberto: R$ <%= row.openLabel %></div>
+                    <div class="record-sub"><%= row.openCount %> parcela(s)</div>
+                  </div>
+                </a>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

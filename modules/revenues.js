@@ -173,6 +173,31 @@ function buildRevenueSummary(revenue) {
   };
 }
 
+function firstPaymentDateTime(revenue) {
+  const parcels = safeJsonParse(revenue.parcelDataJson);
+  const firstParcel = parcels
+    .filter((parcel) => parcel.date)
+    .sort((a, b) => Number(a.number || 0) - Number(b.number || 0))[0];
+  const date = firstParcel ? parseDateInput(firstParcel.date, true) : null;
+  return date ? date.getTime() : 0;
+}
+
+function replaceParcelPaymentAccount(parcelDataJson, oldName, newName) {
+  const parcels = safeJsonParse(parcelDataJson);
+  if (!Array.isArray(parcels)) return null;
+
+  let changed = false;
+  const nextParcels = parcels.map((parcel) => {
+    if (parcel && parcel.paymentAccount === oldName) {
+      changed = true;
+      return { ...parcel, paymentAccount: newName };
+    }
+    return parcel;
+  });
+
+  return changed ? JSON.stringify(nextParcels) : null;
+}
+
 function mapPaidRevenueRows(revenues, start, end) {
   const startTime = start.getTime();
   const endTime = end.getTime();
@@ -242,7 +267,10 @@ module.exports = (prisma) => {
     if (!normalized) return;
 
     const clients = await prisma.revenueClient.findMany({
-      where: clientScope(req),
+      where: {
+        ownerId: req.session?.userId || null,
+        deletedAt: null,
+      },
       select: { document: true },
     });
 
@@ -401,11 +429,17 @@ module.exports = (prisma) => {
       where: ownerScope(req),
       include: { client: true },
       orderBy: { createdAt: "desc" },
-      take: 200,
     });
+    const sortedRevenues = revenues
+      .slice()
+      .sort((a, b) => {
+        const dateCompare = firstPaymentDateTime(b) - firstPaymentDateTime(a);
+        return dateCompare || Number(b.id) - Number(a.id);
+      })
+      .slice(0, 200);
 
     res.render("revenues/sales-list", {
-      revenues,
+      revenues: sortedRevenues,
       currentPath: "/vendas",
     });
   });
@@ -526,7 +560,47 @@ module.exports = (prisma) => {
     }
 
     if (name) {
-      await prisma.quickLaunchOption.update({ where: { id }, data: { name } });
+      await prisma.$transaction(async (tx) => {
+        await tx.quickLaunchOption.update({ where: { id }, data: { name } });
+        await tx.quickLaunchEntry.updateMany({
+          where: { paymentMethod: account.name },
+          data: { paymentMethod: name },
+        });
+        await tx.revenueEntry.updateMany({
+          where: { paymentAccount: account.name },
+          data: { paymentAccount: name },
+        });
+        await tx.financialAccountSetting.updateMany({
+          where: { accountName: account.name },
+          data: { accountName: name },
+        });
+        await tx.financialTransfer.updateMany({
+          where: { fromAccount: account.name },
+          data: { fromAccount: name },
+        });
+        await tx.financialTransfer.updateMany({
+          where: { toAccount: account.name },
+          data: { toAccount: name },
+        });
+        await tx.accountPayable.updateMany({
+          where: { paymentMethod: account.name },
+          data: { paymentMethod: name },
+        });
+
+        const revenueParcels = await tx.revenueEntry.findMany({
+          where: { parcelDataJson: { not: null } },
+          select: { id: true, parcelDataJson: true },
+        });
+        for (const revenue of revenueParcels) {
+          const nextParcelData = replaceParcelPaymentAccount(revenue.parcelDataJson, account.name, name);
+          if (nextParcelData) {
+            await tx.revenueEntry.update({
+              where: { id: revenue.id },
+              data: { parcelDataJson: nextParcelData },
+            });
+          }
+        }
+      });
     }
 
     res.redirect("/receitas/contas?ok=1");

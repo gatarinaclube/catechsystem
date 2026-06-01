@@ -186,6 +186,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         },
         data: { supplier: next },
       });
+      await tx.accountPayable.updateMany({
+        where: {
+          supplier: previous,
+          ...(canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session?.userId || null }),
+        },
+        data: { supplier: next },
+      });
     });
     await syncSupplierOption(next);
 
@@ -209,6 +216,22 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       where: supplierScope(req),
       orderBy: [{ commercialName: "asc" }],
     });
+  }
+
+  async function ensureUniqueSupplierCnpj(req, cnpj, excludeId = null) {
+    const normalized = onlyDigits(cnpj);
+    if (!normalized) return;
+    const duplicate = await prisma.expenseSupplier.findFirst({
+      where: {
+        ownerId: req.session?.userId || null,
+        cnpj: normalized,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+      select: { id: true },
+    });
+    if (duplicate) {
+      throw new Error("Já existe um fornecedor cadastrado com este CNPJ.");
+    }
   }
 
   async function loadExpenseOptionNames(type) {
@@ -253,6 +276,69 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     };
   }
 
+  function parseOptionalDate(value) {
+    if (!value) return null;
+    const text = String(value).slice(0, 10);
+    const [year, month, day] = text.split("-").map(Number);
+    return year && month && day ? new Date(Date.UTC(year, month - 1, day)) : null;
+  }
+
+  function mapReceivableRows(revenues) {
+    const today = parseDateInput(todayForInput());
+
+    return revenues
+      .map((revenue) => {
+        const parcels = safeJsonParse(revenue.parcelDataJson);
+        const openParcels = parcels
+          .filter((parcel) => !parcel.paid)
+          .map((parcel) => ({
+            ...parcel,
+            dueDate: parseOptionalDate(parcel.date),
+          }));
+
+        if (!openParcels.length) return null;
+
+        const openCents = openParcels.reduce(
+          (sum, parcel) => sum + Number(parcel.amountCents || 0),
+          0
+        );
+        const nextParcel = openParcels
+          .slice()
+          .sort((a, b) => {
+            if (!a.dueDate && !b.dueDate) return Number(a.number || 0) - Number(b.number || 0);
+            if (!a.dueDate) return 1;
+            if (!b.dueDate) return -1;
+            return a.dueDate - b.dueDate;
+          })[0];
+        const overdueCount = openParcels.filter((parcel) => parcel.dueDate && parcel.dueDate < today).length;
+        const statusLabel = overdueCount ? "Em atraso" : "Em aberto";
+
+        return {
+          id: revenue.id,
+          kittenLabel: revenue.kittenLabel || "Venda sem gato informado",
+          clientLabel: revenue.client?.fullName || "Cliente não informado",
+          clientContact: [revenue.client?.phone, revenue.client?.email].filter(Boolean).join(" · "),
+          totalLabel: formatAmount(revenue.totalAmountCents),
+          openCents,
+          openLabel: formatAmount(openCents),
+          openCount: openParcels.length,
+          nextDueDate: nextParcel?.dueDate || null,
+          nextDueDateLabel: nextParcel?.dueDate ? formatDateLabel(nextParcel.dueDate) : "Sem vencimento",
+          nextParcelLabel: nextParcel ? `${nextParcel.number || "-"} / ${revenue.installments || parcels.length || "-"}` : "-",
+          nextAmountLabel: formatAmount(nextParcel?.amountCents || 0),
+          statusLabel,
+          statusClass: overdueCount ? "is-red" : "is-yellow",
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => {
+        if (!a.nextDueDate && !b.nextDueDate) return a.kittenLabel.localeCompare(b.kittenLabel, "pt-BR");
+        if (!a.nextDueDate) return 1;
+        if (!b.nextDueDate) return -1;
+        return a.nextDueDate - b.nextDueDate;
+      });
+  }
+
   function clientData(req) {
     return {
       fullName: cleanText(req.body.fullName),
@@ -278,7 +364,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const normalized = normalizeDocument(document);
     if (!normalized) return;
     const clients = await prisma.revenueClient.findMany({
-      where: { ...supplierScope(req), deletedAt: null },
+      where: {
+        ownerId: req.session?.userId || null,
+        deletedAt: null,
+      },
       select: { id: true, document: true },
     });
     if (clients.some((client) => client.id !== excludeId && normalizeDocument(client.document) === normalized)) {
@@ -420,11 +509,28 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requireAuth,
     requirePermission("admin.administrative"),
     async (req, res) => {
+      const search = cleanText(req.query.q);
+      const normalizedSearch = onlyDigits(search);
+      const allSuppliers = await loadSupplierRows(req);
+      const suppliers = search
+        ? allSuppliers.filter((supplier) => {
+            const commercialName = String(supplier.commercialName || "").toLowerCase();
+            const tradeName = String(supplier.tradeName || "").toLowerCase();
+            const cnpj = onlyDigits(supplier.cnpj);
+            return (
+              commercialName.includes(search.toLowerCase()) ||
+              tradeName.includes(search.toLowerCase()) ||
+              (normalizedSearch && cnpj.includes(normalizedSearch))
+            );
+          })
+        : allSuppliers;
+
       res.render("administrative/suppliers", {
         user: req.user,
         currentPath: "/administrativo",
-        suppliers: await loadSupplierRows(req),
+        suppliers,
         categories: await loadExpenseOptionNames("CATEGORY"),
+        search,
         form: {},
         success: req.query.ok === "1",
         error: req.query.error || "",
@@ -439,6 +545,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     async (req, res) => {
       try {
         const data = supplierData(req);
+        await ensureUniqueSupplierCnpj(req, data.cnpj);
         await prisma.expenseSupplier.create({ data });
         await syncSupplierOption(data.commercialName);
         res.redirect("/administrativo/fornecedores?ok=1");
@@ -451,6 +558,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           currentPath: "/administrativo",
           suppliers: await loadSupplierRows(req),
           categories: await loadExpenseOptionNames("CATEGORY"),
+          search: "",
           form: req.body,
           success: false,
           error: message,
@@ -472,6 +580,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       try {
         const data = supplierData(req);
+        await ensureUniqueSupplierCnpj(req, data.cnpj, supplier.id);
         await prisma.expenseSupplier.update({
           where: { id: supplier.id },
           data: {
@@ -508,7 +617,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           ...(canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session?.userId || null }),
         },
       });
-      if (usageCount > 0) {
+      const payableUsageCount = await prisma.accountPayable.count({
+        where: {
+          supplier: supplier.commercialName,
+          ...(canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session?.userId || null }),
+        },
+      });
+      if (usageCount > 0 || payableUsageCount > 0) {
         return res.redirect(`/administrativo/fornecedores?error=${encodeURIComponent("Este fornecedor já está sendo usado em despesas e não pode ser excluído.")}`);
       }
 
@@ -544,19 +659,55 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   );
 
   router.get(
+    "/administrativo/contas-a-receber",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    async (req, res) => {
+      const revenues = await prisma.revenueEntry.findMany({
+        where: ownerScope(req),
+        include: { client: true },
+        orderBy: [{ createdAt: "desc" }],
+      });
+      const receivables = mapReceivableRows(revenues);
+
+      res.render("administrative/receivables", {
+        user: req.user,
+        currentPath: "/administrativo",
+        receivables,
+        totalOpenLabel: formatAmount(
+          receivables.reduce((sum, row) => sum + Number(row.openCents || 0), 0)
+        ),
+      });
+    }
+  );
+
+  router.get(
     "/administrativo/clientes",
     requireAuth,
     requirePermission("admin.administrative"),
     async (req, res) => {
-      const clients = await prisma.revenueClient.findMany({
+      const search = cleanText(req.query.q);
+      const normalizedSearch = normalizeDocument(search);
+      const allClients = await prisma.revenueClient.findMany({
         where: { ...supplierScope(req), deletedAt: null },
         orderBy: { fullName: "asc" },
         include: { _count: { select: { revenues: true } } },
       });
+      const clients = search
+        ? allClients.filter((client) => {
+            const name = String(client.fullName || "").toLowerCase();
+            const document = normalizeDocument(client.document);
+            return (
+              name.includes(search.toLowerCase()) ||
+              (normalizedSearch && document.includes(normalizedSearch))
+            );
+          })
+        : allClients;
       res.render("administrative/clients", {
         user: req.user,
         currentPath: "/administrativo",
         clients,
+        search,
         success: req.query.ok === "1",
         error: req.query.error || "",
       });

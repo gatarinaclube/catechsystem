@@ -54,8 +54,25 @@
             <span class="status-pill is-purple"><%= suppliers.length %></span>
           </div>
 
+          <form method="get" action="/administrativo/fornecedores" class="report-filter-grid" style="margin-bottom:14px;">
+            <div class="field">
+              <label class="field-label" for="supplierSearch">Pesquisar fornecedor</label>
+              <input
+                id="supplierSearch"
+                name="q"
+                type="search"
+                value="<%= search || '' %>"
+                placeholder="Nome, fantasia ou CNPJ"
+              />
+            </div>
+            <div class="report-filter-actions">
+              <button class="btn btn-primary" type="submit">Pesquisar</button>
+              <a class="btn" href="/administrativo/fornecedores">Limpar</a>
+            </div>
+          </form>
+
           <% if (!suppliers.length) { %>
-            <div class="empty">Nenhum fornecedor cadastrado.</div>
+            <div class="empty"><%= search ? 'Nenhum fornecedor encontrado.' : 'Nenhum fornecedor cadastrado.' %></div>
           <% } else { %>
             <div class="record-list">
               <% suppliers.forEach(function(supplier) { %>

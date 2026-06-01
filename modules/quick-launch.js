@@ -358,6 +358,103 @@ module.exports = (prisma) => {
     });
   }
 
+  function replaceParcelPaymentAccount(parcelDataJson, oldName, newName) {
+    const parcels = (() => {
+      try {
+        return parcelDataJson ? JSON.parse(parcelDataJson) : [];
+      } catch {
+        return [];
+      }
+    })();
+    if (!Array.isArray(parcels)) return null;
+
+    let changed = false;
+    const nextParcels = parcels.map((parcel) => {
+      if (parcel && parcel.paymentAccount === oldName) {
+        changed = true;
+        return { ...parcel, paymentAccount: newName };
+      }
+      return parcel;
+    });
+
+    return changed ? JSON.stringify(nextParcels) : null;
+  }
+
+  async function propagateOptionRename(tx, type, oldName, newName) {
+    if (!oldName || !newName || oldName === newName) return;
+
+    if (type === "CATEGORY") {
+      await tx.quickLaunchEntry.updateMany({
+        where: { category: oldName },
+        data: { category: newName },
+      });
+      await tx.accountPayable.updateMany({
+        where: { category: oldName },
+        data: { category: newName },
+      });
+      await tx.expenseSupplier.updateMany({
+        where: { defaultCategory: oldName },
+        data: { defaultCategory: newName },
+      });
+    }
+
+    if (type === "SUPPLIER") {
+      await tx.quickLaunchEntry.updateMany({
+        where: { supplier: oldName },
+        data: { supplier: newName },
+      });
+      await tx.accountPayable.updateMany({
+        where: { supplier: oldName },
+        data: { supplier: newName },
+      });
+      await tx.expenseSupplier.updateMany({
+        where: { commercialName: oldName },
+        data: { commercialName: newName },
+      });
+    }
+
+    if (type === "PAYMENT") {
+      await tx.quickLaunchEntry.updateMany({
+        where: { paymentMethod: oldName },
+        data: { paymentMethod: newName },
+      });
+      await tx.revenueEntry.updateMany({
+        where: { paymentAccount: oldName },
+        data: { paymentAccount: newName },
+      });
+      await tx.financialAccountSetting.updateMany({
+        where: { accountName: oldName },
+        data: { accountName: newName },
+      });
+      await tx.financialTransfer.updateMany({
+        where: { fromAccount: oldName },
+        data: { fromAccount: newName },
+      });
+      await tx.financialTransfer.updateMany({
+        where: { toAccount: oldName },
+        data: { toAccount: newName },
+      });
+      await tx.accountPayable.updateMany({
+        where: { paymentMethod: oldName },
+        data: { paymentMethod: newName },
+      });
+
+      const revenueParcels = await tx.revenueEntry.findMany({
+        where: { parcelDataJson: { not: null } },
+        select: { id: true, parcelDataJson: true },
+      });
+      for (const revenue of revenueParcels) {
+        const nextParcelData = replaceParcelPaymentAccount(revenue.parcelDataJson, oldName, newName);
+        if (nextParcelData) {
+          await tx.revenueEntry.update({
+            where: { id: revenue.id },
+            data: { parcelDataJson: nextParcelData },
+          });
+        }
+      }
+    }
+  }
+
   function mapExpenseForForm(expense = null) {
     if (!expense) {
       return {
@@ -391,6 +488,40 @@ module.exports = (prisma) => {
       error: extra.error || null,
       homePath: req.session?.userId ? "/dashboard" : "/login",
       canManageSuppliers: req.session?.userId && userCan(req.session.userRole, "admin.administrative"),
+      currentPath: "/despesas",
+    });
+  }
+
+  async function renderExpenseList(req, res) {
+    const { month, start, end } = monthRange(req.query.month);
+    const { page, pageSize, skip } = paginationData(req.query);
+    const where = {
+      ...ownerScope(req),
+      competenceDate: {
+        gte: start,
+        lt: end,
+      },
+    };
+    const totalCount = await prisma.quickLaunchEntry.count({ where });
+    const expenses = await prisma.quickLaunchEntry.findMany({
+      where,
+      orderBy: [{ competenceDate: "desc" }, { createdAt: "desc" }],
+      skip,
+      take: pageSize,
+    });
+
+    res.render("quick-launch/list", {
+      expenses: expenses.map((expense) => ({
+        ...expense,
+        amountLabel: formatAmount(expense.amountCents),
+        dateLabel: formatDateOnlyLabel(expense.competenceDate),
+      })),
+      month,
+      page,
+      totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
+      hasPreviousPage: page > 1,
+      hasNextPage: page * pageSize < totalCount,
+      success: req.query.ok === "1",
       currentPath: "/despesas",
     });
   }
@@ -448,8 +579,12 @@ module.exports = (prisma) => {
     }
   });
 
-  router.get("/despesas", async (req, res) => {
+  router.get("/despesas/novo", async (req, res) => {
     await renderExpenseForm(res, req, { success: req.query.ok === "1" });
+  });
+
+  router.get("/despesas", async (req, res) => {
+    await renderExpenseList(req, res);
   });
 
   router.post("/despesas", upload.single("receipt"), async (req, res) => {
@@ -473,36 +608,8 @@ module.exports = (prisma) => {
   });
 
   router.get("/despesas/lista", async (req, res) => {
-    const { month, start, end } = monthRange(req.query.month);
-    const { page, pageSize, skip } = paginationData(req.query);
-    const where = {
-      ...ownerScope(req),
-      competenceDate: {
-        gte: start,
-        lt: end,
-      },
-    };
-    const totalCount = await prisma.quickLaunchEntry.count({ where });
-    const expenses = await prisma.quickLaunchEntry.findMany({
-      where,
-      orderBy: [{ competenceDate: "desc" }, { createdAt: "desc" }],
-      skip,
-      take: pageSize,
-    });
-
-    res.render("quick-launch/list", {
-      expenses: expenses.map((expense) => ({
-        ...expense,
-        amountLabel: formatAmount(expense.amountCents),
-        dateLabel: formatDateOnlyLabel(expense.competenceDate),
-      })),
-      month,
-      page,
-      totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
-      hasPreviousPage: page > 1,
-      hasNextPage: page * pageSize < totalCount,
-      currentPath: "/despesas",
-    });
+    const query = new URLSearchParams(req.query).toString();
+    res.redirect(`/despesas${query ? `?${query}` : ""}`);
   });
 
   router.get("/despesas/opcoes", async (req, res) => {
@@ -569,22 +676,13 @@ module.exports = (prisma) => {
         });
       }
 
-      const entryOwnerWhere = await rawEntryOwnerWhere(req);
-      const field = Prisma.raw(`"${optionFieldForType(option.type)}"`);
-
       await prisma.$transaction(async (tx) => {
         await tx.$executeRaw`
           UPDATE "QuickLaunchOption"
           SET "name" = ${name}
           WHERE "id" = ${id}
         `;
-
-        await tx.$executeRaw`
-          UPDATE "QuickLaunchEntry"
-          SET ${field} = ${name}
-          WHERE ${field} = ${option.name}
-            ${entryOwnerWhere}
-        `;
+        await propagateOptionRename(tx, option.type, option.name, name);
       });
     }
 
@@ -641,7 +739,7 @@ module.exports = (prisma) => {
         where: { id: existing.id },
         data,
       });
-      res.redirect("/despesas/lista");
+      res.redirect("/despesas");
     } catch (err) {
       await renderExpenseForm(res, req, {
         status: 400,

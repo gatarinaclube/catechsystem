@@ -1639,7 +1639,6 @@ app.post("/despesas/opcoes/:id/update", async (req, res) => {
       });
     }
 
-    const field = expenseOptionFieldSql(option.type);
     await prisma.$transaction(async (tx) => {
       await tx.$executeRaw`
         UPDATE "QuickLaunchOption"
@@ -1647,19 +1646,92 @@ app.post("/despesas/opcoes/:id/update", async (req, res) => {
         WHERE "id" = ${id}
           AND "ownerId" IS NULL
       `;
-        await tx.$executeRaw`
-          UPDATE "QuickLaunchEntry"
-          SET ${field} = ${name}
-          WHERE ${field} = ${option.name}
-        `;
-        if (option.type === "PAYMENT") {
-          await tx.$executeRaw`
-            UPDATE "RevenueEntry"
-            SET "paymentAccount" = ${name}
-            WHERE "paymentAccount" = ${option.name}
-          `;
+
+      if (option.type === "CATEGORY") {
+        await tx.quickLaunchEntry.updateMany({
+          where: { category: option.name },
+          data: { category: name },
+        });
+        await tx.accountPayable.updateMany({
+          where: { category: option.name },
+          data: { category: name },
+        });
+        await tx.expenseSupplier.updateMany({
+          where: { defaultCategory: option.name },
+          data: { defaultCategory: name },
+        });
+      }
+
+      if (option.type === "SUPPLIER") {
+        await tx.quickLaunchEntry.updateMany({
+          where: { supplier: option.name },
+          data: { supplier: name },
+        });
+        await tx.accountPayable.updateMany({
+          where: { supplier: option.name },
+          data: { supplier: name },
+        });
+        await tx.expenseSupplier.updateMany({
+          where: { commercialName: option.name },
+          data: { commercialName: name },
+        });
+      }
+
+      if (option.type === "PAYMENT") {
+        await tx.quickLaunchEntry.updateMany({
+          where: { paymentMethod: option.name },
+          data: { paymentMethod: name },
+        });
+        await tx.revenueEntry.updateMany({
+          where: { paymentAccount: option.name },
+          data: { paymentAccount: name },
+        });
+        await tx.financialAccountSetting.updateMany({
+          where: { accountName: option.name },
+          data: { accountName: name },
+        });
+        await tx.financialTransfer.updateMany({
+          where: { fromAccount: option.name },
+          data: { fromAccount: name },
+        });
+        await tx.financialTransfer.updateMany({
+          where: { toAccount: option.name },
+          data: { toAccount: name },
+        });
+        await tx.accountPayable.updateMany({
+          where: { paymentMethod: option.name },
+          data: { paymentMethod: name },
+        });
+
+        const revenueParcels = await tx.revenueEntry.findMany({
+          where: { parcelDataJson: { not: null } },
+          select: { id: true, parcelDataJson: true },
+        });
+        for (const revenue of revenueParcels) {
+          let parcels = [];
+          try {
+            parcels = revenue.parcelDataJson ? JSON.parse(revenue.parcelDataJson) : [];
+          } catch {
+            parcels = [];
+          }
+          if (!Array.isArray(parcels)) continue;
+          let changed = false;
+          const nextParcels = parcels.map((parcel) => {
+            if (parcel && parcel.paymentAccount === option.name) {
+              changed = true;
+              return { ...parcel, paymentAccount: name };
+            }
+            return parcel;
+          });
+          if (changed) {
+            await tx.revenueEntry.update({
+              where: { id: revenue.id },
+              data: { parcelDataJson: JSON.stringify(nextParcels) },
+            });
+          }
         }
-      });
+      }
+    });
     res.redirect(`/despesas/opcoes?type=${option.type}&ok=1`);
   } catch (err) {
     console.error("Erro ao atualizar opção de despesa:", err);

@@ -25,9 +25,28 @@
         <% if (success) { %><div class="content-card message message-success">Cliente salvo.</div><% } %>
         <% if (error) { %><div class="content-card message message-error"><%= error %></div><% } %>
 
+        <div class="content-card">
+          <form method="get" action="/administrativo/clientes" class="report-filter-grid">
+            <div class="field">
+              <label class="field-label" for="clientSearch">Pesquisar cliente</label>
+              <input
+                id="clientSearch"
+                name="q"
+                type="search"
+                value="<%= search || '' %>"
+                placeholder="Nome ou CPF"
+              />
+            </div>
+            <div class="report-filter-actions">
+              <button class="btn btn-primary" type="submit">Pesquisar</button>
+              <a class="btn" href="/administrativo/clientes">Limpar</a>
+            </div>
+          </form>
+        </div>
+
         <div class="content-card module-list-card">
           <% if (!clients.length) { %>
-            <div class="empty">Nenhum cliente cadastrado.</div>
+            <div class="empty"><%= search ? 'Nenhum cliente encontrado.' : 'Nenhum cliente cadastrado.' %></div>
           <% } else { %>
             <div class="record-list">
               <% clients.forEach(function(client) { %>
