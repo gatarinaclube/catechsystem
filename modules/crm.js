@@ -312,6 +312,36 @@ function buildUserSmtpConfig(settings) {
   };
 }
 
+function shouldRemoveContactAfterSendError(error) {
+  const message = String(error?.message || error || "").toLowerCase();
+
+  if (
+    message.includes("too many login attempts") ||
+    message.includes("invalid login") ||
+    message.includes("authentication") ||
+    message.includes("auth") ||
+    message.includes("rate limit") ||
+    message.includes("quota") ||
+    message.includes("try again later") ||
+    message.includes("timeout") ||
+    message.includes("temporarily")
+  ) {
+    return false;
+  }
+
+  return (
+    message.includes("550 5.1.1") ||
+    message.includes("user unknown") ||
+    message.includes("no such user") ||
+    message.includes("recipient address rejected") ||
+    message.includes("invalid recipient") ||
+    message.includes("bad recipient") ||
+    message.includes("address not found") ||
+    message.includes("mailbox unavailable") ||
+    message.includes("does not exist")
+  );
+}
+
 function shapeSmtpSettings(settings) {
   return {
     fromName: settings?.marketingFromName || "",
@@ -461,6 +491,163 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       smtpConfig,
       attachments,
     };
+  }
+
+  function storedAttachmentsFromCampaign(campaign) {
+    return (parseJson(campaign.attachmentPathsJson, []) || [])
+      .map((filePath) => {
+        if (!filePath || !String(filePath).startsWith("/uploads/")) return null;
+        const localPath = path.join(baseUploadsDir, String(filePath).replace(/^\/uploads\//, ""));
+        if (!fs.existsSync(localPath)) return null;
+        return {
+          filename: path.basename(localPath),
+          path: localPath,
+        };
+      })
+      .filter(Boolean);
+  }
+
+  async function buildStoredCampaignMessage(req, campaign) {
+    const settings = await prisma.userSettings.findUnique({
+      where: { userId: req.session.userId },
+    });
+    const smtpConfig = buildUserSmtpConfig(settings);
+    if (!smtpConfig) {
+      throw new Error("Configure seu próprio SMTP/remetente antes de enviar e-mail marketing.");
+    }
+
+    return {
+      subject: campaign.subject,
+      bodyText: campaign.bodyText,
+      imagePath: campaign.imagePath,
+      imageUrl: buildAbsoluteUrl(req, campaign.imagePath),
+      template: parseJson(campaign.styleJson, null) || shapeMarketingTemplate(settings),
+      buttons: parseJson(campaign.ctaJson, []) || [],
+      smtpConfig,
+      attachments: storedAttachmentsFromCampaign(campaign),
+    };
+  }
+
+  async function refreshCampaignStats(campaignId) {
+    const events = await prisma.crmEmailCampaignRecipient.findMany({
+      where: { campaignId },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      select: { email: true, status: true, openedAt: true },
+    });
+    const latestByEmail = new Map();
+    const openedEmails = new Set();
+
+    events.forEach((event) => {
+      const email = normalizeEmail(event.email);
+      if (!email) return;
+      latestByEmail.set(email, event.status);
+      if (event.openedAt) openedEmails.add(email);
+    });
+
+    const statuses = Array.from(latestByEmail.values());
+    const deliveredCount = statuses.filter((status) => status === "DELIVERED").length;
+    const failedCount = statuses.filter((status) => status === "FAILED").length;
+
+    await prisma.crmEmailCampaign.update({
+      where: { id: campaignId },
+      data: {
+        recipients: latestByEmail.size,
+        deliveredCount,
+        failedCount,
+        openedCount: openedEmails.size,
+      },
+    });
+  }
+
+  async function processCampaignDelivery(req, campaign, message, contacts) {
+    let sent = 0;
+    let failed = 0;
+
+    for (const contact of contacts) {
+      let unsubscribeToken = contact.unsubscribeToken;
+      if (!unsubscribeToken && contact.id) {
+        unsubscribeToken = generateToken();
+        await prisma.crmEmailContact.update({
+          where: { id: contact.id },
+          data: { unsubscribeToken },
+        });
+      }
+
+      const token = crypto.randomBytes(24).toString("hex");
+      const recipient = await prisma.crmEmailCampaignRecipient.create({
+        data: {
+          campaignId: campaign.id,
+          email: contact.email,
+          token,
+        },
+      });
+
+      try {
+        const trackingPixelUrl = buildAbsoluteUrl(req, `/crm/marketing/open/${token}.gif`);
+        const unsubscribeUrl = unsubscribeToken
+          ? buildAbsoluteUrl(req, `/crm/marketing/descadastrar/${unsubscribeToken}`)
+          : "";
+        const html = buildMarketingHtml({
+          subject: message.subject,
+          bodyText: message.bodyText,
+          imageUrl: message.imageUrl,
+          template: message.template,
+          buttons: message.buttons,
+          trackingPixelUrl,
+          unsubscribeUrl,
+        });
+
+        await sendStatusEmail({
+          to: contact.email,
+          subject: message.subject,
+          html,
+          attachments: message.attachments,
+          ...(message.smtpConfig ? { smtpConfig: message.smtpConfig, from: message.smtpConfig.from } : {}),
+        });
+        await prisma.crmEmailCampaignRecipient.update({
+          where: { id: recipient.id },
+          data: { status: "DELIVERED" },
+        });
+        sent += 1;
+      } catch (mailErr) {
+        await prisma.crmEmailCampaignRecipient.update({
+          where: { id: recipient.id },
+          data: {
+            status: "FAILED",
+            error: String(mailErr.message || mailErr).slice(0, 500),
+          },
+        });
+        if (contact.id && shouldRemoveContactAfterSendError(mailErr)) {
+          await prisma.crmEmailContact.deleteMany({
+            where: {
+              ownerId: req.session.userId,
+              email: contact.email,
+            },
+          });
+        }
+        failed += 1;
+      }
+    }
+
+    await refreshCampaignStats(campaign.id);
+    return { sent, failed };
+  }
+
+  async function getPendingContactsForCampaign(req, campaignId) {
+    const deliveredEvents = await prisma.crmEmailCampaignRecipient.findMany({
+      where: {
+        campaignId,
+        status: "DELIVERED",
+      },
+      select: { email: true },
+    });
+    const deliveredEmails = new Set(deliveredEvents.map((event) => normalizeEmail(event.email)));
+    const contacts = await prisma.crmEmailContact.findMany({
+      where: marketingScope(req),
+      orderBy: { email: "asc" },
+    });
+
+    return contacts.filter((contact) => !deliveredEmails.has(normalizeEmail(contact.email)));
   }
 
   function isClientComplete(client) {
@@ -673,88 +860,43 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             recipients: contacts.length,
           },
         });
-        let sent = 0;
-        let failed = 0;
+        const { sent, failed } = await processCampaignDelivery(req, campaign, message, contacts);
 
-        for (const contact of contacts) {
-          let unsubscribeToken = contact.unsubscribeToken;
-          if (!unsubscribeToken && contact.id) {
-            unsubscribeToken = generateToken();
-            await prisma.crmEmailContact.update({
-              where: { id: contact.id },
-              data: { unsubscribeToken },
-            });
-          }
-          const token = crypto.randomBytes(24).toString("hex");
-          const recipient = await prisma.crmEmailCampaignRecipient.create({
-            data: {
-              campaignId: campaign.id,
-              email: contact.email,
-              token,
-            },
-          });
-
-          try {
-            const trackingPixelUrl = buildAbsoluteUrl(req, `/crm/marketing/open/${token}.gif`);
-            const unsubscribeUrl = unsubscribeToken
-              ? buildAbsoluteUrl(req, `/crm/marketing/descadastrar/${unsubscribeToken}`)
-              : "";
-            const html = buildMarketingHtml({
-              subject: message.subject,
-              bodyText: message.bodyText,
-              imageUrl: message.imageUrl,
-              template: message.template,
-              buttons: message.buttons,
-              trackingPixelUrl,
-              unsubscribeUrl,
-            });
-            await sendStatusEmail({
-              to: contact.email,
-              subject: message.subject,
-              html,
-              attachments: message.attachments,
-              ...(message.smtpConfig ? { smtpConfig: message.smtpConfig, from: message.smtpConfig.from } : {}),
-            });
-            await prisma.crmEmailCampaignRecipient.update({
-              where: { id: recipient.id },
-              data: { status: "DELIVERED" },
-            });
-            sent += 1;
-          } catch (mailErr) {
-            await prisma.crmEmailCampaignRecipient.update({
-              where: { id: recipient.id },
-              data: {
-                status: "FAILED",
-                error: String(mailErr.message || mailErr).slice(0, 500),
-              },
-            });
-            if (contact.id) {
-              await prisma.crmEmailContact.deleteMany({
-                where: {
-                  ownerId: req.session.userId,
-                  email: contact.email,
-                },
-              });
-            }
-            failed += 1;
-          }
-        }
-
-        await prisma.crmEmailCampaign.update({
-          where: { id: campaign.id },
-          data: {
-            deliveredCount: sent,
-            failedCount: failed,
-          },
-        });
-
-        res.redirect(`/crm?tab=marketing&success=${encodeURIComponent(`Campanha processada: ${sent} entregue(s), ${failed} com erro removido(s) da lista.`)}`);
+        res.redirect(`/crm?tab=marketing&success=${encodeURIComponent(`Campanha processada: ${sent} entregue(s), ${failed} com erro(s).`)}`);
       } catch (err) {
         console.error("Erro ao enviar e-mail marketing:", err);
         res.redirect(`/crm?tab=marketing&error=${encodeURIComponent(err.message || "Erro ao enviar campanha.")}`);
       }
     }
   );
+
+  router.post("/crm/marketing/campaigns/:id/continuar", requireAuth, requirePermission("admin.crm"), async (req, res) => {
+    try {
+      const campaign = await prisma.crmEmailCampaign.findFirst({
+        where: {
+          id: Number(req.params.id),
+          ...marketingScope(req),
+        },
+      });
+
+      if (!campaign) {
+        return res.redirect("/crm?tab=marketing&error=Campanha não encontrada.");
+      }
+
+      const contacts = await getPendingContactsForCampaign(req, campaign.id);
+      if (!contacts.length) {
+        return res.redirect("/crm?tab=marketing&success=Todos os e-mails cadastrados já receberam esta campanha.");
+      }
+
+      const message = await buildStoredCampaignMessage(req, campaign);
+      const { sent, failed } = await processCampaignDelivery(req, campaign, message, contacts);
+
+      res.redirect(`/crm?tab=marketing&success=${encodeURIComponent(`Campanha continuada: ${sent} entregue(s), ${failed} com erro(s).`)}`);
+    } catch (err) {
+      console.error("Erro ao continuar campanha de e-mail marketing:", err);
+      res.redirect(`/crm?tab=marketing&error=${encodeURIComponent(err.message || "Erro ao continuar campanha.")}`);
+    }
+  });
 
   router.post(
     "/crm/marketing/teste",

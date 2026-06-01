@@ -529,6 +529,9 @@
                         <div class="record-sub">Com anexos</div>
                       <% } %>
                     </div>
+                    <form method="post" action="/crm/marketing/campaigns/<%= campaign.id %>/continuar" onsubmit="return confirm('Enviar esta mesma campanha somente para e-mails cadastrados que ainda não receberam?');">
+                      <button type="submit" class="btn" <%= smtpSettings.isComplete ? '' : 'disabled' %>>Enviar pendentes</button>
+                    </form>
                   </div>
                 <% }) %>
               </div>
