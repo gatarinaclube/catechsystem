@@ -201,6 +201,7 @@
           const accountOptions = ['<option value="">Selecione...</option>'].concat(
             paymentAccounts.map((account) => `<option value="${escapeHtml(account)}" ${savedAccount === account ? "selected" : ""}>${escapeHtml(account)}</option>`)
           ).join("");
+          const showRefund = saved.paid && saved.canceled;
           parcelFields.insertAdjacentHTML("beforeend", `
             <div class="parcel-card">
               <div class="quick-grid">
@@ -234,11 +235,16 @@
                     </div>
                   </div>
                 </div>
+                <div class="field parcel-refund-field ${showRefund ? "is-visible" : ""}">
+                  <label>Data do estorno</label>
+                  <input class="parcel-refund-date" name="parcel${i}RefundDate" type="date" value="${saved.refundDate || ""}" ${showRefund ? "required" : ""}>
+                </div>
               </div>
             </div>
           `);
         }
         parcelFields.querySelectorAll(".money-input").forEach(formatMoneyInput);
+        refreshRefundFields();
       }
 
       function syncKittenLabel() {
@@ -259,16 +265,27 @@
       parcelFields.addEventListener("input", (event) => {
         if (event.target.classList.contains("money-input")) formatMoneyInput(event.target);
       });
+      function refreshRefundFields() {
+        parcelFields.querySelectorAll(".parcel-card").forEach((card) => {
+          const paid = card.querySelector(".parcel-paid-toggle");
+          const canceled = card.querySelector(".parcel-canceled-toggle");
+          const refundField = card.querySelector(".parcel-refund-field");
+          const refundDate = card.querySelector(".parcel-refund-date");
+          const shouldShow = Boolean(paid && paid.checked && canceled && canceled.checked);
+          if (refundField) refundField.classList.toggle("is-visible", shouldShow);
+          if (refundDate) {
+            refundDate.required = shouldShow;
+            if (!shouldShow) refundDate.value = "";
+          }
+        });
+      }
+
       parcelFields.addEventListener("change", (event) => {
-        if (event.target.classList.contains("parcel-paid-toggle") && event.target.checked) {
-          const card = event.target.closest(".parcel-card");
-          const canceled = card ? card.querySelector(".parcel-canceled-toggle") : null;
-          if (canceled) canceled.checked = false;
-        }
-        if (event.target.classList.contains("parcel-canceled-toggle") && event.target.checked) {
-          const card = event.target.closest(".parcel-card");
-          const paid = card ? card.querySelector(".parcel-paid-toggle") : null;
-          if (paid) paid.checked = false;
+        if (
+          event.target.classList.contains("parcel-paid-toggle") ||
+          event.target.classList.contains("parcel-canceled-toggle")
+        ) {
+          refreshRefundFields();
         }
       });
       installments.addEventListener("change", renderParcels);

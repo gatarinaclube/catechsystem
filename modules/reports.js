@@ -194,6 +194,14 @@ function kittenNameOnly(label) {
   return String(label || "-").replace(/^\s*[^-]+-\s*/, "") || "-";
 }
 
+function parcelCancellationNote(parcel) {
+  if (!parcel?.canceled) return "";
+  const refundDate = parcel.refundDate ? parseDateInput(parcel.refundDate, null) : null;
+  return refundDate
+    ? `Pagamento cancelado. Estorno em ${formatDateOnlyLabel(refundDate)}.`
+    : "Pagamento cancelado.";
+}
+
 function mapRevenueRows(revenues, filters) {
   const rows = [];
   const startTime = filters.startDate.getTime();
@@ -201,7 +209,7 @@ function mapRevenueRows(revenues, filters) {
 
   revenues.forEach((revenue) => {
     parseParcelData(revenue.parcelDataJson).forEach((parcel) => {
-      if (parcel.canceled || !parcel.paid || !parcel.date) return;
+      if (!parcel.paid || !parcel.date) return;
 
       const paidDate = parseDateInput(parcel.date, null);
       if (!paidDate) return;
@@ -221,6 +229,7 @@ function mapRevenueRows(revenues, filters) {
         amountCents: parcel.amountCents || 0,
         clientLabel: revenue.client?.fullName || "-",
         paymentAccount,
+        note: parcelCancellationNote(parcel),
       });
     });
   });

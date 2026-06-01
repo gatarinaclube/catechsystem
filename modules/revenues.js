@@ -54,6 +54,14 @@ function formatDateOnlyLabel(date) {
     : "-";
 }
 
+function parcelCancellationNote(parcel) {
+  if (!parcel?.canceled) return "";
+  const refundDate = parcel.refundDate ? parseDateInput(parcel.refundDate, true) : null;
+  return refundDate
+    ? `Pagamento cancelado. Estorno em ${formatDateOnlyLabel(refundDate)}.`
+    : "Pagamento cancelado.";
+}
+
 function monthRange(monthValue) {
   const fallback = todayForInput().slice(0, 7);
   const month = /^\d{4}-\d{2}$/.test(monthValue || "") ? monthValue : fallback;
@@ -179,9 +187,11 @@ function buildRevenueSummary(revenue) {
 
 function firstPaymentDateTime(revenue) {
   const parcels = safeJsonParse(revenue.parcelDataJson);
-  const firstParcel = parcels
-    .filter((parcel) => parcel.date)
-    .sort((a, b) => Number(a.number || 0) - Number(b.number || 0))[0];
+  const firstParcel =
+    parcels.find((parcel) => Number(parcel.number) === 1 && parcel.date) ||
+    parcels
+      .filter((parcel) => parcel.date)
+      .sort((a, b) => Number(a.number || 0) - Number(b.number || 0))[0];
   const date = firstParcel ? parseDateInput(firstParcel.date, true) : null;
   return date ? date.getTime() : 0;
 }
@@ -209,7 +219,7 @@ function mapPaidRevenueRows(revenues, start, end) {
 
   revenues.forEach((revenue) => {
     safeJsonParse(revenue.parcelDataJson).forEach((parcel) => {
-      if (parcel.canceled || !parcel.paid || !parcel.date) return;
+      if (!parcel.paid || !parcel.date) return;
       const paidDate = parseDateInput(parcel.date, true);
       if (!paidDate) return;
       const paidTime = paidDate.getTime();
@@ -224,6 +234,7 @@ function mapPaidRevenueRows(revenues, start, end) {
         paymentAccount: parcel.paymentAccount || revenue.paymentAccount || "-",
         amountLabel: formatAmount(parcel.amountCents || 0),
         parcelLabel: `${parcel.number || "-"} / ${revenue.installments || "-"}`,
+        note: parcelCancellationNote(parcel),
       });
     });
   });
@@ -341,6 +352,10 @@ module.exports = (prisma) => {
         date: body[`parcel${i}Date`] || "",
         paid: body[`parcel${i}Paid`] === "YES",
         canceled: body[`parcel${i}Canceled`] === "YES",
+        refundDate:
+          body[`parcel${i}Paid`] === "YES" && body[`parcel${i}Canceled`] === "YES"
+            ? body[`parcel${i}RefundDate`] || ""
+            : "",
         paymentAccount: body[`parcel${i}PaymentAccount`] || body.paymentAccount || DEFAULT_PAYMENT_ACCOUNT,
       });
     }

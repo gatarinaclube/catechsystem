@@ -444,6 +444,14 @@ input[type="file"] {
   gap: 4px;
 }
 
+.parcel-refund-field {
+  display: none;
+}
+
+.parcel-refund-field.is-visible {
+  display: block;
+}
+
 .paid-toggle-label {
   margin: 0;
 }

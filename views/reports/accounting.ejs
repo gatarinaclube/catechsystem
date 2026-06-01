@@ -86,6 +86,7 @@
                         <th>Cliente</th>
                         <th>Parcela</th>
                         <th>Conta</th>
+                        <th>Observação</th>
                         <th class="amount">Valor</th>
                       </tr>
                     </thead>
@@ -97,6 +98,7 @@
                           <td><%= row.clientLabel || '-' %></td>
                           <td><%= row.parcelLabel || '-' %></td>
                           <td><%= row.paymentAccount || '-' %></td>
+                          <td><%= row.note || '-' %></td>
                           <td class="amount cash-in"><%= row.amountLabel %></td>
                         </tr>
                       <% }) %>
