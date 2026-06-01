@@ -374,6 +374,45 @@
                   <textarea id="marketingBody" name="bodyText" rows="8" required placeholder="Escreva o texto que será enviado no e-mail."><%= selectedDraft.bodyText || '' %></textarea>
                 </div>
                 <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border-soft);">
+                  <div class="content-title">Destinatários</div>
+                  <div class="settings-options" style="margin-top:10px;">
+                    <label class="settings-check">
+                      <input type="radio" name="recipientMode" value="all" checked />
+                      <span>Todos cadastrados</span>
+                    </label>
+                    <label class="settings-check">
+                      <input type="radio" name="recipientMode" value="selected" />
+                      <span>Apenas selecionados</span>
+                    </label>
+                    <label class="settings-check">
+                      <input type="radio" name="recipientMode" value="manual" />
+                      <span>Digitados</span>
+                    </label>
+                  </div>
+                  <div id="selectedRecipientsBox" style="display:none; margin-top:12px;">
+                    <% if (!emailContacts.length) { %>
+                      <div class="empty">Nenhum contato cadastrado.</div>
+                    <% } else { %>
+                      <div style="max-height:220px; overflow:auto; border:1px solid var(--border-soft); border-radius:8px; padding:10px;">
+                        <% emailContacts.forEach(function(contact) { %>
+                          <label class="settings-check" style="margin:4px;">
+                            <input type="checkbox" name="selectedContacts" value="<%= contact.id %>" />
+                            <span><%= contact.email %></span>
+                          </label>
+                        <% }) %>
+                      </div>
+                    <% } %>
+                  </div>
+                  <div id="manualRecipientsBox" class="field" style="display:none; margin-top:12px;">
+                    <label class="field-label" for="manualRecipients">E-mails digitados</label>
+                    <textarea id="manualRecipients" name="manualRecipients" rows="4" placeholder="um@email.com&#10;outro@email.com"></textarea>
+                  </div>
+                  <div class="field" style="margin-top:12px;">
+                    <label class="field-label" for="testRecipients">E-mail(s) para teste</label>
+                    <input id="testRecipients" name="testRecipients" type="text" placeholder="teste@email.com ou vários separados por vírgula" />
+                  </div>
+                </div>
+                <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border-soft);">
                   <div class="content-title">Botões do e-mail</div>
                   <div class="grid-2" style="margin-top:12px;">
                     <div class="field">
@@ -421,7 +460,8 @@
                   <button type="submit" class="btn" formaction="/crm/marketing/drafts">
                     <%= selectedDraft.id ? 'Atualizar e-mail salvo' : 'Salvar e-mail' %>
                   </button>
-                  <button type="submit" class="btn btn-primary" <%= emailContacts.length ? '' : 'disabled' %>>Enviar campanha</button>
+                  <button type="submit" class="btn" formaction="/crm/marketing/teste">Enviar teste</button>
+                  <button type="submit" class="btn btn-primary">Enviar campanha</button>
                 </div>
               </form>
 
@@ -497,6 +537,8 @@
             subject: document.getElementById("marketingSubject"),
             body: document.getElementById("marketingBody"),
             image: document.getElementById("marketingImage"),
+            selectedRecipientsBox: document.getElementById("selectedRecipientsBox"),
+            manualRecipientsBox: document.getElementById("manualRecipientsBox"),
             websiteLabel: document.getElementById("websiteButtonLabel"),
             websiteUrl: document.getElementById("websiteButtonUrl"),
             instagramLabel: document.getElementById("instagramButtonLabel"),
@@ -567,6 +609,16 @@
             renderButtons();
           }
 
+          function updateRecipientMode() {
+            const selectedMode = document.querySelector('input[name="recipientMode"]:checked')?.value || "all";
+            if (fields.selectedRecipientsBox) {
+              fields.selectedRecipientsBox.style.display = selectedMode === "selected" ? "block" : "none";
+            }
+            if (fields.manualRecipientsBox) {
+              fields.manualRecipientsBox.style.display = selectedMode === "manual" ? "block" : "none";
+            }
+          }
+
           Object.values(fields).forEach((field) => {
             if (field && field !== fields.image) {
               field.addEventListener("input", updatePreview);
@@ -592,6 +644,11 @@
             });
           }
 
+          document.querySelectorAll('input[name="recipientMode"]').forEach((input) => {
+            input.addEventListener("change", updateRecipientMode);
+          });
+
+          updateRecipientMode();
           updatePreview();
         });
       </script>

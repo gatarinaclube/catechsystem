@@ -378,6 +378,78 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     return { ownerId: req.session?.userId };
   }
 
+  async function getMarketingRecipients(req) {
+    const recipientMode = cleanText(req.body.recipientMode) || "all";
+
+    if (recipientMode === "manual") {
+      return extractEmails(req.body.manualRecipients).map((email) => ({
+        id: null,
+        email,
+        unsubscribeToken: null,
+        manual: true,
+      }));
+    }
+
+    if (recipientMode === "selected") {
+      const ids = []
+        .concat(req.body.selectedContacts || [])
+        .map((id) => Number(id))
+        .filter(Boolean);
+
+      if (!ids.length) return [];
+
+      return prisma.crmEmailContact.findMany({
+        where: {
+          ...marketingScope(req),
+          id: { in: ids },
+        },
+        orderBy: { email: "asc" },
+      });
+    }
+
+    return prisma.crmEmailContact.findMany({
+      where: marketingScope(req),
+      orderBy: { email: "asc" },
+    });
+  }
+
+  async function buildMarketingMessage(req) {
+    const subject = cleanText(req.body.subject);
+    const bodyText = cleanText(req.body.bodyText);
+
+    if (!subject || !bodyText) {
+      throw new Error("Informe assunto e texto do e-mail.");
+    }
+
+    const imageFile = req.files?.marketingImage?.[0] || null;
+    const attachmentFiles = req.files?.marketingAttachments || [];
+    const imagePath = imageFile ? `/uploads/crm-marketing/${imageFile.filename}` : null;
+    const attachmentPaths = attachmentFiles.map((file) => `/uploads/crm-marketing/${file.filename}`);
+    const imageUrl = buildAbsoluteUrl(req, imagePath);
+    const settings = await prisma.userSettings.findUnique({
+      where: { userId: req.session.userId },
+    });
+    const template = shapeMarketingTemplate(settings);
+    const buttons = buildCampaignButtons(req.body, template);
+    const smtpConfig = buildUserSmtpConfig(settings);
+    const attachments = attachmentFiles.map((file) => ({
+      filename: file.originalname,
+      path: file.path,
+    }));
+
+    return {
+      subject,
+      bodyText,
+      imagePath,
+      attachmentPaths,
+      imageUrl,
+      template,
+      buttons,
+      smtpConfig,
+      attachments,
+    };
+  }
+
   function isClientComplete(client) {
     return Boolean(
       client.fullName &&
@@ -569,46 +641,22 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     ]),
     async (req, res) => {
       try {
-        const subject = cleanText(req.body.subject);
-        const bodyText = cleanText(req.body.bodyText);
-
-        if (!subject || !bodyText) {
-          return res.redirect("/crm?tab=marketing&error=Informe assunto e texto do e-mail.");
-        }
-
-        const contacts = await prisma.crmEmailContact.findMany({
-          where: marketingScope(req),
-          orderBy: { email: "asc" },
-        });
+        const message = await buildMarketingMessage(req);
+        const contacts = await getMarketingRecipients(req);
 
         if (!contacts.length) {
-          return res.redirect("/crm?tab=marketing&error=Cadastre e-mails antes de enviar uma campanha.");
+          return res.redirect("/crm?tab=marketing&error=Informe ao menos um destinatário válido.");
         }
 
-        const imageFile = req.files?.marketingImage?.[0] || null;
-        const attachmentFiles = req.files?.marketingAttachments || [];
-        const imagePath = imageFile ? `/uploads/crm-marketing/${imageFile.filename}` : null;
-        const attachmentPaths = attachmentFiles.map((file) => `/uploads/crm-marketing/${file.filename}`);
-        const imageUrl = buildAbsoluteUrl(req, imagePath);
-        const settings = await prisma.userSettings.findUnique({
-          where: { userId: req.session.userId },
-        });
-        const template = shapeMarketingTemplate(settings);
-        const buttons = buildCampaignButtons(req.body, template);
-        const smtpConfig = buildUserSmtpConfig(settings);
-        const attachments = attachmentFiles.map((file) => ({
-          filename: file.originalname,
-          path: file.path,
-        }));
         const campaign = await prisma.crmEmailCampaign.create({
           data: {
             ownerId: req.session.userId,
-            subject,
-            bodyText,
-            imagePath,
-            attachmentPathsJson: JSON.stringify(attachmentPaths),
-            ctaJson: JSON.stringify(buttons),
-            styleJson: JSON.stringify(template),
+            subject: message.subject,
+            bodyText: message.bodyText,
+            imagePath: message.imagePath,
+            attachmentPathsJson: JSON.stringify(message.attachmentPaths),
+            ctaJson: JSON.stringify(message.buttons),
+            styleJson: JSON.stringify(message.template),
             recipients: contacts.length,
           },
         });
@@ -617,7 +665,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
         for (const contact of contacts) {
           let unsubscribeToken = contact.unsubscribeToken;
-          if (!unsubscribeToken) {
+          if (!unsubscribeToken && contact.id) {
             unsubscribeToken = generateToken();
             await prisma.crmEmailContact.update({
               where: { id: contact.id },
@@ -635,22 +683,24 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
           try {
             const trackingPixelUrl = buildAbsoluteUrl(req, `/crm/marketing/open/${token}.gif`);
-            const unsubscribeUrl = buildAbsoluteUrl(req, `/crm/marketing/descadastrar/${unsubscribeToken}`);
+            const unsubscribeUrl = unsubscribeToken
+              ? buildAbsoluteUrl(req, `/crm/marketing/descadastrar/${unsubscribeToken}`)
+              : "";
             const html = buildMarketingHtml({
-              subject,
-              bodyText,
-              imageUrl,
-              template,
-              buttons,
+              subject: message.subject,
+              bodyText: message.bodyText,
+              imageUrl: message.imageUrl,
+              template: message.template,
+              buttons: message.buttons,
               trackingPixelUrl,
               unsubscribeUrl,
             });
             await sendStatusEmail({
               to: contact.email,
-              subject,
+              subject: message.subject,
               html,
-              attachments,
-              ...(smtpConfig ? { smtpConfig, from: smtpConfig.from } : {}),
+              attachments: message.attachments,
+              ...(message.smtpConfig ? { smtpConfig: message.smtpConfig, from: message.smtpConfig.from } : {}),
             });
             await prisma.crmEmailCampaignRecipient.update({
               where: { id: recipient.id },
@@ -665,12 +715,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
                 error: String(mailErr.message || mailErr).slice(0, 500),
               },
             });
-            await prisma.crmEmailContact.deleteMany({
-              where: {
-                ownerId: req.session.userId,
-                email: contact.email,
-              },
-            });
+            if (contact.id) {
+              await prisma.crmEmailContact.deleteMany({
+                where: {
+                  ownerId: req.session.userId,
+                  email: contact.email,
+                },
+              });
+            }
             failed += 1;
           }
         }
@@ -687,6 +739,51 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       } catch (err) {
         console.error("Erro ao enviar e-mail marketing:", err);
         res.redirect(`/crm?tab=marketing&error=${encodeURIComponent(err.message || "Erro ao enviar campanha.")}`);
+      }
+    }
+  );
+
+  router.post(
+    "/crm/marketing/teste",
+    requireAuth,
+    requirePermission("admin.crm"),
+    upload.fields([
+      { name: "marketingImage", maxCount: 1 },
+      { name: "marketingAttachments", maxCount: 5 },
+    ]),
+    async (req, res) => {
+      try {
+        const testEmails = extractEmails(req.body.testRecipients);
+
+        if (!testEmails.length) {
+          return res.redirect("/crm?tab=marketing&error=Informe ao menos um e-mail para teste.");
+        }
+
+        const message = await buildMarketingMessage(req);
+        const html = buildMarketingHtml({
+          subject: message.subject,
+          bodyText: message.bodyText,
+          imageUrl: message.imageUrl,
+          template: message.template,
+          buttons: message.buttons,
+        });
+
+        let sent = 0;
+        for (const email of testEmails) {
+          await sendStatusEmail({
+            to: email,
+            subject: `[TESTE] ${message.subject}`,
+            html,
+            attachments: message.attachments,
+            ...(message.smtpConfig ? { smtpConfig: message.smtpConfig, from: message.smtpConfig.from } : {}),
+          });
+          sent += 1;
+        }
+
+        res.redirect(`/crm?tab=marketing&success=${encodeURIComponent(`Teste enviado para ${sent} e-mail(s).`)}`);
+      } catch (err) {
+        console.error("Erro ao enviar teste de e-mail marketing:", err);
+        res.redirect(`/crm?tab=marketing&error=${encodeURIComponent(err.message || "Erro ao enviar teste.")}`);
       }
     }
   );
