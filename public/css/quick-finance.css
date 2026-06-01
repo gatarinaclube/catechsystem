@@ -439,6 +439,11 @@ input[type="file"] {
   min-height: 44px;
 }
 
+.parcel-status-stack {
+  display: grid;
+  gap: 4px;
+}
+
 .paid-toggle-label {
   margin: 0;
 }
@@ -482,6 +487,11 @@ input[type="file"] {
 .paid-toggle input:checked + span {
   background: #16a34a;
   border-color: #16a34a;
+}
+
+.paid-toggle.is-cancel input:checked + span {
+  background: #dc2626;
+  border-color: #dc2626;
 }
 
 .paid-toggle input:checked + span::after {

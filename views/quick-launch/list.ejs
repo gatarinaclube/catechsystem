@@ -2,68 +2,86 @@
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Despesas Lançadas</title>
+    <title>Despesas - CaTech</title>
     <link rel="stylesheet" href="/css/theme.css" />
-    <link rel="stylesheet" href="/css/quick-finance.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
   </head>
   <body>
-    <main class="quick-shell">
-      <header class="quick-header">
-        <h1 class="quick-title">Despesas Lançadas</h1>
-        <div class="quick-subtitle">Consulte as despesas e lance novos pagamentos quando necessário.</div>
-      </header>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
 
-      <% if (success) { %>
-        <div class="message message-success" style="margin-bottom:12px;">Despesa salva.</div>
-      <% } %>
-
-      <div class="quick-card quick-filter-card">
-        <a class="btn" href="/despesas/novo">Lançar despesa</a>
-      </div>
-
-      <form class="quick-card quick-filter-card" method="get" action="/despesas">
-        <div class="field">
-          <label for="month">Mês</label>
-          <input id="month" name="month" type="month" value="<%= month %>" />
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Despesas</h2>
+            <div class="welcome-sub">Despesas lançadas para acompanhamento financeiro.</div>
+          </div>
+          <div class="actions">
+            <a href="/despesas/novo" class="btn btn-primary">Lançar despesa</a>
+            <a href="/administrativo" class="btn">Voltar</a>
+          </div>
         </div>
-        <button type="submit" class="btn">Filtrar</button>
-      </form>
 
-      <div class="quick-card">
-        <% if (!expenses.length) { %>
-          <div class="empty">Nenhuma despesa lançada neste mês.</div>
-        <% } else { %>
-          <ul class="quick-list">
-            <% expenses.forEach(function(expense) { %>
-              <li>
-                <a class="quick-expense-row" href="/despesas/<%= expense.id %>">
-                  <span class="quick-expense-left">
-                    <strong><%= expense.dateLabel %></strong>
-                    <span><%= expense.amountLabel %></span>
-                  </span>
-                  <span class="quick-expense-supplier"><%= expense.supplier || '-' %></span>
+        <% if (success) { %>
+          <div class="content-card message message-success">Despesa salva.</div>
+        <% } %>
+
+        <div class="content-card" style="margin-bottom:18px;">
+          <form method="get" action="/despesas" class="report-filter-grid">
+            <div class="field">
+              <label class="field-label" for="month">Mês</label>
+              <input id="month" name="month" type="month" value="<%= month %>" />
+            </div>
+            <div class="report-filter-actions">
+              <button type="submit" class="btn btn-primary">Filtrar</button>
+              <a href="/despesas" class="btn">Limpar</a>
+            </div>
+          </form>
+        </div>
+
+        <div class="content-card module-list-card">
+          <% if (!expenses.length) { %>
+            <div class="empty">Nenhuma despesa lançada neste mês.</div>
+          <% } else { %>
+            <div class="record-list">
+              <% expenses.forEach(function(expense) { %>
+                <a class="record-row" href="/despesas/<%= expense.id %>" style="text-decoration:none;">
+                  <div class="record-main">
+                    <div class="record-title">
+                      <%= expense.supplier || "Fornecedor não informado" %>
+                    </div>
+                    <div class="record-sub">
+                      <%= expense.category || "Sem categoria" %>
+                      <% if (expense.paymentMethod) { %>
+                        · <%= expense.paymentMethod %>
+                      <% } %>
+                      <% if (expense.note) { %>
+                        · <%= expense.note %>
+                      <% } %>
+                    </div>
+                  </div>
+                  <div class="record-meta">
+                    <span class="status-pill is-red">Despesa</span>
+                    <div style="margin-top:6px;"><%= expense.amountLabel %></div>
+                    <div class="record-sub"><%= expense.dateLabel %></div>
+                  </div>
                 </a>
-              </li>
-            <% }) %>
-          </ul>
-        <% } %>
-      </div>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
 
-      <div class="quick-pagination">
-        <% if (hasPreviousPage) { %>
-          <a class="btn" href="/despesas?month=<%= month %>&page=<%= page - 1 %>">Anterior</a>
-        <% } %>
-        <span>Página <%= page %> de <%= totalPages %></span>
-        <% if (hasNextPage) { %>
-          <a class="btn" href="/despesas?month=<%= month %>&page=<%= page + 1 %>">Próxima</a>
-        <% } %>
-      </div>
-
-      <div class="quick-footer">
-        <a class="quick-options-link" href="/administrativo" title="Administrativo">←</a>
-        <a class="quick-options-link" href="/dashboard" title="Página inicial">⌂</a>
-      </div>
-    </main>
+        <div class="pagination">
+          <% if (hasPreviousPage) { %>
+            <a class="btn" href="/despesas?month=<%= month %>&page=<%= page - 1 %>">Anterior</a>
+          <% } %>
+          <span class="content-sub">Página <%= page %> de <%= totalPages %></span>
+          <% if (hasNextPage) { %>
+            <a class="btn" href="/despesas?month=<%= month %>&page=<%= page + 1 %>">Próxima</a>
+          <% } %>
+        </div>
+      </main>
+    </div>
   </body>
 </html>

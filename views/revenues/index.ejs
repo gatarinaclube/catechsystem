@@ -217,12 +217,21 @@
                   <select name="parcel${i}PaymentAccount">${accountOptions}</select>
                 </div>
                 <div class="field">
-                  <div class="paid-toggle-row">
-                    <label class="paid-toggle-label">Pago</label>
-                    <label class="paid-toggle" title="Pago">
-                      <input type="checkbox" name="parcel${i}Paid" value="YES" ${saved.paid ? "checked" : ""}>
-                      <span></span>
-                    </label>
+                  <div class="parcel-status-stack">
+                    <div class="paid-toggle-row">
+                      <label class="paid-toggle-label">Pago</label>
+                      <label class="paid-toggle" title="Pago">
+                        <input class="parcel-paid-toggle" type="checkbox" name="parcel${i}Paid" value="YES" ${saved.paid ? "checked" : ""}>
+                        <span></span>
+                      </label>
+                    </div>
+                    <div class="paid-toggle-row">
+                      <label class="paid-toggle-label">Cancelado</label>
+                      <label class="paid-toggle is-cancel" title="Cancelado">
+                        <input class="parcel-canceled-toggle" type="checkbox" name="parcel${i}Canceled" value="YES" ${saved.canceled ? "checked" : ""}>
+                        <span></span>
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -249,6 +258,18 @@
       });
       parcelFields.addEventListener("input", (event) => {
         if (event.target.classList.contains("money-input")) formatMoneyInput(event.target);
+      });
+      parcelFields.addEventListener("change", (event) => {
+        if (event.target.classList.contains("parcel-paid-toggle") && event.target.checked) {
+          const card = event.target.closest(".parcel-card");
+          const canceled = card ? card.querySelector(".parcel-canceled-toggle") : null;
+          if (canceled) canceled.checked = false;
+        }
+        if (event.target.classList.contains("parcel-canceled-toggle") && event.target.checked) {
+          const card = event.target.closest(".parcel-card");
+          const paid = card ? card.querySelector(".parcel-paid-toggle") : null;
+          if (paid) paid.checked = false;
+        }
       });
       installments.addEventListener("change", renderParcels);
       kittenSelect.addEventListener("change", syncKittenLabel);

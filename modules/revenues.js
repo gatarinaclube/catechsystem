@@ -125,13 +125,13 @@ function buildRevenueSummary(revenue) {
 
   const totalCents = Number(revenue.totalAmountCents || 0);
   const parcels = safeJsonParse(revenue.parcelDataJson);
-  const paidCents = parcels.reduce(
+  const activeParcels = parcels.filter((parcel) => !parcel.canceled);
+  const paidCents = activeParcels.reduce(
     (sum, parcel) => sum + (parcel.paid ? Number(parcel.amountCents || 0) : 0),
     0
   );
-  const openCents = Math.max(0, totalCents - paidCents);
   const today = parseDateInput(todayForInput(), true);
-  const openParcels = parcels
+  const openParcels = activeParcels
     .filter((parcel) => !parcel.paid)
     .map((parcel) => ({
       ...parcel,
@@ -144,10 +144,14 @@ function buildRevenueSummary(revenue) {
       return a.dueDate - b.dueDate;
     });
   const nextParcel = openParcels[0] || null;
+  const openCents = openParcels.reduce(
+    (sum, parcel) => sum + Number(parcel.amountCents || 0),
+    0
+  );
   const overdueCount = openParcels.filter(
     (parcel) => parcel.dueDate && today && parcel.dueDate < today
   ).length;
-  const paidCount = parcels.filter((parcel) => parcel.paid).length;
+  const paidCount = activeParcels.filter((parcel) => parcel.paid).length;
   const status = openCents <= 0
     ? "Pago"
     : overdueCount > 0
@@ -205,7 +209,7 @@ function mapPaidRevenueRows(revenues, start, end) {
 
   revenues.forEach((revenue) => {
     safeJsonParse(revenue.parcelDataJson).forEach((parcel) => {
-      if (!parcel.paid || !parcel.date) return;
+      if (parcel.canceled || !parcel.paid || !parcel.date) return;
       const paidDate = parseDateInput(parcel.date, true);
       if (!paidDate) return;
       const paidTime = paidDate.getTime();
@@ -336,6 +340,7 @@ module.exports = (prisma) => {
         amountCents: parseAmountToCents(body[`parcel${i}Amount`]),
         date: body[`parcel${i}Date`] || "",
         paid: body[`parcel${i}Paid`] === "YES",
+        canceled: body[`parcel${i}Canceled`] === "YES",
         paymentAccount: body[`parcel${i}PaymentAccount`] || body.paymentAccount || DEFAULT_PAYMENT_ACCOUNT,
       });
     }

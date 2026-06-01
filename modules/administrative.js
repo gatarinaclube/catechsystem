@@ -84,7 +84,7 @@ function safeJsonParse(value) {
 }
 
 function parseParcels(value) {
-  return safeJsonParse(value).filter((parcel) => parcel.paid && parcel.date);
+  return safeJsonParse(value).filter((parcel) => !parcel.canceled && parcel.paid && parcel.date);
 }
 
 function monthContains(date, start, end) {
@@ -290,7 +290,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       .map((revenue) => {
         const parcels = safeJsonParse(revenue.parcelDataJson);
         const openParcels = parcels
-          .filter((parcel) => !parcel.paid)
+          .filter((parcel) => !parcel.paid && !parcel.canceled)
           .map((parcel) => ({
             ...parcel,
             dueDate: parseOptionalDate(parcel.date),

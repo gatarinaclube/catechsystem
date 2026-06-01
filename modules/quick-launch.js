@@ -511,6 +511,7 @@ module.exports = (prisma) => {
     });
 
     res.render("quick-launch/list", {
+      user: req.user,
       expenses: expenses.map((expense) => ({
         ...expense,
         amountLabel: formatAmount(expense.amountCents),

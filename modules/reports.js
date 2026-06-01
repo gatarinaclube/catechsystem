@@ -201,7 +201,7 @@ function mapRevenueRows(revenues, filters) {
 
   revenues.forEach((revenue) => {
     parseParcelData(revenue.parcelDataJson).forEach((parcel) => {
-      if (!parcel.paid || !parcel.date) return;
+      if (parcel.canceled || !parcel.paid || !parcel.date) return;
 
       const paidDate = parseDateInput(parcel.date, null);
       if (!paidDate) return;
@@ -242,7 +242,7 @@ function mapReceivableRows(revenues, filters) {
 
   revenues.forEach((revenue) => {
     parseParcelData(revenue.parcelDataJson).forEach((parcel) => {
-      if (parcel.paid || !parcel.date || !parcel.amountCents) return;
+      if (parcel.paid || parcel.canceled || !parcel.date || !parcel.amountCents) return;
 
       const dueDate = parseDateInput(parcel.date, null);
       if (!dueDate) return;
