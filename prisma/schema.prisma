@@ -67,6 +67,8 @@ model User {
   quickLaunchOptions QuickLaunchOption[]
   revenueClients RevenueClient[]
   revenueEntries RevenueEntry[]
+  crmEmailContacts CrmEmailContact[]
+  crmEmailCampaigns CrmEmailCampaign[]
   financialAccountSettings FinancialAccountSetting[]
   financialTransfers FinancialTransfer[]
   passwordResetTokens PasswordResetToken[]
@@ -310,6 +312,22 @@ model UserSettings {
   membershipsJson String?
   breedsJson      String?
   examsJson       String?
+  marketingFromName String?
+  marketingFromEmail String?
+  marketingSmtpHost String?
+  marketingSmtpPort Int?
+  marketingSmtpSecure Boolean @default(false)
+  marketingSmtpUser String?
+  marketingSmtpPassEncrypted String?
+  marketingFontFamily String?
+  marketingBackgroundColor String?
+  marketingCardColor String?
+  marketingTextColor String?
+  marketingAccentColor String?
+  marketingWebsiteUrl String?
+  marketingInstagramUrl String?
+  marketingWhatsappUrl String?
+  marketingFooterText String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -545,6 +563,50 @@ model RevenueClient {
   createdAt    DateTime @default(now())
   deletedAt    DateTime?
   revenues     RevenueEntry[]
+}
+
+model CrmEmailContact {
+  id        Int      @id @default(autoincrement())
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId   Int
+  email     String
+  name      String?
+  source    String?
+  createdAt DateTime @default(now())
+
+  @@unique([ownerId, email])
+}
+
+model CrmEmailCampaign {
+  id             Int      @id @default(autoincrement())
+  owner          User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId        Int
+  subject        String
+  bodyText       String
+  imagePath      String?
+  attachmentPathsJson String?
+  ctaJson        String?
+  styleJson      String?
+  recipients     Int      @default(0)
+  deliveredCount Int      @default(0)
+  failedCount    Int      @default(0)
+  openedCount    Int      @default(0)
+  sentAt         DateTime @default(now())
+
+  recipientEvents CrmEmailCampaignRecipient[]
+}
+
+model CrmEmailCampaignRecipient {
+  id          Int      @id @default(autoincrement())
+  campaign   CrmEmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignId Int
+  email       String
+  status      String   @default("PENDING")
+  error       String?
+  openedAt    DateTime?
+  token       String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model RevenueEntry {

@@ -1,10 +1,10 @@
 const nodemailer = require("nodemailer");
 
-function getTransporter() {
-  const host = process.env.SMTP_HOST;
-  const port = Number(process.env.SMTP_PORT || 587);
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
+function getTransporter(customConfig = null) {
+  const host = customConfig?.host || process.env.SMTP_HOST;
+  const port = Number(customConfig?.port || process.env.SMTP_PORT || 587);
+  const user = customConfig?.user || process.env.SMTP_USER;
+  const pass = customConfig?.pass || process.env.SMTP_PASS;
 
   if (!host || !user || !pass) {
     throw new Error("SMTP não configurado corretamente");
@@ -13,20 +13,21 @@ function getTransporter() {
   return nodemailer.createTransport({
     host,
     port,
-    secure: port === 465,
+    secure: typeof customConfig?.secure === "boolean" ? customConfig.secure : port === 465,
     auth: { user, pass },
   });
 }
 
-async function sendStatusEmail({ to, subject, html }) {
-  const transporter = getTransporter();
-  const from = process.env.MAIL_FROM || process.env.SMTP_USER;
+async function sendStatusEmail({ to, subject, html, smtpConfig = null, from = null, attachments = [] }) {
+  const transporter = getTransporter(smtpConfig);
+  const sender = from || smtpConfig?.from || process.env.MAIL_FROM || process.env.SMTP_USER;
 
   await transporter.sendMail({
-    from,
+    from: sender,
     to,
     subject,
     html,
+    attachments,
   });
 }
 

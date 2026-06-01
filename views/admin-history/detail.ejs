@@ -159,6 +159,23 @@
                   <strong>Data do parto:</strong> <%= item.birthDate %><br />
                   <strong>Quantidade:</strong> <%= item.totalKittens %> filhotes
                   (<%= item.females %> fêmeas / <%= item.males %> machos / <%= item.dead %> mortos)<br />
+                  <% if (item.deathCauses && (item.deathCauses.atBirth.count || item.deathCauses.afterBirth.count)) { %>
+                    <strong>Causas dos óbitos:</strong>
+                    <ul class="sublist">
+                      <% if (item.deathCauses.atBirth.count) { %>
+                        <li>
+                          No parto:
+                          <%= item.deathCauses.atBirth.causes.length ? item.deathCauses.atBirth.causes.join(', ') : 'Causa não informada' %>
+                        </li>
+                      <% } %>
+                      <% if (item.deathCauses.afterBirth.count) { %>
+                        <li>
+                          Pós-parto:
+                          <%= item.deathCauses.afterBirth.causes.length ? item.deathCauses.afterBirth.causes.join(', ') : 'Causa não informada' %>
+                        </li>
+                      <% } %>
+                    </ul>
+                  <% } %>
                   <strong>Observações:</strong><br />
                   <%= item.notes || 'Sem observações cadastradas.' %>
                   <% if (item.kittens.length) { %>

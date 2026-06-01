@@ -15,12 +15,26 @@
         <div class="main-header">
           <div>
             <h2 class="welcome-title">CRM</h2>
-            <div class="welcome-sub">Clientes cadastrados nas receitas e no CRM.</div>
+            <div class="welcome-sub">Clientes, contatos de e-mail e campanhas de marketing.</div>
           </div>
           <div class="actions">
+            <a href="/crm?tab=marketing" class="btn">E-mail Marketing</a>
             <a href="/crm/clientes/novo" class="btn btn-primary">Novo Cliente</a>
           </div>
         </div>
+
+        <div class="module-tabs" style="margin-bottom:18px;">
+          <a href="/crm?tab=clientes" class="module-tab <%= activeTab === 'clientes' ? 'is-active' : '' %>">Clientes</a>
+          <a href="/crm?tab=emails" class="module-tab <%= activeTab === 'emails' ? 'is-active' : '' %>">Contatos de e-mail</a>
+          <a href="/crm?tab=marketing" class="module-tab <%= activeTab === 'marketing' ? 'is-active' : '' %>">E-mail marketing</a>
+        </div>
+
+        <% if (messages && messages.success) { %>
+          <div class="alert alert-success" style="margin-bottom:18px;"><%= messages.success %></div>
+        <% } %>
+        <% if (messages && messages.error) { %>
+          <div class="alert alert-error" style="margin-bottom:18px;"><%= messages.error %></div>
+        <% } %>
 
         <div class="metric-grid" style="margin-bottom:18px;">
           <div class="metric-card is-blue">
@@ -43,9 +57,30 @@
             <div class="metric-value"><%= summary.withSales %></div>
             <div class="metric-note">Clientes vinculados a receitas</div>
           </div>
+          <div class="metric-card is-green">
+            <div class="metric-label">E-mails marketing</div>
+            <div class="metric-value"><%= summary.emailContacts %></div>
+            <div class="metric-note">Lista separada dos clientes</div>
+          </div>
+          <div class="metric-card is-blue">
+            <div class="metric-label">Entregues</div>
+            <div class="metric-value"><%= summary.delivered || 0 %></div>
+            <div class="metric-note">Envios aceitos pelo SMTP</div>
+          </div>
+          <div class="metric-card is-yellow">
+            <div class="metric-label">Abertos</div>
+            <div class="metric-value"><%= summary.opened || 0 %></div>
+            <div class="metric-note">Aberturas detectadas</div>
+          </div>
+          <div class="metric-card is-purple">
+            <div class="metric-label">Com erro</div>
+            <div class="metric-value"><%= summary.failed || 0 %></div>
+            <div class="metric-note">Removidos da lista</div>
+          </div>
         </div>
 
-        <div class="content-card module-list-card">
+        <% if (activeTab === 'clientes') { %>
+          <div class="content-card module-list-card">
           <div class="history-section-head" style="margin-bottom:12px;">
             <div>
               <div class="content-title">Clientes</div>
@@ -93,7 +128,318 @@
               <% }) %>
             </div>
           <% } %>
-        </div>
+          </div>
+        <% } %>
+
+        <% if (activeTab === 'emails') { %>
+          <div class="content-card" style="margin-bottom:18px;">
+            <div class="content-title">Contatos de E-mail</div>
+            <div class="content-sub">Lista exclusiva para e-mail marketing. Estes e-mails não se misturam com os clientes completos.</div>
+            <form method="post" action="/crm/emails" style="margin-top:16px;">
+              <div class="grid-2">
+                <div class="field">
+                  <label class="field-label" for="emailName">Nome opcional</label>
+                  <input id="emailName" name="name" type="text" placeholder="Nome do contato, quando for um único e-mail" />
+                </div>
+                <div class="field">
+                  <label class="field-label" for="singleEmail">E-mail único</label>
+                  <input id="singleEmail" name="email" type="email" placeholder="contato@exemplo.com" />
+                </div>
+              </div>
+              <div class="field" style="margin-top:12px;">
+                <label class="field-label" for="bulkEmails">Ou cole vários e-mails</label>
+                <textarea id="bulkEmails" name="emails" rows="5" placeholder="um@email.com&#10;outro@email.com&#10;terceiro@email.com"></textarea>
+              </div>
+              <div class="form-actions" style="text-align:right; margin-top:12px;">
+                <button type="submit" class="btn btn-primary">Salvar e-mails</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="content-card module-list-card">
+            <div class="history-section-head" style="margin-bottom:12px;">
+              <div>
+                <div class="content-title">E-mails cadastrados</div>
+                <div class="content-sub">Somente estes contatos receberão campanhas.</div>
+              </div>
+              <span class="status-pill is-green"><%= emailContacts.length %></span>
+            </div>
+            <% if (!emailContacts.length) { %>
+              <div class="empty">Nenhum e-mail cadastrado para marketing.</div>
+            <% } else { %>
+              <div class="record-list">
+                <% emailContacts.forEach(function(contact) { %>
+                  <div class="record-row">
+                    <div class="record-main">
+                      <div class="record-title"><%= contact.email %></div>
+                      <div class="record-sub">
+                        <%= contact.name || 'Sem nome vinculado' %>
+                        · Cadastro: <%= contact.createdAtLabel || '-' %>
+                      </div>
+                    </div>
+                    <div class="record-meta">
+                      <form method="post" action="/crm/emails/<%= contact.id %>/excluir" onsubmit="return confirm('Remover este e-mail da lista de marketing?');">
+                        <button type="submit" class="btn">Remover</button>
+                      </form>
+                    </div>
+                  </div>
+                <% }) %>
+              </div>
+            <% } %>
+          </div>
+        <% } %>
+
+        <% if (activeTab === 'marketing') { %>
+          <div class="content-card" style="margin-bottom:18px;">
+            <div class="history-section-head" style="margin-bottom:12px;">
+              <div>
+                <div class="content-title">Configuração do Remetente</div>
+                <div class="content-sub">Quando preenchida, esta configuração será usada somente nos seus envios de e-mail marketing.</div>
+              </div>
+              <span class="status-pill <%= smtpSettings.isComplete ? 'is-green' : 'is-yellow' %>">
+                <%= smtpSettings.isComplete ? 'SMTP próprio ativo' : 'Usando SMTP padrão' %>
+              </span>
+            </div>
+            <form method="post" action="/crm/marketing/smtp">
+              <div class="grid-2">
+                <div class="field">
+                  <label class="field-label" for="fromName">Nome do remetente</label>
+                  <input id="fromName" name="fromName" type="text" value="<%= smtpSettings.fromName || '' %>" placeholder="Nome do gatil" />
+                </div>
+                <div class="field">
+                  <label class="field-label" for="fromEmail">E-mail remetente</label>
+                  <input id="fromEmail" name="fromEmail" type="email" value="<%= smtpSettings.fromEmail || '' %>" placeholder="contato@seudominio.com" />
+                </div>
+              </div>
+              <div class="grid-3" style="margin-top:12px;">
+                <div class="field">
+                  <label class="field-label" for="smtpHost">Servidor SMTP</label>
+                  <input id="smtpHost" name="smtpHost" type="text" value="<%= smtpSettings.host || '' %>" placeholder="smtp.seudominio.com" />
+                </div>
+                <div class="field">
+                  <label class="field-label" for="smtpPort">Porta</label>
+                  <input id="smtpPort" name="smtpPort" type="number" min="1" max="65535" value="<%= smtpSettings.port || 587 %>" />
+                </div>
+                <div class="field">
+                  <label class="field-label">&nbsp;</label>
+                  <label class="settings-check" style="margin:0;">
+                    <input type="checkbox" name="smtpSecure" <%= smtpSettings.secure ? 'checked' : '' %> />
+                    <span>Usar SSL/TLS</span>
+                  </label>
+                </div>
+              </div>
+              <div class="grid-2" style="margin-top:12px;">
+                <div class="field">
+                  <label class="field-label" for="smtpUser">Usuário SMTP</label>
+                  <input id="smtpUser" name="smtpUser" type="text" value="<%= smtpSettings.user || '' %>" autocomplete="off" />
+                </div>
+                <div class="field">
+                  <label class="field-label" for="smtpPassword">Senha SMTP</label>
+                  <input id="smtpPassword" name="smtpPassword" type="password" placeholder="<%= smtpSettings.hasPassword ? 'Senha já cadastrada' : 'Senha ou senha de app' %>" autocomplete="new-password" />
+                </div>
+              </div>
+              <% if (smtpSettings.hasPassword) { %>
+                <label class="settings-check" style="margin-top:12px;">
+                  <input type="checkbox" name="clearSmtpPassword" />
+                  <span>Remover senha SMTP salva</span>
+                </label>
+              <% } %>
+              <div class="form-actions" style="text-align:right; margin-top:12px;">
+                <button type="submit" class="btn btn-primary">Salvar remetente</button>
+              </div>
+            </form>
+            <form method="post" action="/crm/marketing/smtp/testar" style="margin-top:10px; text-align:right;">
+              <button type="submit" class="btn" <%= smtpSettings.isComplete ? '' : 'disabled' %>>Enviar teste</button>
+            </form>
+          </div>
+
+          <div class="content-card" style="margin-bottom:18px;">
+            <div class="content-title">Layout do E-mail</div>
+            <div class="content-sub">Configuração visual padrão para as campanhas deste usuário.</div>
+            <form method="post" action="/crm/marketing/template" style="margin-top:16px;">
+              <div class="grid-3">
+                <div class="field">
+                  <label class="field-label" for="fontFamily">Fonte</label>
+                  <select id="fontFamily" name="fontFamily">
+                    <% marketingFonts.forEach(function(font) { %>
+                      <option value="<%= font.value %>" <%= marketingTemplate.fontFamily === font.value ? 'selected' : '' %>><%= font.label %></option>
+                    <% }) %>
+                  </select>
+                </div>
+                <div class="field">
+                  <label class="field-label" for="backgroundColor">Fundo do e-mail</label>
+                  <input id="backgroundColor" name="backgroundColor" type="color" value="<%= marketingTemplate.backgroundColor %>" />
+                </div>
+                <div class="field">
+                  <label class="field-label" for="cardColor">Fundo do conteúdo</label>
+                  <input id="cardColor" name="cardColor" type="color" value="<%= marketingTemplate.cardColor %>" />
+                </div>
+              </div>
+              <div class="grid-3" style="margin-top:12px;">
+                <div class="field">
+                  <label class="field-label" for="textColor">Cor do texto</label>
+                  <input id="textColor" name="textColor" type="color" value="<%= marketingTemplate.textColor %>" />
+                </div>
+                <div class="field">
+                  <label class="field-label" for="accentColor">Cor dos botões/destaques</label>
+                  <input id="accentColor" name="accentColor" type="color" value="<%= marketingTemplate.accentColor %>" />
+                </div>
+              </div>
+              <div class="grid-3" style="margin-top:12px;">
+                <div class="field">
+                  <label class="field-label" for="websiteUrl">Site padrão</label>
+                  <input id="websiteUrl" name="websiteUrl" type="url" value="<%= marketingTemplate.websiteUrl || '' %>" placeholder="https://..." />
+                </div>
+                <div class="field">
+                  <label class="field-label" for="instagramUrl">Instagram padrão</label>
+                  <input id="instagramUrl" name="instagramUrl" type="url" value="<%= marketingTemplate.instagramUrl || '' %>" placeholder="https://instagram.com/..." />
+                </div>
+                <div class="field">
+                  <label class="field-label" for="whatsappUrl">WhatsApp padrão</label>
+                  <input id="whatsappUrl" name="whatsappUrl" type="url" value="<%= marketingTemplate.whatsappUrl || '' %>" placeholder="https://wa.me/..." />
+                </div>
+              </div>
+              <div class="field" style="margin-top:12px;">
+                <label class="field-label" for="footerText">Rodapé do e-mail</label>
+                <input id="footerText" name="footerText" type="text" value="<%= marketingTemplate.footerText || '' %>" />
+              </div>
+              <div class="form-actions" style="text-align:right; margin-top:12px;">
+                <button type="submit" class="btn btn-primary">Salvar layout</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="content-card" style="margin-bottom:18px;">
+            <div class="content-title">Prévia do E-mail</div>
+            <div class="content-sub">Simulação aproximada do layout que o destinatário verá.</div>
+            <div style="margin-top:14px; background:<%= marketingTemplate.backgroundColor %>; padding:22px; border-radius:8px;">
+              <div style="max-width:680px; margin:0 auto; background:<%= marketingTemplate.cardColor %>; border:1px solid var(--border-soft); border-radius:8px; overflow:hidden;">
+                <div style="height:130px; background:linear-gradient(135deg, <%= marketingTemplate.accentColor %>, #111827); color:#ffffff; display:flex; align-items:center; justify-content:center; font-weight:800;">
+                  Imagem da campanha
+                </div>
+                <div style="padding:24px; color:<%= marketingTemplate.textColor %>; font-family:<%= marketingTemplate.fontFamily %>;">
+                  <div style="width:54px; height:4px; background:<%= marketingTemplate.accentColor %>; border-radius:99px; margin-bottom:16px;"></div>
+                  <h3 style="margin:0 0 12px; font-size:22px;">Assunto da campanha</h3>
+                  <p style="margin:0 0 12px;">Aqui aparecerá o texto principal do e-mail, com espaçamento confortável e leitura clara.</p>
+                  <div style="text-align:center; margin-top:18px;">
+                    <span style="display:inline-block; padding:11px 16px; border-radius:6px; background:<%= marketingTemplate.accentColor %>; color:#ffffff; font-weight:700;">Botão de ação</span>
+                  </div>
+                </div>
+                <div style="padding:14px 18px; background:#f9fafb; color:#6b7280; font-size:12px; text-align:center;">
+                  <%= marketingTemplate.footerText %>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="content-card" style="margin-bottom:18px;">
+            <div class="content-title">Enviar E-mail Marketing</div>
+            <div class="content-sub">O envio será feito apenas para os contatos cadastrados na aba Contatos de e-mail.</div>
+            <form method="post" action="/crm/marketing/enviar" enctype="multipart/form-data" style="margin-top:16px;">
+              <div class="field">
+                <label class="field-label" for="marketingSubject">Assunto</label>
+                <input id="marketingSubject" name="subject" type="text" maxlength="160" required />
+              </div>
+              <div class="field" style="margin-top:12px;">
+                <label class="field-label" for="marketingImage">Imagem da campanha</label>
+                <input id="marketingImage" name="marketingImage" type="file" accept="image/*" />
+              </div>
+              <div class="field" style="margin-top:12px;">
+                <label class="field-label" for="marketingAttachments">Anexos</label>
+                <input id="marketingAttachments" name="marketingAttachments" type="file" multiple />
+                <div class="section-note">Podem ser enviados até 5 anexos, com até 8 MB cada.</div>
+              </div>
+              <div class="field" style="margin-top:12px;">
+                <label class="field-label" for="marketingBody">Texto</label>
+                <textarea id="marketingBody" name="bodyText" rows="8" required placeholder="Escreva o texto que será enviado no e-mail."></textarea>
+              </div>
+              <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border-soft);">
+                <div class="content-title">Botões do e-mail</div>
+                <div class="grid-2" style="margin-top:12px;">
+                  <div class="field">
+                    <label class="field-label" for="websiteButtonLabel">Texto do botão Site</label>
+                    <input id="websiteButtonLabel" name="websiteButtonLabel" type="text" value="Site" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="websiteButtonUrl">Link do site</label>
+                    <input id="websiteButtonUrl" name="websiteButtonUrl" type="url" value="<%= marketingTemplate.websiteUrl || '' %>" placeholder="https://..." />
+                  </div>
+                </div>
+                <div class="grid-2" style="margin-top:12px;">
+                  <div class="field">
+                    <label class="field-label" for="instagramButtonLabel">Texto do botão Instagram</label>
+                    <input id="instagramButtonLabel" name="instagramButtonLabel" type="text" value="Instagram" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="instagramButtonUrl">Link do Instagram</label>
+                    <input id="instagramButtonUrl" name="instagramButtonUrl" type="url" value="<%= marketingTemplate.instagramUrl || '' %>" placeholder="https://instagram.com/..." />
+                  </div>
+                </div>
+                <div class="grid-2" style="margin-top:12px;">
+                  <div class="field">
+                    <label class="field-label" for="whatsappButtonLabel">Texto do botão WhatsApp</label>
+                    <input id="whatsappButtonLabel" name="whatsappButtonLabel" type="text" value="WhatsApp" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="whatsappButtonUrl">Link do WhatsApp</label>
+                    <input id="whatsappButtonUrl" name="whatsappButtonUrl" type="url" value="<%= marketingTemplate.whatsappUrl || '' %>" placeholder="https://wa.me/..." />
+                  </div>
+                </div>
+                <div class="grid-2" style="margin-top:12px;">
+                  <div class="field">
+                    <label class="field-label" for="extraButtonLabel">Texto de botão extra</label>
+                    <input id="extraButtonLabel" name="extraButtonLabel" type="text" placeholder="Ex.: Ver filhotes" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="extraButtonUrl">Link de botão extra</label>
+                    <input id="extraButtonUrl" name="extraButtonUrl" type="url" placeholder="https://..." />
+                  </div>
+                </div>
+              </div>
+              <div class="form-actions" style="text-align:right; margin-top:12px;">
+                <span class="status-pill is-green" style="margin-right:8px;"><%= emailContacts.length %> destinatário(s)</span>
+                <button type="submit" class="btn btn-primary" <%= emailContacts.length ? '' : 'disabled' %>>Enviar campanha</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="content-card module-list-card">
+            <div class="history-section-head" style="margin-bottom:12px;">
+              <div>
+                <div class="content-title">Últimas campanhas</div>
+                <div class="content-sub">Histórico dos envios realizados por este usuário.</div>
+              </div>
+              <span class="status-pill is-purple"><%= campaigns.length %></span>
+            </div>
+            <% if (!campaigns.length) { %>
+              <div class="empty">Nenhuma campanha enviada.</div>
+            <% } else { %>
+              <div class="record-list">
+                <% campaigns.forEach(function(campaign) { %>
+                  <div class="record-row">
+                    <div class="record-main">
+                      <div class="record-title"><%= campaign.subject %></div>
+                      <div class="record-sub">
+                        Enviada em <%= campaign.sentAtLabel || '-' %>
+                        · <%= campaign.recipients %> destinatário(s)
+                        · <%= campaign.deliveredCount || 0 %> entregue(s)
+                        · <%= campaign.failedCount || 0 %> erro(s)
+                        · <%= campaign.openedCount || 0 %> aberto(s)
+                        · <%= campaign.openRate || 0 %>% abertura
+                      </div>
+                      <% if (campaign.imagePath) { %>
+                        <div class="record-sub">Com imagem</div>
+                      <% } %>
+                      <% if (campaign.attachmentPathsJson) { %>
+                        <div class="record-sub">Com anexos</div>
+                      <% } %>
+                    </div>
+                  </div>
+                <% }) %>
+              </div>
+            <% } %>
+          </div>
+        <% } %>
       </main>
     </div>
   </body>

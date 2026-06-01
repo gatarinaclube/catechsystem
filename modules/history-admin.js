@@ -179,6 +179,42 @@ function formatExamHistory(plan) {
   };
 }
 
+function formatDeathCauses(litter) {
+  const atBirthCauses = safeJsonParse(litter?.deadAtBirthCausesJson, []) || [];
+  const afterBirthCauses = safeJsonParse(litter?.deadAfterBirthCausesJson, []) || [];
+
+  return {
+    atBirth: {
+      count: litter?.deadAtBirthCount || 0,
+      causes: atBirthCauses,
+    },
+    afterBirth: {
+      count: litter?.deadAfterBirthCount || 0,
+      causes: afterBirthCauses,
+    },
+  };
+}
+
+function buildDeathCauseSummary(deathCauses) {
+  const parts = [];
+
+  if (deathCauses?.atBirth?.count) {
+    const causes = deathCauses.atBirth.causes.length
+      ? `: ${deathCauses.atBirth.causes.join(", ")}`
+      : "";
+    parts.push(`no parto ${deathCauses.atBirth.count}${causes}`);
+  }
+
+  if (deathCauses?.afterBirth?.count) {
+    const causes = deathCauses.afterBirth.causes.length
+      ? `: ${deathCauses.afterBirth.causes.join(", ")}`
+      : "";
+    parts.push(`pós-parto ${deathCauses.afterBirth.count}${causes}`);
+  }
+
+  return parts.join(" · ");
+}
+
 function timelineDateTime(value) {
   const parsed = parseDate(value);
   return parsed ? parsed.getTime() : null;
@@ -234,11 +270,15 @@ function buildCatTimeline({
   });
 
   partumHistory.forEach((item) => {
+    const deathCauseSummary = buildDeathCauseSummary(item.deathCauses);
     entries.push(buildTimelineEntry({
       date: item.rawBirthDate,
       section: "Partos",
       title: `Parto - Ninhada ${item.litterNumber}`,
-      description: `${item.totalKittens} filhote(s), ${item.females} fêmea(s), ${item.males} macho(s), ${item.dead} óbito(s).`,
+      description: [
+        `${item.totalKittens} filhote(s), ${item.females} fêmea(s), ${item.males} macho(s), ${item.dead} óbito(s).`,
+        deathCauseSummary ? `Causas: ${deathCauseSummary}.` : "",
+      ].filter(Boolean).join(" "),
       color: "is-purple",
     }));
   });
@@ -486,6 +526,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         females: litter.femaleCount || 0,
         males: litter.maleCount || 0,
         dead: litter.deadCount || 0,
+        deathCauses: formatDeathCauses(litter),
         notes: litter.historyNotes || "",
         kittens: litter.kittens.map((kitten) => ({
           number: kitten.kittenNumber || "-",
