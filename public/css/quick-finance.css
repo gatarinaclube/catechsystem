@@ -59,6 +59,38 @@ label {
   text-transform: uppercase;
 }
 
+.quick-field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
+.quick-field-head label {
+  margin-bottom: 0;
+}
+
+.quick-field-icon {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  color: #374151;
+  background: #ffffff;
+  font-size: 18px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.quick-field-icon:hover {
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+
 input,
 select,
 textarea {

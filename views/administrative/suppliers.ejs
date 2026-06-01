@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Fornecedores - Administrativo</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Fornecedores</h2>
+            <div class="welcome-sub">Cadastro de fornecedores usados no lançamento de despesas.</div>
+          </div>
+          <div class="actions">
+            <a href="/administrativo" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <% if (success) { %>
+          <div class="content-card message message-success">Fornecedor salvo.</div>
+        <% } %>
+        <% if (error) { %>
+          <div class="content-card message message-error"><%= error %></div>
+        <% } %>
+
+        <div class="content-card">
+          <div class="history-section-head" style="margin-bottom:12px;">
+            <div>
+              <div class="content-title">Novo fornecedor</div>
+              <div class="content-sub">CNPJ e CEP podem preencher parte das informações automaticamente.</div>
+            </div>
+          </div>
+
+          <form method="post" action="/administrativo/fornecedores" class="supplier-form">
+            <%- include('./suppliers-form-fields', { supplier: form || {}, prefix: 'new' }) %>
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit">Salvar fornecedor</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="content-card module-list-card">
+          <div class="history-section-head" style="margin-bottom:12px;">
+            <div>
+              <div class="content-title">Fornecedores cadastrados</div>
+              <div class="content-sub">Edite dados de contato, endereço e identificação fiscal.</div>
+            </div>
+            <span class="status-pill is-purple"><%= suppliers.length %></span>
+          </div>
+
+          <% if (!suppliers.length) { %>
+            <div class="empty">Nenhum fornecedor cadastrado.</div>
+          <% } else { %>
+            <div class="record-list">
+              <% suppliers.forEach(function(supplier) { %>
+                <details class="record-row supplier-row">
+                  <summary class="supplier-summary">
+                    <span>
+                      <strong><%= supplier.commercialName %></strong>
+                      <small>
+                        <%= supplier.tradeName || '-' %>
+                        <% if (supplier.cnpj) { %> · CNPJ <%= supplier.cnpj %><% } %>
+                      </small>
+                    </span>
+                    <span class="status-pill">Editar</span>
+                  </summary>
+                  <div class="supplier-edit">
+                    <form method="post" action="/administrativo/fornecedores/<%= supplier.id %>/update" class="supplier-form">
+                      <%- include('./suppliers-form-fields', { supplier, prefix: 'supplier-' + supplier.id }) %>
+                      <div class="form-actions">
+                        <button class="btn btn-primary" type="submit">Salvar alterações</button>
+                      </div>
+                    </form>
+                    <form method="post" action="/administrativo/fornecedores/<%= supplier.id %>/delete" onsubmit="return confirm('Excluir este fornecedor?');" class="supplier-delete">
+                      <button class="btn btn-danger" type="submit">Excluir fornecedor</button>
+                    </form>
+                  </div>
+                </details>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      function digits(value) {
+        return String(value || "").replace(/\D/g, "");
+      }
+
+      function setValue(form, name, value) {
+        const input = form.querySelector(`[name="${name}"]`);
+        if (input && value && !input.value) input.value = value;
+      }
+
+      async function fetchJson(url) {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Consulta indisponível");
+        return response.json();
+      }
+
+      document.querySelectorAll(".supplier-form").forEach((form) => {
+        const cnpjInput = form.querySelector('[name="cnpj"]');
+        const cepInput = form.querySelector('[name="cep"]');
+
+        cnpjInput?.addEventListener("blur", async () => {
+          const cnpj = digits(cnpjInput.value);
+          if (cnpj.length !== 14) return;
+          try {
+            const data = await fetchJson(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+            setValue(form, "commercialName", data.razao_social);
+            setValue(form, "tradeName", data.nome_fantasia);
+            setValue(form, "cep", data.cep);
+            setValue(form, "street", data.logradouro);
+            setValue(form, "number", data.numero);
+            setValue(form, "complement", data.complemento);
+            setValue(form, "neighborhood", data.bairro);
+            setValue(form, "city", data.municipio);
+            setValue(form, "state", data.uf);
+            setValue(form, "phone", data.ddd_telefone_1);
+            setValue(form, "email", data.email);
+          } catch (err) {}
+        });
+
+        cepInput?.addEventListener("blur", async () => {
+          const cep = digits(cepInput.value);
+          if (cep.length !== 8) return;
+          try {
+            const data = await fetchJson(`https://viacep.com.br/ws/${cep}/json/`);
+            if (data.erro) return;
+            setValue(form, "street", data.logradouro);
+            setValue(form, "neighborhood", data.bairro);
+            setValue(form, "city", data.localidade);
+            setValue(form, "state", data.uf);
+          } catch (err) {}
+        });
+      });
+    </script>
+  </body>
+</html>

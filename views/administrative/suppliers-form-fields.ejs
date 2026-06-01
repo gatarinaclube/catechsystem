@@ -1,0 +1,67 @@
+<div class="form-grid">
+  <div class="field">
+    <label class="field-label" for="<%= prefix %>-commercialName">Nome Comercial</label>
+    <input id="<%= prefix %>-commercialName" name="commercialName" value="<%= supplier.commercialName || '' %>" required />
+  </div>
+  <div class="field">
+    <label class="field-label" for="<%= prefix %>-tradeName">Fantasia</label>
+    <input id="<%= prefix %>-tradeName" name="tradeName" value="<%= supplier.tradeName || '' %>" />
+  </div>
+  <div class="field">
+    <label class="field-label" for="<%= prefix %>-defaultCategory">Categoria padrão</label>
+    <select id="<%= prefix %>-defaultCategory" name="defaultCategory">
+      <option value="">Sem categoria padrão</option>
+      <% (categories || []).forEach(function(category) { %>
+        <option value="<%= category %>" <%= supplier.defaultCategory === category ? 'selected' : '' %>><%= category %></option>
+      <% }) %>
+    </select>
+  </div>
+  <div class="field">
+    <label class="field-label" for="<%= prefix %>-cnpj">CNPJ</label>
+    <input id="<%= prefix %>-cnpj" name="cnpj" inputmode="numeric" value="<%= supplier.cnpj || '' %>" placeholder="00.000.000/0000-00" />
+  </div>
+  <div class="field">
+    <label class="field-label" for="<%= prefix %>-cep">CEP</label>
+    <input id="<%= prefix %>-cep" name="cep" inputmode="numeric" value="<%= supplier.cep || '' %>" placeholder="00000-000" />
+  </div>
+  <div class="field">
+    <label class="field-label" for="<%= prefix %>-street">Endereço</label>
+    <input id="<%= prefix %>-street" name="street" value="<%= supplier.street || '' %>" />
+  </div>
+  <div class="field">
+    <label class="field-label" for="<%= prefix %>-number">Número</label>
+    <input id="<%= prefix %>-number" name="number" value="<%= supplier.number || '' %>" />
+  </div>
+  <div class="field">
+    <label class="field-label" for="<%= prefix %>-complement">Complemento</label>
+    <input id="<%= prefix %>-complement" name="complement" value="<%= supplier.complement || '' %>" />
+  </div>
+  <div class="field">
+    <label class="field-label" for="<%= prefix %>-neighborhood">Bairro</label>
+    <input id="<%= prefix %>-neighborhood" name="neighborhood" value="<%= supplier.neighborhood || '' %>" />
+  </div>
+  <div class="field">
+    <label class="field-label" for="<%= prefix %>-city">Cidade</label>
+    <input id="<%= prefix %>-city" name="city" value="<%= supplier.city || '' %>" />
+  </div>
+  <div class="field">
+    <label class="field-label" for="<%= prefix %>-state">UF</label>
+    <input id="<%= prefix %>-state" name="state" maxlength="2" value="<%= supplier.state || '' %>" />
+  </div>
+  <div class="field">
+    <label class="field-label" for="<%= prefix %>-email">E-mail</label>
+    <input id="<%= prefix %>-email" name="email" type="email" value="<%= supplier.email || '' %>" />
+  </div>
+  <div class="field">
+    <label class="field-label" for="<%= prefix %>-phone">Telefone</label>
+    <input id="<%= prefix %>-phone" name="phone" value="<%= supplier.phone || '' %>" />
+  </div>
+  <div class="field">
+    <label class="field-label" for="<%= prefix %>-contactName">Contato principal</label>
+    <input id="<%= prefix %>-contactName" name="contactName" value="<%= supplier.contactName || '' %>" />
+  </div>
+  <div class="field">
+    <label class="field-label" for="<%= prefix %>-contactPhone">Telefone do contato</label>
+    <input id="<%= prefix %>-contactPhone" name="contactPhone" value="<%= supplier.contactPhone || '' %>" />
+  </div>
+</div>

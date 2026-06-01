@@ -1,0 +1,51 @@
+<div class="form-grid">
+  <div class="field">
+    <label class="field-label" for="<%= prefix %>-supplier">Fornecedor</label>
+    <select id="<%= prefix %>-supplier" name="supplier" required>
+      <option value="">Selecione...</option>
+      <% (suppliers || []).forEach(function(supplier) { %>
+        <option value="<%= supplier.commercialName %>" <%= payable.supplier === supplier.commercialName ? 'selected' : '' %>><%= supplier.commercialName %></option>
+      <% }) %>
+    </select>
+  </div>
+  <div class="field">
+    <label class="field-label" for="<%= prefix %>-category">Categoria</label>
+    <select id="<%= prefix %>-category" name="category" required>
+      <option value="">Selecione...</option>
+      <% (categories || []).forEach(function(category) { %>
+        <option value="<%= category %>" <%= payable.category === category ? 'selected' : '' %>><%= category %></option>
+      <% }) %>
+    </select>
+  </div>
+  <div class="field">
+    <label class="field-label" for="<%= prefix %>-amount">Valor</label>
+    <input id="<%= prefix %>-amount" name="amount" inputmode="decimal" value="<%= payable.amount || '' %>" required />
+  </div>
+  <div class="field">
+    <label class="field-label" for="<%= prefix %>-dueDate">Vencimento</label>
+    <input id="<%= prefix %>-dueDate" name="dueDate" type="date" value="<%= payable.dueDateInput || '' %>" required />
+  </div>
+  <div class="field">
+    <label class="field-label" for="<%= prefix %>-paymentMethod">Conta de pagamento prevista</label>
+    <select id="<%= prefix %>-paymentMethod" name="paymentMethod">
+      <option value="">Definir ao pagar</option>
+      <% (paymentMethods || []).forEach(function(item) { %>
+        <option value="<%= item %>" <%= payable.paymentMethod === item ? 'selected' : '' %>><%= item %></option>
+      <% }) %>
+    </select>
+  </div>
+  <div class="field">
+    <label class="field-label" for="<%= prefix %>-description">Descrição</label>
+    <input id="<%= prefix %>-description" name="description" value="<%= payable.description || '' %>" />
+  </div>
+  <div class="field">
+    <label class="field-label" for="<%= prefix %>-note">Observação</label>
+    <input id="<%= prefix %>-note" name="note" value="<%= payable.note || '' %>" />
+  </div>
+  <div class="field">
+    <label class="checkbox-line" style="margin-top:28px;">
+      <input type="checkbox" name="isFixed" value="YES" <%= payable.isFixed ? 'checked' : '' %> />
+      Conta fixa mensal
+    </label>
+  </div>
+</div>

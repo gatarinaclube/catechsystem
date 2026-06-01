@@ -1042,6 +1042,69 @@ textarea:focus {
   color: var(--text-main);
 }
 
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.form-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.supplier-row {
+  display: block;
+}
+
+.supplier-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.supplier-summary::-webkit-details-marker {
+  display: none;
+}
+
+.supplier-summary span:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.supplier-summary small {
+  color: var(--text-muted);
+}
+
+.supplier-edit {
+  border-top: 1px solid var(--border-soft);
+  margin-top: 12px;
+  padding-top: 14px;
+}
+
+.supplier-delete {
+  margin-top: 10px;
+  text-align: right;
+}
+
+.checkbox-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.checkbox-line input {
+  width: auto;
+}
+
 .record-sub {
   margin-top: 3px;
   font-size: 12px;
@@ -1618,6 +1681,7 @@ textarea:focus {
   .account-grid,
   .account-metrics,
   .account-form,
+  .form-grid,
   .transfer-grid,
   .transfer-edit-grid {
     grid-template-columns: 1fr;

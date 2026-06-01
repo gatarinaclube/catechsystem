@@ -136,15 +136,12 @@ function buildProfileAccessGroups(role) {
       title: "Tático",
       modules: [
         { label: "CRM", permission: "admin.crm" },
-        { label: "Vendas", permission: "admin.sales" },
         { label: "Painel", permission: "admin.tacticalPanel" },
       ],
     },
     {
       title: "Estratégico",
       modules: [
-        { label: "Receitas", permission: "admin.revenues" },
-        { label: "Despesas", permission: "admin.quickLaunch" },
         { label: "Relatórios", permission: "admin.reports" },
         { label: "Administrativo", permission: "admin.administrative" },
       ],

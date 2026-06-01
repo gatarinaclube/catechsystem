@@ -72,6 +72,8 @@ model User {
   crmEmailDrafts CrmEmailDraft[]
   financialAccountSettings FinancialAccountSetting[]
   financialTransfers FinancialTransfer[]
+  expenseSuppliers ExpenseSupplier[]
+  accountPayables AccountPayable[]
   passwordResetTokens PasswordResetToken[]
   academyEnrollments AcademyEnrollment[]
   academyProgress AcademyProgress[]
@@ -543,6 +545,55 @@ model FinancialTransfer {
   deletedAt       DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model ExpenseSupplier {
+  id             Int      @id @default(autoincrement())
+  owner          User?    @relation(fields: [ownerId], references: [id])
+  ownerId        Int?
+  commercialName String
+  defaultCategory String?
+  tradeName      String?
+  cnpj           String?
+  cep            String?
+  street         String?
+  number         String?
+  complement     String?
+  neighborhood   String?
+  city           String?
+  state          String?
+  email          String?
+  phone          String?
+  contactName    String?
+  contactPhone   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([ownerId, commercialName])
+  @@index([ownerId, cnpj])
+}
+
+model AccountPayable {
+  id               Int      @id @default(autoincrement())
+  owner            User?    @relation(fields: [ownerId], references: [id])
+  ownerId          Int?
+  supplier         String
+  category         String
+  description      String?
+  amountCents      Int
+  dueDate          DateTime
+  paymentMethod    String?
+  note             String?
+  isFixed          Boolean  @default(false)
+  recurringGroupId String?
+  status           String   @default("PENDING")
+  paidAt           DateTime?
+  expenseEntryId   Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([ownerId, status, dueDate])
+  @@index([ownerId, recurringGroupId])
 }
 
 model RevenueClient {

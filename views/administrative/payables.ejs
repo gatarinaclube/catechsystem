@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Contas a Pagar - Administrativo</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Contas a Pagar</h2>
+            <div class="welcome-sub">Agende contas fixas e variáveis antes de lançar a despesa paga.</div>
+          </div>
+          <div class="actions">
+            <a href="/administrativo" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <% if (success) { %><div class="content-card message message-success">Conta a pagar atualizada.</div><% } %>
+        <% if (error) { %><div class="content-card message message-error"><%= error %></div><% } %>
+
+        <div class="content-card">
+          <div class="content-title">Nova conta</div>
+          <form method="post" action="/administrativo/contas-a-pagar" class="supplier-form" style="margin-top:12px;">
+            <%- include('./payables-form-fields', { payable: form || {}, suppliers, categories, paymentMethods, prefix: 'new' }) %>
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit">Cadastrar conta</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="content-card module-list-card">
+          <div class="history-section-head" style="margin-bottom:12px;">
+            <div>
+              <div class="content-title">Contas cadastradas</div>
+              <div class="content-sub">Efetivar pagamento cria automaticamente o lançamento em Despesas.</div>
+            </div>
+            <span class="status-pill is-purple"><%= payables.length %></span>
+          </div>
+
+          <% if (!payables.length) { %>
+            <div class="empty">Nenhuma conta a pagar cadastrada.</div>
+          <% } else { %>
+            <div class="record-list">
+              <% payables.forEach(function(payable) { %>
+                <details class="record-row supplier-row">
+                  <summary class="supplier-summary">
+                    <span>
+                      <strong><%= payable.supplier %> · <%= payable.amountLabel %></strong>
+                      <small>
+                        <%= payable.category %> · Vencimento <%= payable.dueDateLabel %>
+                        <% if (payable.isFixed) { %> · Fixa mensal<% } %>
+                        <% if (payable.status === 'PAID') { %> · Pago em <%= payable.paidAtLabel %><% } %>
+                      </small>
+                    </span>
+                    <span class="status-pill <%= payable.status === 'PAID' ? 'is-green' : 'is-yellow' %>">
+                      <%= payable.status === 'PAID' ? 'Pago' : 'Pendente' %>
+                    </span>
+                  </summary>
+
+                  <div class="supplier-edit">
+                    <% if (payable.status === 'PENDING') { %>
+                      <form method="post" action="/administrativo/contas-a-pagar/<%= payable.id %>/update" class="supplier-form">
+                        <%- include('./payables-form-fields', { payable, suppliers, categories, paymentMethods, prefix: 'payable-' + payable.id }) %>
+                        <% if (payable.recurringGroupId) { %>
+                          <label class="checkbox-line">
+                            <input type="checkbox" name="applyFuture" value="YES" />
+                            Aplicar alterações nas próximas contas fixas ainda pendentes
+                          </label>
+                        <% } %>
+                        <div class="form-actions">
+                          <button class="btn btn-primary" type="submit">Salvar alterações</button>
+                        </div>
+                      </form>
+
+                      <form method="post" action="/administrativo/contas-a-pagar/<%= payable.id %>/pagar" class="form-grid" style="margin-top:14px;">
+                        <div class="field">
+                          <label class="field-label">Data de pagamento</label>
+                          <input name="paidAt" type="date" value="<%= payable.dueDateInput %>" required />
+                        </div>
+                        <div class="field">
+                          <label class="field-label">Conta de pagamento</label>
+                          <select name="paymentMethod" required>
+                            <option value="">Selecione...</option>
+                            <% paymentMethods.forEach(function(item) { %>
+                              <option value="<%= item %>" <%= payable.paymentMethod === item ? 'selected' : '' %>><%= item %></option>
+                            <% }) %>
+                          </select>
+                        </div>
+                        <div class="form-actions">
+                          <button class="btn btn-primary" type="submit">Efetivar pagamento</button>
+                        </div>
+                      </form>
+
+                      <form method="post" action="/administrativo/contas-a-pagar/<%= payable.id %>/delete" onsubmit="return confirm('Excluir esta conta a pagar?');" class="supplier-delete">
+                        <button class="btn btn-danger" type="submit">Excluir</button>
+                      </form>
+                    <% } else { %>
+                      <div class="content-sub">Despesa lançada automaticamente. Código da despesa: <%= payable.expenseEntryId || '-' %>.</div>
+                    <% } %>
+                  </div>
+                </details>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      const supplierDefaults = <%- JSON.stringify((suppliers || []).reduce(function(map, supplier) {
+        map[supplier.commercialName] = supplier.defaultCategory || "";
+        return map;
+      }, {})) %>;
+
+      document.querySelectorAll(".supplier-form").forEach((form) => {
+        const supplier = form.querySelector('[name="supplier"]');
+        const category = form.querySelector('[name="category"]');
+        supplier?.addEventListener("change", () => {
+          const defaultCategory = supplierDefaults[supplier.value] || "";
+          if (defaultCategory && category) category.value = defaultCategory;
+        });
+      });
+    </script>
+  </body>
+</html>

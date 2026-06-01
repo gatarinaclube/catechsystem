@@ -35,6 +35,26 @@
         </div>
 
         <div class="field">
+          <div class="quick-field-head">
+            <label for="supplier">Fornecedor</label>
+            <% if (canManageSuppliers) { %>
+              <a class="quick-field-icon" href="/administrativo/fornecedores" title="Cadastrar ou editar fornecedores">＋</a>
+            <% } %>
+          </div>
+          <select id="supplier" name="supplier" required>
+            <option value="">Selecione...</option>
+            <% suppliers.forEach(function(item) { %>
+              <% const supplierDefault = (supplierDefaults || []).find(function(row) { return row.name === item; }); %>
+              <option
+                value="<%= item %>"
+                data-category="<%= supplierDefault ? supplierDefault.defaultCategory : '' %>"
+                <%= expense.supplier === item ? 'selected' : '' %>
+              ><%= item %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="field">
           <label for="category">Categoria</label>
           <select id="category" name="category" required>
             <option value="">Selecione...</option>
@@ -74,16 +94,6 @@
         </div>
 
         <div class="field">
-          <label for="supplier">Fornecedor</label>
-          <select id="supplier" name="supplier" required>
-            <option value="">Selecione...</option>
-            <% suppliers.forEach(function(item) { %>
-              <option value="<%= item %>" <%= expense.supplier === item ? 'selected' : '' %>><%= item %></option>
-            <% }) %>
-          </select>
-        </div>
-
-        <div class="field">
           <label for="receipt">Foto/Comprovante</label>
           <input id="receipt" name="receipt" type="file" accept="image/*,application/pdf" capture="environment" />
           <% if (expense.receiptPath) { %>
@@ -112,6 +122,8 @@
     </main>
     <script>
       const amount = document.getElementById("amount");
+      const supplier = document.getElementById("supplier");
+      const category = document.getElementById("category");
       const paymentMethod = document.getElementById("paymentMethod");
       const paymentMode = document.getElementById("paymentMode");
       const creditFields = document.getElementById("creditFields");
@@ -139,8 +151,15 @@
         installmentsField.style.display = paymentMode.value === "Parcelado" ? "block" : "none";
       }
 
+      function refreshCategoryFromSupplier() {
+        const selected = supplier.options[supplier.selectedIndex];
+        const defaultCategory = selected ? selected.dataset.category : "";
+        if (defaultCategory) category.value = defaultCategory;
+      }
+
       amount.addEventListener("input", () => formatMoneyInput(amount));
       amount.addEventListener("blur", () => formatMoneyInput(amount));
+      supplier.addEventListener("change", refreshCategoryFromSupplier);
       paymentMethod.addEventListener("change", refreshCreditFields);
       paymentMode.addEventListener("change", refreshCreditFields);
       formatMoneyInput(amount);

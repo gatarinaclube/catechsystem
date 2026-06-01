@@ -15,16 +15,14 @@
         <div class="main-header">
           <div>
             <h2 class="welcome-title">CRM</h2>
-            <div class="welcome-sub">Clientes, contatos de e-mail e campanhas de marketing.</div>
+            <div class="welcome-sub">Contatos de e-mail e campanhas de marketing.</div>
           </div>
           <div class="actions">
             <a href="/crm?tab=marketing" class="btn">E-mail Marketing</a>
-            <a href="/crm/clientes/novo" class="btn btn-primary">Novo Cliente</a>
           </div>
         </div>
 
         <div class="module-tabs" style="margin-bottom:18px;">
-          <a href="/crm?tab=clientes" class="module-tab <%= activeTab === 'clientes' ? 'is-active' : '' %>">Clientes</a>
           <a href="/crm?tab=emails" class="module-tab <%= activeTab === 'emails' ? 'is-active' : '' %>">Contatos de e-mail</a>
           <a href="/crm?tab=marketing" class="module-tab <%= activeTab === 'marketing' ? 'is-active' : '' %>">E-mail marketing</a>
         </div>
@@ -37,30 +35,10 @@
         <% } %>
 
         <div class="metric-grid" style="margin-bottom:18px;">
-          <div class="metric-card is-blue">
-            <div class="metric-label">Clientes</div>
-            <div class="metric-value"><%= summary.total %></div>
-            <div class="metric-note">Total cadastrado</div>
-          </div>
-          <div class="metric-card is-green">
-            <div class="metric-label">Completos</div>
-            <div class="metric-value"><%= summary.complete %></div>
-            <div class="metric-note">Cadastro com contato e endereço</div>
-          </div>
-          <div class="metric-card is-yellow">
-            <div class="metric-label">Incompletos</div>
-            <div class="metric-value"><%= summary.incomplete %></div>
-            <div class="metric-note">Precisam de revisão</div>
-          </div>
-          <div class="metric-card is-purple">
-            <div class="metric-label">Com vendas</div>
-            <div class="metric-value"><%= summary.withSales %></div>
-            <div class="metric-note">Clientes vinculados a receitas</div>
-          </div>
           <div class="metric-card is-green">
             <div class="metric-label">E-mails marketing</div>
             <div class="metric-value"><%= summary.emailContacts %></div>
-            <div class="metric-note">Lista separada dos clientes</div>
+            <div class="metric-note">Lista de campanhas</div>
           </div>
           <div class="metric-card is-blue">
             <div class="metric-label">Entregues</div>
@@ -78,58 +56,6 @@
             <div class="metric-note">Removidos da lista</div>
           </div>
         </div>
-
-        <% if (activeTab === 'clientes') { %>
-          <div class="content-card module-list-card">
-          <div class="history-section-head" style="margin-bottom:12px;">
-            <div>
-              <div class="content-title">Clientes</div>
-              <div class="content-sub">Clique no cliente para editar cadastro, contato e endereço.</div>
-            </div>
-            <span class="status-pill is-blue"><%= clients.length %></span>
-          </div>
-          <% if (!clients.length) { %>
-            <div class="empty">Nenhum cliente cadastrado.</div>
-          <% } else { %>
-            <div class="record-list">
-              <% clients.forEach(function(client) { %>
-                <a class="record-row" href="/crm/clientes/<%= client.id %>" style="text-decoration:none;">
-                  <div class="record-main">
-                    <div class="record-title">
-                      <%= client.fullName || "Cliente sem nome" %>
-                    </div>
-                    <div class="record-sub">
-                      <%= client.document || "Sem documento" %>
-                      · Cadastro: <%= client.createdAtLabel || "-" %>
-                      <% if (client.locationLabel) { %>
-                        · <%= client.locationLabel %>
-                      <% } %>
-                    </div>
-                    <% if (client.contactLabel) { %>
-                      <div class="record-sub"><%= client.contactLabel %></div>
-                    <% } else { %>
-                      <div class="record-sub">Sem telefone/e-mail</div>
-                    <% } %>
-                    <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
-                      <span class="status-pill <%= client.isComplete ? 'is-green' : 'is-yellow' %>">
-                        <%= client.isComplete ? 'Cadastro completo' : 'Cadastro incompleto' %>
-                      </span>
-                      <% if (client.salesCount > 0) { %>
-                        <span class="status-pill is-purple"><%= client.salesCount %> venda(s)</span>
-                      <% } else { %>
-                        <span class="status-pill">Sem vendas</span>
-                      <% } %>
-                    </div>
-                  </div>
-                  <div class="record-meta">
-                    <span class="status-pill is-blue">Editar</span>
-                  </div>
-                </a>
-              <% }) %>
-            </div>
-          <% } %>
-          </div>
-        <% } %>
 
         <% if (activeTab === 'emails') { %>
           <div class="content-card" style="margin-bottom:18px;">

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Clientes - Administrativo</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Clientes</h2>
+            <div class="welcome-sub">Cadastro usado em receitas e vendas.</div>
+          </div>
+          <div class="actions">
+            <a href="/administrativo/clientes/novo" class="btn btn-primary">Novo Cliente</a>
+            <a href="/administrativo" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <% if (success) { %><div class="content-card message message-success">Cliente salvo.</div><% } %>
+        <% if (error) { %><div class="content-card message message-error"><%= error %></div><% } %>
+
+        <div class="content-card module-list-card">
+          <% if (!clients.length) { %>
+            <div class="empty">Nenhum cliente cadastrado.</div>
+          <% } else { %>
+            <div class="record-list">
+              <% clients.forEach(function(client) { %>
+                <a class="record-row" href="/administrativo/clientes/<%= client.id %>" style="text-decoration:none;">
+                  <div class="record-main">
+                    <div class="record-title"><%= client.fullName %></div>
+                    <div class="record-sub">
+                      <%= [client.document, client.phone, client.email].filter(Boolean).join(' · ') || '-' %>
+                    </div>
+                    <div class="record-sub">
+                      <%= [client.city, client.state].filter(Boolean).join(' - ') || '-' %>
+                    </div>
+                  </div>
+                  <div class="record-meta">
+                    <span class="status-pill"><%= client._count && client._count.revenues ? client._count.revenues : 0 %> venda(s)</span>
+                  </div>
+                </a>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

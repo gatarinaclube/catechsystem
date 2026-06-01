@@ -286,10 +286,33 @@ module.exports = (prisma) => {
 
   async function loadOptions(req) {
     const rows = await rawListOptions(req);
+    let registeredSuppliers = [];
+    let supplierDefaults = [];
+
+    try {
+      const supplierRows = await prisma.expenseSupplier.findMany({
+        where: canViewAllData(req.session?.userRole)
+          ? {}
+          : { ownerId: req.session?.userId || null },
+        select: { commercialName: true, defaultCategory: true },
+        orderBy: { commercialName: "asc" },
+      });
+      registeredSuppliers = supplierRows.map((supplier) => supplier.commercialName);
+      supplierDefaults = supplierRows.map((supplier) => ({
+        name: supplier.commercialName,
+        defaultCategory: supplier.defaultCategory || "",
+      }));
+    } catch {
+      registeredSuppliers = [];
+    }
 
     return {
       categories: optionNames(rows.filter((row) => row.type === "CATEGORY")),
-      suppliers: optionNames(rows.filter((row) => row.type === "SUPPLIER")),
+      suppliers: optionNames([
+        ...rows.filter((row) => row.type === "SUPPLIER"),
+        ...registeredSuppliers.map((name) => ({ name })),
+      ]),
+      supplierDefaults,
       paymentMethods: optionNames(rows.filter((row) => row.type === "PAYMENT")),
     };
   }
@@ -367,6 +390,7 @@ module.exports = (prisma) => {
       success: extra.success || false,
       error: extra.error || null,
       homePath: req.session?.userId ? "/dashboard" : "/login",
+      canManageSuppliers: req.session?.userId && userCan(req.session.userRole, "admin.administrative"),
       currentPath: "/despesas",
     });
   }

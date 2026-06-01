@@ -49,6 +49,23 @@ function parseDateInput(value) {
   return year && month && day ? new Date(Date.UTC(year, month - 1, day)) : new Date();
 }
 
+function addMonths(date, amount) {
+  const next = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + amount, date.getUTCDate()));
+  if (next.getUTCDate() !== date.getUTCDate()) {
+    next.setUTCDate(0);
+  }
+  return next;
+}
+
+function cleanText(value) {
+  const text = typeof value === "string" ? value.trim() : "";
+  return text || "";
+}
+
+function onlyDigits(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
 function currentMonthRange() {
   const [year, month] = todayForInput().split("-").map(Number);
   return {
@@ -85,6 +102,188 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
   function settingOwnerId(req) {
     return req.session?.userId || null;
+  }
+
+  function supplierScope(req) {
+    if (canViewAllData(req.session?.userRole)) return {};
+    return { ownerId: req.session?.userId || null };
+  }
+
+  function supplierData(req) {
+    const commercialName = cleanText(req.body.commercialName);
+    if (!commercialName) {
+      throw new Error("Informe o Nome Comercial do fornecedor.");
+    }
+
+    return {
+      ownerId: req.session?.userId || null,
+      commercialName,
+      defaultCategory: cleanText(req.body.defaultCategory) || null,
+      tradeName: cleanText(req.body.tradeName) || null,
+      cnpj: onlyDigits(req.body.cnpj) || null,
+      cep: onlyDigits(req.body.cep) || null,
+      street: cleanText(req.body.street) || null,
+      number: cleanText(req.body.number) || null,
+      complement: cleanText(req.body.complement) || null,
+      neighborhood: cleanText(req.body.neighborhood) || null,
+      city: cleanText(req.body.city) || null,
+      state: cleanText(req.body.state).toUpperCase() || null,
+      email: cleanText(req.body.email).toLowerCase() || null,
+      phone: cleanText(req.body.phone) || null,
+      contactName: cleanText(req.body.contactName) || null,
+      contactPhone: cleanText(req.body.contactPhone) || null,
+    };
+  }
+
+  async function syncSupplierOption(name) {
+    const supplierName = cleanText(name);
+    if (!supplierName) return;
+
+    const existing = await prisma.quickLaunchOption.findFirst({
+      where: {
+        type: "SUPPLIER",
+        ownerId: null,
+        name: supplierName,
+      },
+      select: { id: true },
+    });
+    if (existing) return;
+
+    await prisma.quickLaunchOption.create({
+      data: {
+        type: "SUPPLIER",
+        ownerId: null,
+        name: supplierName,
+      },
+    });
+  }
+
+  async function renameSupplierOption(req, oldName, newName) {
+    const previous = cleanText(oldName);
+    const next = cleanText(newName);
+    if (!previous || !next || previous === next) {
+      await syncSupplierOption(next);
+      return;
+    }
+
+    const duplicate = await prisma.quickLaunchOption.findFirst({
+      where: { type: "SUPPLIER", ownerId: null, name: next },
+      select: { id: true },
+    });
+
+    await prisma.$transaction(async (tx) => {
+      if (!duplicate) {
+        await tx.quickLaunchOption.updateMany({
+          where: { type: "SUPPLIER", ownerId: null, name: previous },
+          data: { name: next },
+        });
+      }
+
+      await tx.quickLaunchEntry.updateMany({
+        where: {
+          supplier: previous,
+          ...(canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session?.userId || null }),
+        },
+        data: { supplier: next },
+      });
+    });
+    await syncSupplierOption(next);
+
+    if (duplicate) {
+      const remainingWithPreviousName = await prisma.expenseSupplier.count({
+        where: { commercialName: previous },
+      });
+      const previousUsageCount = await prisma.quickLaunchEntry.count({
+        where: { supplier: previous },
+      });
+      if (!remainingWithPreviousName && !previousUsageCount) {
+        await prisma.quickLaunchOption.deleteMany({
+          where: { type: "SUPPLIER", ownerId: null, name: previous },
+        });
+      }
+    }
+  }
+
+  async function loadSupplierRows(req) {
+    return prisma.expenseSupplier.findMany({
+      where: supplierScope(req),
+      orderBy: [{ commercialName: "asc" }],
+    });
+  }
+
+  async function loadExpenseOptionNames(type) {
+    const options = await prisma.quickLaunchOption.findMany({
+      where: { type, disabledAt: null },
+      orderBy: { name: "asc" },
+      select: { name: true },
+    });
+    return Array.from(new Set(options.map((option) => option.name).filter(Boolean)))
+      .sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }
+
+  function payableData(req) {
+    const amountCents = parseAmountToCents(req.body.amount);
+    const supplier = cleanText(req.body.supplier);
+    const category = cleanText(req.body.category);
+    if (!supplier || !category || amountCents <= 0) {
+      throw new Error("Informe fornecedor, categoria e valor.");
+    }
+
+    return {
+      ownerId: req.session?.userId || null,
+      supplier,
+      category,
+      description: cleanText(req.body.description) || null,
+      amountCents,
+      dueDate: parseDateInput(req.body.dueDate),
+      paymentMethod: cleanText(req.body.paymentMethod) || null,
+      note: cleanText(req.body.note) || null,
+      isFixed: req.body.isFixed === "YES",
+    };
+  }
+
+  function mapPayable(row) {
+    return {
+      ...row,
+      amount: formatAmount(row.amountCents),
+      amountLabel: formatAmount(row.amountCents),
+      dueDateInput: formatDateInput(row.dueDate),
+      dueDateLabel: formatDateLabel(row.dueDate),
+      paidAtLabel: row.paidAt ? formatDateLabel(row.paidAt) : "",
+    };
+  }
+
+  function clientData(req) {
+    return {
+      fullName: cleanText(req.body.fullName),
+      document: cleanText(req.body.document) || null,
+      cep: cleanText(req.body.cep) || null,
+      street: cleanText(req.body.street) || null,
+      number: cleanText(req.body.number) || null,
+      complement: cleanText(req.body.complement) || null,
+      neighborhood: cleanText(req.body.neighborhood) || null,
+      city: cleanText(req.body.city) || null,
+      state: cleanText(req.body.state) || null,
+      country: cleanText(req.body.country) || null,
+      email: cleanText(req.body.email) || null,
+      phone: cleanText(req.body.phone) || null,
+    };
+  }
+
+  function normalizeDocument(value) {
+    return String(value || "").replace(/[\s.\-_/]/g, "").toUpperCase();
+  }
+
+  async function ensureUniqueClientDocument(req, document, excludeId = null) {
+    const normalized = normalizeDocument(document);
+    if (!normalized) return;
+    const clients = await prisma.revenueClient.findMany({
+      where: { ...supplierScope(req), deletedAt: null },
+      select: { id: true, document: true },
+    });
+    if (clients.some((client) => client.id !== excludeId && normalizeDocument(client.document) === normalized)) {
+      throw new Error("Já existe um cliente cadastrado com este CPF/RG/Passaporte.");
+    }
   }
 
   async function loadPaymentAccounts() {
@@ -213,6 +412,439 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         user: req.user,
         currentPath: "/administrativo",
       });
+    }
+  );
+
+  router.get(
+    "/administrativo/fornecedores",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    async (req, res) => {
+      res.render("administrative/suppliers", {
+        user: req.user,
+        currentPath: "/administrativo",
+        suppliers: await loadSupplierRows(req),
+        categories: await loadExpenseOptionNames("CATEGORY"),
+        form: {},
+        success: req.query.ok === "1",
+        error: req.query.error || "",
+      });
+    }
+  );
+
+  router.post(
+    "/administrativo/fornecedores",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    async (req, res) => {
+      try {
+        const data = supplierData(req);
+        await prisma.expenseSupplier.create({ data });
+        await syncSupplierOption(data.commercialName);
+        res.redirect("/administrativo/fornecedores?ok=1");
+      } catch (err) {
+        const message = err.code === "P2002"
+          ? "Já existe um fornecedor com este Nome Comercial."
+          : err.message || "Erro ao salvar fornecedor.";
+        res.status(400).render("administrative/suppliers", {
+          user: req.user,
+          currentPath: "/administrativo",
+          suppliers: await loadSupplierRows(req),
+          categories: await loadExpenseOptionNames("CATEGORY"),
+          form: req.body,
+          success: false,
+          error: message,
+        });
+      }
+    }
+  );
+
+  router.post(
+    "/administrativo/fornecedores/:id/update",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    async (req, res) => {
+      const id = Number(req.params.id);
+      const supplier = await prisma.expenseSupplier.findFirst({
+        where: { id, ...supplierScope(req) },
+      });
+      if (!supplier) return res.status(404).send("Fornecedor não encontrado.");
+
+      try {
+        const data = supplierData(req);
+        await prisma.expenseSupplier.update({
+          where: { id: supplier.id },
+          data: {
+            ...data,
+            ownerId: supplier.ownerId,
+          },
+        });
+        await renameSupplierOption(req, supplier.commercialName, data.commercialName);
+        res.redirect("/administrativo/fornecedores?ok=1");
+      } catch (err) {
+        const message = err.code === "P2002"
+          ? "Já existe um fornecedor com este Nome Comercial."
+          : err.message || "Erro ao atualizar fornecedor.";
+        res.redirect(`/administrativo/fornecedores?error=${encodeURIComponent(message)}`);
+      }
+    }
+  );
+
+  router.post(
+    "/administrativo/fornecedores/:id/delete",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    async (req, res) => {
+      const id = Number(req.params.id);
+      const supplier = await prisma.expenseSupplier.findFirst({
+        where: { id, ...supplierScope(req) },
+        select: { id: true, commercialName: true },
+      });
+      if (!supplier) return res.status(404).send("Fornecedor não encontrado.");
+
+      const usageCount = await prisma.quickLaunchEntry.count({
+        where: {
+          supplier: supplier.commercialName,
+          ...(canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session?.userId || null }),
+        },
+      });
+      if (usageCount > 0) {
+        return res.redirect(`/administrativo/fornecedores?error=${encodeURIComponent("Este fornecedor já está sendo usado em despesas e não pode ser excluído.")}`);
+      }
+
+      await prisma.expenseSupplier.delete({ where: { id: supplier.id } });
+      const remainingWithName = await prisma.expenseSupplier.count({
+        where: { commercialName: supplier.commercialName },
+      });
+      if (!remainingWithName) {
+        await prisma.quickLaunchOption.deleteMany({
+          where: {
+            type: "SUPPLIER",
+            ownerId: null,
+            name: supplier.commercialName,
+          },
+        });
+      }
+      res.redirect("/administrativo/fornecedores?ok=1");
+    }
+  );
+
+  router.get(
+    "/administrativo/despesas",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    (req, res) => res.redirect("/despesas")
+  );
+
+  router.get(
+    "/administrativo/receitas-vendas",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    (req, res) => res.redirect("/vendas")
+  );
+
+  router.get(
+    "/administrativo/clientes",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    async (req, res) => {
+      const clients = await prisma.revenueClient.findMany({
+        where: { ...supplierScope(req), deletedAt: null },
+        orderBy: { fullName: "asc" },
+        include: { _count: { select: { revenues: true } } },
+      });
+      res.render("administrative/clients", {
+        user: req.user,
+        currentPath: "/administrativo",
+        clients,
+        success: req.query.ok === "1",
+        error: req.query.error || "",
+      });
+    }
+  );
+
+  router.get(
+    "/administrativo/clientes/novo",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    (req, res) => {
+      res.render("revenues/client-form", {
+        title: "Novo Cliente",
+        formAction: "/administrativo/clientes/novo",
+        backPath: "/administrativo/clientes",
+        client: null,
+        deleteAction: null,
+        error: null,
+        currentPath: "/administrativo",
+      });
+    }
+  );
+
+  router.post(
+    "/administrativo/clientes/novo",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    async (req, res) => {
+      try {
+        await ensureUniqueClientDocument(req, req.body.document);
+        await prisma.revenueClient.create({
+          data: {
+            ownerId: req.session?.userId || null,
+            ...clientData(req),
+          },
+        });
+        res.redirect("/administrativo/clientes?ok=1");
+      } catch (err) {
+        res.status(400).render("revenues/client-form", {
+          title: "Novo Cliente",
+          formAction: "/administrativo/clientes/novo",
+          backPath: "/administrativo/clientes",
+          client: req.body,
+          deleteAction: null,
+          error: err.message || "Erro ao salvar cliente.",
+          currentPath: "/administrativo",
+        });
+      }
+    }
+  );
+
+  router.get(
+    "/administrativo/clientes/:id",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    async (req, res) => {
+      const client = await prisma.revenueClient.findFirst({
+        where: { id: Number(req.params.id), ...supplierScope(req), deletedAt: null },
+      });
+      if (!client) return res.status(404).send("Cliente não encontrado.");
+      res.render("revenues/client-form", {
+        title: "Editar Cliente",
+        formAction: `/administrativo/clientes/${client.id}`,
+        backPath: "/administrativo/clientes",
+        client,
+        deleteAction: `/administrativo/clientes/${client.id}/excluir`,
+        error: null,
+        currentPath: "/administrativo",
+      });
+    }
+  );
+
+  router.post(
+    "/administrativo/clientes/:id",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    async (req, res) => {
+      const client = await prisma.revenueClient.findFirst({
+        where: { id: Number(req.params.id), ...supplierScope(req), deletedAt: null },
+      });
+      if (!client) return res.status(404).send("Cliente não encontrado.");
+
+      try {
+        await ensureUniqueClientDocument(req, req.body.document, client.id);
+        await prisma.revenueClient.update({
+          where: { id: client.id },
+          data: clientData(req),
+        });
+        res.redirect("/administrativo/clientes?ok=1");
+      } catch (err) {
+        res.status(400).render("revenues/client-form", {
+          title: "Editar Cliente",
+          formAction: `/administrativo/clientes/${client.id}`,
+          backPath: "/administrativo/clientes",
+          client: { ...client, ...req.body },
+          deleteAction: `/administrativo/clientes/${client.id}/excluir`,
+          error: err.message || "Erro ao salvar cliente.",
+          currentPath: "/administrativo",
+        });
+      }
+    }
+  );
+
+  router.post(
+    "/administrativo/clientes/:id/excluir",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    async (req, res) => {
+      const client = await prisma.revenueClient.findFirst({
+        where: { id: Number(req.params.id), ...supplierScope(req), deletedAt: null },
+      });
+      if (!client) return res.status(404).send("Cliente não encontrado.");
+      await prisma.revenueClient.update({
+        where: { id: client.id },
+        data: { deletedAt: new Date() },
+      });
+      res.redirect("/administrativo/clientes?ok=1");
+    }
+  );
+
+  router.get(
+    "/administrativo/contas-a-pagar",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    async (req, res) => {
+      const [payables, suppliers, categories, paymentMethods] = await Promise.all([
+        prisma.accountPayable.findMany({
+          where: supplierScope(req),
+          orderBy: [{ status: "asc" }, { dueDate: "asc" }],
+          take: 300,
+        }),
+        loadSupplierRows(req),
+        loadExpenseOptionNames("CATEGORY"),
+        loadExpenseOptionNames("PAYMENT"),
+      ]);
+      res.render("administrative/payables", {
+        user: req.user,
+        currentPath: "/administrativo",
+        payables: payables.map(mapPayable),
+        suppliers,
+        categories,
+        paymentMethods,
+        form: {},
+        success: req.query.ok === "1",
+        error: req.query.error || "",
+      });
+    }
+  );
+
+  router.post(
+    "/administrativo/contas-a-pagar",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    async (req, res) => {
+      try {
+        const data = payableData(req);
+        await prisma.accountPayable.create({
+          data: {
+            ...data,
+            recurringGroupId: data.isFixed ? `${Date.now()}-${Math.round(Math.random() * 1e9)}` : null,
+          },
+        });
+        res.redirect("/administrativo/contas-a-pagar?ok=1");
+      } catch (err) {
+        res.redirect(`/administrativo/contas-a-pagar?error=${encodeURIComponent(err.message || "Erro ao salvar conta a pagar.")}`);
+      }
+    }
+  );
+
+  router.post(
+    "/administrativo/contas-a-pagar/:id/update",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    async (req, res) => {
+      const payable = await prisma.accountPayable.findFirst({
+        where: { id: Number(req.params.id), ...supplierScope(req) },
+      });
+      if (!payable || payable.status === "PAID") return res.status(404).send("Conta a pagar não encontrada.");
+
+      try {
+        const data = payableData(req);
+        await prisma.accountPayable.update({
+          where: { id: payable.id },
+          data: {
+            ...data,
+            ownerId: payable.ownerId,
+            recurringGroupId: data.isFixed ? payable.recurringGroupId || `${Date.now()}-${Math.round(Math.random() * 1e9)}` : null,
+          },
+        });
+
+        if (payable.recurringGroupId && req.body.applyFuture === "YES") {
+          await prisma.accountPayable.updateMany({
+            where: {
+              ownerId: payable.ownerId,
+              recurringGroupId: payable.recurringGroupId,
+              status: "PENDING",
+              dueDate: { gt: payable.dueDate },
+            },
+            data: {
+              supplier: data.supplier,
+              category: data.category,
+              description: data.description,
+              amountCents: data.amountCents,
+              paymentMethod: data.paymentMethod,
+              note: data.note,
+              isFixed: data.isFixed,
+            },
+          });
+        }
+
+        res.redirect("/administrativo/contas-a-pagar?ok=1");
+      } catch (err) {
+        res.redirect(`/administrativo/contas-a-pagar?error=${encodeURIComponent(err.message || "Erro ao atualizar conta a pagar.")}`);
+      }
+    }
+  );
+
+  router.post(
+    "/administrativo/contas-a-pagar/:id/pagar",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    async (req, res) => {
+      const payable = await prisma.accountPayable.findFirst({
+        where: { id: Number(req.params.id), ...supplierScope(req), status: "PENDING" },
+      });
+      if (!payable) return res.status(404).send("Conta a pagar não encontrada.");
+
+      const paidAt = parseDateInput(req.body.paidAt);
+      const paymentMethod = cleanText(req.body.paymentMethod) || payable.paymentMethod || "";
+      if (!paymentMethod) {
+        return res.redirect(`/administrativo/contas-a-pagar?error=${encodeURIComponent("Informe a conta de pagamento antes de efetivar.")}`);
+      }
+
+      const expense = await prisma.quickLaunchEntry.create({
+        data: {
+          ownerId: payable.ownerId,
+          amountCents: payable.amountCents,
+          category: payable.category,
+          paymentMethod,
+          supplier: payable.supplier,
+          receiptPath: null,
+          note: payable.note || payable.description,
+          competenceDate: paidAt,
+        },
+      });
+
+      await prisma.accountPayable.update({
+        where: { id: payable.id },
+        data: {
+          status: "PAID",
+          paidAt,
+          paymentMethod,
+          expenseEntryId: expense.id,
+        },
+      });
+
+      if (payable.isFixed) {
+        await prisma.accountPayable.create({
+          data: {
+            ownerId: payable.ownerId,
+            supplier: payable.supplier,
+            category: payable.category,
+            description: payable.description,
+            amountCents: payable.amountCents,
+            dueDate: addMonths(payable.dueDate, 1),
+            paymentMethod: payable.paymentMethod,
+            note: payable.note,
+            isFixed: true,
+            recurringGroupId: payable.recurringGroupId || `${Date.now()}-${Math.round(Math.random() * 1e9)}`,
+          },
+        });
+      }
+
+      res.redirect("/administrativo/contas-a-pagar?ok=1");
+    }
+  );
+
+  router.post(
+    "/administrativo/contas-a-pagar/:id/delete",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    async (req, res) => {
+      const payable = await prisma.accountPayable.findFirst({
+        where: { id: Number(req.params.id), ...supplierScope(req), status: "PENDING" },
+      });
+      if (!payable) return res.status(404).send("Conta a pagar não encontrada.");
+      await prisma.accountPayable.delete({ where: { id: payable.id } });
+      res.redirect("/administrativo/contas-a-pagar?ok=1");
     }
   );
 

@@ -724,9 +724,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       smtpSettings: shapeSmtpSettings(userSettings),
       marketingTemplate: shapeMarketingTemplate(userSettings),
       marketingFonts: MARKETING_FONTS,
-      activeTab: ["clientes", "emails", "marketing"].includes(req.query.tab)
+      activeTab: ["emails", "marketing"].includes(req.query.tab)
         ? req.query.tab
-        : "clientes",
+        : "emails",
       messages: {
         success: req.query.success || "",
         error: req.query.error || "",
