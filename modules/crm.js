@@ -125,12 +125,22 @@ function buildButtons(buttons, accentColor) {
   const filtered = buttons.filter((button) => button.url && button.label);
   if (!filtered.length) return "";
 
+  const iconByKey = {
+    website: "www",
+    instagram: "IG",
+    whatsapp: "WA",
+    extra: "+",
+  };
+
   return `
     <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;margin-top:22px;">
       <tr>
         <td style="text-align:center;">
           ${filtered.map((button) => `
             <a href="${escapeHtml(button.url)}" style="display:inline-block;margin:4px;padding:12px 18px;border-radius:6px;background:${accentColor};color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;">
+              <span style="display:inline-block;min-width:24px;height:24px;line-height:24px;margin-right:8px;border-radius:50%;background:rgba(255,255,255,0.22);color:#ffffff;text-align:center;font-size:11px;font-weight:800;vertical-align:middle;">
+                ${escapeHtml(iconByKey[button.key] || "+")}
+              </span>
               ${escapeHtml(button.label)}
             </a>
           `).join("")}
@@ -432,6 +442,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const template = shapeMarketingTemplate(settings);
     const buttons = buildCampaignButtons(req.body, template);
     const smtpConfig = buildUserSmtpConfig(settings);
+    if (!smtpConfig) {
+      throw new Error("Configure seu próprio SMTP/remetente antes de enviar e-mail marketing.");
+    }
     const attachments = attachmentFiles.map((file) => ({
       filename: file.originalname,
       path: file.path,
@@ -766,6 +779,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           imageUrl: message.imageUrl,
           template: message.template,
           buttons: message.buttons,
+          unsubscribeUrl: "#",
         });
 
         let sent = 0;
