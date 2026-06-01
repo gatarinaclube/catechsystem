@@ -693,9 +693,11 @@ model Litter {
   deadAtBirthCount Int?
   deadAtBirthMaleCount Int?
   deadAtBirthFemaleCount Int?
+  deadAtBirthCausesJson String?
   deadAfterBirthCount Int?
   deadAfterBirthMaleCount Int?
   deadAfterBirthFemaleCount Int?
+  deadAfterBirthCausesJson String?
   historyNotes    String?
 
   // Recebimento / assinaturas (não usados no form, mas mantidos)

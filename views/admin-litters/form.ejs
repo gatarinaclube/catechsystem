@@ -166,7 +166,7 @@
 
           <div class="content-card" style="margin-bottom:18px;">
             <div class="content-title">Informações dos Filhotes</div>
-            <div class="grid-4" style="margin-top:12px; display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:16px;">
+            <div class="grid-3" style="margin-top:12px;">
               <div class="field">
                 <label class="field-label" for="femaleCount">Qtde de Fêmeas</label>
                 <input id="femaleCount" name="femaleCount" type="number" min="0" max="99" value="<%= litter?.femaleCount ?? '' %>" />
@@ -179,10 +179,6 @@
                 <label class="field-label" for="litterCountDisplay">Qtde de Filhotes</label>
                 <input id="litterCountDisplay" type="number" readonly value="<%= litter?.litterCount ?? 0 %>" />
               </div>
-              <div class="field">
-                <label class="field-label" for="deadCount">Óbitos</label>
-                <input id="deadCount" name="deadCount" type="number" min="0" value="<%= litter?.deadCount ?? 0 %>" />
-              </div>
             </div>
 
             <div id="kittenRows" style="margin-top:16px;"></div>
@@ -190,6 +186,7 @@
 
           <div class="content-card" id="deadStatsCard" style="margin-bottom:18px;">
             <div class="content-title">Estatísticas</div>
+            <input id="deadCount" name="deadCount" type="hidden" value="<%= litter?.deadCount ?? 0 %>" />
             <div id="deadStatsBlock" style="margin-top:12px;">
               <div class="grid-3">
                 <div class="field">
@@ -202,6 +199,8 @@
                 </div>
               </div>
 
+              <div id="deadAtBirthCauses" style="margin-top:12px;"></div>
+
               <div id="deadAtBirthDetails" class="grid-3" style="margin-top:12px;">
                 <div class="field">
                   <label class="field-label" for="deadAtBirthMaleCount">Machos mortos no parto</label>
@@ -212,6 +211,8 @@
                   <input id="deadAtBirthFemaleCount" name="deadAtBirthFemaleCount" type="number" min="0" value="<%= litter?.deadAtBirthFemaleCount ?? 0 %>" />
                 </div>
               </div>
+
+              <div id="deadAfterBirthCauses" style="margin-top:12px;"></div>
 
               <div id="deadAfterBirthDetails" class="grid-3" style="margin-top:12px;">
                 <div class="field">
@@ -242,6 +243,10 @@
     <script src="/js/ems-data.js"></script>
     <script>
       const breeds = <%- JSON.stringify(breeds) %>;
+      const deathCausesAtBirth = <%- JSON.stringify(deathCausesAtBirth || []) %>;
+      const deathCausesAfterBirth = <%- JSON.stringify(deathCausesAfterBirth || []) %>;
+      const currentDeadAtBirthCauses = <%- JSON.stringify(deadAtBirthCauses || []) %>;
+      const currentDeadAfterBirthCauses = <%- JSON.stringify(deadAfterBirthCauses || []) %>;
       const kittens = <%- JSON.stringify(kittens.map((kitten) => ({
         ...kitten,
         kittenCatId: kitten.kittenCatId || null,
@@ -255,8 +260,10 @@
       const deadStatsBlock = document.getElementById("deadStatsBlock");
       const deadAtBirthCountInput = document.getElementById("deadAtBirthCount");
       const deadAtBirthDetails = document.getElementById("deadAtBirthDetails");
+      const deadAtBirthCauses = document.getElementById("deadAtBirthCauses");
       const deadAfterBirthCountInput = document.getElementById("deadAfterBirthCount");
       const deadAfterBirthDetails = document.getElementById("deadAfterBirthDetails");
+      const deadAfterBirthCauses = document.getElementById("deadAfterBirthCauses");
 
       function bindBreedToEms(select, emsSelect, currentValue) {
         const emsList = window.EMS_BY_BREED[select.value] || [];
@@ -286,10 +293,71 @@
       }
 
       function updateDeadBlocks() {
-        const hasDeadKittens = Number(deadCountInput.value || 0) > 0;
-        deadStatsBlock.style.display = hasDeadKittens ? "block" : "none";
-        deadAtBirthDetails.style.display = Number(deadAtBirthCountInput.value || 0) > 0 ? "grid" : "none";
-        deadAfterBirthDetails.style.display = Number(deadAfterBirthCountInput.value || 0) > 0 ? "grid" : "none";
+        const deadAtBirthCount = Number(deadAtBirthCountInput.value || 0);
+        const deadAfterBirthCount = Number(deadAfterBirthCountInput.value || 0);
+        deadCountInput.value = deadAtBirthCount + deadAfterBirthCount;
+        deadStatsBlock.style.display = "block";
+        deadAtBirthDetails.style.display = deadAtBirthCount > 0 ? "grid" : "none";
+        deadAfterBirthDetails.style.display = deadAfterBirthCount > 0 ? "grid" : "none";
+        renderDeathCauseFields(
+          deadAtBirthCauses,
+          "deadAtBirthCause",
+          deadAtBirthCount,
+          deathCausesAtBirth,
+          currentDeadAtBirthCauses,
+          "Causa da morte no parto"
+        );
+        renderDeathCauseFields(
+          deadAfterBirthCauses,
+          "deadAfterBirthCause",
+          deadAfterBirthCount,
+          deathCausesAfterBirth,
+          currentDeadAfterBirthCauses,
+          "Causa da morte pós parto"
+        );
+      }
+
+      function renderDeathCauseFields(container, fieldName, count, options, currentValues, labelPrefix) {
+        const existingValues = Array.from(container.querySelectorAll("select")).map((select) => select.value);
+        container.innerHTML = "";
+
+        if (!count) return;
+
+        const grid = document.createElement("div");
+        grid.className = "grid-3";
+
+        for (let i = 0; i < count; i += 1) {
+          const value = existingValues[i] || currentValues[i] || "";
+          const field = document.createElement("div");
+          field.className = "field";
+
+          const label = document.createElement("label");
+          label.className = "field-label";
+          label.textContent = `${labelPrefix} ${i + 1}`;
+
+          const select = document.createElement("select");
+          select.name = fieldName;
+          select.required = true;
+
+          const emptyOption = document.createElement("option");
+          emptyOption.value = "";
+          emptyOption.textContent = "Selecione...";
+          select.appendChild(emptyOption);
+
+          options.forEach((cause) => {
+            const option = document.createElement("option");
+            option.value = cause;
+            option.textContent = cause;
+            option.selected = value === cause;
+            select.appendChild(option);
+          });
+
+          field.appendChild(label);
+          field.appendChild(select);
+          grid.appendChild(field);
+        }
+
+        container.appendChild(grid);
       }
 
       function renderKittenRows() {
@@ -386,7 +454,6 @@
 
       femaleCountInput.addEventListener("input", renderKittenRows);
       maleCountInput.addEventListener("input", renderKittenRows);
-      deadCountInput.addEventListener("input", updateDeadBlocks);
       deadAtBirthCountInput.addEventListener("input", updateDeadBlocks);
       deadAfterBirthCountInput.addEventListener("input", updateDeadBlocks);
 

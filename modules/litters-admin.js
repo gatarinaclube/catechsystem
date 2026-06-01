@@ -9,6 +9,26 @@ const BREEDS = [
   "PEB","RAG","RUS","SBI","SIB","SNO","SOK","SPH","SRL","SRS","THA","TUA","TUV"
 ];
 
+const DEATH_CAUSES_AT_BIRTH = [
+  "Fenda Palatina",
+  "Deformidade",
+  "Eviceração",
+  "Prematuro",
+  "Indefinido",
+  "Baixo Peso",
+];
+
+const DEATH_CAUSES_AFTER_BIRTH = [
+  "Fenda Palatina",
+  "Deformidade",
+  "Eviceração",
+  "Prematuro",
+  "Indefinido",
+  "Trauma",
+  "Inapetência",
+  "Baixo Peso",
+];
+
 function calculateAgeLabel(date) {
   if (!date) return "-";
   const birth = new Date(date);
@@ -70,6 +90,34 @@ function getFullCatName(cat, catteryName = "") {
 
 function buildLitterLabel(litter) {
   return `${litter.litterNumber || String(litter.id).padStart(3, "0")} - ${litter.femaleName || "Fêmea"} X ${litter.maleName || "Macho"} - ${formatDateForInput(litter.litterBirthDate) || "-"}`;
+}
+
+function parseJsonArray(value) {
+  try {
+    const parsed = JSON.parse(value || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function parseDeathCauses(body, fieldName, count, allowedCauses) {
+  const selected = []
+    .concat(body[fieldName] || [])
+    .map((value) => String(value || "").trim())
+    .filter(Boolean)
+    .slice(0, count);
+
+  if (selected.length < count) {
+    throw new Error("Informe a causa de morte para cada filhote registrado em óbito.");
+  }
+
+  return selected.map((cause, index) => {
+    if (!allowedCauses.includes(cause)) {
+      throw new Error(`Informe uma causa válida para o óbito ${index + 1}.`);
+    }
+    return cause;
+  });
 }
 
 module.exports = (prisma, requireAuth, requirePermission) => {
@@ -217,6 +265,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         displayName: getFullCatName(cat, catteryNameByUserId.get(cat.ownerId) || catteryName),
       })),
       breeds: BREEDS,
+      deathCausesAtBirth: DEATH_CAUSES_AT_BIRTH,
+      deathCausesAfterBirth: DEATH_CAUSES_AFTER_BIRTH,
+      deadAtBirthCauses: parseJsonArray(litter?.deadAtBirthCausesJson),
+      deadAfterBirthCauses: parseJsonArray(litter?.deadAfterBirthCausesJson),
       litter,
       kittens,
       catteryName,
@@ -379,9 +431,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       deadAtBirthCount: payload.deadAtBirthCount,
       deadAtBirthMaleCount: payload.deadAtBirthMaleCount,
       deadAtBirthFemaleCount: payload.deadAtBirthFemaleCount,
+      deadAtBirthCausesJson: JSON.stringify(payload.deadAtBirthCauses || []),
       deadAfterBirthCount: payload.deadAfterBirthCount,
       deadAfterBirthMaleCount: payload.deadAfterBirthMaleCount,
       deadAfterBirthFemaleCount: payload.deadAfterBirthFemaleCount,
+      deadAfterBirthCausesJson: JSON.stringify(payload.deadAfterBirthCauses || []),
       historyNotes: payload.historyNotes || null,
       litterBreed: payload.kittens[0]?.breed || existingLitter?.litterBreed || null,
     };
@@ -500,6 +554,20 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         );
         await ensureLitterCreationLimits(req, kittens.length);
         await ensureUniqueMicrochips(kittens);
+        const deadAtBirthCount = Number(req.body.deadAtBirthCount || 0);
+        const deadAfterBirthCount = Number(req.body.deadAfterBirthCount || 0);
+        const deadAtBirthCauses = parseDeathCauses(
+          req.body,
+          "deadAtBirthCause",
+          deadAtBirthCount,
+          DEATH_CAUSES_AT_BIRTH
+        );
+        const deadAfterBirthCauses = parseDeathCauses(
+          req.body,
+          "deadAfterBirthCause",
+          deadAfterBirthCount,
+          DEATH_CAUSES_AFTER_BIRTH
+        );
 
         const payload = {
           ownerId: req.session.userId,
@@ -511,13 +579,15 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           maleCount,
           litterCount,
           kittens,
-          deadCount: Number(req.body.deadCount || 0),
-          deadAtBirthCount: Number(req.body.deadAtBirthCount || 0),
+          deadCount: deadAtBirthCount + deadAfterBirthCount,
+          deadAtBirthCount,
           deadAtBirthMaleCount: Number(req.body.deadAtBirthMaleCount || 0),
           deadAtBirthFemaleCount: Number(req.body.deadAtBirthFemaleCount || 0),
-          deadAfterBirthCount: Number(req.body.deadAfterBirthCount || 0),
+          deadAtBirthCauses,
+          deadAfterBirthCount,
           deadAfterBirthMaleCount: Number(req.body.deadAfterBirthMaleCount || 0),
           deadAfterBirthFemaleCount: Number(req.body.deadAfterBirthFemaleCount || 0),
+          deadAfterBirthCauses,
           historyNotes: req.body.historyNotes || null,
         };
 
@@ -536,6 +606,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       } catch (err) {
         const litter = {
           ...req.body,
+          deadAtBirthCausesJson: JSON.stringify([].concat(req.body.deadAtBirthCause || []).filter(Boolean)),
+          deadAfterBirthCausesJson: JSON.stringify([].concat(req.body.deadAfterBirthCause || []).filter(Boolean)),
           kittens: parseKittenRows(req.body).kittens,
         };
 
@@ -612,6 +684,20 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           Math.max(0, kittens.length - existingLitter.kittens.length)
         );
         await ensureUniqueMicrochips(kittens, existingLitter.id);
+        const deadAtBirthCount = Number(req.body.deadAtBirthCount || 0);
+        const deadAfterBirthCount = Number(req.body.deadAfterBirthCount || 0);
+        const deadAtBirthCauses = parseDeathCauses(
+          req.body,
+          "deadAtBirthCause",
+          deadAtBirthCount,
+          DEATH_CAUSES_AT_BIRTH
+        );
+        const deadAfterBirthCauses = parseDeathCauses(
+          req.body,
+          "deadAfterBirthCause",
+          deadAfterBirthCount,
+          DEATH_CAUSES_AFTER_BIRTH
+        );
 
         const payload = {
           ownerId: existingLitter.ownerId || req.session.userId,
@@ -623,13 +709,15 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           maleCount,
           litterCount,
           kittens,
-          deadCount: Number(req.body.deadCount || 0),
-          deadAtBirthCount: Number(req.body.deadAtBirthCount || 0),
+          deadCount: deadAtBirthCount + deadAfterBirthCount,
+          deadAtBirthCount,
           deadAtBirthMaleCount: Number(req.body.deadAtBirthMaleCount || 0),
           deadAtBirthFemaleCount: Number(req.body.deadAtBirthFemaleCount || 0),
-          deadAfterBirthCount: Number(req.body.deadAfterBirthCount || 0),
+          deadAtBirthCauses,
+          deadAfterBirthCount,
           deadAfterBirthMaleCount: Number(req.body.deadAfterBirthMaleCount || 0),
           deadAfterBirthFemaleCount: Number(req.body.deadAfterBirthFemaleCount || 0),
+          deadAfterBirthCauses,
           historyNotes: req.body.historyNotes || null,
         };
 
@@ -649,6 +737,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         const litter = {
           ...existingLitter,
           ...req.body,
+          deadAtBirthCausesJson: JSON.stringify([].concat(req.body.deadAtBirthCause || []).filter(Boolean)),
+          deadAfterBirthCausesJson: JSON.stringify([].concat(req.body.deadAfterBirthCause || []).filter(Boolean)),
           kittens: parseKittenRows(req.body, existingLitter.kittens).kittens,
         };
         res.status(400).render("admin-litters/form", {
