@@ -75,7 +75,13 @@ function cardInvoiceDates(month, closingDay, dueDay) {
   const startDate = addDays(previousClosingDate, 1);
   const dueMonthIndex = dueDay > closingDay ? monthIndex : monthIndex + 1;
   const dueDate = utcDateWithClampedDay(year, dueMonthIndex, dueDay);
-  return { startDate, closingDate, dueDate };
+  return { startDate, closingDate, previousClosingDate, dueDate };
+}
+
+function previousMonthInput(month) {
+  const [year, monthNumber] = month.split("-").map(Number);
+  const date = new Date(Date.UTC(year, monthNumber - 2, 1));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
 function buildExpenseFilters(query) {
@@ -602,11 +608,46 @@ async function loadCreditCardAccounts(prisma, req) {
     orderBy: { accountName: "asc" },
   });
   return cards.map((card) => ({
+    id: card.id,
+    ownerId: card.ownerId,
     value: card.accountName,
     label: card.accountName,
     closingDay: card.creditCardClosingDay || 1,
     dueDay: card.creditCardDueDay || 1,
   }));
+}
+
+async function findCreditCardInvoiceSetting(prisma, req, cardName, month) {
+  if (!cardName) return null;
+  return prisma.creditCardInvoiceSetting.findFirst({
+    where: {
+      ...settingScope(req),
+      accountName: cardName,
+      month,
+    },
+  });
+}
+
+async function buildCreditCardInvoiceDates(prisma, req, card, month) {
+  const defaultDates = cardInvoiceDates(month, card?.closingDay || 1, card?.dueDay || 1);
+  if (!card?.value) return defaultDates;
+
+  const [currentSetting, previousSetting] = await Promise.all([
+    findCreditCardInvoiceSetting(prisma, req, card.value, month),
+    findCreditCardInvoiceSetting(prisma, req, card.value, previousMonthInput(month)),
+  ]);
+
+  const closingDate = currentSetting?.closingDate || defaultDates.closingDate;
+  const dueDate = currentSetting?.dueDate || defaultDates.dueDate;
+  const previousClosingDate = previousSetting?.closingDate || defaultDates.previousClosingDate;
+
+  return {
+    startDate: addDays(previousClosingDate, 1),
+    previousClosingDate,
+    closingDate,
+    dueDate,
+    hasCustomDates: Boolean(currentSetting),
+  };
 }
 
 async function buildCreditCardInvoiceRows(prisma, req, cardName, dates) {
@@ -1255,7 +1296,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   );
 
   router.post(
-    "/reports/credit-cards/closing-day",
+    "/reports/credit-cards/invoice-dates",
     requireAuth,
     requirePermission("admin.reports"),
     async (req, res) => {
@@ -1263,24 +1304,48 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const month = /^\d{4}-\d{2}$/.test(req.body.month || "")
         ? req.body.month
         : currentMonthInput();
-      const closingDay = clampDay(req.body.closingDay, 1);
+      const closingDate = parseDateInput(req.body.closingDate, null);
+      const dueDate = parseDateInput(req.body.dueDate, null);
 
-      if (cardName) {
+      if (cardName && closingDate && dueDate) {
         const card = await prisma.financialAccountSetting.findFirst({
           where: { ...settingScope(req), accountName: cardName, isCreditCard: true },
-          select: { id: true },
+          select: { id: true, ownerId: true },
         });
 
         if (card) {
-          await prisma.financialAccountSetting.update({
-            where: { id: card.id },
-            data: { creditCardClosingDay: closingDay },
+          const existing = await prisma.creditCardInvoiceSetting.findFirst({
+            where: {
+              ownerId: card.ownerId,
+              accountName: cardName,
+              month,
+            },
+            select: { id: true },
           });
+          const data = {
+            ownerId: card.ownerId,
+            accountName: cardName,
+            month,
+            closingDate,
+            dueDate,
+          };
+
+          if (existing) {
+            await prisma.creditCardInvoiceSetting.update({
+              where: { id: existing.id },
+              data: {
+                closingDate,
+                dueDate,
+              },
+            });
+          } else {
+            await prisma.creditCardInvoiceSetting.create({ data });
+          }
         }
       }
 
       if (req.headers.accept?.includes("application/json")) {
-        return res.json({ ok: true, closingDay });
+        return res.json({ ok: true });
       }
 
       res.redirect(`/reports/credit-cards?card=${encodeURIComponent(cardName)}&month=${encodeURIComponent(month)}`);
@@ -1298,9 +1363,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         || cardOptions[0]
         || null;
       const cardName = selectedCard?.value || "";
-      const closingDay = clampDay(req.query.closingDay || selectedCard?.closingDay, selectedCard?.closingDay || 1);
       const dueDay = clampDay(selectedCard?.dueDay, 1);
-      const dates = cardInvoiceDates(filters.month, closingDay, dueDay);
+      const dates = await buildCreditCardInvoiceDates(prisma, req, selectedCard, filters.month);
       const rows = await buildCreditCardInvoiceRows(prisma, req, cardName, dates);
       const purchaseTotalCents = rows.purchases.reduce((sum, row) => sum + Number(row.amountCents || 0), 0);
       const paymentTotalCents = rows.payments.reduce((sum, row) => sum + Number(row.amountCents || 0), 0);
@@ -1311,7 +1375,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         currentPath: "/reports",
         cardOptions,
         selectedCard,
-        filters: { ...filters, card: cardName, closingDay, dueDay },
+        filters: {
+          ...filters,
+          card: cardName,
+          dueDay,
+          closingDateInput: formatDateInput(dates.closingDate),
+          dueDateInput: formatDateInput(dates.dueDate),
+          hasCustomDates: dates.hasCustomDates,
+        },
         purchases: rows.purchases,
         payments: rows.payments,
         startLabel: formatDateOnlyLabel(dates.startDate),

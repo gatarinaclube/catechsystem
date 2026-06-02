@@ -40,12 +40,12 @@
               <input id="month" name="month" type="month" value="<%= filters.month %>" />
             </div>
             <div class="field">
-              <label class="field-label" for="closingDay">Dia de fechamento</label>
-              <input id="closingDay" name="closingDay" type="number" min="1" max="31" value="<%= filters.closingDay %>" form="closing-day-form" <%= filters.card ? '' : 'disabled' %> />
+              <label class="field-label" for="closingDate">Data de fechamento</label>
+              <input id="closingDate" name="closingDate" type="date" value="<%= filters.closingDateInput %>" form="invoice-dates-form" <%= filters.card ? '' : 'disabled' %> />
             </div>
             <div class="field">
-              <label class="field-label">Dia de vencimento</label>
-              <input type="number" value="<%= filters.dueDay %>" disabled />
+              <label class="field-label" for="dueDate">Data de vencimento</label>
+              <input id="dueDate" name="dueDate" type="date" value="<%= filters.dueDateInput %>" form="invoice-dates-form" <%= filters.card ? '' : 'disabled' %> />
             </div>
             <div class="report-filter-actions">
               <button type="submit" class="btn btn-primary">Filtrar</button>
@@ -53,7 +53,7 @@
             </div>
           </form>
 
-          <form id="closing-day-form" method="post" action="/reports/credit-cards/closing-day">
+          <form id="invoice-dates-form" method="post" action="/reports/credit-cards/invoice-dates">
             <input type="hidden" name="card" value="<%= filters.card %>" />
             <input type="hidden" name="month" value="<%= filters.month %>" />
           </form>
@@ -81,7 +81,8 @@
             </div>
             <div class="invoice-period">
               <span>Período: <strong><%= startLabel %></strong> a <strong><%= closingLabel %></strong></span>
-              <span>Vencimento base: <strong><%= dueLabel %></strong></span>
+              <span>Vencimento: <strong><%= dueLabel %></strong></span>
+              <span><%= filters.hasCustomDates ? 'Datas ajustadas para esta fatura' : 'Datas padrão da conta' %></span>
             </div>
           </div>
 
@@ -167,18 +168,20 @@
     </div>
 
     <script>
-      const closingInput = document.getElementById("closingDay");
-      const closingForm = document.getElementById("closing-day-form");
+      const invoiceDateInputs = document.querySelectorAll("#closingDate, #dueDate");
+      const invoiceDatesForm = document.getElementById("invoice-dates-form");
       const cardSelect = document.getElementById("card");
       const monthInput = document.getElementById("month");
 
-      if (closingInput && closingForm) {
-        closingInput.addEventListener("change", () => {
-          const hiddenCard = closingForm.querySelector('input[name="card"]');
-          const hiddenMonth = closingForm.querySelector('input[name="month"]');
-          if (hiddenCard && cardSelect) hiddenCard.value = cardSelect.value;
-          if (hiddenMonth && monthInput) hiddenMonth.value = monthInput.value;
-          closingForm.submit();
+      if (invoiceDateInputs.length && invoiceDatesForm) {
+        invoiceDateInputs.forEach((input) => {
+          input.addEventListener("change", () => {
+            const hiddenCard = invoiceDatesForm.querySelector('input[name="card"]');
+            const hiddenMonth = invoiceDatesForm.querySelector('input[name="month"]');
+            if (hiddenCard && cardSelect) hiddenCard.value = cardSelect.value;
+            if (hiddenMonth && monthInput) hiddenMonth.value = monthInput.value;
+            invoiceDatesForm.submit();
+          });
         });
       }
     </script>

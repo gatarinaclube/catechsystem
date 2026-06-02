@@ -71,6 +71,7 @@ model User {
   crmEmailCampaigns CrmEmailCampaign[]
   crmEmailDrafts CrmEmailDraft[]
   financialAccountSettings FinancialAccountSetting[]
+  creditCardInvoiceSettings CreditCardInvoiceSetting[]
   financialTransfers FinancialTransfer[]
   expenseSuppliers ExpenseSupplier[]
   accountPayables AccountPayable[]
@@ -533,6 +534,20 @@ model FinancialAccountSetting {
   updatedAt            DateTime @updatedAt
 
   @@unique([ownerId, accountName])
+}
+
+model CreditCardInvoiceSetting {
+  id          Int      @id @default(autoincrement())
+  owner       User?    @relation(fields: [ownerId], references: [id])
+  ownerId     Int?
+  accountName String
+  month       String
+  closingDate DateTime
+  dueDate     DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([ownerId, accountName, month])
 }
 
 model FinancialTransfer {
