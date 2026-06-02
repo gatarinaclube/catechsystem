@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Produtos e Serviços - Administrativo</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Produtos/Serviços</h2>
+            <div class="welcome-sub">Itens que podem ser selecionados no lançamento de receitas.</div>
+          </div>
+          <div class="actions">
+            <a href="/administrativo" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <% if (success) { %><div class="content-card message message-success">Produto/serviço salvo.</div><% } %>
+        <% if (error) { %><div class="content-card message message-error"><%= error %></div><% } %>
+
+        <div class="content-card">
+          <div class="history-section-head" style="margin-bottom:12px;">
+            <div>
+              <div class="content-title">Novo produto ou serviço</div>
+              <div class="content-sub">O valor padrão é opcional e pode ajudar no preenchimento da receita.</div>
+            </div>
+          </div>
+
+          <form method="post" action="/administrativo/produtos-servicos" class="form-grid">
+            <div class="field">
+              <label class="field-label" for="type">Tipo</label>
+              <select id="type" name="type">
+                <option value="SERVICE">Serviço</option>
+                <option value="PRODUCT">Produto</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label" for="name">Nome</label>
+              <input id="name" name="name" required />
+            </div>
+            <div class="field">
+              <label class="field-label" for="price">Valor padrão</label>
+              <input id="price" class="money-input" name="price" inputmode="decimal" placeholder="0,00" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="active">Status</label>
+              <select id="active" name="active">
+                <option value="YES">Ativo</option>
+                <option value="NO">Inativo</option>
+              </select>
+            </div>
+            <div class="field" style="grid-column:1 / -1;">
+              <label class="field-label" for="description">Descrição</label>
+              <textarea id="description" name="description" rows="3"></textarea>
+            </div>
+            <div class="form-actions" style="grid-column:1 / -1;">
+              <button class="btn btn-primary" type="submit">Salvar</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="content-card module-list-card">
+          <div class="history-section-head" style="margin-bottom:12px;">
+            <div>
+              <div class="content-title">Itens cadastrados</div>
+              <div class="content-sub">Edite nomes, valores e disponibilidade.</div>
+            </div>
+            <span class="status-pill is-purple"><%= products.length %></span>
+          </div>
+
+          <form method="get" action="/administrativo/produtos-servicos" class="report-filter-grid" style="margin-bottom:14px;">
+            <div class="field">
+              <label class="field-label" for="productSearch">Pesquisar</label>
+              <input id="productSearch" name="q" type="search" value="<%= search || '' %>" placeholder="Nome ou descrição" />
+            </div>
+            <div class="report-filter-actions">
+              <button class="btn btn-primary" type="submit">Pesquisar</button>
+              <a class="btn" href="/administrativo/produtos-servicos">Limpar</a>
+            </div>
+          </form>
+
+          <% if (!products.length) { %>
+            <div class="empty"><%= search ? 'Nenhum item encontrado.' : 'Nenhum produto ou serviço cadastrado.' %></div>
+          <% } else { %>
+            <div class="record-list">
+              <% products.forEach(function(product) { %>
+                <details class="record-row supplier-row">
+                  <summary class="supplier-summary">
+                    <span>
+                      <strong><%= product.name %></strong>
+                      <small><%= product.typeLabel %> · <%= product.priceLabel %><% if (!product.active) { %> · Inativo<% } %></small>
+                    </span>
+                    <span class="status-pill">Editar</span>
+                  </summary>
+                  <div class="supplier-edit">
+                    <form method="post" action="/administrativo/produtos-servicos/<%= product.id %>/update" class="form-grid">
+                      <div class="field">
+                        <label class="field-label">Tipo</label>
+                        <select name="type">
+                          <option value="SERVICE" <%= product.type === 'SERVICE' ? 'selected' : '' %>>Serviço</option>
+                          <option value="PRODUCT" <%= product.type === 'PRODUCT' ? 'selected' : '' %>>Produto</option>
+                        </select>
+                      </div>
+                      <div class="field">
+                        <label class="field-label">Nome</label>
+                        <input name="name" value="<%= product.name %>" required />
+                      </div>
+                      <div class="field">
+                        <label class="field-label">Valor padrão</label>
+                        <input class="money-input" name="price" inputmode="decimal" value="<%= product.price %>" />
+                      </div>
+                      <div class="field">
+                        <label class="field-label">Status</label>
+                        <select name="active">
+                          <option value="YES" <%= product.active ? 'selected' : '' %>>Ativo</option>
+                          <option value="NO" <%= !product.active ? 'selected' : '' %>>Inativo</option>
+                        </select>
+                      </div>
+                      <div class="field" style="grid-column:1 / -1;">
+                        <label class="field-label">Descrição</label>
+                        <textarea name="description" rows="3"><%= product.description || '' %></textarea>
+                      </div>
+                      <div class="form-actions" style="grid-column:1 / -1;">
+                        <button class="btn btn-primary" type="submit">Salvar alterações</button>
+                      </div>
+                    </form>
+                    <form method="post" action="/administrativo/produtos-servicos/<%= product.id %>/delete" onsubmit="return confirm('Excluir este produto/serviço?');" class="supplier-delete">
+                      <button class="btn btn-danger" type="submit">Excluir</button>
+                    </form>
+                  </div>
+                </details>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      document.querySelectorAll(".money-input").forEach((input) => {
+        function format() {
+          const digits = String(input.value || "").replace(/\D/g, "");
+          if (!digits) {
+            input.value = "";
+            return;
+          }
+          input.value = (Number.parseInt(digits, 10) / 100).toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          });
+        }
+        input.addEventListener("input", format);
+        input.addEventListener("blur", format);
+        format();
+      });
+    </script>
+  </body>
+</html>

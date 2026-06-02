@@ -104,6 +104,8 @@ function mapRevenueForForm(revenue = null) {
     return {
       clientId: "",
       kittenId: "",
+      revenueItem: "",
+      productServiceId: "",
       invoiceNumber: "",
       invoiceDate: "",
       catAmount: "",
@@ -118,6 +120,11 @@ function mapRevenueForForm(revenue = null) {
 
   return {
     ...revenue,
+    revenueItem: revenue.productServiceId
+      ? `product:${revenue.productServiceId}`
+      : revenue.kittenId
+        ? `cat:${revenue.kittenId}`
+        : "",
     invoiceDate: formatDateInput(revenue.invoiceDate),
     catAmount: formatAmount(revenue.catAmountCents),
     transportAmount: formatAmount(revenue.transportAmountCents),
@@ -230,7 +237,7 @@ function mapPaidRevenueRows(revenues, start, end) {
         paidDateTime: paidTime,
         dateLabel: formatDateOnlyLabel(paidDate),
         kittenLabel: revenue.kittenLabel || "-",
-        clientLabel: revenue.client?.fullName || "-",
+        clientLabel: revenue.client?.fullName || "Cliente desconhecido",
         paymentAccount: parcel.paymentAccount || revenue.paymentAccount || "-",
         amountLabel: formatAmount(parcel.amountCents || 0),
         parcelLabel: `${parcel.number || "-"} / ${revenue.installments || "-"}`,
@@ -310,6 +317,16 @@ module.exports = (prisma) => {
       include: { litterKitten: true },
       orderBy: [{ kittenNumber: "asc" }, { name: "asc" }],
     });
+    const products = await prisma.revenueProductService.findMany({
+      where: {
+        ...ownerScope(req),
+        OR: [
+          { active: true },
+          ...(revenue?.productServiceId ? [{ id: revenue.productServiceId }] : []),
+        ],
+      },
+      orderBy: [{ type: "asc" }, { name: "asc" }],
+    });
     const accounts = await prisma.quickLaunchOption.findMany({
       where: { type: "PAYMENT", disabledAt: null },
       orderBy: { name: "asc" },
@@ -333,12 +350,17 @@ module.exports = (prisma) => {
             .map((cat) => ({ ...cat, label: buildKittenLabel(cat) })),
         },
       ],
+      productServices: products.map((item) => ({
+        ...item,
+        label: `${item.type === "PRODUCT" ? "Produto" : "Serviço"} - ${item.name}`,
+        price: item.priceCents ? formatAmount(item.priceCents) : "",
+      })),
       paymentAccounts,
       revenue: mapRevenueForForm(revenue),
     };
   }
 
-  function buildRevenueData(body, existing = null) {
+function buildRevenueData(body, existing = null) {
     const catAmountCents = parseAmountToCents(body.catAmount);
     const transportAmountCents = parseAmountToCents(body.transportAmount);
     const totalAmountCents = catAmountCents + transportAmountCents;
@@ -360,9 +382,22 @@ module.exports = (prisma) => {
       });
     }
 
+    const revenueItem = String(body.revenueItem || "").trim();
+    const isProductService = revenueItem.startsWith("product:");
+    const isCat = revenueItem.startsWith("cat:");
+    const selectedKittenId = isCat
+      ? Number(revenueItem.replace("cat:", ""))
+      : body.kittenId
+        ? Number(body.kittenId)
+        : null;
+    const selectedProductServiceId = isProductService
+      ? Number(revenueItem.replace("product:", ""))
+      : null;
+
     return {
       clientId: body.clientId ? Number(body.clientId) : null,
-      kittenId: body.kittenId ? Number(body.kittenId) : existing?.kittenId || null,
+      kittenId: selectedKittenId || (isProductService ? null : existing?.kittenId || null),
+      productServiceId: selectedProductServiceId || null,
       kittenLabel: body.kittenLabel || existing?.kittenLabel || null,
       invoiceNumber: body.invoiceNumber || null,
       invoiceDate: parseDateInput(body.invoiceDate, true),
@@ -395,15 +430,34 @@ module.exports = (prisma) => {
 
   router.post("/receitas", async (req, res) => {
     try {
-      const kitten = req.body.kittenId
+      const revenueItem = String(req.body.revenueItem || "").trim();
+      const kittenId = revenueItem.startsWith("cat:")
+        ? Number(revenueItem.replace("cat:", ""))
+        : req.body.kittenId
+          ? Number(req.body.kittenId)
+          : null;
+      const productServiceId = revenueItem.startsWith("product:")
+        ? Number(revenueItem.replace("product:", ""))
+        : null;
+      const kitten = kittenId
         ? await prisma.cat.findFirst({
-            where: { id: Number(req.body.kittenId), ...ownerScope(req) },
+            where: { id: kittenId, ...ownerScope(req) },
             include: { litterKitten: true },
+          })
+        : null;
+      const productService = productServiceId
+        ? await prisma.revenueProductService.findFirst({
+            where: { id: productServiceId, ...ownerScope(req), active: true },
           })
         : null;
       const data = buildRevenueData({
         ...req.body,
-        kittenLabel: kitten ? buildKittenLabel(kitten) : req.body.kittenLabel,
+        revenueItem,
+        kittenLabel: kitten
+          ? buildKittenLabel(kitten)
+          : productService
+            ? `${productService.type === "PRODUCT" ? "Produto" : "Serviço"} - ${productService.name}`
+            : req.body.kittenLabel,
       });
 
       await prisma.revenueEntry.create({
@@ -482,9 +536,40 @@ module.exports = (prisma) => {
     });
     if (!existing) return res.status(404).send("Venda não encontrada.");
 
+    const revenueItem = String(req.body.revenueItem || "").trim();
+    const kittenId = revenueItem.startsWith("cat:")
+      ? Number(revenueItem.replace("cat:", ""))
+      : req.body.kittenId
+        ? Number(req.body.kittenId)
+        : null;
+    const productServiceId = revenueItem.startsWith("product:")
+      ? Number(revenueItem.replace("product:", ""))
+      : null;
+    const [kitten, productService] = await Promise.all([
+      kittenId
+        ? prisma.cat.findFirst({
+            where: { id: kittenId, ...ownerScope(req) },
+            include: { litterKitten: true },
+          })
+        : null,
+      productServiceId
+        ? prisma.revenueProductService.findFirst({
+            where: { id: productServiceId, ...ownerScope(req), active: true },
+          })
+        : null,
+    ]);
+
     await prisma.revenueEntry.update({
       where: { id: existing.id },
-      data: buildRevenueData(req.body, existing),
+      data: buildRevenueData({
+        ...req.body,
+        revenueItem,
+        kittenLabel: kitten
+          ? buildKittenLabel(kitten)
+          : productService
+            ? `${productService.type === "PRODUCT" ? "Produto" : "Serviço"} - ${productService.name}`
+            : req.body.kittenLabel,
+      }, existing),
     });
     res.redirect("/vendas");
   });

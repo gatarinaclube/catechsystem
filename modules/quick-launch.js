@@ -294,12 +294,13 @@ module.exports = (prisma) => {
         where: canViewAllData(req.session?.userRole)
           ? {}
           : { ownerId: req.session?.userId || null },
-        select: { commercialName: true, defaultCategory: true },
+        select: { commercialName: true, tradeName: true, cnpj: true, defaultCategory: true },
         orderBy: { commercialName: "asc" },
       });
       registeredSuppliers = supplierRows.map((supplier) => supplier.commercialName);
       supplierDefaults = supplierRows.map((supplier) => ({
         name: supplier.commercialName,
+        label: [supplier.tradeName, supplier.cnpj ? `CNPJ ${supplier.cnpj}` : ""].filter(Boolean).join(" · "),
         defaultCategory: supplier.defaultCategory || "",
       }));
     } catch {
@@ -312,6 +313,17 @@ module.exports = (prisma) => {
         ...rows.filter((row) => row.type === "SUPPLIER"),
         ...registeredSuppliers.map((name) => ({ name })),
       ]),
+      supplierChoices: optionNames([
+        ...rows.filter((row) => row.type === "SUPPLIER"),
+        ...registeredSuppliers.map((name) => ({ name })),
+      ]).map((name) => {
+        const registered = supplierDefaults.find((supplier) => supplier.name === name);
+        return {
+          name,
+          label: registered?.label || "",
+          defaultCategory: registered?.defaultCategory || "",
+        };
+      }),
       supplierDefaults,
       paymentMethods: optionNames(rows.filter((row) => row.type === "PAYMENT")),
     };

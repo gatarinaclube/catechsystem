@@ -41,17 +41,24 @@
               <a class="quick-field-icon" href="/administrativo/fornecedores" title="Cadastrar ou editar fornecedores">＋</a>
             <% } %>
           </div>
-          <select id="supplier" name="supplier" required>
-            <option value="">Selecione...</option>
-            <% suppliers.forEach(function(item) { %>
-              <% const supplierDefault = (supplierDefaults || []).find(function(row) { return row.name === item; }); %>
+          <input
+            id="supplier"
+            name="supplier"
+            list="supplierOptions"
+            value="<%= expense.supplier || '' %>"
+            placeholder="Digite nome, fantasia ou CNPJ"
+            required
+            autocomplete="off"
+          />
+          <datalist id="supplierOptions">
+            <% (supplierChoices || []).forEach(function(item) { %>
               <option
-                value="<%= item %>"
-                data-category="<%= supplierDefault ? supplierDefault.defaultCategory : '' %>"
-                <%= expense.supplier === item ? 'selected' : '' %>
-              ><%= item %></option>
+                value="<%= item.name %>"
+                data-category="<%= item.defaultCategory || '' %>"
+                label="<%= item.label || '' %>"
+              ></option>
             <% }) %>
-          </select>
+          </datalist>
         </div>
 
         <div class="field">
@@ -152,7 +159,8 @@
       }
 
       function refreshCategoryFromSupplier() {
-        const selected = supplier.options[supplier.selectedIndex];
+        const selected = Array.from(document.querySelectorAll("#supplierOptions option"))
+          .find((option) => option.value === supplier.value);
         const defaultCategory = selected ? selected.dataset.category : "";
         if (defaultCategory) category.value = defaultCategory;
       }
@@ -160,6 +168,7 @@
       amount.addEventListener("input", () => formatMoneyInput(amount));
       amount.addEventListener("blur", () => formatMoneyInput(amount));
       supplier.addEventListener("change", refreshCategoryFromSupplier);
+      supplier.addEventListener("input", refreshCategoryFromSupplier);
       paymentMethod.addEventListener("change", refreshCreditFields);
       paymentMode.addEventListener("change", refreshCreditFields);
       formatMoneyInput(amount);

@@ -102,8 +102,9 @@
         { href: "/admin/vaccinations", match: "/admin/vaccinations", icon: "💉", label: "Vacinação", allowed: access && access.canAccessVaccinationsAdmin },
         { href: "/admin/deworming", match: "/admin/deworming", icon: "🧪", label: "Vermifugação", allowed: access && access.canAccessDewormingAdmin },
         { href: "/admin/weighing", match: "/admin/weighing", icon: "⚖️", label: "Pesagem", allowed: access && access.canAccessWeighingAdmin },
-        { href: "/admin/exams", match: "/admin/exams", icon: "🩺", label: "Exames", allowed: access && access.canAccessExamsAdmin },
         { href: "/admin/history", match: "/admin/history", icon: "📚", label: "Histórico", allowed: access && access.canAccessHistoryAdmin },
+        { href: "/admin/treatments", match: "/admin/treatments", icon: "💊", label: "Tratamento", allowed: access && access.canAccessTreatmentsAdmin },
+        { href: "/admin/exams", match: "/admin/exams", icon: "🩺", label: "Exames", allowed: access && access.canAccessExamsAdmin },
       ].forEach(renderMenuItem); %>
 
       <div

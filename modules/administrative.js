@@ -135,6 +135,38 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     };
   }
 
+  function productServiceScope(req) {
+    if (canViewAllData(req.session?.userRole)) return {};
+    return { ownerId: req.session?.userId || null };
+  }
+
+  function productServiceData(req) {
+    const name = cleanText(req.body.name);
+    if (!name) {
+      throw new Error("Informe o nome do produto ou serviço.");
+    }
+
+    const type = req.body.type === "PRODUCT" ? "PRODUCT" : "SERVICE";
+
+    return {
+      ownerId: req.session?.userId || null,
+      type,
+      name,
+      description: cleanText(req.body.description) || null,
+      priceCents: req.body.price ? parseAmountToCents(req.body.price) : null,
+      active: req.body.active !== "NO",
+    };
+  }
+
+  function mapProductService(row) {
+    return {
+      ...row,
+      typeLabel: row.type === "PRODUCT" ? "Produto" : "Serviço",
+      price: row.priceCents === null || row.priceCents === undefined ? "" : formatAmount(row.priceCents),
+      priceLabel: row.priceCents === null || row.priceCents === undefined ? "-" : formatAmount(row.priceCents),
+    };
+  }
+
   async function syncSupplierOption(name) {
     const supplierName = cleanText(name);
     if (!supplierName) return;
@@ -316,7 +348,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         return {
           id: revenue.id,
           kittenLabel: revenue.kittenLabel || "Venda sem gato informado",
-          clientLabel: revenue.client?.fullName || "Cliente não informado",
+          clientLabel: revenue.client?.fullName || "Cliente desconhecido",
           clientContact: [revenue.client?.phone, revenue.client?.email].filter(Boolean).join(" · "),
           totalLabel: formatAmount(revenue.totalAmountCents),
           openCents,
@@ -652,6 +684,100 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requireAuth,
     requirePermission("admin.administrative"),
     (req, res) => res.redirect("/despesas")
+  );
+
+  router.get(
+    "/administrativo/produtos-servicos",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    async (req, res) => {
+      const search = cleanText(req.query.q);
+      const products = await prisma.revenueProductService.findMany({
+        where: {
+          ...productServiceScope(req),
+          ...(search
+            ? {
+                OR: [
+                  { name: { contains: search, mode: "insensitive" } },
+                  { description: { contains: search, mode: "insensitive" } },
+                ],
+              }
+            : {}),
+        },
+        orderBy: [{ active: "desc" }, { name: "asc" }],
+      });
+
+      res.render("administrative/product-services", {
+        user: req.user,
+        currentPath: "/administrativo",
+        products: products.map(mapProductService),
+        search,
+        form: {},
+        success: req.query.ok === "1",
+        error: req.query.error || "",
+      });
+    }
+  );
+
+  router.post(
+    "/administrativo/produtos-servicos",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    async (req, res) => {
+      try {
+        await prisma.revenueProductService.create({ data: productServiceData(req) });
+        res.redirect("/administrativo/produtos-servicos?ok=1");
+      } catch (err) {
+        const message = err.code === "P2002"
+          ? "Já existe um produto ou serviço cadastrado com este nome."
+          : err.message || "Erro ao salvar produto/serviço.";
+        res.redirect(`/administrativo/produtos-servicos?error=${encodeURIComponent(message)}`);
+      }
+    }
+  );
+
+  router.post(
+    "/administrativo/produtos-servicos/:id/update",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    async (req, res) => {
+      const product = await prisma.revenueProductService.findFirst({
+        where: { id: Number(req.params.id), ...productServiceScope(req) },
+      });
+      if (!product) return res.status(404).send("Produto/serviço não encontrado.");
+
+      try {
+        await prisma.revenueProductService.update({
+          where: { id: product.id },
+          data: {
+            ...productServiceData(req),
+            ownerId: product.ownerId,
+          },
+        });
+        res.redirect("/administrativo/produtos-servicos?ok=1");
+      } catch (err) {
+        const message = err.code === "P2002"
+          ? "Já existe um produto ou serviço cadastrado com este nome."
+          : err.message || "Erro ao atualizar produto/serviço.";
+        res.redirect(`/administrativo/produtos-servicos?error=${encodeURIComponent(message)}`);
+      }
+    }
+  );
+
+  router.post(
+    "/administrativo/produtos-servicos/:id/delete",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    async (req, res) => {
+      const product = await prisma.revenueProductService.findFirst({
+        where: { id: Number(req.params.id), ...productServiceScope(req) },
+        select: { id: true },
+      });
+      if (!product) return res.status(404).send("Produto/serviço não encontrado.");
+
+      await prisma.revenueProductService.delete({ where: { id: product.id } });
+      res.redirect("/administrativo/produtos-servicos?ok=1");
+    }
   );
 
   router.get(

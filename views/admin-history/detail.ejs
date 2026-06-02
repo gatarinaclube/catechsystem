@@ -198,9 +198,11 @@
           </div>
           <form method="post" action="/admin/history/<%= cat.id %>/treatments" style="margin-top:12px;">
             <div data-treatment-box>
-              <% const treatmentItems = treatmentHistory.length ? treatmentHistory : [{ type: '', startDate: '', endDate: '', dischargeDate: '', dosageSchedule: '', medication: '', dosage: '', notes: '' }]; %>
+              <% const treatmentItems = treatmentHistory.length ? treatmentHistory : [{ treatmentId: '', source: '', type: '', startDate: '', endDate: '', dischargeDate: '', dosageSchedule: '', medication: '', dosage: '', duration: '', administrationTime: '', administrationRoute: '', notes: '' }]; %>
               <% treatmentItems.forEach(function(item, idx) { %>
                 <div class="history-readonly">
+                  <input type="hidden" name="treatmentId" value="<%= item.treatmentId || '' %>" />
+                  <input type="hidden" name="treatmentSource" value="<%= item.source || '' %>" />
                   <div class="history-form-row treatment">
                     <select name="treatmentType">
                       <option value="">Selecione</option>
@@ -223,6 +225,11 @@
                   </div>
                   <div class="history-form-row treatment">
                     <input type="text" name="treatmentDosage" value="<%= item.dosage || '' %>" placeholder="Dosagem" />
+                    <input type="text" name="treatmentDuration" value="<%= item.duration || '' %>" placeholder="Tempo de tratamento" />
+                    <input type="text" name="treatmentAdministrationTime" value="<%= item.administrationTime || item.dosageSchedule || '' %>" placeholder="Horário / frequência" />
+                  </div>
+                  <div class="history-form-row treatment">
+                    <input type="text" name="treatmentAdministrationRoute" value="<%= item.administrationRoute || '' %>" placeholder="Via de administração" />
                     <textarea name="treatmentNotes" rows="3" style="grid-column: span 2;" placeholder="Observações"><%= item.notes || '' %></textarea>
                     <% if (idx === treatmentItems.length - 1) { %>
                       <button type="button" class="btn add-treatment">+</button>

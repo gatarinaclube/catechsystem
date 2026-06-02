@@ -34,7 +34,7 @@
                       <%= revenue.kittenLabel || "Venda sem filhote" %>
                     </div>
                     <div class="record-sub">
-                      <%= revenue.client ? revenue.client.fullName : "Cliente não informado" %>
+                      <%= revenue.client ? revenue.client.fullName : "Cliente desconhecido" %>
                       <% if (revenue.paymentAccount) { %>
                         · <%= revenue.paymentAccount %>
                       <% } %>

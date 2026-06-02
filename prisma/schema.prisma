@@ -67,12 +67,15 @@ model User {
   quickLaunchOptions QuickLaunchOption[]
   revenueClients RevenueClient[]
   revenueEntries RevenueEntry[]
+  revenueProductServices RevenueProductService[]
   crmEmailContacts CrmEmailContact[]
   crmEmailCampaigns CrmEmailCampaign[]
   crmEmailDrafts CrmEmailDraft[]
   financialAccountSettings FinancialAccountSetting[]
   creditCardInvoiceSettings CreditCardInvoiceSetting[]
   financialTransfers FinancialTransfer[]
+  treatmentMedications TreatmentMedication[]
+  catTreatments CatTreatment[]
   expenseSuppliers ExpenseSupplier[]
   accountPayables AccountPayable[]
   passwordResetTokens PasswordResetToken[]
@@ -701,6 +704,8 @@ model RevenueEntry {
   clientId           Int?
   kitten             Cat?     @relation("RevenueKitten", fields: [kittenId], references: [id])
   kittenId           Int?
+  productService     RevenueProductService? @relation(fields: [productServiceId], references: [id], onDelete: SetNull)
+  productServiceId   Int?
   kittenLabel        String?
   invoiceNumber      String?
   invoiceDate        DateTime?
@@ -712,6 +717,23 @@ model RevenueEntry {
   note               String?
   parcelDataJson     String?
   createdAt          DateTime @default(now())
+}
+
+model RevenueProductService {
+  id          Int      @id @default(autoincrement())
+  owner       User?    @relation(fields: [ownerId], references: [id])
+  ownerId     Int?
+  type        String
+  name        String
+  description String?
+  priceCents  Int?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  revenues RevenueEntry[]
+
+  @@unique([ownerId, name])
 }
 
 model Cat {
@@ -790,8 +812,44 @@ model Cat {
   weighingPlan     WeighingPlan?
   examPlan         ExamPlan?
   historyEntries   CatHistoryEntry[]
+  treatments       CatTreatment[]
 
   status    CatStatus @default(NOVO)
+}
+
+model TreatmentMedication {
+  id          Int      @id @default(autoincrement())
+  owner       User?    @relation(fields: [ownerId], references: [id])
+  ownerId     Int?
+  name        String
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  treatments CatTreatment[]
+
+  @@unique([ownerId, name])
+}
+
+model CatTreatment {
+  id        Int      @id @default(autoincrement())
+  owner     User?    @relation(fields: [ownerId], references: [id])
+  ownerId   Int?
+  cat       Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  catId     Int
+  medication TreatmentMedication? @relation(fields: [medicationId], references: [id], onDelete: SetNull)
+  medicationId Int?
+  medicationName String
+  dosage     String?
+  duration   String?
+  administrationTime String?
+  administrationRoute String?
+  startDate  DateTime
+  endDate    DateTime?
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model Litter {

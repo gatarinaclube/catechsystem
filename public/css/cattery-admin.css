@@ -1644,6 +1644,33 @@ textarea:focus {
   background: #ffffff;
 }
 
+.treatment-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.75fr);
+  gap: 18px;
+}
+
+.treatment-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.treatment-full {
+  grid-column: 1 / -1;
+}
+
+.treatment-form select[multiple] {
+  min-height: 220px;
+}
+
+.pill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 .transfer-item-head {
   display: flex;
   align-items: flex-start;
@@ -1696,6 +1723,10 @@ textarea:focus {
     grid-template-columns: 1fr;
   }
 
+  .treatment-layout {
+    grid-template-columns: 1fr;
+  }
+
   .report-table {
     min-width: 640px;
   }
@@ -1709,6 +1740,7 @@ textarea:focus {
   .account-metrics,
   .account-form,
   .form-grid,
+  .treatment-form,
   .transfer-grid,
   .transfer-edit-grid {
     grid-template-columns: 1fr;

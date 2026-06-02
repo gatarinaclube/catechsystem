@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Tratamento - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Tratamento</h2>
+            <div class="welcome-sub">Registro de medicações e tratamentos no histórico dos animais.</div>
+          </div>
+          <div class="actions">
+            <a href="/dashboard" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <% if (success) { %>
+          <div class="content-card message message-success">Tratamento salvo.</div>
+        <% } %>
+        <% if (error) { %>
+          <div class="content-card message message-error"><%= error %></div>
+        <% } %>
+
+        <div class="treatment-layout">
+          <section class="content-card">
+            <div class="history-section-head" style="margin-bottom:12px;">
+              <div>
+                <div class="content-title">Novo tratamento</div>
+                <div class="content-sub">Selecione um ou mais animais. Filhotes entregues não aparecem para novos lançamentos.</div>
+              </div>
+            </div>
+
+            <form method="post" action="/admin/treatments" class="treatment-form">
+              <div class="field treatment-full">
+                <label class="field-label" for="catIds">Animais</label>
+                <select id="catIds" name="catIds" multiple size="9" required>
+                  <% cats.forEach(function(cat) { %>
+                    <option value="<%= cat.id %>"><%= cat.categoryLabel %> - <%= cat.name %><%= cat.microchip ? ' - ' + cat.microchip : '' %></option>
+                  <% }) %>
+                </select>
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="medicationId">Medicação cadastrada</label>
+                <select id="medicationId" name="medicationId">
+                  <option value="">Outra medicação</option>
+                  <% medications.forEach(function(medication) { %>
+                    <option value="<%= medication.id %>"><%= medication.name %></option>
+                  <% }) %>
+                </select>
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="medicationName">Medicação não cadastrada</label>
+                <input id="medicationName" name="medicationName" placeholder="Ex.: Convenia, Dipirona, complexo..." />
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="dosage">Dose</label>
+                <input id="dosage" name="dosage" placeholder="Ex.: 0,3 ml, 1 comprimido, 2 gotas" />
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="duration">Tempo de tratamento</label>
+                <input id="duration" name="duration" placeholder="Ex.: 5 dias, 7 aplicações" />
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="administrationTime">Horário / frequência</label>
+                <input id="administrationTime" name="administrationTime" placeholder="Ex.: 8/8h, 20h, manhã e noite" />
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="administrationRoute">Via de administração</label>
+                <select id="administrationRoute" name="administrationRoute">
+                  <option value="">Selecione...</option>
+                  <% routes.forEach(function(route) { %>
+                    <option value="<%= route %>"><%= route %></option>
+                  <% }) %>
+                </select>
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="startDate">Data de início</label>
+                <input id="startDate" name="startDate" type="date" value="<%= form.startDate %>" required />
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="endDate">Data final</label>
+                <input id="endDate" name="endDate" type="date" />
+              </div>
+
+              <div class="field treatment-full">
+                <label class="field-label" for="notes">Observações</label>
+                <textarea id="notes" name="notes" rows="3" placeholder="Reação, evolução clínica, orientação veterinária ou observações importantes"></textarea>
+              </div>
+
+              <div class="form-actions treatment-full">
+                <button class="btn btn-primary" type="submit">Salvar tratamento</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="content-card">
+            <div class="history-section-head" style="margin-bottom:12px;">
+              <div>
+                <div class="content-title">Cadastrar medicação</div>
+                <div class="content-sub">Crie opções para selecionar rapidamente nos próximos lançamentos.</div>
+              </div>
+            </div>
+
+            <form method="post" action="/admin/treatments/medications" class="form-grid">
+              <div class="field" style="grid-column:1 / -1;">
+                <label class="field-label" for="medName">Nome da medicação</label>
+                <input id="medName" name="name" required />
+              </div>
+              <div class="field" style="grid-column:1 / -1;">
+                <label class="field-label" for="medDescription">Observação</label>
+                <textarea id="medDescription" name="description" rows="3"></textarea>
+              </div>
+              <div class="form-actions" style="grid-column:1 / -1;">
+                <button class="btn" type="submit">Cadastrar medicação</button>
+              </div>
+            </form>
+
+            <div class="content-title" style="font-size:15px; margin-top:18px;">Medicações cadastradas</div>
+            <% if (!medications.length) { %>
+              <div class="empty">Nenhuma medicação cadastrada.</div>
+            <% } else { %>
+              <div class="pill-list">
+                <% medications.forEach(function(medication) { %>
+                  <span class="status-pill is-blue"><%= medication.name %></span>
+                <% }) %>
+              </div>
+            <% } %>
+          </section>
+        </div>
+
+        <section class="content-card module-list-card" style="margin-top:18px;">
+          <div class="history-section-head" style="margin-bottom:12px;">
+            <div>
+              <div class="content-title">Tratamentos recentes</div>
+              <div class="content-sub">Todos estes registros também constam no histórico individual do animal.</div>
+            </div>
+            <span class="status-pill is-yellow"><%= treatments.length %></span>
+          </div>
+
+          <% if (!treatments.length) { %>
+            <div class="empty">Nenhum tratamento registrado.</div>
+          <% } else { %>
+            <div class="record-list">
+              <% treatments.forEach(function(treatment) { %>
+                <div class="record-row">
+                  <div class="record-main">
+                    <div class="record-title"><%= treatment.catName %></div>
+                    <div class="record-sub">
+                      <strong><%= treatment.medicationName %></strong>
+                      <% if (treatment.dosage) { %> · Dose: <%= treatment.dosage %><% } %>
+                      <% if (treatment.duration) { %> · Tempo: <%= treatment.duration %><% } %>
+                    </div>
+                    <div class="record-sub">
+                      Início: <%= treatment.startDateLabel %>
+                      <% if (treatment.endDate) { %> · Final: <%= treatment.endDateLabel %><% } %>
+                      <% if (treatment.administrationTime) { %> · Horário: <%= treatment.administrationTime %><% } %>
+                      <% if (treatment.administrationRoute) { %> · Via: <%= treatment.administrationRoute %><% } %>
+                    </div>
+                    <% if (treatment.notes) { %>
+                      <div class="record-sub"><%= treatment.notes %></div>
+                    <% } %>
+                  </div>
+                  <div class="record-meta">
+                    <a class="btn" href="/admin/history/<%= treatment.catId %>#tratamentos">Histórico</a>
+                    <form method="post" action="/admin/treatments/<%= treatment.id %>/delete" onsubmit="return confirm('Excluir este tratamento? Ele também será removido do histórico deste animal.');">
+                      <button class="btn btn-danger" type="submit">Excluir</button>
+                    </form>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

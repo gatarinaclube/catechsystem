@@ -56,24 +56,33 @@
 
         <div class="inline-action-row">
           <div class="field">
-            <label for="clientId">Cliente</label>
-            <select id="clientId" name="clientId" required>
-              <option value="">Selecione...</option>
+            <label for="clientSearch">Cliente</label>
+            <% const selectedClient = clients.find(function(client) { return String(revenue.clientId || '') === String(client.id); }); %>
+            <input
+              id="clientSearch"
+              list="clientOptions"
+              value="<%= selectedClient ? selectedClient.fullName + (selectedClient.document ? ' - ' + selectedClient.document : '') : '' %>"
+              placeholder="Digite nome, CPF ou CNPJ"
+              autocomplete="off"
+            />
+            <input type="hidden" id="clientId" name="clientId" value="<%= revenue.clientId || '' %>" />
+            <datalist id="clientOptions">
               <% clients.forEach(function(client) { %>
-                <option value="<%= client.id %>" <%= String(revenue.clientId || '') === String(client.id) ? 'selected' : '' %>>
-                  <%= client.fullName %><%= client.document ? ' - ' + client.document : '' %>
-                </option>
+                <option
+                  value="<%= client.fullName %><%= client.document ? ' - ' + client.document : '' %>"
+                  data-id="<%= client.id %>"
+                ></option>
               <% }) %>
-            </select>
+            </datalist>
           </div>
           <a class="btn small-button" href="/receitas/clientes/novo">+</a>
         </div>
 
         <div class="field">
-          <label for="kittenId">Filhote</label>
-          <select id="kittenId" name="kittenId" required>
-            <% if (revenue.kittenId && revenue.kittenLabel) { %>
-              <option value="<%= revenue.kittenId %>" selected><%= revenue.kittenLabel %></option>
+          <label for="revenueItem">Filhote/Produto/Serviço</label>
+          <select id="revenueItem" name="revenueItem" required>
+            <% if (!revenue.revenueItem && revenue.kittenLabel) { %>
+              <option value="" selected><%= revenue.kittenLabel %></option>
             <% } else { %>
               <option value="">Selecione...</option>
             <% } %>
@@ -81,12 +90,25 @@
               <% if (group.kittens && group.kittens.length) { %>
                 <optgroup label="<%= group.label %>">
                   <% group.kittens.forEach(function(kitten) { %>
-                    <option value="<%= kitten.id %>" data-label="<%= kitten.label %>" <%= String(revenue.kittenId || '') === String(kitten.id) ? 'selected' : '' %>><%= kitten.label %></option>
+                    <option value="cat:<%= kitten.id %>" data-label="<%= kitten.label %>" <%= revenue.revenueItem === 'cat:' + kitten.id ? 'selected' : '' %>><%= kitten.label %></option>
                   <% }) %>
                 </optgroup>
               <% } %>
             <% }) %>
+            <% if (productServices && productServices.length) { %>
+              <optgroup label="Produtos/Serviços">
+                <% productServices.forEach(function(item) { %>
+                  <option
+                    value="product:<%= item.id %>"
+                    data-label="<%= item.label %>"
+                    data-price="<%= item.price || '' %>"
+                    <%= revenue.revenueItem === 'product:' + item.id ? 'selected' : '' %>
+                  ><%= item.label %></option>
+                <% }) %>
+              </optgroup>
+            <% } %>
           </select>
+          <input type="hidden" id="kittenId" name="kittenId" value="<%= revenue.kittenId || '' %>" />
           <input type="hidden" id="kittenLabel" name="kittenLabel" value="<%= revenue.kittenLabel || '' %>" />
         </div>
 
@@ -103,7 +125,7 @@
 
         <div class="quick-grid">
           <div class="field">
-            <label for="catAmount">Valor do Gato</label>
+            <label for="catAmount">Valor do item</label>
             <input id="catAmount" class="money-input" name="catAmount" inputmode="decimal" placeholder="0,00" value="<%= revenue.catAmount || '' %>" required />
           </div>
           <div class="field">
@@ -151,8 +173,12 @@
       const catAmount = document.getElementById("catAmount");
       const transportAmount = document.getElementById("transportAmount");
       const totalAmount = document.getElementById("totalAmount");
-      const kittenSelect = document.getElementById("kittenId");
+      const revenueItemSelect = document.getElementById("revenueItem");
+      const kittenId = document.getElementById("kittenId");
       const kittenLabel = document.getElementById("kittenLabel");
+      const clientSearch = document.getElementById("clientSearch");
+      const clientId = document.getElementById("clientId");
+      const clientOptions = Array.from(document.querySelectorAll("#clientOptions option"));
 
       function formatMoneyInput(input) {
         const digits = String(input.value || "").replace(/\D/g, "");
@@ -247,8 +273,21 @@
       }
 
       function syncKittenLabel() {
-        const option = kittenSelect.options[kittenSelect.selectedIndex];
-        if (option) kittenLabel.value = option.dataset.label || option.textContent.trim();
+        const option = revenueItemSelect.options[revenueItemSelect.selectedIndex];
+        if (!option) return;
+        const value = option.value || "";
+        kittenLabel.value = option.dataset.label || option.textContent.trim();
+        kittenId.value = value.startsWith("cat:") ? value.replace("cat:", "") : "";
+        if (value.startsWith("product:") && option.dataset.price && !catAmount.value) {
+          catAmount.value = option.dataset.price;
+          formatMoneyInput(catAmount);
+          refreshTotal();
+        }
+      }
+
+      function syncClientId() {
+        const selected = clientOptions.find((option) => option.value === clientSearch.value);
+        clientId.value = selected ? selected.dataset.id || "" : "";
       }
 
       [catAmount, transportAmount].forEach((input) => {
@@ -288,11 +327,14 @@
         }
       });
       installments.addEventListener("change", renderParcels);
-      kittenSelect.addEventListener("change", syncKittenLabel);
+      revenueItemSelect.addEventListener("change", syncKittenLabel);
+      clientSearch.addEventListener("change", syncClientId);
+      clientSearch.addEventListener("input", syncClientId);
       [catAmount, transportAmount].forEach(formatMoneyInput);
       refreshTotal();
       renderParcels();
       syncKittenLabel();
+      syncClientId();
     </script>
   </body>
 </html>

@@ -273,7 +273,7 @@ function mapRevenueRows(revenues, filters) {
         dateLabel: formatDateOnlyLabel(paidDate),
         amountLabel: formatCurrency(parcel.amountCents),
         amountCents: parcel.amountCents || 0,
-        clientLabel: revenue.client?.fullName || "-",
+        clientLabel: revenue.client?.fullName || "Cliente desconhecido",
         paymentAccount,
         note: parcelCancellationNote(parcel),
       });
@@ -315,7 +315,7 @@ function mapReceivableRows(revenues, filters) {
         dateLabel: formatDateOnlyLabel(dueDate),
         amountLabel: formatCurrency(parcel.amountCents),
         amountCents: parcel.amountCents || 0,
-        clientLabel: revenue.client?.fullName || "-",
+        clientLabel: revenue.client?.fullName || "Cliente desconhecido",
         paymentAccount,
       });
     });
@@ -354,7 +354,7 @@ function mapRefundRows(revenues, filters) {
         amountCents: -Number(parcel.amountCents || 0),
         amountLabel: `- ${formatCurrency(parcel.amountCents)}`,
         kittenLabel: revenue.kittenLabel || "-",
-        clientLabel: revenue.client?.fullName || "-",
+        clientLabel: revenue.client?.fullName || "Cliente desconhecido",
         paymentAccount,
         note: `Estorno referente ao pagamento de ${parcel.date ? formatDateOnlyLabel(parseDateInput(parcel.date, null)) : "data não informada"}.`,
       });

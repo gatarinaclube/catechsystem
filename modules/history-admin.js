@@ -106,10 +106,16 @@ function parseTreatmentEntries(body) {
   const dosageSchedules = reqArray(body.treatmentDosageSchedule);
   const medications = reqArray(body.treatmentMedication);
   const dosages = reqArray(body.treatmentDosage);
+  const durations = reqArray(body.treatmentDuration);
+  const administrationTimes = reqArray(body.treatmentAdministrationTime);
+  const administrationRoutes = reqArray(body.treatmentAdministrationRoute);
   const notes = reqArray(body.treatmentNotes);
+  const treatmentIds = reqArray(body.treatmentId);
+  const sources = reqArray(body.treatmentSource);
 
   return types
     .map((type, index) => ({
+      treatmentId: treatmentIds[index] || "",
       type: type || "",
       startDate: formatDateInput(startDates[index]),
       endDate: formatDateInput(endDates[index]),
@@ -117,7 +123,11 @@ function parseTreatmentEntries(body) {
       dosageSchedule: dosageSchedules[index] || "",
       medication: (medications[index] || "").trim(),
       dosage: (dosages[index] || "").trim(),
+      duration: (durations[index] || "").trim(),
+      administrationTime: (administrationTimes[index] || "").trim(),
+      administrationRoute: (administrationRoutes[index] || "").trim(),
       notes: (notes[index] || "").trim(),
+      source: sources[index] || "",
     }))
     .filter((item) =>
       item.type ||
@@ -127,6 +137,9 @@ function parseTreatmentEntries(body) {
       item.dosageSchedule ||
       item.medication ||
       item.dosage ||
+      item.duration ||
+      item.administrationTime ||
+      item.administrationRoute ||
       item.notes
     );
 }
@@ -291,6 +304,9 @@ function buildCatTimeline({
       description: [
         item.medication ? `Medicação: ${item.medication}` : "",
         item.dosage ? `Dosagem: ${item.dosage}` : "",
+        item.duration ? `Tempo: ${item.duration}` : "",
+        item.administrationTime ? `Horário: ${item.administrationTime}` : "",
+        item.administrationRoute ? `Via: ${item.administrationRoute}` : "",
         item.notes || "",
       ].filter(Boolean).join(" · ") || "Sem observações.",
       color: "is-yellow",
