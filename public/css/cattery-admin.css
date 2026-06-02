@@ -1105,6 +1105,16 @@ textarea:focus {
   width: auto;
 }
 
+.credit-card-extra {
+  display: none;
+  grid-column: 1 / -1;
+  margin-bottom: 12px;
+}
+
+.credit-card-extra.is-visible {
+  display: grid;
+}
+
 .record-sub {
   margin-top: 3px;
   font-size: 12px;
@@ -1333,6 +1343,11 @@ textarea:focus {
   color: #6d28d9;
 }
 
+.report-card.is-yellow .report-card-icon {
+  background: #fef3c7;
+  color: #92400e;
+}
+
 .report-filter-card {
   margin-bottom: 18px;
 }
@@ -1369,6 +1384,18 @@ textarea:focus {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 12px;
+}
+
+.invoice-period {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.invoice-period strong {
+  color: var(--text-main);
 }
 
 .report-total {

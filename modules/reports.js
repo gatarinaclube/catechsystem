@@ -58,6 +58,26 @@ function formatCurrency(cents) {
   });
 }
 
+function clampDay(value, fallback = 1) {
+  return Math.min(31, Math.max(1, Number.parseInt(value || fallback, 10) || fallback));
+}
+
+function utcDateWithClampedDay(year, monthIndex, day) {
+  const lastDay = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(year, monthIndex, Math.min(day, lastDay)));
+}
+
+function cardInvoiceDates(month, closingDay, dueDay) {
+  const [year, monthNumber] = month.split("-").map(Number);
+  const monthIndex = monthNumber - 1;
+  const closingDate = utcDateWithClampedDay(year, monthIndex, closingDay);
+  const previousClosingDate = utcDateWithClampedDay(year, monthIndex - 1, closingDay);
+  const startDate = addDays(previousClosingDate, 1);
+  const dueMonthIndex = dueDay > closingDay ? monthIndex : monthIndex + 1;
+  const dueDate = utcDateWithClampedDay(year, dueMonthIndex, dueDay);
+  return { startDate, closingDate, dueDate };
+}
+
 function buildExpenseFilters(query) {
   const periodType = query.periodType === "custom" ? "custom" : "month";
   const month = /^\d{4}-\d{2}$/.test(query.month || "")
@@ -90,6 +110,16 @@ function buildExpenseFilters(query) {
     startDateInput: formatDateInput(startDate),
     endDateInput: formatDateInput(endDate),
     account: String(query.account || "").trim(),
+  };
+}
+
+function buildCreditCardFilters(query) {
+  const month = /^\d{4}-\d{2}$/.test(query.month || "")
+    ? query.month
+    : currentMonthInput();
+  return {
+    month,
+    card: String(query.card || "").trim(),
   };
 }
 
@@ -171,6 +201,16 @@ function buildQueryString(filters, forcePdf = false) {
   }
 
   return params.toString();
+}
+
+function ownerScope(req) {
+  if (canViewAllData(req.session?.userRole)) return {};
+  return { ownerId: req.session?.userId || null };
+}
+
+function settingScope(req) {
+  if (canViewAllData(req.session?.userRole)) return {};
+  return { ownerId: req.session?.userId || null };
 }
 
 function mapExpenseRows(expenses) {
@@ -281,6 +321,46 @@ function mapReceivableRows(revenues, filters) {
   });
 }
 
+function mapRefundRows(revenues, filters) {
+  const rows = [];
+  const startTime = filters.startDate.getTime();
+  const endTime = addDays(filters.endDate, 1).getTime();
+
+  revenues.forEach((revenue) => {
+    parseParcelData(revenue.parcelDataJson).forEach((parcel) => {
+      if (!parcel.paid || !parcel.canceled || !parcel.refundDate || !parcel.amountCents) return;
+
+      const refundDate = parseDateInput(parcel.refundDate, null);
+      if (!refundDate) return;
+
+      const refundTime = refundDate.getTime();
+      if (refundTime < startTime || refundTime >= endTime) return;
+      const paymentAccount = parcel.paymentAccount || revenue.paymentAccount || "";
+      if (filters.account && paymentAccount !== filters.account) return;
+
+      rows.push({
+        id: `refund-${revenue.id}-${parcel.number || ""}`,
+        revenueId: revenue.id,
+        parcelNumber: parcel.number,
+        parcelLabel: `${parcel.number || "-"} / ${revenue.installments || "-"}`,
+        dateTime: refundTime,
+        dateLabel: formatDateOnlyLabel(refundDate),
+        amountCents: -Number(parcel.amountCents || 0),
+        amountLabel: `- ${formatCurrency(parcel.amountCents)}`,
+        kittenLabel: revenue.kittenLabel || "-",
+        clientLabel: revenue.client?.fullName || "-",
+        paymentAccount,
+        note: `Estorno referente ao pagamento de ${parcel.date ? formatDateOnlyLabel(parseDateInput(parcel.date, null)) : "data não informada"}.`,
+      });
+    });
+  });
+
+  return rows.sort((a, b) => {
+    const dateCompare = b.dateTime - a.dateTime;
+    return dateCompare || String(b.id).localeCompare(String(a.id));
+  });
+}
+
 function mapTransferRows(transfers, filters) {
   const startTime = filters.startDate.getTime();
   const endTime = addDays(filters.endDate, 1).getTime();
@@ -322,7 +402,7 @@ function mapTransferRows(transfers, filters) {
   return rows;
 }
 
-function mapCashFlowRows(expenses, revenueRows, transfers, filters) {
+function mapCashFlowRows(expenses, revenueRows, transfers, filters, refundRows = []) {
   const expenseRows = mapExpenseRows(expenses).map((expense) => ({
     id: `expense-${expense.id}`,
     dateTime: new Date(expense.competenceDate).getTime(),
@@ -347,7 +427,19 @@ function mapCashFlowRows(expenses, revenueRows, transfers, filters) {
     amountLabel: formatCurrency(revenue.amountCents),
   }));
 
-  return [...incomeRows, ...expenseRows, ...mapTransferRows(transfers, filters)].sort((a, b) => {
+  const refundCashRows = refundRows.map((refund) => ({
+    id: refund.id,
+    dateTime: refund.dateTime,
+    dateLabel: refund.dateLabel,
+    typeLabel: "Estorno",
+    account: refund.paymentAccount || "-",
+    description: [kittenNameOnly(refund.kittenLabel), refund.clientLabel].filter(Boolean).join(" · ") || "Estorno",
+    note: refund.note || "",
+    amountCents: Number(refund.amountCents || 0),
+    amountLabel: refund.amountLabel,
+  }));
+
+  return [...incomeRows, ...expenseRows, ...refundCashRows, ...mapTransferRows(transfers, filters)].sort((a, b) => {
     const dateCompare = b.dateTime - a.dateTime;
     return dateCompare || String(b.id).localeCompare(String(a.id));
   });
@@ -426,7 +518,7 @@ function groupRowsByMonth(rows, filters, dateGetter, options = {}) {
   return buckets;
 }
 
-function buildAccountingExpenseRows(expenses, transfers, filters, account) {
+function buildAccountingExpenseRows(expenses, transfers, filters, account, refundRows = []) {
   const expenseRows = mapExpenseRows(
     expenses.filter((expense) => !account || expense.paymentMethod === account)
   ).map((expense) => ({
@@ -442,8 +534,23 @@ function buildAccountingExpenseRows(expenses, transfers, filters, account) {
     amountLabel: `- ${formatCurrency(expense.amountCents)}`,
   }));
 
+  const refundAccountRows = refundRows
+    .filter((refund) => !account || refund.paymentAccount === account)
+    .map((refund) => ({
+      id: refund.id,
+      date: new Date(refund.dateTime),
+      dateTime: refund.dateTime,
+      dateLabel: refund.dateLabel,
+      typeLabel: "Estorno",
+      account: refund.paymentAccount || "-",
+      description: [kittenNameOnly(refund.kittenLabel), refund.clientLabel].filter(Boolean).join(" · ") || "Estorno",
+      note: refund.note || "",
+      amountCents: Number(refund.amountCents || 0),
+      amountLabel: refund.amountLabel,
+    }));
+
   const transferRows = mapTransferRows(transfers, { ...filters, account });
-  return [...expenseRows, ...transferRows].sort((a, b) => b.dateTime - a.dateTime);
+  return [...expenseRows, ...refundAccountRows, ...transferRows].sort((a, b) => b.dateTime - a.dateTime);
 }
 
 function pickAccountingAccounts(accountOptions, selectedAccount = "") {
@@ -461,17 +568,88 @@ function pickAccountingAccounts(accountOptions, selectedAccount = "") {
   return [sicoob, credit].filter(Boolean);
 }
 
-async function loadAccountOptions(prisma) {
+async function loadCreditCardNames(prisma, req) {
+  const cardSettings = await prisma.financialAccountSetting.findMany({
+    where: { ...settingScope(req), isCreditCard: true },
+    select: { accountName: true },
+  });
+  return new Set(cardSettings.map((setting) => setting.accountName).filter(Boolean));
+}
+
+async function loadAccountOptions(prisma, req, { includeCreditCards = false } = {}) {
+  const creditCardNames = await loadCreditCardNames(prisma, req);
   const rows = await prisma.quickLaunchOption.findMany({
     where: { type: "PAYMENT", disabledAt: null },
     orderBy: { name: "asc" },
     select: { name: true },
   });
   const names = Array.from(new Set(rows.map((row) => row.name).filter(Boolean)))
+    .filter((name) => includeCreditCards || !creditCardNames.has(name))
     .sort((a, b) => a.localeCompare(b, "pt-BR"));
   return [{ value: "", label: "Todas" }].concat(
     names.map((name) => ({ value: name, label: name }))
   );
+}
+
+function filterCreditCardExpenses(expenses, creditCardNames) {
+  if (!creditCardNames.size) return expenses;
+  return expenses.filter((expense) => !creditCardNames.has(expense.paymentMethod || ""));
+}
+
+async function loadCreditCardAccounts(prisma, req) {
+  const cards = await prisma.financialAccountSetting.findMany({
+    where: { ...settingScope(req), isCreditCard: true },
+    orderBy: { accountName: "asc" },
+  });
+  return cards.map((card) => ({
+    value: card.accountName,
+    label: card.accountName,
+    closingDay: card.creditCardClosingDay || 1,
+    dueDay: card.creditCardDueDay || 1,
+  }));
+}
+
+async function buildCreditCardInvoiceRows(prisma, req, cardName, dates) {
+  if (!cardName) {
+    return { purchases: [], payments: [] };
+  }
+
+  const purchases = await prisma.quickLaunchEntry.findMany({
+    where: {
+      ...ownerScope(req),
+      paymentMethod: cardName,
+      competenceDate: {
+        gte: dates.startDate,
+        lte: dates.closingDate,
+      },
+    },
+    orderBy: [{ competenceDate: "asc" }, { createdAt: "asc" }],
+  });
+  const payments = await prisma.financialTransfer.findMany({
+    where: {
+      ...ownerScope(req),
+      toAccount: cardName,
+      deletedAt: null,
+      transferDate: {
+        gt: dates.closingDate,
+        lte: dates.dueDate,
+      },
+    },
+    orderBy: [{ transferDate: "asc" }, { createdAt: "asc" }],
+  });
+
+  return {
+    purchases: purchases.map((row) => ({
+      ...row,
+      dateLabel: formatDateOnlyLabel(row.competenceDate),
+      amountLabel: formatCurrency(row.amountCents),
+    })),
+    payments: payments.map((row) => ({
+      ...row,
+      dateLabel: formatDateOnlyLabel(row.transferDate),
+      amountLabel: formatCurrency(row.amountCents),
+    })),
+  };
 }
 
 function renderExpensesPdf(res, rows, filters, totalLabel) {
@@ -882,8 +1060,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         where: buildExpenseWhere(req, filters),
         orderBy: [{ competenceDate: "desc" }, { createdAt: "desc" }],
       });
-      const rows = mapExpenseRows(expenses);
-      const totalCents = expenses.reduce(
+      const creditCardNames = await loadCreditCardNames(prisma, req);
+      const visibleExpenses = filterCreditCardExpenses(expenses, creditCardNames);
+      const rows = mapExpenseRows(visibleExpenses);
+      const totalCents = visibleExpenses.reduce(
         (sum, expense) => sum + expense.amountCents,
         0
       );
@@ -893,7 +1073,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         currentPath: "/reports",
         rows,
         filters,
-        accountOptions: await loadAccountOptions(prisma),
+        accountOptions: await loadAccountOptions(prisma, req),
         totalLabel: formatCurrency(totalCents),
         pdfQuery: buildQueryString(filters, true),
       });
@@ -910,8 +1090,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         where: buildExpenseWhere(req, filters),
         orderBy: [{ competenceDate: "desc" }, { createdAt: "desc" }],
       });
-      const rows = mapExpenseRows(expenses);
-      const totalCents = expenses.reduce(
+      const creditCardNames = await loadCreditCardNames(prisma, req);
+      const visibleExpenses = filterCreditCardExpenses(expenses, creditCardNames);
+      const rows = mapExpenseRows(visibleExpenses);
+      const totalCents = visibleExpenses.reduce(
         (sum, expense) => sum + expense.amountCents,
         0
       );
@@ -942,7 +1124,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         currentPath: "/reports",
         rows,
         filters,
-        accountOptions: await loadAccountOptions(prisma),
+        accountOptions: await loadAccountOptions(prisma, req),
         totalLabel: formatCurrency(totalCents),
         pdfQuery: buildQueryString(filters, true),
       });
@@ -987,13 +1169,21 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       });
       const transfers = await prisma.financialTransfer.findMany({
         where: {
-          ...(canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId }),
+          ...ownerScope(req),
           deletedAt: null,
         },
         orderBy: [{ transferDate: "desc" }, { createdAt: "desc" }],
       });
       const revenueRows = mapRevenueRows(revenues, filters);
-      const rows = mapCashFlowRows(expenses, revenueRows, transfers, filters);
+      const refundRows = mapRefundRows(revenues, filters);
+      const creditCardNames = await loadCreditCardNames(prisma, req);
+      const rows = mapCashFlowRows(
+        filterCreditCardExpenses(expenses, creditCardNames),
+        revenueRows,
+        transfers,
+        filters,
+        refundRows
+      );
       const incomeCents = rows
         .filter((row) => row.amountCents > 0)
         .reduce((sum, row) => sum + row.amountCents, 0);
@@ -1007,7 +1197,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         currentPath: "/reports",
         rows,
         filters,
-        accountOptions: await loadAccountOptions(prisma),
+        accountOptions: await loadAccountOptions(prisma, req),
         incomeLabel: formatCurrency(incomeCents),
         expenseLabel: formatCurrency(expenseCents),
         balanceLabel: formatCurrency(balanceCents),
@@ -1033,13 +1223,21 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       });
       const transfers = await prisma.financialTransfer.findMany({
         where: {
-          ...(canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId }),
+          ...ownerScope(req),
           deletedAt: null,
         },
         orderBy: [{ transferDate: "desc" }, { createdAt: "desc" }],
       });
       const revenueRows = mapRevenueRows(revenues, filters);
-      const rows = mapCashFlowRows(expenses, revenueRows, transfers, filters);
+      const refundRows = mapRefundRows(revenues, filters);
+      const creditCardNames = await loadCreditCardNames(prisma, req);
+      const rows = mapCashFlowRows(
+        filterCreditCardExpenses(expenses, creditCardNames),
+        revenueRows,
+        transfers,
+        filters,
+        refundRows
+      );
       const incomeCents = rows
         .filter((row) => row.amountCents > 0)
         .reduce((sum, row) => sum + row.amountCents, 0);
@@ -1056,8 +1254,78 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     }
   );
 
+  router.post(
+    "/reports/credit-cards/closing-day",
+    requireAuth,
+    requirePermission("admin.reports"),
+    async (req, res) => {
+      const cardName = String(req.body.card || "").trim();
+      const month = /^\d{4}-\d{2}$/.test(req.body.month || "")
+        ? req.body.month
+        : currentMonthInput();
+      const closingDay = clampDay(req.body.closingDay, 1);
+
+      if (cardName) {
+        const card = await prisma.financialAccountSetting.findFirst({
+          where: { ...settingScope(req), accountName: cardName, isCreditCard: true },
+          select: { id: true },
+        });
+
+        if (card) {
+          await prisma.financialAccountSetting.update({
+            where: { id: card.id },
+            data: { creditCardClosingDay: closingDay },
+          });
+        }
+      }
+
+      if (req.headers.accept?.includes("application/json")) {
+        return res.json({ ok: true, closingDay });
+      }
+
+      res.redirect(`/reports/credit-cards?card=${encodeURIComponent(cardName)}&month=${encodeURIComponent(month)}`);
+    }
+  );
+
+  router.get(
+    "/reports/credit-cards",
+    requireAuth,
+    requirePermission("admin.reports"),
+    async (req, res) => {
+      const filters = buildCreditCardFilters(req.query);
+      const cardOptions = await loadCreditCardAccounts(prisma, req);
+      const selectedCard = cardOptions.find((option) => option.value === filters.card)
+        || cardOptions[0]
+        || null;
+      const cardName = selectedCard?.value || "";
+      const closingDay = clampDay(req.query.closingDay || selectedCard?.closingDay, selectedCard?.closingDay || 1);
+      const dueDay = clampDay(selectedCard?.dueDay, 1);
+      const dates = cardInvoiceDates(filters.month, closingDay, dueDay);
+      const rows = await buildCreditCardInvoiceRows(prisma, req, cardName, dates);
+      const purchaseTotalCents = rows.purchases.reduce((sum, row) => sum + Number(row.amountCents || 0), 0);
+      const paymentTotalCents = rows.payments.reduce((sum, row) => sum + Number(row.amountCents || 0), 0);
+      const balanceCents = purchaseTotalCents - paymentTotalCents;
+
+      res.render("reports/credit-cards", {
+        user: req.user,
+        currentPath: "/reports",
+        cardOptions,
+        selectedCard,
+        filters: { ...filters, card: cardName, closingDay, dueDay },
+        purchases: rows.purchases,
+        payments: rows.payments,
+        startLabel: formatDateOnlyLabel(dates.startDate),
+        closingLabel: formatDateOnlyLabel(dates.closingDate),
+        dueLabel: formatDateOnlyLabel(dates.dueDate),
+        purchaseTotalLabel: formatCurrency(purchaseTotalCents),
+        paymentTotalLabel: formatCurrency(paymentTotalCents),
+        balanceLabel: formatCurrency(balanceCents),
+      });
+    }
+  );
+
   async function loadAccountingData(req, filters) {
-    const accountOptions = await loadAccountOptions(prisma);
+    const accountOptions = await loadAccountOptions(prisma, req);
     const expenses = await prisma.quickLaunchEntry.findMany({
       where: buildExpenseWhere(req, { ...filters, account: "" }),
       orderBy: [{ competenceDate: "desc" }, { createdAt: "desc" }],
@@ -1069,14 +1337,17 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     });
     const transfers = await prisma.financialTransfer.findMany({
       where: {
-        ...(canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId }),
+        ...ownerScope(req),
         deletedAt: null,
       },
       orderBy: [{ transferDate: "desc" }, { createdAt: "desc" }],
     });
 
     const revenueRows = mapRevenueRows(revenues, filters);
+    const refundRows = mapRefundRows(revenues, filters);
     const receivableRows = mapReceivableRows(revenues, filters);
+    const creditCardNames = await loadCreditCardNames(prisma, req);
+    const visibleExpenses = filterCreditCardExpenses(expenses, creditCardNames);
     const revenueMonths = groupRowsByMonth(
       revenueRows,
       filters,
@@ -1092,7 +1363,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const receivableTotalCents = receivableRows.reduce((sum, row) => sum + Number(row.amountCents || 0), 0);
     const accounts = pickAccountingAccounts(accountOptions, filters.account);
     const accountSections = accounts.map((account) => {
-      const rows = buildAccountingExpenseRows(expenses, transfers, filters, account);
+      const rows = buildAccountingExpenseRows(visibleExpenses, transfers, filters, account, refundRows);
       const totalCents = rows
         .filter((row) => row.amountCents < 0)
         .reduce((sum, row) => sum + Math.abs(row.amountCents), 0);

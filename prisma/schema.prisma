@@ -526,6 +526,9 @@ model FinancialAccountSetting {
   capitalSocialEnabled Boolean  @default(false)
   capitalSocialCents   Int      @default(0)
   capitalEntriesJson   String?
+  isCreditCard         Boolean  @default(false)
+  creditCardClosingDay Int?
+  creditCardDueDay     Int?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Cartões de Crédito - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Cartões de Crédito</h2>
+            <div class="welcome-sub">Fechamento, compras e pagamentos das faturas.</div>
+          </div>
+          <div class="actions">
+            <a href="/reports" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <div class="content-card report-filter-card">
+          <form method="get" action="/reports/credit-cards" class="report-filter-grid">
+            <div class="field">
+              <label class="field-label" for="card">Cartão</label>
+              <select id="card" name="card">
+                <% if (!cardOptions.length) { %>
+                  <option value="">Nenhum cartão configurado</option>
+                <% } %>
+                <% cardOptions.forEach(function(option) { %>
+                  <option value="<%= option.value %>" <%= filters.card === option.value ? 'selected' : '' %>><%= option.label %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label" for="month">Fatura de</label>
+              <input id="month" name="month" type="month" value="<%= filters.month %>" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="closingDay">Dia de fechamento</label>
+              <input id="closingDay" name="closingDay" type="number" min="1" max="31" value="<%= filters.closingDay %>" form="closing-day-form" <%= filters.card ? '' : 'disabled' %> />
+            </div>
+            <div class="field">
+              <label class="field-label">Dia de vencimento</label>
+              <input type="number" value="<%= filters.dueDay %>" disabled />
+            </div>
+            <div class="report-filter-actions">
+              <button type="submit" class="btn btn-primary">Filtrar</button>
+              <a href="/reports/credit-cards" class="btn">Limpar</a>
+            </div>
+          </form>
+
+          <form id="closing-day-form" method="post" action="/reports/credit-cards/closing-day">
+            <input type="hidden" name="card" value="<%= filters.card %>" />
+            <input type="hidden" name="month" value="<%= filters.month %>" />
+          </form>
+        </div>
+
+        <% if (!cardOptions.length) { %>
+          <div class="content-card">
+            <div class="empty">Nenhuma conta marcada como cartão de crédito. Configure isso em Administrativo &gt; Contas.</div>
+          </div>
+        <% } else { %>
+          <div class="content-card">
+            <div class="report-summary-grid">
+              <div>
+                <div class="content-sub">Compras da fatura</div>
+                <div class="report-total cash-out"><%= purchaseTotalLabel %></div>
+              </div>
+              <div>
+                <div class="content-sub">Pagamentos</div>
+                <div class="report-total cash-in"><%= paymentTotalLabel %></div>
+              </div>
+              <div>
+                <div class="content-sub">Saldo da fatura</div>
+                <div class="report-total"><%= balanceLabel %></div>
+              </div>
+            </div>
+            <div class="invoice-period">
+              <span>Período: <strong><%= startLabel %></strong> a <strong><%= closingLabel %></strong></span>
+              <span>Vencimento base: <strong><%= dueLabel %></strong></span>
+            </div>
+          </div>
+
+          <div class="content-card accounting-section">
+            <div class="report-summary">
+              <div>
+                <h3 class="section-title">Compras</h3>
+                <div class="content-sub">Lançamentos pagos com <%= filters.card || '-' %> até o fechamento.</div>
+              </div>
+              <div class="report-total cash-out"><%= purchaseTotalLabel %></div>
+            </div>
+
+            <% if (!purchases.length) { %>
+              <div class="empty">Nenhuma compra encontrada para esta fatura.</div>
+            <% } else { %>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Categoria</th>
+                      <th>Fornecedor</th>
+                      <th>Observação</th>
+                      <th class="amount">Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% purchases.forEach(function(row) { %>
+                      <tr>
+                        <td><%= row.dateLabel %></td>
+                        <td><%= row.category || '-' %></td>
+                        <td><%= row.supplier || '-' %></td>
+                        <td><%= row.note || '-' %></td>
+                        <td class="amount cash-out"><%= row.amountLabel %></td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+          </div>
+
+          <div class="content-card accounting-section">
+            <div class="report-summary">
+              <div>
+                <h3 class="section-title">Pagamentos da Fatura</h3>
+                <div class="content-sub">Transferências feitas para o cartão até o vencimento.</div>
+              </div>
+              <div class="report-total cash-in"><%= paymentTotalLabel %></div>
+            </div>
+
+            <% if (!payments.length) { %>
+              <div class="empty">Nenhum pagamento encontrado para esta fatura.</div>
+            <% } else { %>
+              <div class="report-table-wrap">
+                <table class="report-table">
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Conta de origem</th>
+                      <th>Cartão</th>
+                      <th>Observação</th>
+                      <th class="amount">Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% payments.forEach(function(row) { %>
+                      <tr>
+                        <td><%= row.dateLabel %></td>
+                        <td><%= row.fromAccount || '-' %></td>
+                        <td><%= row.toAccount || '-' %></td>
+                        <td><%= row.note || '-' %></td>
+                        <td class="amount cash-in"><%= row.amountLabel %></td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+          </div>
+        <% } %>
+      </main>
+    </div>
+
+    <script>
+      const closingInput = document.getElementById("closingDay");
+      const closingForm = document.getElementById("closing-day-form");
+      const cardSelect = document.getElementById("card");
+      const monthInput = document.getElementById("month");
+
+      if (closingInput && closingForm) {
+        closingInput.addEventListener("change", () => {
+          const hiddenCard = closingForm.querySelector('input[name="card"]');
+          const hiddenMonth = closingForm.querySelector('input[name="month"]');
+          if (hiddenCard && cardSelect) hiddenCard.value = cardSelect.value;
+          if (hiddenMonth && monthInput) hiddenMonth.value = monthInput.value;
+          closingForm.submit();
+        });
+      }
+    </script>
+  </body>
+</html>

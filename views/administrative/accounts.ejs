@@ -93,6 +93,33 @@
                         />
                       </div>
                     </div>
+                    <div class="field">
+                      <label class="field-label">Cartão de crédito</label>
+                      <div class="capital-row">
+                        <label class="paid-toggle" title="Cartão de crédito">
+                          <input
+                            class="credit-card-toggle"
+                            type="checkbox"
+                            name="isCreditCard"
+                            value="YES"
+                            data-target="credit-card-extra-<%= index %>"
+                            <%= account.isCreditCard ? 'checked' : '' %>
+                          />
+                          <span></span>
+                        </label>
+                        <span class="content-sub">Esta conta é um cartão</span>
+                      </div>
+                    </div>
+                    <div id="credit-card-extra-<%= index %>" class="form-grid credit-card-extra <%= account.isCreditCard ? 'is-visible' : '' %>">
+                      <div class="field">
+                        <label class="field-label">Dia de fechamento</label>
+                        <input name="creditCardClosingDay" type="number" min="1" max="31" value="<%= account.creditCardClosingDay || '' %>" />
+                      </div>
+                      <div class="field">
+                        <label class="field-label">Dia de vencimento</label>
+                        <input name="creditCardDueDay" type="number" min="1" max="31" value="<%= account.creditCardDueDay || '' %>" />
+                      </div>
+                    </div>
                     <button class="btn btn-primary" type="submit">Salvar</button>
                   </form>
                 </div>
@@ -227,6 +254,15 @@
       });
 
       document.querySelectorAll(".capital-toggle").forEach((toggle) => {
+        const target = document.getElementById(toggle.dataset.target);
+        function refresh() {
+          target?.classList.toggle("is-visible", toggle.checked);
+        }
+        toggle.addEventListener("change", refresh);
+        refresh();
+      });
+
+      document.querySelectorAll(".credit-card-toggle").forEach((toggle) => {
         const target = document.getElementById(toggle.dataset.target);
         function refresh() {
           target?.classList.toggle("is-visible", toggle.checked);

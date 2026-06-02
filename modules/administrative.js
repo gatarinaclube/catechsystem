@@ -447,6 +447,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         capitalSocialEnabled: setting.capitalSocialEnabled,
         capitalSocial: formatAmount(setting.capitalSocialCents),
         capitalSocialLabel: formatAmount(setting.capitalSocialCents),
+        isCreditCard: Boolean(setting.isCreditCard),
+        creditCardClosingDay: setting.creditCardClosingDay || "",
+        creditCardDueDay: setting.creditCardDueDay || "",
         balanceLabel: formatAmount(setting.initialBalanceCents + totalIncome + totalTransfersIn - totalExpenses - totalTransfersOut),
         monthIncomeLabel: formatAmount(monthIncome + monthTransfersIn),
         monthExpenseLabel: formatAmount(monthExpenses + monthTransfersOut),
@@ -1031,6 +1034,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         initialBalanceCents: parseAmountToCents(req.body.initialBalance),
         capitalSocialEnabled: req.body.capitalSocialEnabled === "YES",
         capitalSocialCents: parseAmountToCents(req.body.capitalSocial),
+        isCreditCard: req.body.isCreditCard === "YES",
+        creditCardClosingDay: req.body.isCreditCard === "YES"
+          ? Math.min(31, Math.max(1, Number.parseInt(req.body.creditCardClosingDay || "1", 10)))
+          : null,
+        creditCardDueDay: req.body.isCreditCard === "YES"
+          ? Math.min(31, Math.max(1, Number.parseInt(req.body.creditCardDueDay || "1", 10)))
+          : null,
       };
       if (existing) {
         await prisma.financialAccountSetting.update({
