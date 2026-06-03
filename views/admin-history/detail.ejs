@@ -203,6 +203,37 @@
                 <div class="history-readonly">
                   <input type="hidden" name="treatmentId" value="<%= item.treatmentId || '' %>" />
                   <input type="hidden" name="treatmentSource" value="<%= item.source || '' %>" />
+                  <% if (item.source === 'treatments-module') { %>
+                    <input type="hidden" name="treatmentType" value="<%= item.type || '' %>" />
+                    <input type="hidden" name="treatmentStartDate" value="<%= formatDateInput(item.startDate) %>" />
+                    <input type="hidden" name="treatmentEndDate" value="<%= formatDateInput(item.endDate) %>" />
+                    <input type="hidden" name="treatmentDischargeDate" value="<%= formatDateInput(item.dischargeDate) %>" />
+                    <input type="hidden" name="treatmentDosageSchedule" value="<%= item.dosageSchedule || '' %>" />
+                    <input type="hidden" name="treatmentMedication" value="<%= item.medication || '' %>" />
+                    <input type="hidden" name="treatmentDosage" value="<%= item.dosage || '' %>" />
+                    <input type="hidden" name="treatmentDuration" value="<%= item.duration || '' %>" />
+                    <input type="hidden" name="treatmentAdministrationTime" value="<%= item.administrationTime || item.dosageSchedule || '' %>" />
+                    <input type="hidden" name="treatmentAdministrationRoute" value="<%= item.administrationRoute || '' %>" />
+                    <input type="hidden" name="treatmentNotes" value="<%= item.notes || '' %>" />
+                    <div class="record-row" style="align-items:flex-start;">
+                      <div class="record-main">
+                        <div class="record-title"><%= item.type || 'Tratamento' %> · <%= item.medication || '-' %></div>
+                        <div class="record-sub">
+                          Início: <%= formatDateInput(item.startDate) || '-' %>
+                          <% if (item.endDate) { %> · Final: <%= formatDateInput(item.endDate) %><% } %>
+                          <% if (item.dosage) { %> · Dose: <%= item.dosage %><% } %>
+                          <% if (item.duration) { %> · Tempo: <%= item.duration %><% } %>
+                        </div>
+                        <div class="record-sub">
+                          <% if (item.administrationTime || item.dosageSchedule) { %>Horário: <%= item.administrationTime || item.dosageSchedule %><% } %>
+                          <% if (item.administrationRoute) { %> · Via: <%= item.administrationRoute %><% } %>
+                        </div>
+                        <% if (item.notes) { %><div class="record-sub"><%= item.notes %></div><% } %>
+                        <div class="record-sub">Este registro é editado pelo módulo Tratamento.</div>
+                      </div>
+                      <span class="status-pill is-yellow">Somente leitura</span>
+                    </div>
+                  <% } else { %>
                   <div class="history-form-row treatment">
                     <select name="treatmentType">
                       <option value="">Selecione</option>
@@ -235,6 +266,7 @@
                       <button type="button" class="btn add-treatment">+</button>
                     <% } %>
                   </div>
+                  <% } %>
                 </div>
               <% }) %>
             </div>

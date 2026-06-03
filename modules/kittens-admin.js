@@ -1,6 +1,7 @@
 const express = require("express");
 const { canViewAllData } = require("../utils/access");
 const { getCreationLimits, yearlyRange } = require("../utils/planLimits");
+const { kittenFallbackDisplayName } = require("../utils/cattery-admin");
 
 const BREEDS = [
   "ABY","SOM","ACL","ACS","BAL","SIA","BEN","BLH","BSH","BML","BOM","BUR",
@@ -198,8 +199,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       cat.kittenNumber ||
       cat.litterKitten?.kittenNumber ||
       (cat.litterKitten?.index ? String(cat.litterKitten.index).padStart(4, "0") : "----");
+    const displayName = kittenFallbackDisplayName(cat) || `${linkedKittenNumber} - ${cat.name || "Sem nome"}`;
 
-    return `${linkedKittenNumber} - ${cat.name || "Sem nome"} - ${formatDateForInput(cat.birthDate) || "-"} - ${formatMicrochip(cat.microchip)}`;
+    return `${displayName} - ${formatMicrochip(cat.microchip)}`;
   }
 
   function getKittenOrderValue(cat) {
@@ -264,7 +266,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
     return {
       kittenNumber: req.body.kittenNumber || null,
-      name: req.body.name || null,
+      name: req.body.name || "",
       gender: req.body.gender || null,
       microchip,
       birthDate: req.body.birthDate ? new Date(req.body.birthDate) : null,
@@ -311,6 +313,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         },
         include: {
           litterKitten: true,
+          mother: true,
         },
         orderBy: [{ birthDate: "asc" }, { name: "asc" }],
       });

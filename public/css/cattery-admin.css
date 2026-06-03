@@ -1701,6 +1701,10 @@ textarea:focus {
   gap: 18px;
 }
 
+.treatment-layout-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .treatment-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1713,6 +1717,56 @@ textarea:focus {
 
 .treatment-form select[multiple] {
   min-height: 220px;
+}
+
+.medication-manager {
+  margin-bottom: 18px;
+}
+
+.medication-manager-body {
+  padding: 0 16px 18px;
+}
+
+.medication-form {
+  align-items: end;
+}
+
+.medication-row,
+.treatment-edit-row {
+  display: block;
+}
+
+.medication-row-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.medication-row-summary::-webkit-details-marker {
+  display: none;
+}
+
+.medication-edit-form,
+.treatment-edit-form {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.schedule-times {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.schedule-time {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 .pill-list {

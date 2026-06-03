@@ -76,7 +76,23 @@ function isOwnerSelf(cat) {
   return !cat.currentOwnerId || cat.currentOwnerId === cat.ownerId;
 }
 
+function kittenFallbackDisplayName(cat) {
+  const isKittenRecord = Boolean(cat?.kittenNumber || cat?.litterKitten);
+  const hasName = Boolean(String(cat?.name || "").trim());
+  if (!isKittenRecord || hasName) return "";
+
+  const number = cat.kittenNumber || cat.litterKitten?.kittenNumber || cat.litterKitten?.index || "-";
+  const sexValue = cat.gender || cat.sex || cat.litterKitten?.sex || "";
+  const sex = sexValue === "M" ? "Macho" : sexValue === "F" ? "Fêmea" : sexValue || "-";
+  const motherName = cat.mother?.name || cat.motherName || "-";
+  const birthDate = formatDate(cat.birthDate) || "-";
+  return [number, sex, motherName, birthDate].join(" - ");
+}
+
 function buildDisplayName(cat) {
+  const kittenFallback = kittenFallbackDisplayName(cat);
+  if (kittenFallback) return kittenFallback;
+
   return [
     cat.titleBeforeName,
     cat.country ? `${cat.country}*` : null,
@@ -141,5 +157,6 @@ module.exports = {
   ageInMonths,
   isOwnerSelf,
   buildDisplayName,
+  kittenFallbackDisplayName,
   classifyOperationalCat,
 };

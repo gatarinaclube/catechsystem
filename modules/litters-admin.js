@@ -357,7 +357,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       country: motherCat?.country || fatherCat?.country || null,
       titleBeforeName: null,
       titleAfterName: null,
-      name: kitten.name || `Filhote ${kitten.index}`,
+      name: kitten.name || "",
       kittenNumber: kitten.kittenNumber || null,
       microchip: kitten.microchip,
       birthDate: litter.litterBirthDate || null,

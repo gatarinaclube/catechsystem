@@ -28,6 +28,7 @@ const {
   addDays,
   addMonths,
   addYears,
+  buildDisplayName,
   classifyOperationalCat,
 } = require("./utils/cattery-admin");
 const { sendStatusEmail } = require("./utils/mailer");
@@ -1018,8 +1019,12 @@ app.get("/buscar", requireAuth, async (req, res) => {
         },
         orderBy: { name: "asc" },
         take: 12,
-        select: { id: true, name: true, microchip: true, kittenNumber: true, breed: true },
+        include: { litterKitten: true, mother: true },
       });
+      results.cats = results.cats.map((cat) => ({
+        ...cat,
+        displayName: buildDisplayName(cat),
+      }));
     }
 
     if (userCan(req.session.userRole, "admin.litters")) {

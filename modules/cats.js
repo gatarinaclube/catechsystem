@@ -39,6 +39,33 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     return text || null;
   }
 
+  async function syncLinkedLitterKitten(tx, catId, data, existingCat = {}) {
+    const linked = await tx.litterKitten.findFirst({
+      where: { kittenCatId: catId },
+      select: { id: true },
+    });
+    if (!linked) return;
+
+    const neuteredValue =
+      typeof data.neutered === "boolean" ? data.neutered : existingCat.neutered;
+    const deceasedValue =
+      typeof data.deceased === "boolean" ? data.deceased : existingCat.deceased;
+
+    await tx.litterKitten.update({
+      where: { id: linked.id },
+      data: {
+        kittenNumber: data.kittenNumber ?? existingCat.kittenNumber ?? null,
+        name: data.name ?? existingCat.name ?? "",
+        sex: data.gender ?? existingCat.gender ?? null,
+        breed: data.breed ?? existingCat.breed ?? null,
+        emsEyes: data.emsCode ?? existingCat.emsCode ?? null,
+        microchip: data.microchip ?? existingCat.microchip ?? null,
+        breeding: neuteredValue ? "NOT_FOR_BREEDING" : "FOR_BREEDING",
+        deceased: deceasedValue || false,
+      },
+    });
+  }
+
   function normalizeKey(value) {
     return String(value || "")
       .normalize("NFD")
@@ -1011,9 +1038,12 @@ if (!isAdmin) {
   data.status = "NOVO";
 }
 
-      await prisma.cat.update({
-        where: { id: Number(id) },
-        data,
+      await prisma.$transaction(async (tx) => {
+        await tx.cat.update({
+          where: { id: Number(id) },
+          data,
+        });
+        await syncLinkedLitterKitten(tx, Number(id), data, existingCat);
       });
 
       res.redirect("/cats");
