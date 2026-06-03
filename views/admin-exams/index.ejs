@@ -9,9 +9,10 @@
     <style>
       .exam-grid {
         display: grid;
-        grid-template-columns: 220px 140px 220px 220px 240px 190px;
-        gap: 10px;
+        grid-template-columns: minmax(190px, 1.1fr) minmax(120px, .7fr) repeat(4, minmax(180px, 1fr));
+        gap: 12px;
         align-items: start;
+        min-width: 0;
       }
       .exam-header {
         font-size: 12px;
@@ -21,18 +22,63 @@
       .exam-row {
         padding: 12px;
         border: 1px solid var(--border-soft);
-        border-radius: 14px;
+        border-radius: 8px;
         margin-bottom: 12px;
+        overflow: hidden;
       }
       .exam-row.is-urgent {
         border-left: 5px solid #dc2626;
       }
-      @media (max-width: 1300px) {
+      .exam-cell-label {
+        display: none;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        margin-bottom: 6px;
+      }
+      .exam-upload {
+        display: none;
+        gap: 6px;
+      }
+      .exam-upload.is-visible {
+        display: grid;
+      }
+      .exam-file-link {
+        font-size: 12px;
+      }
+      .exam-row input,
+      .exam-row select {
+        max-width: 100%;
+        min-width: 0;
+      }
+      .inline-plus.exam-eco-row {
+        align-items: start;
+        flex-wrap: wrap;
+      }
+      .exam-print-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      @media (max-width: 1500px) {
         .exam-grid {
-          grid-template-columns: 1fr;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
         .exam-header {
           display: none;
+        }
+        .exam-cell-label {
+          display: block;
+        }
+      }
+      @media (max-width: 760px) {
+        .exam-grid {
+          grid-template-columns: 1fr;
+        }
+        .exam-row {
+          padding: 10px;
         }
       }
     </style>
@@ -50,6 +96,33 @@
             <a href="/dashboard" class="btn">Voltar</a>
           </div>
         </div>
+
+        <section class="content-card" style="margin-bottom:18px;">
+          <div class="history-section-head" style="margin-bottom:12px;">
+            <div>
+              <div class="content-title">Imprimir exames</div>
+              <div class="content-sub">Selecione o gato e escolha quais exames deseja baixar para impressão.</div>
+            </div>
+          </div>
+          <div class="grid-2" style="align-items:end;">
+            <div class="field">
+              <label class="field-label" for="printCatId">Gato</label>
+              <select id="printCatId">
+                <option value="">Selecione...</option>
+                <% (printCats || []).forEach(function(cat) { %>
+                  <option value="<%= cat.id %>"><%= cat.label %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="exam-print-actions">
+              <a class="btn" href="#" data-print-type="pkdef">PKDef</a>
+              <a class="btn" href="#" data-print-type="pra">PRA</a>
+              <a class="btn" href="#" data-print-type="hcm-latest">Último HCM</a>
+              <a class="btn" href="#" data-print-type="hcm-all">Todos HCM</a>
+              <a class="btn btn-primary" href="#" data-print-type="all">Todos</a>
+            </div>
+          </div>
+        </section>
 
         <% categories.forEach(function(category) { %>
           <% const items = grouped[category.key] || []; %>
@@ -75,9 +148,10 @@
                 <div class="empty" style="margin-top:12px;">Nenhum gato nesta categoria.</div>
               <% } else { %>
                 <% items.forEach(function(row) { %>
-                <form method="post" action="/admin/exams/<%= row.cat.id %>" class="exam-row <%= row.urgent ? 'is-urgent' : '' %>">
+                <form method="post" action="/admin/exams/<%= row.cat.id %>" enctype="multipart/form-data" class="exam-row <%= row.urgent ? 'is-urgent' : '' %>">
                   <div class="exam-grid">
                     <div>
+                      <div class="exam-cell-label">Nome do Gato</div>
                       <div class="item-title" style="color:<%= row.urgent ? '#dc2626' : 'inherit' %>;">
                         <%= row.displayName %>
                       </div>
@@ -88,10 +162,14 @@
                       </div>
                     </div>
 
-                    <div><strong><%= row.birthDateLabel %></strong></div>
+                    <div>
+                      <div class="exam-cell-label">Data de Nascimento</div>
+                      <strong><%= row.birthDateLabel %></strong>
+                    </div>
 
                     <div class="mini-stack">
-                      <select name="pkdefSource">
+                      <div class="exam-cell-label">PKDef</div>
+                      <select name="pkdefSource" data-source-toggle="pkdef">
                         <option value="">Selecione</option>
                         <% sourceOptions.forEach(function(option) { %>
                           <option value="<%= option %>" <%= row.pkdefSource === option ? "selected" : "" %>><%= option %></option>
@@ -103,10 +181,17 @@
                           <option value="<%= option %>" <%= row.pkdefResult === option ? "selected" : "" %>><%= option %></option>
                         <% }) %>
                       </select>
+                      <div class="exam-upload" data-upload-box="pkdef">
+                        <% if (row.examDocs && row.examDocs.pkdef) { %>
+                          <a class="exam-file-link" href="<%= row.examDocs.pkdef %>" target="_blank">Arquivo atual</a>
+                        <% } %>
+                        <input type="file" name="pkdefDoc" accept=".pdf,image/*" />
+                      </div>
                     </div>
 
                     <div class="mini-stack">
-                      <select name="prabfSource">
+                      <div class="exam-cell-label">PRA-bf</div>
+                      <select name="prabfSource" data-source-toggle="prabf">
                         <option value="">Selecione</option>
                         <% sourceOptions.forEach(function(option) { %>
                           <option value="<%= option %>" <%= row.prabfSource === option ? "selected" : "" %>><%= option %></option>
@@ -118,17 +203,30 @@
                           <option value="<%= option %>" <%= row.prabfResult === option ? "selected" : "" %>><%= option %></option>
                         <% }) %>
                       </select>
+                      <div class="exam-upload" data-upload-box="prabf">
+                        <% if (row.examDocs && row.examDocs.pra) { %>
+                          <a class="exam-file-link" href="<%= row.examDocs.pra %>" target="_blank">Arquivo atual</a>
+                        <% } %>
+                        <input type="file" name="prabfDoc" accept=".pdf,image/*" />
+                      </div>
                     </div>
 
                     <div class="mini-stack" data-eco-box>
-                      <% row.ecoHistory.forEach(function(item) { %>
-                        <div class="inline-plus" data-eco-row>
+                      <div class="exam-cell-label">Ecocardiodoppler</div>
+                      <% row.ecoHistory.forEach(function(item, index) { %>
+                        <div class="inline-plus exam-eco-row" data-eco-row>
                           <% if (item.date) { %>
                             <input type="hidden" name="ecoDates" value="<%= item.date %>" />
+                            <input type="hidden" name="ecoFiles" value="<%= item.file || '' %>" />
                             <span class="history-date-display"><%= formatDate(item.date) %></span>
+                            <% if (item.file) { %>
+                              <a class="exam-file-link" href="<%= item.file %>" target="_blank">Arquivo</a>
+                            <% } %>
+                            <input type="file" name="hcmDoc_<%= index %>" accept=".pdf,image/*" />
                             <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
                           <% } else { %>
                             <input type="date" name="ecoDates" value="" />
+                            <input type="hidden" name="ecoFiles" value="" />
                           <% } %>
                         </div>
                       <% }) %>
@@ -138,6 +236,7 @@
                     </div>
 
                     <div class="mini-stack">
+                      <div class="exam-cell-label">Próximo Eco</div>
                       <div><strong><%= row.nextEco ? formatDate(row.nextEco) : "-" %></strong></div>
                     </div>
                   </div>
@@ -152,6 +251,19 @@
 
     <script>
       (function () {
+        const printCatSelect = document.getElementById("printCatId");
+        document.querySelectorAll("[data-print-type]").forEach((button) => {
+          button.addEventListener("click", (event) => {
+            const catId = printCatSelect?.value || "";
+            if (!catId) {
+              event.preventDefault();
+              alert("Selecione um gato para imprimir os exames.");
+              return;
+            }
+            button.href = `/admin/exams/print?catId=${encodeURIComponent(catId)}&type=${encodeURIComponent(button.dataset.printType)}`;
+          });
+        });
+
         function formatDisplayDate(value) {
           if (!value) return "";
           const parts = value.split("-");
@@ -161,6 +273,7 @@
 
         async function autosave(form) {
           if (!form) return;
+          reindexEcoRows(form);
           if (form.dataset.submitting === "true") {
             form.dataset.pendingSave = "true";
             return;
@@ -172,10 +285,9 @@
           try {
             const response = await fetch(form.action, {
               method: "POST",
-              body: new URLSearchParams(new FormData(form)),
+              body: new FormData(form),
               credentials: "same-origin",
               headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
                 "X-Autosave": "true",
               },
             });
@@ -197,13 +309,22 @@
           button.addEventListener("click", () => {
             const box = button.closest("[data-eco-box]");
             const row = document.createElement("div");
-            row.className = "inline-plus";
+            row.className = "inline-plus exam-eco-row";
             row.dataset.ecoRow = "";
-            row.innerHTML = '<input type="date" name="ecoDates" value="" />';
+            row.innerHTML = '<input type="date" name="ecoDates" value="" /><input type="hidden" name="ecoFiles" value="" />';
             box.insertBefore(row, button.closest(".history-add-row"));
             bindEcoRow(row);
+            reindexEcoRows(button.closest("form"));
           });
         });
+
+        function reindexEcoRows(form) {
+          if (!form) return;
+          form.querySelectorAll("[data-eco-row]").forEach((row, index) => {
+            const fileInput = row.querySelector('input[type="file"]');
+            if (fileInput) fileInput.name = `hcmDoc_${index}`;
+          });
+        }
 
         function bindDelete(button) {
           button.addEventListener("click", () => {
@@ -211,6 +332,7 @@
             const form = button.closest("form");
             row.remove();
 
+            reindexEcoRows(form);
             autosave(form);
           });
         }
@@ -222,9 +344,13 @@
               if (!input.value) return;
               row.innerHTML = `
                 <input type="hidden" name="ecoDates" value="${input.value}" />
+                <input type="hidden" name="ecoFiles" value="" />
                 <span class="history-date-display">${formatDisplayDate(input.value)}</span>
+                <input type="file" accept=".pdf,image/*" />
                 <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
               `;
+              reindexEcoRows(row.closest("form"));
+              bindFileInputs(row);
               bindDelete(row.querySelector(".delete-history-date"));
               autosave(row.closest("form"));
             });
@@ -232,11 +358,37 @@
 
           const deleteButton = row.querySelector(".delete-history-date");
           if (deleteButton) bindDelete(deleteButton);
+          bindFileInputs(row);
+        }
+
+        function syncExamUploads(form) {
+          form.querySelectorAll("[data-source-toggle]").forEach((select) => {
+            const box = form.querySelector(`[data-upload-box="${select.dataset.sourceToggle}"]`);
+            if (!box) return;
+            box.classList.toggle("is-visible", select.value === "Próprio");
+          });
+        }
+
+        function bindFileInputs(scope) {
+          scope.querySelectorAll('input[type="file"]').forEach((input) => {
+            if (input.dataset.boundFile === "true") return;
+            input.dataset.boundFile = "true";
+            input.addEventListener("change", () => autosave(input.closest("form")));
+          });
         }
 
         document.querySelectorAll("[data-eco-row]").forEach(bindEcoRow);
         document.querySelectorAll(".exam-row select").forEach((field) => {
-          field.addEventListener("change", () => autosave(field.closest("form")));
+          field.addEventListener("change", () => {
+            const form = field.closest("form");
+            syncExamUploads(form);
+            autosave(form);
+          });
+        });
+        document.querySelectorAll(".exam-row").forEach((form) => {
+          syncExamUploads(form);
+          reindexEcoRows(form);
+          bindFileInputs(form);
         });
       })();
     </script>
