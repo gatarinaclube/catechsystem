@@ -18,6 +18,16 @@
     });
   }
 
+  function improveAndroidPdfPreview() {
+    const isAndroid = /Android/i.test(navigator.userAgent || "");
+    if (!isAndroid) return;
+
+    document.querySelectorAll(".public-pdf-viewer iframe[data-pdf-src]").forEach((frame) => {
+      const pdfUrl = new URL(frame.dataset.pdfSrc, window.location.origin).href;
+      frame.src = `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(pdfUrl)}`;
+    });
+  }
+
   function showPhoto() {
     if (!gallery.length) return;
     image.src = gallery[index];
@@ -78,5 +88,10 @@
   });
 
   syncParentDetails();
-  mobileParents.addEventListener("change", syncParentDetails);
+  improveAndroidPdfPreview();
+  if (mobileParents.addEventListener) {
+    mobileParents.addEventListener("change", syncParentDetails);
+  } else {
+    mobileParents.addListener(syncParentDetails);
+  }
 })();
