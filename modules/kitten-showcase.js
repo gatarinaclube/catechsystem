@@ -299,6 +299,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const settings = await getSettings(req.session.userId);
     const showcase = await getShowcase(req.session.userId);
     const showcaseLitterLimit = getCreationLimits(req.session.userRole).showcaseLitters;
+    const uploadLimit = getFileUploadLimit(req.session.userRole);
     const publicBaseUrl = `${req.protocol}://${req.get("host")}/vitrine`;
 
     return res.status(options.status || 200).render("kitten-showcase/admin", {
@@ -313,6 +314,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         littersNote: showcaseLitterLimit === 1
           ? "Seu perfil permite manter 1 ninhada publicada na vitrine. Ninhadas ocultas ficam salvas e não entram neste limite."
           : null,
+        uploadLimitBytes: uploadLimit.bytes,
+        uploadLimitLabel: uploadLimit.label,
       },
       publicBaseUrl,
       error: options.error || null,
@@ -545,6 +548,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
         res.redirect("/admin/vitrine-filhotes?ok=1");
       } catch (err) {
+        if (err.code === "UPLOAD_LIMIT") {
+          try {
+            return renderAdmin(req, res, { status: 413, error: err.message });
+          } catch {
+            return next(err);
+          }
+        }
+
         if (err.message && !err.code) {
           try {
             return renderAdmin(req, res, { status: 400, error: err.message });

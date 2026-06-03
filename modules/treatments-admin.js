@@ -214,7 +214,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   async function loadEligibleCats(req) {
     const cats = await prisma.cat.findMany({
       where: ownerScope(req),
-      include: { litterKitten: true },
+      include: { litterKitten: true, mother: true },
       orderBy: [{ name: "asc" }],
     });
 
@@ -291,6 +291,17 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         cat: { is: ownerScope(req) },
       },
     });
+  }
+
+  async function findMedicationFromBody(req) {
+    const medicationId = Number(req.body.medicationId);
+    const name = cleanText(req.body.medicationName);
+    const where = medicationId
+      ? { id: medicationId, ...ownerScope(req), active: true }
+      : name
+        ? { name, ...ownerScope(req), active: true }
+        : null;
+    return where ? prisma.treatmentMedication.findFirst({ where }) : null;
   }
 
   router.get(
@@ -418,9 +429,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         return res.redirect(`/admin/treatments?error=${encodeURIComponent("Selecione ao menos um animal.")}`);
       }
 
-      const medication = await prisma.treatmentMedication.findFirst({
-        where: { id: Number(req.body.medicationId), ...ownerScope(req), active: true },
-      });
+      const medication = await findMedicationFromBody(req);
 
       try {
         const data = treatmentFormData(req.body, medication);
@@ -460,9 +469,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       });
       if (!treatment) return res.status(404).send("Tratamento não encontrado.");
 
-      const medication = await prisma.treatmentMedication.findFirst({
-        where: { id: Number(req.body.medicationId), ...ownerScope(req), active: true },
-      });
+      const medication = await findMedicationFromBody(req);
 
       try {
         const data = treatmentFormData(req.body, medication);

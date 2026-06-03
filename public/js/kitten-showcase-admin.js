@@ -1,6 +1,4 @@
 (function () {
-  const MAX_PHOTO_MB = 5;
-  const MAX_PHOTO_BYTES = MAX_PHOTO_MB * 1024 * 1024;
   const root = document.getElementById("littersRoot");
   const form = document.getElementById("showcaseForm");
   const payloadInput = document.getElementById("payload");
@@ -17,6 +15,8 @@
     .filter(Boolean);
   const initial = window.__SHOWCASE__ || {};
   const limits = window.__SHOWCASE_LIMITS__ || {};
+  const uploadLimitBytes = Number(limits.uploadLimitBytes) || 5 * 1024 * 1024;
+  const uploadLimitLabel = limits.uploadLimitLabel || "5 MB";
 
   function makeKey(prefix) {
     return `${prefix}_${Date.now()}_${Math.round(Math.random() * 100000)}`;
@@ -152,13 +152,13 @@
   }
 
   function filesAreWithinLimit(input) {
-    return Array.from(input.files || []).every((file) => file.size <= MAX_PHOTO_BYTES);
+    return Array.from(input.files || []).every((file) => file.size <= uploadLimitBytes);
   }
 
   function validateFiles(input) {
     if (filesAreWithinLimit(input)) return true;
     input.value = "";
-    alert(`Cada arquivo deve ter no máximo ${MAX_PHOTO_MB} MB.`);
+    alert(`Cada arquivo deve ter no máximo ${uploadLimitLabel}.`);
     return false;
   }
 
@@ -413,7 +413,7 @@
     const oversized = Array.from(form.querySelectorAll('input[type="file"]'))
       .some((input) => !filesAreWithinLimit(input));
     if (oversized) {
-      alert(`Cada arquivo deve ter no máximo ${MAX_PHOTO_MB} MB.`);
+      alert(`Cada arquivo deve ter no máximo ${uploadLimitLabel}.`);
       event.preventDefault();
       return;
     }

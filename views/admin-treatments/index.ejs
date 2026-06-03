@@ -30,6 +30,12 @@
           <div class="content-card message message-error"><%= error %></div>
         <% } %>
 
+        <datalist id="medicationOptions">
+          <% medications.forEach(function(medication) { %>
+            <option value="<%= medication.name %>" data-id="<%= medication.id %>"></option>
+          <% }) %>
+        </datalist>
+
         <details class="content-card medication-manager" id="medicationManager">
           <summary class="dashboard-panel-summary">
             <div>
@@ -113,18 +119,9 @@
               </div>
 
               <div class="field">
-                <label class="field-label" for="medicationSearch">Buscar medicação</label>
-                <input id="medicationSearch" class="medication-search" type="search" placeholder="Digite parte do nome" autocomplete="off" />
-              </div>
-
-              <div class="field">
-                <label class="field-label" for="medicationId">Medicação</label>
-                <select id="medicationId" name="medicationId" required>
-                  <option value="">Selecione...</option>
-                  <% medications.forEach(function(medication) { %>
-                    <option value="<%= medication.id %>"><%= medication.name %></option>
-                  <% }) %>
-                </select>
+                <label class="field-label" for="medicationName">Medicação</label>
+                <input id="medicationName" class="medication-picker" name="medicationName" list="medicationOptions" placeholder="Digite ou selecione..." autocomplete="off" required />
+                <input id="medicationId" class="medication-id" type="hidden" name="medicationId" />
               </div>
 
               <div class="field">
@@ -232,17 +229,9 @@
 
                   <form method="post" action="/admin/treatments/<%= treatment.id %>/update" class="treatment-form treatment-edit-form">
                     <div class="field">
-                      <label class="field-label">Buscar medicação</label>
-                      <input class="medication-search" type="search" placeholder="Digite parte do nome" autocomplete="off" />
-                    </div>
-                    <div class="field">
                       <label class="field-label">Medicação</label>
-                      <select name="medicationId" class="medication-select" required>
-                        <option value="">Selecione...</option>
-                        <% medications.forEach(function(medication) { %>
-                          <option value="<%= medication.id %>" <%= treatment.medicationId === medication.id ? 'selected' : '' %>><%= medication.name %></option>
-                        <% }) %>
-                      </select>
+                      <input class="medication-picker" name="medicationName" list="medicationOptions" value="<%= treatment.medicationName || '' %>" autocomplete="off" required />
+                      <input class="medication-id" type="hidden" name="medicationId" value="<%= treatment.medicationId || '' %>" />
                     </div>
                     <div class="field">
                       <label class="field-label">Dose</label>
@@ -360,14 +349,16 @@
         if (start && end && days > 0) end.value = addDays(start.value, days - 1);
       }
 
-      function renderSchedule(form, keepExisting = false) {
+      function renderSchedule(form, keepExisting = false, forceDefaults = false) {
         const frequency = form.querySelector(".frequency-select, #frequency");
         const target = form.querySelector(".schedule-times, #scheduleTimes");
         if (!frequency || !target) return;
 
         const existing = keepExisting && target.dataset.times
           ? JSON.parse(target.dataset.times || "[]")
-          : Array.from(target.querySelectorAll("input")).map((input) => input.value).filter(Boolean);
+          : forceDefaults
+            ? []
+            : Array.from(target.querySelectorAll("input, select")).map((input) => input.value).filter(Boolean);
         const values = existing.length ? existing : (frequencyDefaults[frequency.value] || []);
         target.innerHTML = "";
 
@@ -382,7 +373,7 @@
               </select>
             `;
           } else {
-            label.innerHTML = `<span>${index + 1}º horário</span><input type="time" name="scheduleTimes" value="${value}">`;
+            label.innerHTML = `<span>${index + 1}º horário</span><input type="time" name="scheduleTimes" value="${value}" ${index > 0 ? "readonly" : ""}>`;
           }
           target.appendChild(label);
         });
@@ -393,39 +384,31 @@
         }
       }
 
-      function setupMedicationFilter(scope) {
-        const search = scope.querySelector(".medication-search");
-        const select = scope.querySelector(".medication-select, #medicationId");
-        if (!search || !select) return;
+      function setupMedicationPicker(scope) {
+        const input = scope.querySelector(".medication-picker");
+        const hidden = scope.querySelector(".medication-id");
+        const options = Array.from(document.querySelectorAll("#medicationOptions option"));
+        if (!input || !hidden) return;
 
-        const options = Array.from(select.options).map((option) => ({
-          value: option.value,
-          text: option.text,
-          selected: option.selected,
-        }));
+        function syncMedicationId() {
+          const selected = options.find((option) => option.value === input.value);
+          hidden.value = selected ? selected.dataset.id || "" : "";
+          input.setCustomValidity(selected ? "" : "Selecione uma medicação cadastrada.");
+        }
 
-        search.addEventListener("input", () => {
-          const term = search.value.trim().toLocaleLowerCase("pt-BR");
-          const current = select.value;
-          select.innerHTML = "";
-          options
-            .filter((option) => !term || option.text.toLocaleLowerCase("pt-BR").includes(term) || !option.value)
-            .forEach((option) => {
-              const next = new Option(option.text, option.value);
-              next.selected = option.value === current;
-              select.add(next);
-            });
-        });
+        input.addEventListener("input", syncMedicationId);
+        input.addEventListener("change", syncMedicationId);
+        syncMedicationId();
       }
 
       function setupTreatmentForm(form) {
-        setupMedicationFilter(form);
+        setupMedicationPicker(form);
         const frequency = form.querySelector(".frequency-select, #frequency");
         const duration = form.querySelector(".duration-days, #durationDays");
         const start = form.querySelector(".start-date, #startDate");
         if (frequency) {
           renderSchedule(form, true);
-          frequency.addEventListener("change", () => renderSchedule(form));
+          frequency.addEventListener("change", () => renderSchedule(form, false, true));
         }
         if (duration) duration.addEventListener("input", () => syncEndDate(form));
         if (start) start.addEventListener("change", () => syncEndDate(form));

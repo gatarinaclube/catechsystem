@@ -78,8 +78,9 @@ function isOwnerSelf(cat) {
 
 function kittenFallbackDisplayName(cat) {
   const isKittenRecord = Boolean(cat?.kittenNumber || cat?.litterKitten);
-  const hasName = Boolean(String(cat?.name || "").trim());
-  if (!isKittenRecord || hasName) return "";
+  const name = String(cat?.name || "").trim();
+  const hasRealName = Boolean(name) && !/^filhote\s+\d+$/i.test(name);
+  if (!isKittenRecord || hasRealName) return "";
 
   const number = cat.kittenNumber || cat.litterKitten?.kittenNumber || cat.litterKitten?.index || "-";
   const sexValue = cat.gender || cat.sex || cat.litterKitten?.sex || "";
