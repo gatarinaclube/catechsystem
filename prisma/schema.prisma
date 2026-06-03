@@ -370,6 +370,9 @@ model CatteryKittenShowcase {
   paymentCardCash Boolean @default(false)
   paymentCardInstallments Boolean @default(false)
   paymentInstallments Int?
+  paymentText String?
+  aboutText   String?
+  aboutPdfPath String?
   published   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

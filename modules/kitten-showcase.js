@@ -59,7 +59,9 @@ function createUpload() {
     limits: { fileSize: SHOWCASE_UPLOAD_LIMIT.bytes, files: 80 },
     fileFilter: (req, file, cb) => {
       const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-      cb(allowed.includes(file.mimetype) ? null : new Error("Envie apenas imagens."), allowed.includes(file.mimetype));
+      const isAboutPdf = file.fieldname === "aboutPdf" && file.mimetype === "application/pdf";
+      const accepted = allowed.includes(file.mimetype) || isAboutPdf;
+      cb(accepted ? null : new Error("Envie imagens na vitrine e PDF apenas na apresentação do gatil."), accepted);
     },
   });
 }
@@ -149,6 +151,9 @@ function emptyShowcase(settings, user) {
     paymentCardCash: false,
     paymentCardInstallments: false,
     paymentInstallments: null,
+    paymentText: "",
+    aboutText: "",
+    aboutPdfPath: "",
     published: false,
     litters: [],
   };
@@ -166,6 +171,9 @@ function shapeShowcase(showcase, settings, user) {
     cardColor: showcase.cardColor || fallback.cardColor,
     textColor: showcase.textColor || fallback.textColor,
     accentColor: showcase.accentColor || fallback.accentColor,
+    paymentText: showcase.paymentText || "",
+    aboutText: showcase.aboutText || "",
+    aboutPdfPath: showcase.aboutPdfPath || "",
     litters: (showcase.litters || []).map((litter) => ({
       ...litter,
       birthDate: formatDateInput(litter.birthDate),
@@ -239,6 +247,13 @@ async function renderPublicShowcase(prisma, req, res, next, rawSlug) {
       showcase,
       settings: showcase.owner?.settings || null,
       litters,
+      hasPaymentInfo: Boolean(
+        showcase.paymentPix ||
+        showcase.paymentCardCash ||
+        showcase.paymentCardInstallments ||
+        compact(showcase.paymentText)
+      ),
+      hasAboutInfo: Boolean(compact(showcase.aboutText) || compact(showcase.aboutPdfPath)),
     });
   } catch (err) {
     return next(err);
@@ -368,6 +383,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         const slug = slugify(payload.slug || fallback.slug);
         validateFilesForRole(req.files || [], req.session.userRole);
         const logoUpload = uploaded.get("showcaseLogo")?.[0] || null;
+        const aboutPdfUpload = uploaded.get("aboutPdf")?.[0] || null;
 
         if (!slug || RESERVED_SLUGS.has(slug)) {
           throw new Error("Informe um link válido para o gatil.");
@@ -423,6 +439,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               paymentInstallments: payload.paymentCardInstallments === true
                 ? normalizeInstallments(payload.paymentInstallments)
                 : null,
+              paymentText: compact(payload.paymentText),
+              aboutText: compact(payload.aboutText),
+              aboutPdfPath: aboutPdfUpload || compact(payload.aboutPdfPath),
               published: payload.published === true,
             },
             create: {
@@ -444,6 +463,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               paymentInstallments: payload.paymentCardInstallments === true
                 ? normalizeInstallments(payload.paymentInstallments)
                 : null,
+              paymentText: compact(payload.paymentText),
+              aboutText: compact(payload.aboutText),
+              aboutPdfPath: aboutPdfUpload || compact(payload.aboutPdfPath),
               published: payload.published === true,
             },
           });

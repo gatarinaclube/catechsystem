@@ -6,6 +6,17 @@
   const nextButton = lightbox.querySelector(".lightbox-next");
   let gallery = [];
   let index = 0;
+  const mobileParents = window.matchMedia("(max-width: 620px)");
+
+  function syncParentDetails() {
+    document.querySelectorAll(".public-parent").forEach((details) => {
+      if (mobileParents.matches) {
+        details.removeAttribute("open");
+      } else {
+        details.setAttribute("open", "");
+      }
+    });
+  }
 
   function showPhoto() {
     if (!gallery.length) return;
@@ -65,4 +76,7 @@
   document.querySelectorAll(".protected-image").forEach((img) => {
     img.addEventListener("dragstart", (event) => event.preventDefault());
   });
+
+  syncParentDetails();
+  mobileParents.addEventListener("change", syncParentDetails);
 })();

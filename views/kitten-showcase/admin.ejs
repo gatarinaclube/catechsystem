@@ -147,6 +147,26 @@
                   <input id="paymentInstallments" type="number" min="2" max="24" step="1" value="<%= showcase.paymentInstallments || '' %>" />
                 </div>
               </div>
+              <div class="field" style="margin-top:12px;">
+                <label class="field-label" for="paymentText">Texto sobre forma de pagamento</label>
+                <textarea id="paymentText" rows="4" placeholder="Ex.: condições, reserva, sinal, parcelamento, orientações para contato"><%= showcase.paymentText || '' %></textarea>
+              </div>
+            </div>
+
+            <div class="field-panel showcase-about-panel">
+              <div class="content-title">Informações sobre o gatil</div>
+              <div class="field">
+                <label class="field-label" for="aboutText">Texto sobre o gatil</label>
+                <textarea id="aboutText" rows="5" placeholder="Ex.: história do gatil, criação, socialização, entrega, acompanhamento e diferenciais"><%= showcase.aboutText || '' %></textarea>
+              </div>
+              <div class="field" style="margin-top:12px;">
+                <label class="field-label" for="aboutPdf">Apresentação em PDF</label>
+                <input id="aboutPdf" name="aboutPdf" type="file" accept="application/pdf" />
+                <input id="aboutPdfPath" type="hidden" value="<%= showcase.aboutPdfPath || '' %>" />
+                <% if (showcase.aboutPdfPath) { %>
+                  <small>PDF atual anexado. Envie outro apenas se desejar substituir.</small>
+                <% } %>
+              </div>
             </div>
           </section>
 

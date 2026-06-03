@@ -158,7 +158,7 @@
   function validateFiles(input) {
     if (filesAreWithinLimit(input)) return true;
     input.value = "";
-    alert(`Cada imagem deve ter no máximo ${MAX_PHOTO_MB} MB.`);
+    alert(`Cada arquivo deve ter no máximo ${MAX_PHOTO_MB} MB.`);
     return false;
   }
 
@@ -390,6 +390,9 @@
       paymentCardCash: document.getElementById("paymentCardCash").checked,
       paymentCardInstallments: document.getElementById("paymentCardInstallments").checked,
       paymentInstallments: document.getElementById("paymentInstallments").value.trim(),
+      paymentText: document.getElementById("paymentText").value.trim(),
+      aboutText: document.getElementById("aboutText").value.trim(),
+      aboutPdfPath: document.getElementById("aboutPdfPath").value.trim(),
       published: document.getElementById("published").checked,
       litters,
     };
@@ -410,7 +413,7 @@
     const oversized = Array.from(form.querySelectorAll('input[type="file"]'))
       .some((input) => !filesAreWithinLimit(input));
     if (oversized) {
-      alert(`Cada imagem deve ter no máximo ${MAX_PHOTO_MB} MB.`);
+      alert(`Cada arquivo deve ter no máximo ${MAX_PHOTO_MB} MB.`);
       event.preventDefault();
       return;
     }

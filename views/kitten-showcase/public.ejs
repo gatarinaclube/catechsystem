@@ -59,37 +59,11 @@
             <span>Filhotes disponíveis</span>
             <strong><%= totalKittens %></strong>
           </div>
-          <% if (showcase.paymentPix || showcase.paymentCardCash || showcase.paymentCardInstallments) { %>
-            <p>Condições de pagamento disponíveis no gatil.</p>
-          <% } %>
         </aside>
       </div>
     </header>
 
     <main class="showcase-main">
-      <% if (showcase.paymentPix || showcase.paymentCardCash || showcase.paymentCardInstallments) { %>
-        <section class="public-payment">
-          <div>
-            <p class="public-label">Atendimento</p>
-            <h2>Formas de pagamento</h2>
-          </div>
-          <div class="public-payment-options">
-            <% if (showcase.paymentPix) { %>
-              <div class="public-payment-chip"><span class="payment-icon pix-icon">PIX</span><span>PIX</span></div>
-            <% } %>
-            <% if (showcase.paymentCardCash) { %>
-              <div class="public-payment-chip"><span class="payment-icon card-icon">▣</span><span>Cartão à vista</span></div>
-            <% } %>
-            <% if (showcase.paymentCardInstallments) { %>
-              <div class="public-payment-chip">
-                <span class="payment-icon card-icon">▣</span>
-                <span>Cartão parcelado<%= showcase.paymentInstallments ? ` em até ${showcase.paymentInstallments}x` : '' %></span>
-              </div>
-            <% } %>
-          </div>
-        </section>
-      <% } %>
-
       <% if (!litters.length) { %>
         <section class="showcase-empty">Nenhuma ninhada disponível no momento.</section>
       <% } %>
@@ -112,30 +86,35 @@
 
           <div class="public-parent-grid">
             <% [
-              { label: 'Pai', name: litter.fatherName, photos: [litter.fatherPhoto, litter.fatherPhoto2].filter(Boolean), color: litter.fatherColor, note: litter.fatherNote, pkdef: litter.fatherPkdef, pra: litter.fatherPra, hcm: litter.fatherHcm },
-              { label: 'Mãe', name: litter.motherName, photos: [litter.motherPhoto, litter.motherPhoto2].filter(Boolean), color: litter.motherColor, note: litter.motherNote, pkdef: litter.motherPkdef, pra: litter.motherPra, hcm: litter.motherHcm }
+              { label: 'Pai', mobileLabel: 'Informações do Pai', name: litter.fatherName, photos: [litter.fatherPhoto, litter.fatherPhoto2].filter(Boolean), color: litter.fatherColor, note: litter.fatherNote, pkdef: litter.fatherPkdef, pra: litter.fatherPra, hcm: litter.fatherHcm },
+              { label: 'Mãe', mobileLabel: 'Informações da Mãe', name: litter.motherName, photos: [litter.motherPhoto, litter.motherPhoto2].filter(Boolean), color: litter.motherColor, note: litter.motherNote, pkdef: litter.motherPkdef, pra: litter.motherPra, hcm: litter.motherHcm }
             ].forEach(function(parent) { %>
-              <article class="public-parent">
-                <% if (parent.photos.length) { %>
-                  <button class="gallery-trigger public-parent-photo-stack" type="button" data-gallery='<%- JSON.stringify(parent.photos) %>' data-index="0" aria-label="Abrir fotos de <%= parent.name %>">
-                    <img class="protected-image" src="<%= parent.photos[0] %>" alt="<%= parent.name %>" draggable="false" />
-                    <% if (parent.photos.length > 1) { %><span>+<%= parent.photos.length - 1 %></span><% } %>
-                  </button>
-                <% } %>
-                <div>
-                  <p class="public-label"><%= parent.label %></p>
-                  <h3><%= parent.name %></h3>
-                  <% if (parent.note) { %>
-                    <p class="public-parent-note"><%= parent.note %></p>
+              <details class="public-parent" open>
+                <summary class="public-parent-summary">
+                  <span><%= parent.mobileLabel %></span>
+                </summary>
+                <div class="public-parent-content">
+                  <% if (parent.photos.length) { %>
+                    <button class="gallery-trigger public-parent-photo-stack" type="button" data-gallery='<%- JSON.stringify(parent.photos) %>' data-index="0" aria-label="Abrir fotos de <%= parent.name %>">
+                      <img class="protected-image" src="<%= parent.photos[0] %>" alt="<%= parent.name %>" draggable="false" />
+                      <% if (parent.photos.length > 1) { %><span>+<%= parent.photos.length - 1 %></span><% } %>
+                    </button>
                   <% } %>
-                  <dl>
-                    <% if (parent.color) { %><div><dt>Cor</dt><dd><%= parent.color %></dd></div><% } %>
-                    <% if (parent.pkdef) { %><div><dt>PKDef</dt><dd><%= parent.pkdef %></dd></div><% } %>
-                    <% if (parent.pra) { %><div><dt>PRA</dt><dd><%= parent.pra %></dd></div><% } %>
-                    <% if (parent.hcm) { %><div><dt>HCM</dt><dd><%= parent.hcm %></dd></div><% } %>
-                  </dl>
+                  <div>
+                    <p class="public-label"><%= parent.label %></p>
+                    <h3><%= parent.name %></h3>
+                    <% if (parent.note) { %>
+                      <p class="public-parent-note"><%= parent.note %></p>
+                    <% } %>
+                    <dl>
+                      <% if (parent.color) { %><div><dt>Cor</dt><dd><%= parent.color %></dd></div><% } %>
+                      <% if (parent.pkdef) { %><div><dt>PKDef</dt><dd><%= parent.pkdef %></dd></div><% } %>
+                      <% if (parent.pra) { %><div><dt>PRA</dt><dd><%= parent.pra %></dd></div><% } %>
+                      <% if (parent.hcm) { %><div><dt>HCM</dt><dd><%= parent.hcm %></dd></div><% } %>
+                    </dl>
+                  </div>
                 </div>
-              </article>
+              </details>
             <% }) %>
           </div>
 
@@ -176,6 +155,52 @@
           </div>
         </section>
       <% }) %>
+
+      <% if (hasPaymentInfo) { %>
+        <section class="public-info-section public-payment">
+          <div>
+            <p class="public-label">Atendimento</p>
+            <h2>Formas de pagamento</h2>
+            <% if (showcase.paymentText) { %>
+              <p class="public-info-text"><%= showcase.paymentText %></p>
+            <% } %>
+          </div>
+          <% if (showcase.paymentPix || showcase.paymentCardCash || showcase.paymentCardInstallments) { %>
+            <div class="public-payment-options">
+              <% if (showcase.paymentPix) { %>
+                <div class="public-payment-chip"><span class="payment-icon pix-icon">PIX</span><span>PIX</span></div>
+              <% } %>
+              <% if (showcase.paymentCardCash) { %>
+                <div class="public-payment-chip"><span class="payment-icon card-icon">▣</span><span>Cartão à vista</span></div>
+              <% } %>
+              <% if (showcase.paymentCardInstallments) { %>
+                <div class="public-payment-chip">
+                  <span class="payment-icon card-icon">▣</span>
+                  <span>Cartão parcelado<%= showcase.paymentInstallments ? ` em até ${showcase.paymentInstallments}x` : '' %></span>
+                </div>
+              <% } %>
+            </div>
+          <% } %>
+        </section>
+      <% } %>
+
+      <% if (hasAboutInfo) { %>
+        <section class="public-info-section public-about">
+          <div class="public-info-head">
+            <p class="public-label">Gatil</p>
+            <h2>Sobre o gatil</h2>
+          </div>
+          <% if (showcase.aboutText) { %>
+            <p class="public-info-text"><%= showcase.aboutText %></p>
+          <% } %>
+          <% if (showcase.aboutPdfPath) { %>
+            <div class="public-pdf-viewer">
+              <iframe src="<%= showcase.aboutPdfPath %>#toolbar=1&navpanes=0" title="Apresentação do gatil"></iframe>
+              <a href="<%= showcase.aboutPdfPath %>" target="_blank" rel="noopener noreferrer">Abrir apresentação em PDF</a>
+            </div>
+          <% } %>
+        </section>
+      <% } %>
     </main>
     <div class="lightbox" id="showcaseLightbox" hidden>
       <button class="lightbox-close" type="button" aria-label="Fechar">×</button>
