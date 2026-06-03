@@ -23,6 +23,13 @@ const {
   getFileUploadLimit,
   loadPlanLimitOverrides,
 } = require("./utils/planLimits");
+const {
+  parseDate,
+  addDays,
+  addMonths,
+  addYears,
+  classifyOperationalCat,
+} = require("./utils/cattery-admin");
 const { sendStatusEmail } = require("./utils/mailer");
 const {
   notifyNewUser,
@@ -666,6 +673,39 @@ app.get("/dashboard", requireAuth, async (req, res) => {
       }
     }
 
+    function sortHistoryDates(history) {
+      return [...history]
+        .map((value) => ({ ...value, date: value?.date || "" }))
+        .sort((a, b) => {
+          const aDate = parseDate(a.date);
+          const bDate = parseDate(b.date);
+          if (!aDate && !bDate) return 0;
+          if (!aDate) return -1;
+          if (!bDate) return 1;
+          return aDate - bDate;
+        });
+    }
+
+    function computeNextAntirabic(birthDate, history) {
+      const sorted = sortHistoryDates(history).filter((item) => parseDate(item.date));
+      const birth = parseDate(birthDate);
+      if (!sorted.length) return birth ? addMonths(birth, 3) : null;
+      const last = parseDate(sorted[sorted.length - 1].date);
+      return last ? addDays(addYears(last, 1), -1) : null;
+    }
+
+    function computeNextFeline(birthDate, history) {
+      const sorted = sortHistoryDates(history).filter((item) => parseDate(item.date));
+      const birth = parseDate(birthDate);
+      if (!sorted.length) return birth ? addMonths(birth, 2) : null;
+      if (sorted.length === 1) {
+        const first = parseDate(sorted[0].date);
+        return first ? addDays(first, 21) : null;
+      }
+      const last = parseDate(sorted[sorted.length - 1].date);
+      return last ? addDays(addYears(last, 1), -1) : null;
+    }
+
     let catsInReviewCount = 0;
 
 if (isAdminRole(req.session.userRole)) {
@@ -767,7 +807,11 @@ let receivableCents = 0;
 let receivableCount = 0;
 const attentionLimitDate = new Date(today);
 attentionLimitDate.setDate(attentionLimitDate.getDate() + 15);
+const nextTenDays = new Date(today);
+nextTenDays.setDate(nextTenDays.getDate() + 10);
 const receivableAttention = [];
+let nextReceivableCents = 0;
+let nextReceivableCount = 0;
 monthRevenues.forEach((revenue) => {
   parseJsonList(revenue.parcelDataJson).forEach((parcel, index) => {
     const parcelDate = parcel.date ? new Date(`${parcel.date}T00:00:00`) : null;
@@ -779,6 +823,10 @@ monthRevenues.forEach((revenue) => {
     if (!parcel.paid && parcelDate >= today) {
       receivableCents += amount;
       receivableCount += 1;
+    }
+    if (!parcel.paid && !parcel.canceled && parcelDate >= today && parcelDate <= nextTenDays) {
+      nextReceivableCents += amount;
+      nextReceivableCount += 1;
     }
     if (!parcel.paid && parcelDate <= attentionLimitDate) {
       receivableAttention.push({
@@ -795,6 +843,19 @@ monthRevenues.forEach((revenue) => {
   });
 });
 
+const nextPayables = await prisma.accountPayable.findMany({
+  where: {
+    ...userScope,
+    status: "PENDING",
+    dueDate: { gte: today, lte: nextTenDays },
+  },
+  select: { amountCents: true },
+});
+const nextPayableCents = nextPayables.reduce(
+  (sum, row) => sum + Number(row.amountCents || 0),
+  0
+);
+
 const weighingAttentionPlans = await prisma.weighingPlan.findMany({
   where: {
     shouldWeigh: true,
@@ -808,6 +869,37 @@ const weighingAttentionCount = await prisma.weighingPlan.count({
   where: {
     shouldWeigh: true,
     cat: { is: userScope },
+  },
+});
+
+const vaccinationCats = await prisma.cat.findMany({
+  where: userScope,
+  include: {
+    mother: true,
+    vaccinationPlan: true,
+    litterKitten: true,
+  },
+});
+const overdueVaccinesCount = vaccinationCats.reduce((count, cat) => {
+  if (!classifyOperationalCat(cat)) return count;
+  const antirabicHistory = parseJsonList(cat.vaccinationPlan?.antirabicHistoryJson);
+  const felineHistory = parseJsonList(cat.vaccinationPlan?.felineHistoryJson);
+  const nextAntirabic = computeNextAntirabic(cat.birthDate, antirabicHistory);
+  const nextFeline = computeNextFeline(cat.birthDate, felineHistory);
+  return [nextAntirabic, nextFeline].some((date) => date && date < today)
+    ? count + 1
+    : count;
+}, 0);
+
+const activeTreatmentCount = await prisma.catTreatment.count({
+  where: {
+    ...userScope,
+    OR: [{ endDate: null }, { endDate: { gte: today } }],
+    cat: {
+      is: {
+        OR: [{ delivered: false }, { delivered: null }],
+      },
+    },
   },
 });
 
@@ -859,8 +951,22 @@ const operationalPanel = {
   },
   routines: {
     weighingAttentionCount,
+    overdueVaccinesCount,
+    activeTreatmentCount,
   },
   attentionItems,
+};
+
+const administrativePanel = {
+  finance: {
+    incomeLabel: moneyLabel(monthRevenueCents),
+    expenseLabel: moneyLabel(monthExpenseCents),
+    balanceLabel: moneyLabel(monthRevenueCents - monthExpenseCents),
+    nextReceivableLabel: moneyLabel(nextReceivableCents),
+    nextReceivableCount,
+    nextPayableLabel: moneyLabel(nextPayableCents),
+    nextPayableCount: nextPayables.length,
+  },
 };
 
 
@@ -874,6 +980,7 @@ res.render("dashboard", {
 
   pendingServices,
 pendingServicesCount: pendingServices.length,
+  administrativePanel,
   operationalPanel,
 
   currentPath: req.path,

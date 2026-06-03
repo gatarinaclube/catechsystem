@@ -504,6 +504,7 @@ model QuickLaunchEntry {
   paymentMethod String
   paymentMode   String?
   installments  Int?
+  parcelDataJson String?
   supplier      String
   receiptPath   String?
   note          String?

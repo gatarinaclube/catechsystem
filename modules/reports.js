@@ -236,6 +236,54 @@ function parseParcelData(value) {
   }
 }
 
+function mapCreditCardPurchaseRows(expenses, dates) {
+  const startTime = dates.startDate.getTime();
+  const endTime = addDays(dates.closingDate, 1).getTime();
+  const rows = [];
+
+  expenses.forEach((expense) => {
+    const parcels = parseParcelData(expense.parcelDataJson);
+
+    if (parcels.length) {
+      parcels.forEach((parcel) => {
+        const parcelDate = parseDateInput(parcel.date, null);
+        if (!parcelDate) return;
+
+        const parcelTime = parcelDate.getTime();
+        if (parcelTime < startTime || parcelTime >= endTime) return;
+
+        rows.push({
+          ...expense,
+          parcelNumber: parcel.number,
+          parcelLabel: `${parcel.number || "-"} / ${expense.installments || parcels.length || "-"}`,
+          competenceDate: parcelDate,
+          dateLabel: formatDateOnlyLabel(parcelDate),
+          amountCents: Number(parcel.amountCents || 0),
+          amountLabel: formatCurrency(parcel.amountCents),
+        });
+      });
+      return;
+    }
+
+    const expenseTime = new Date(expense.competenceDate).getTime();
+    if (expenseTime < startTime || expenseTime >= endTime) return;
+
+    rows.push({
+      ...expense,
+      parcelLabel: expense.paymentMode === "Parcelado" && expense.installments
+        ? `1 / ${expense.installments}`
+        : "",
+      dateLabel: formatDateOnlyLabel(expense.competenceDate),
+      amountLabel: formatCurrency(expense.amountCents),
+    });
+  });
+
+  return rows.sort((a, b) => {
+    const dateCompare = new Date(a.competenceDate).getTime() - new Date(b.competenceDate).getTime();
+    return dateCompare || Number(a.id) - Number(b.id);
+  });
+}
+
 function kittenNameOnly(label) {
   return String(label || "-").replace(/^\s*[^-]+-\s*/, "") || "-";
 }
@@ -659,10 +707,6 @@ async function buildCreditCardInvoiceRows(prisma, req, cardName, dates) {
     where: {
       ...ownerScope(req),
       paymentMethod: cardName,
-      competenceDate: {
-        gte: dates.startDate,
-        lte: dates.closingDate,
-      },
     },
     orderBy: [{ competenceDate: "asc" }, { createdAt: "asc" }],
   });
@@ -680,11 +724,7 @@ async function buildCreditCardInvoiceRows(prisma, req, cardName, dates) {
   });
 
   return {
-    purchases: purchases.map((row) => ({
-      ...row,
-      dateLabel: formatDateOnlyLabel(row.competenceDate),
-      amountLabel: formatCurrency(row.amountCents),
-    })),
+    purchases: mapCreditCardPurchaseRows(purchases, dates),
     payments: payments.map((row) => ({
       ...row,
       dateLabel: formatDateOnlyLabel(row.transferDate),

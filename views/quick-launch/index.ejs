@@ -75,8 +75,8 @@
           <label for="paymentMethod">Conta de Pagamento</label>
           <select id="paymentMethod" name="paymentMethod" required>
             <option value="">Selecione...</option>
-            <% paymentMethods.forEach(function(item) { %>
-              <option value="<%= item %>" <%= expense.paymentMethod === item ? 'selected' : '' %>><%= item %></option>
+            <% (paymentMethodChoices || []).forEach(function(item) { %>
+              <option value="<%= item.name %>" data-credit-card="<%= item.isCreditCard ? 'YES' : 'NO' %>" <%= expense.paymentMethod === item.name ? 'selected' : '' %>><%= item.name %></option>
             <% }) %>
           </select>
         </div>
@@ -99,6 +99,8 @@
             </select>
           </div>
         </div>
+
+        <div id="parcelFields" class="quick-parcels"></div>
 
         <div class="field">
           <label for="receipt">Foto/Comprovante</label>
@@ -135,6 +137,9 @@
       const paymentMode = document.getElementById("paymentMode");
       const creditFields = document.getElementById("creditFields");
       const installmentsField = document.getElementById("installmentsField");
+      const installments = document.getElementById("installments");
+      const parcelFields = document.getElementById("parcelFields");
+      const savedParcels = <%- JSON.stringify(expense.parcels || []) %>;
 
       function formatMoneyInput(input) {
         const digits = String(input.value || "").replace(/\D/g, "");
@@ -150,12 +155,81 @@
         });
       }
 
+      function moneyToCents(value) {
+        const digits = String(value || "").replace(/\D/g, "");
+        return digits ? Number.parseInt(digits, 10) : 0;
+      }
+
+      function numberToMoney(value) {
+        return Number(value || 0).toLocaleString("pt-BR", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+      }
+
+      function addMonths(dateText, monthsToAdd) {
+        const parts = String(dateText || "").split("-").map(Number);
+        const base = parts[0] && parts[1] && parts[2]
+          ? new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]))
+          : new Date();
+        base.setUTCMonth(base.getUTCMonth() + monthsToAdd);
+        return base.toISOString().slice(0, 10);
+      }
+
+      function selectedPaymentIsCreditCard() {
+        const option = paymentMethod.options[paymentMethod.selectedIndex];
+        return option && option.dataset.creditCard === "YES";
+      }
+
+      function splitAmount(totalCents, count) {
+        const base = Math.floor(totalCents / count);
+        const remainder = totalCents - base * count;
+        return Array.from({ length: count }, (_, index) => base + (index < remainder ? 1 : 0));
+      }
+
+      function renderParcels() {
+        const isParcelado = selectedPaymentIsCreditCard() && paymentMode.value === "Parcelado";
+        parcelFields.innerHTML = "";
+        if (!isParcelado) return;
+
+        const count = Number(installments.value || 1);
+        const amounts = splitAmount(moneyToCents(amount.value), count);
+        const startDate = document.getElementById("competenceDate").value;
+
+        for (let i = 1; i <= count; i += 1) {
+          const saved = savedParcels.find((parcel) => Number(parcel.number) === i) || {};
+          const parcelAmount = saved.amount || numberToMoney((amounts[i - 1] || 0) / 100);
+          const parcelDate = saved.date || addMonths(startDate, i - 1);
+          parcelFields.insertAdjacentHTML("beforeend", `
+            <div class="parcel-card">
+              <div class="content-title">${i}ª parcela</div>
+              <div class="quick-grid">
+                <div class="field">
+                  <label>Valor</label>
+                  <input class="money-input parcel-money-input" name="parcel${i}Amount" inputmode="decimal" value="${parcelAmount}">
+                </div>
+                <div class="field">
+                  <label>Data na fatura</label>
+                  <input name="parcel${i}Date" type="date" value="${parcelDate}">
+                </div>
+              </div>
+            </div>
+          `);
+        }
+
+        parcelFields.querySelectorAll(".money-input").forEach((input) => {
+          input.addEventListener("input", () => formatMoneyInput(input));
+          input.addEventListener("blur", () => formatMoneyInput(input));
+        });
+      }
+
       function refreshCreditFields() {
-        const isCredit = (paymentMethod.value || "").toLowerCase().includes("crédito");
+        const isCredit = selectedPaymentIsCreditCard();
         creditFields.style.display = isCredit ? "grid" : "none";
         paymentMode.required = isCredit;
         if (!isCredit) paymentMode.value = "";
         installmentsField.style.display = paymentMode.value === "Parcelado" ? "block" : "none";
+        renderParcels();
       }
 
       function refreshCategoryFromSupplier() {
@@ -171,6 +245,9 @@
       supplier.addEventListener("input", refreshCategoryFromSupplier);
       paymentMethod.addEventListener("change", refreshCreditFields);
       paymentMode.addEventListener("change", refreshCreditFields);
+      installments.addEventListener("change", renderParcels);
+      document.getElementById("competenceDate").addEventListener("change", renderParcels);
+      amount.addEventListener("blur", renderParcels);
       formatMoneyInput(amount);
       refreshCreditFields();
     </script>

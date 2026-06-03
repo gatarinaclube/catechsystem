@@ -103,6 +103,7 @@
                   <thead>
                     <tr>
                       <th>Data</th>
+                      <th>Parcela</th>
                       <th>Categoria</th>
                       <th>Fornecedor</th>
                       <th>Observação</th>
@@ -113,6 +114,7 @@
                     <% purchases.forEach(function(row) { %>
                       <tr>
                         <td><%= row.dateLabel %></td>
+                        <td><%= row.parcelLabel || '-' %></td>
                         <td><%= row.category || '-' %></td>
                         <td><%= row.supplier || '-' %></td>
                         <td><%= row.note || '-' %></td>

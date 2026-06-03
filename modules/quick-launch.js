@@ -57,6 +57,12 @@ function parseDateInput(value) {
   return year && month && day ? new Date(Date.UTC(year, month - 1, day)) : new Date();
 }
 
+function addMonthsInput(dateText, monthsToAdd) {
+  const base = parseDateInput(dateText);
+  const date = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + monthsToAdd, base.getUTCDate()));
+  return date.toISOString().slice(0, 10);
+}
+
 function formatDateInput(date) {
   if (!date) return todayForInput();
   return new Date(date).toISOString().slice(0, 10);
@@ -69,6 +75,22 @@ function formatDateOnlyLabel(date) {
   const month = String(value.getUTCMonth() + 1).padStart(2, "0");
   const year = value.getUTCFullYear();
   return `${day}/${month}/${year}`;
+}
+
+function safeJsonParse(value) {
+  try {
+    const parsed = value ? JSON.parse(value) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function splitAmountCents(totalCents, installments) {
+  const count = Math.max(1, Number.parseInt(installments || "1", 10) || 1);
+  const base = Math.floor(Number(totalCents || 0) / count);
+  const remainder = Number(totalCents || 0) - base * count;
+  return Array.from({ length: count }, (_, index) => base + (index < remainder ? 1 : 0));
 }
 
 function monthRange(monthValue) {
@@ -116,24 +138,43 @@ function createUpload() {
   });
 }
 
-function buildExpenseFormData(body, file, existingReceipt = null) {
+function buildExpenseParcels(body, amountCents, installments, competenceDateText) {
+  const count = Math.max(1, Number.parseInt(installments || "1", 10) || 1);
+  const defaults = splitAmountCents(amountCents, count);
+
+  return Array.from({ length: count }, (_, index) => {
+    const number = index + 1;
+    return {
+      number,
+      amountCents: parseAmountToCents(body[`parcel${number}Amount`]) || defaults[index] || 0,
+      date: String(body[`parcel${number}Date`] || addMonthsInput(competenceDateText, index)).slice(0, 10),
+    };
+  });
+}
+
+function buildExpenseFormData(body, file, existingReceipt = null, creditCardNames = new Set()) {
   const amountCents = parseAmountToCents(body.amount);
   const category = String(body.category || "").trim();
   const paymentMethod = String(body.paymentMethod || "").trim();
   const supplier = String(body.supplier || "").trim();
-  const paymentMode = paymentMethod.toLowerCase().includes("crédito")
+  const isCreditCard = creditCardNames.has(paymentMethod);
+  const paymentMode = isCreditCard
     ? String(body.paymentMode || "").trim()
     : null;
   const installments =
     paymentMode === "Parcelado"
       ? Math.min(12, Math.max(1, Number.parseInt(body.installments || "1", 10)))
       : null;
+  const competenceDateText = String(body.competenceDate || todayForInput()).slice(0, 10);
+  const parcelDataJson = isCreditCard
+    ? JSON.stringify(buildExpenseParcels(body, amountCents, installments || 1, competenceDateText))
+    : null;
 
   if (!amountCents || amountCents <= 0) throw new Error("Informe um valor válido.");
   if (!category || !paymentMethod || !supplier) {
     throw new Error("Preencha categoria, conta de pagamento e fornecedor.");
   }
-  if (paymentMethod.toLowerCase().includes("crédito") && !paymentMode) {
+  if (isCreditCard && !paymentMode) {
     throw new Error("Informe se o crédito é à vista ou parcelado.");
   }
   return {
@@ -142,6 +183,7 @@ function buildExpenseFormData(body, file, existingReceipt = null) {
     paymentMethod,
     paymentMode,
     installments,
+    parcelDataJson,
     supplier,
     receiptPath: file ? `/uploads/quick-launch/${file.filename}` : existingReceipt,
     note: body.note || null,
@@ -288,6 +330,7 @@ module.exports = (prisma) => {
     const rows = await rawListOptions(req);
     let registeredSuppliers = [];
     let supplierDefaults = [];
+    let creditCardNames = new Set();
 
     try {
       const supplierRows = await prisma.expenseSupplier.findMany({
@@ -307,6 +350,20 @@ module.exports = (prisma) => {
       registeredSuppliers = [];
     }
 
+    try {
+      const accountRows = await prisma.financialAccountSetting.findMany({
+        where: canViewAllData(req.session?.userRole)
+          ? {}
+          : { ownerId: req.session?.userId || null },
+        select: { accountName: true, isCreditCard: true },
+      });
+      creditCardNames = new Set(accountRows.filter((row) => row.isCreditCard).map((row) => row.accountName));
+    } catch {
+      creditCardNames = new Set();
+    }
+
+    const paymentMethods = optionNames(rows.filter((row) => row.type === "PAYMENT"));
+
     return {
       categories: optionNames(rows.filter((row) => row.type === "CATEGORY")),
       suppliers: optionNames([
@@ -325,8 +382,23 @@ module.exports = (prisma) => {
         };
       }),
       supplierDefaults,
-      paymentMethods: optionNames(rows.filter((row) => row.type === "PAYMENT")),
+      paymentMethods,
+      paymentMethodChoices: paymentMethods.map((name) => ({
+        name,
+        isCreditCard: creditCardNames.has(name),
+      })),
     };
+  }
+
+  async function loadExpenseCreditCardNames(req, fallbackOwnerId = null) {
+    const ownerId = req.session?.userId || fallbackOwnerId;
+    const rows = await prisma.financialAccountSetting.findMany({
+      where: canViewAllData(req.session?.userRole)
+        ? { isCreditCard: true }
+        : { ownerId: ownerId || null, isCreditCard: true },
+      select: { accountName: true },
+    });
+    return new Set(rows.map((row) => row.accountName).filter(Boolean));
   }
 
   async function loadManagedOptions(req, selectedType) {
@@ -475,6 +547,7 @@ module.exports = (prisma) => {
         paymentMethod: "",
         paymentMode: "",
         installments: "1",
+        parcels: [],
         supplier: "",
         receiptPath: "",
         note: "",
@@ -487,6 +560,10 @@ module.exports = (prisma) => {
       amount: formatAmount(expense.amountCents),
       competenceDate: formatDateInput(expense.competenceDate),
       installments: expense.installments || "1",
+      parcels: safeJsonParse(expense.parcelDataJson).map((parcel) => ({
+        ...parcel,
+        amount: formatAmount(parcel.amountCents),
+      })),
     };
   }
 
@@ -575,7 +652,12 @@ module.exports = (prisma) => {
 
     try {
       validateFilesForRole(req.file ? [req.file] : [], user.role);
-      const data = buildExpenseFormData(req.body, req.file);
+      const data = buildExpenseFormData(
+        req.body,
+        req.file,
+        null,
+        await loadExpenseCreditCardNames(req, user.id)
+      );
       await prisma.quickLaunchEntry.create({
         data: {
           ownerId: user.id,
@@ -603,7 +685,12 @@ module.exports = (prisma) => {
   router.post("/despesas", upload.single("receipt"), async (req, res) => {
     try {
       validateFilesForRole(req.file ? [req.file] : [], req.session?.userRole);
-      const data = buildExpenseFormData(req.body, req.file);
+      const data = buildExpenseFormData(
+        req.body,
+        req.file,
+        null,
+        await loadExpenseCreditCardNames(req)
+      );
       await prisma.quickLaunchEntry.create({
         data: {
           ownerId: req.session?.userId || null,
@@ -747,7 +834,12 @@ module.exports = (prisma) => {
 
     try {
       validateFilesForRole(req.file ? [req.file] : [], req.session?.userRole);
-      const data = buildExpenseFormData(req.body, req.file, existing.receiptPath);
+      const data = buildExpenseFormData(
+        req.body,
+        req.file,
+        existing.receiptPath,
+        await loadExpenseCreditCardNames(req)
+      );
       await prisma.quickLaunchEntry.update({
         where: { id: existing.id },
         data,
