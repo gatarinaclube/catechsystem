@@ -47,6 +47,15 @@ function safeJsonParse(value, fallback = {}) {
   }
 }
 
+function normalizeDocument(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function clientLabel(client) {
+  if (!client) return "";
+  return [client.fullName, client.document].filter(Boolean).join(" - ");
+}
+
 function mergeLinkedKittenFields(cat) {
   if (!cat) return cat;
   const linkedBreeding = cat.litterKitten?.breeding || null;
@@ -94,6 +103,12 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
   function ownerScope(req) {
     return canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId };
+  }
+
+  function clientScope(req) {
+    return canViewAllData(req.session?.userRole)
+      ? { deletedAt: null }
+      : { ownerId: req.session.userId, deletedAt: null };
   }
 
   async function ensureKittenLimit(req) {
@@ -150,6 +165,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           },
         })
       : [];
+    const ownerClients = await prisma.revenueClient.findMany({
+      where: clientScope(req),
+      orderBy: { fullName: "asc" },
+    });
 
     return {
       user: req.user,
@@ -157,6 +176,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       females,
       males,
       users,
+      ownerClients: ownerClients.map((client) => ({
+        ...client,
+        label: clientLabel(client),
+        normalizedDocument: normalizeDocument(client.document),
+      })),
       breeds: BREEDS,
       kittenStatusOptions: KITTEN_STATUS_OPTIONS,
       kitten,
@@ -241,28 +265,17 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
   async function parsePayload(req, existingKitten = null) {
     const microchip = await validateMicrochip(req.body.microchip, existingKitten?.id || null);
-    const currentOwnerMode = req.body.currentOwnerMode || "ME";
-    const registeredOwnerMode = req.body.registeredOwnerMode || "YES";
-    const currentOwnerId = currentOwnerMode === "OTHER"
-      ? (registeredOwnerMode === "YES" && req.body.currentOwnerId
-          ? Number(req.body.currentOwnerId)
-          : null)
-      : req.session.userId;
-    const newOwnerInfo = currentOwnerMode === "OTHER" && registeredOwnerMode === "NO"
-      ? {
-          name: req.body.newOwnerName || "",
-          document: req.body.newOwnerDocument || "",
-          cep: req.body.newOwnerCep || "",
-          city: req.body.newOwnerCity || "",
-          street: req.body.newOwnerStreet || "",
-          number: req.body.newOwnerNumber || "",
-          neighborhood: req.body.newOwnerNeighborhood || "",
-          state: req.body.newOwnerState || "",
-          country: req.body.newOwnerCountry || "",
-          phone: req.body.newOwnerPhone || "",
-          email: req.body.newOwnerEmail || "",
-        }
+    const ownerLockedBySale = existingKitten?.ownershipSource === "SALE";
+    const selectedOwnerClientId = req.body.currentOwnerClientId ? Number(req.body.currentOwnerClientId) : null;
+    const selectedOwnerClient = selectedOwnerClientId && !ownerLockedBySale
+      ? await prisma.revenueClient.findFirst({
+          where: { id: selectedOwnerClientId, ...clientScope(req) },
+        })
       : null;
+
+    if (selectedOwnerClientId && !ownerLockedBySale && !selectedOwnerClient) {
+      throw new Error("Selecione um cliente cadastrado válido para o proprietário.");
+    }
 
     return {
       kittenNumber: req.body.kittenNumber || null,
@@ -279,9 +292,17 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       neutered: req.body.breedingStatus === "NOT_FOR_BREEDING",
       breederType: "Eu Mesmo",
       breederName: null,
-      ownershipType: currentOwnerMode === "OTHER" ? "CO-OWNERSHIP" : "OWNER",
-      currentOwnerId,
-      newOwnerInfoJson: newOwnerInfo ? JSON.stringify(newOwnerInfo) : null,
+      ownershipType: selectedOwnerClientId || ownerLockedBySale ? "OWNER" : null,
+      currentOwnerId: ownerLockedBySale ? existingKitten.currentOwnerId : null,
+      currentOwnerClientId: ownerLockedBySale
+        ? existingKitten.currentOwnerClientId
+        : selectedOwnerClientId,
+      ownershipSource: ownerLockedBySale
+        ? existingKitten.ownershipSource
+        : selectedOwnerClientId
+          ? "MANUAL"
+          : null,
+      newOwnerInfoJson: ownerLockedBySale ? existingKitten.newOwnerInfoJson : null,
       ...statusFlags(req.body.kittenAvailabilityStatus || existingKitten?.kittenAvailabilityStatus || "UNAVAILABLE"),
       ownerId: existingKitten?.ownerId || req.session.userId,
       status: existingKitten?.status || "APROVADO",
@@ -439,6 +460,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         where: { id: Number(req.params.id) },
         include: {
           litterKitten: true,
+          currentOwnerClient: true,
         },
       });
 
@@ -469,6 +491,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         where: { id: Number(req.params.id) },
         include: {
           litterKitten: true,
+          currentOwnerClient: true,
         },
       });
 

@@ -455,6 +455,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         include: {
           owner: true,
           currentOwner: true,
+          currentOwnerClient: true,
           father: true,
           mother: true,
           litterKitten: {
@@ -514,7 +515,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         father: cat.father?.name || cat.fatherName || "-",
         mother: cat.mother?.name || cat.motherName || "-",
         owner: cat.owner?.name || "-",
-        currentOwner: cat.currentOwner?.name || cat.owner?.name || "-",
+        currentOwner: cat.currentOwnerClient?.fullName || cat.currentOwner?.name || cat.owner?.name || "-",
         classification:
           classifyOperationalCat(cat, {
             includeDeliveredKittensInHistory: true,

@@ -176,23 +176,30 @@
 
           <div class="content-card" style="margin-bottom:18px;">
             <div class="content-title">Informações de Propriedade</div>
-            <% const hasNewOwnerInfo = Boolean(kitten?.newOwnerInfoJson || kitten?.newOwnerInfo); %>
-            <% const isOtherOwner = hasNewOwnerInfo || (kitten?.currentOwnerId && kitten?.currentOwnerId !== kitten?.ownerId); %>
-            <% const newOwnerInfo = kitten?.newOwnerInfo || {}; %>
-            <div class="kitten-property-grid">
+            <% const selectedOwnerClient = ownerClients.find(function(client) { return String(kitten?.currentOwnerClientId || '') === String(client.id); }); %>
+            <% const ownerLockedBySale = kitten?.ownershipSource === 'SALE'; %>
+            <div class="grid-2" style="margin-top:12px;">
               <div class="field">
-                <label class="field-label" for="currentOwnerMode">Proprietário</label>
-                <select id="currentOwnerMode" name="currentOwnerMode">
-                  <option value="ME" <%= isOtherOwner ? "" : "selected" %>>Eu Mesmo</option>
-                  <option value="OTHER" <%= isOtherOwner ? "selected" : "" %>>Outro</option>
-                </select>
-                <div class="field owner-nested-field" id="registeredOwnerModeField">
-                  <label class="field-label" for="registeredOwnerMode">Pessoa cadastrada?</label>
-                  <select id="registeredOwnerMode" name="registeredOwnerMode">
-                    <option value="YES" <%= hasNewOwnerInfo ? "" : "selected" %>>SIM</option>
-                    <option value="NO" <%= hasNewOwnerInfo ? "selected" : "" %>>NÃO</option>
-                  </select>
-                </div>
+                <label class="field-label" for="ownerClientSearch">Cliente proprietário</label>
+                <input
+                  id="ownerClientSearch"
+                  list="ownerClientOptions"
+                  value="<%= selectedOwnerClient ? selectedOwnerClient.label : '' %>"
+                  placeholder="Digite o nome, CPF ou CNPJ do cliente"
+                  autocomplete="off"
+                  <%= ownerLockedBySale ? "readonly" : "" %>
+                />
+                <input type="hidden" id="currentOwnerClientId" name="currentOwnerClientId" value="<%= kitten?.currentOwnerClientId || '' %>" />
+                <datalist id="ownerClientOptions">
+                  <% ownerClients.forEach(function(client) { %>
+                    <option value="<%= client.label %>" data-id="<%= client.id %>"></option>
+                  <% }) %>
+                </datalist>
+                <% if (ownerLockedBySale) { %>
+                  <div class="section-note" style="margin-top:8px;">
+                    Proprietário vinculado por venda. Para alterar, edite a venda relacionada.
+                  </div>
+                <% } %>
               </div>
               <div class="field">
                 <label class="field-label" for="kittenAvailabilityStatus">Status</label>
@@ -203,68 +210,7 @@
                 </select>
               </div>
             </div>
-            <div class="registered-owner-row" id="currentOwnerField">
-              <div class="field">
-                <label class="field-label" for="currentOwnerId">Pessoa cadastrada</label>
-                <select id="currentOwnerId" name="currentOwnerId">
-                  <option value="">Selecione...</option>
-                  <% users.forEach(function(item) { %>
-                    <option value="<%= item.id %>" <%= String(kitten?.currentOwnerId || '') === String(item.id) ? "selected" : "" %>><%= item.name %></option>
-                  <% }) %>
-                </select>
-                <a href="#" id="ownerInfoLink" style="display:inline-block; margin-top:8px;">informações</a>
-              </div>
-              <div id="ownerInfoBox" class="content-card" style="display:none; padding:12px;"></div>
-            </div>
-            <div class="new-owner-grid" id="newOwnerFields">
-              <div class="field">
-                <label class="field-label" for="newOwnerName">Nome Completo</label>
-                <input id="newOwnerName" name="newOwnerName" type="text" value="<%= newOwnerInfo.name || '' %>" />
-              </div>
-              <div class="field">
-                <label class="field-label" for="newOwnerDocument">CPF/RG/Passaporte</label>
-                <input id="newOwnerDocument" name="newOwnerDocument" type="text" value="<%= newOwnerInfo.document || '' %>" />
-              </div>
-              <div class="field">
-                <label class="field-label" for="newOwnerCep">CEP</label>
-                <div class="cep-lookup-row">
-                  <input id="newOwnerCep" name="newOwnerCep" type="text" value="<%= newOwnerInfo.cep || '' %>" />
-                  <button type="button" class="btn cep-lookup-button" id="cepLookupButton" title="Buscar CEP" aria-label="Buscar CEP">&#128269;</button>
-                </div>
-              </div>
-              <div class="field">
-                <label class="field-label" for="newOwnerCity">Cidade</label>
-                <input id="newOwnerCity" name="newOwnerCity" type="text" value="<%= newOwnerInfo.city || '' %>" />
-              </div>
-              <div class="field">
-                <label class="field-label" for="newOwnerStreet">Rua</label>
-                <input id="newOwnerStreet" name="newOwnerStreet" type="text" value="<%= newOwnerInfo.street || '' %>" />
-              </div>
-              <div class="field">
-                <label class="field-label" for="newOwnerNumber">Número</label>
-                <input id="newOwnerNumber" name="newOwnerNumber" type="text" value="<%= newOwnerInfo.number || '' %>" />
-              </div>
-              <div class="field">
-                <label class="field-label" for="newOwnerNeighborhood">Bairro</label>
-                <input id="newOwnerNeighborhood" name="newOwnerNeighborhood" type="text" value="<%= newOwnerInfo.neighborhood || '' %>" />
-              </div>
-              <div class="field">
-                <label class="field-label" for="newOwnerState">UF</label>
-                <input id="newOwnerState" name="newOwnerState" type="text" maxlength="2" value="<%= newOwnerInfo.state || '' %>" />
-              </div>
-              <div class="field">
-                <label class="field-label" for="newOwnerCountry">País</label>
-                <input id="newOwnerCountry" name="newOwnerCountry" type="text" value="<%= newOwnerInfo.country || 'Brasil' %>" />
-              </div>
-              <div class="field">
-                <label class="field-label" for="newOwnerPhone">Telefone/Whatsapp</label>
-                <input id="newOwnerPhone" name="newOwnerPhone" type="text" value="<%= newOwnerInfo.phone || '' %>" />
-              </div>
-              <div class="field">
-                <label class="field-label" for="newOwnerEmail">E-mail</label>
-                <input id="newOwnerEmail" name="newOwnerEmail" type="email" value="<%= newOwnerInfo.email || '' %>" />
-              </div>
-            </div>
+            <div id="ownerClientInfoBox" class="content-card" style="display:none; padding:12px; margin-top:12px;"></div>
           </div>
 
           <div class="content-card">
@@ -284,22 +230,10 @@
 
     <script src="/js/ems-data.js"></script>
     <script>
-      const users = <%- JSON.stringify(users) %>;
-      const currentOwnerMode = document.getElementById("currentOwnerMode");
-      const registeredOwnerModeField = document.getElementById("registeredOwnerModeField");
-      const registeredOwnerMode = document.getElementById("registeredOwnerMode");
-      const currentOwnerField = document.getElementById("currentOwnerField");
-      const currentOwnerSelect = document.getElementById("currentOwnerId");
-      const ownerInfoLink = document.getElementById("ownerInfoLink");
-      const ownerInfoBox = document.getElementById("ownerInfoBox");
-      const newOwnerFields = document.getElementById("newOwnerFields");
-      const newOwnerCep = document.getElementById("newOwnerCep");
-      const cepLookupButton = document.getElementById("cepLookupButton");
-      const newOwnerCity = document.getElementById("newOwnerCity");
-      const newOwnerStreet = document.getElementById("newOwnerStreet");
-      const newOwnerNeighborhood = document.getElementById("newOwnerNeighborhood");
-      const newOwnerState = document.getElementById("newOwnerState");
-      const newOwnerCountry = document.getElementById("newOwnerCountry");
+      const ownerClients = <%- JSON.stringify(ownerClients || []) %>;
+      const ownerClientSearch = document.getElementById("ownerClientSearch");
+      const currentOwnerClientId = document.getElementById("currentOwnerClientId");
+      const ownerClientInfoBox = document.getElementById("ownerClientInfoBox");
       const microchipInput = document.getElementById("microchip");
       const breedSelect = document.getElementById("breed");
       const emsSelect = document.getElementById("emsCode");
@@ -309,53 +243,34 @@
         microchipInput.value = (digits.match(/.{1,3}/g) || []).join(".");
       }
 
-      function toggleOwnerField() {
-        const isOther = currentOwnerMode.value === "OTHER";
-        const isRegistered = registeredOwnerMode.value === "YES";
-
-        registeredOwnerModeField.style.display = isOther ? "block" : "none";
-        currentOwnerField.style.display = isOther && isRegistered ? "grid" : "none";
-        newOwnerFields.style.display = isOther && !isRegistered ? "grid" : "none";
-
-        if (!isOther || !isRegistered) {
-          ownerInfoBox.style.display = "none";
-        }
+      function escapeHtml(value) {
+        return String(value || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
       }
 
-      function renderOwnerInfo(event) {
-        event.preventDefault();
-        const selected = users.find((item) => String(item.id) === currentOwnerSelect.value);
+      function renderOwnerClientInfo() {
+        const selected = ownerClients.find((item) => String(item.id) === currentOwnerClientId.value);
         if (!selected) {
-          ownerInfoBox.style.display = "none";
+          ownerClientInfoBox.style.display = "none";
           return;
         }
-        ownerInfoBox.style.display = "block";
-        ownerInfoBox.innerHTML = `
-          <strong>${selected.name}</strong><br>
-          E-mail: ${selected.email || "-"}<br>
-          Telefone: ${selected.phones || "-"}<br>
-          Cidade: ${selected.city || "-"} / ${selected.state || "-"}
+        ownerClientInfoBox.style.display = "block";
+        ownerClientInfoBox.innerHTML = `
+          <strong>${escapeHtml(selected.fullName)}</strong><br>
+          Documento: ${escapeHtml(selected.document || "-")}<br>
+          E-mail: ${escapeHtml(selected.email || "-")}<br>
+          Telefone: ${escapeHtml(selected.phone || "-")}<br>
+          Cidade: ${escapeHtml(selected.city || "-")} / ${escapeHtml(selected.state || "-")}
         `;
       }
 
-      async function lookupCep() {
-        const cep = newOwnerCep.value.replace(/\D/g, "");
-        if (cep.length !== 8) return;
-
-        try {
-          const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-          if (!response.ok) return;
-          const data = await response.json();
-          if (data.erro) return;
-
-          if (!newOwnerStreet.value) newOwnerStreet.value = data.logradouro || "";
-          if (!newOwnerNeighborhood.value) newOwnerNeighborhood.value = data.bairro || "";
-          if (!newOwnerCity.value) newOwnerCity.value = data.localidade || "";
-          if (!newOwnerState.value) newOwnerState.value = data.uf || "";
-          if (!newOwnerCountry.value) newOwnerCountry.value = "Brasil";
-        } catch (error) {
-          console.error(error);
-        }
+      function syncOwnerClientId() {
+        const selected = ownerClients.find((item) => item.label === ownerClientSearch.value);
+        currentOwnerClientId.value = selected ? selected.id : "";
+        renderOwnerClientInfo();
       }
 
       function bindBreedToEms() {
@@ -378,15 +293,12 @@
         });
       }
 
-      currentOwnerMode.addEventListener("change", toggleOwnerField);
-      registeredOwnerMode.addEventListener("change", toggleOwnerField);
-      ownerInfoLink.addEventListener("click", renderOwnerInfo);
-      newOwnerCep.addEventListener("blur", lookupCep);
-      cepLookupButton.addEventListener("click", lookupCep);
+      ownerClientSearch.addEventListener("input", syncOwnerClientId);
+      ownerClientSearch.addEventListener("change", syncOwnerClientId);
       microchipInput.addEventListener("input", formatMicrochip);
       breedSelect.addEventListener("change", bindBreedToEms);
 
-      toggleOwnerField();
+      renderOwnerClientInfo();
       formatMicrochip();
       bindBreedToEms();
     </script>

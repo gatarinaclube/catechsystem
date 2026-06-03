@@ -213,7 +213,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
   async function loadEligibleCats(req) {
     const cats = await prisma.cat.findMany({
-      where: ownerScope(req),
+      where: {
+        ...ownerScope(req),
+        AND: [
+          { OR: [{ deceased: false }, { deceased: null }] },
+          { OR: [{ kittenAvailabilityStatus: { not: "DECEASED" } }, { kittenAvailabilityStatus: null }] },
+        ],
+      },
       include: { litterKitten: true, mother: true },
       orderBy: [{ name: "asc" }],
     });

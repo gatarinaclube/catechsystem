@@ -27,11 +27,39 @@
           </div>
         </div>
 
+        <% const imported = importedLitter || null; %>
+        <div class="content-card" style="margin-bottom:18px;">
+          <div class="section-title"><strong>Importar ninhada cadastrada em Ninhadas</strong></div>
+          <form method="get" action="/litters/new" class="grid-2" style="margin-top:12px; align-items:end;">
+            <div class="field">
+              <label class="field-label" for="importLitterId">Ninhada cadastrada</label>
+              <select id="importLitterId" name="importLitterId">
+                <option value="">Selecione uma ninhada...</option>
+                <% (importableLitters || []).forEach(function(litter) { %>
+                  <option value="<%= litter.id %>" <%= imported && imported.id === litter.id ? 'selected' : '' %>><%= litter.importLabel %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Importar Ninhada</button>
+              <% if (imported) { %>
+                <a href="/litters/new" class="btn">Limpar importação</a>
+              <% } %>
+            </div>
+          </form>
+          <% if (imported) { %>
+            <div class="section-note" style="margin-top:10px;">
+              Ninhada importada. Ao salvar, o serviço será vinculado a esta ninhada já cadastrada.
+            </div>
+          <% } %>
+        </div>
+
         <form
   method="post"
   action="/litters"
   enctype="multipart/form-data"
 >
+          <input type="hidden" name="importedLitterId" value="<%= imported ? imported.id : '' %>" />
           <div class="content">
 
 
@@ -54,6 +82,7 @@
                           data-breed="<%= c.breed || '' %>"
                           data-ems="<%= c.emsCode || '' %>"
                           data-microchip="<%= c.microchip || '' %>"
+                          <%= String(importedFemaleCatId || '') === String(c.id) ? 'selected' : '' %>
                         >
                           <%= c.name %>
                           <% if (c.pedigreeNumber) { %> - <%= c.pedigreeNumber %><% } %>
@@ -93,6 +122,7 @@
                           data-breed="<%= c.breed || '' %>"
                           data-ems="<%= c.emsCode || '' %>"
                           data-microchip="<%= c.microchip || '' %>"
+                          <%= String(importedMaleCatId || '') === String(c.id) ? 'selected' : '' %>
                         >
                           <%= c.name %>
                           <% if (c.pedigreeNumber) { %> - <%= c.pedigreeNumber %><% } %>
@@ -206,7 +236,7 @@
                       "IS","IT","KO","KR","LI","LT","LU","LV","MX","MY","NL","NO",
                       "PL","PT","RO","RS","RU","SE","SI","SK","TR","UA","US","UY"
                     ].forEach(function (code) { %>
-                      <option value="<%= code %>"><%= code %>*</option>
+                      <option value="<%= code %>" <%= imported?.catteryCountry === code ? 'selected' : '' %>><%= code %>*</option>
                     <% }); %>
                   </select>
                 </div>
@@ -219,6 +249,7 @@
                     id="litterBirthDate"
                     type="date"
                     name="litterBirthDate"
+                    value="<%= imported ? formatDateForInput(imported.litterBirthDate) : '' %>"
                     required
                   />
                 </div>
@@ -232,6 +263,7 @@
                     type="text"
                     name="catteryName"
                     maxlength="15"
+                    value="<%= imported?.catteryName || '' %>"
                     required
                   />
                   <small style="font-size:11px; color:var(--text-muted);">
@@ -247,7 +279,7 @@
                     id="litterCount"
                     type="number"
                     name="litterCount"
-                    value="1"
+                    value="<%= imported?.litterCount || (imported?.kittens || []).length || 1 %>"
                     min="1"
                     max="9"
                     inputmode="numeric"
@@ -262,6 +294,7 @@
               <div class="section-title"><strong>Dados dos filhotes</strong></div>
           <div class="kittens-wrapper">
             <% for (let i = 1; i <= 9; i++) { %>
+              <% const importedKitten = imported ? importedKittenAt(imported, i) : null; %>
               <div class="kitten-block" data-index="<%= i %>">
                 <div class="kitten-header">Filhote <%= i %></div>
 
@@ -280,6 +313,7 @@
                       data-index="<%= i %>"
                       name="kitten<%= i %>_nameSuffix"
                       placeholder="Nome"
+                      value="<%= importedKitten?.name || '' %>"
                     />
                     </div>
 
@@ -289,6 +323,7 @@
                       class="kitten-name-full"
                       data-index="<%= i %>"
                       name="kitten<%= i %>_fullName"
+                      value="<%= importedKitten?.name || '' %>"
                     />
                   </div>
 
@@ -302,56 +337,11 @@
                       data-required-when-visible="true"
                     >
                       <option value="">Selecione...</option>
-                      <option value="ABY">ABY</option>
-                      <option value="ACL">ACL</option>
-                      <option value="ACS">ACS</option>
-                      <option value="BAL">BAL</option>
-                      <option value="BEN">BEN</option>
-                      <option value="BLH">BLH</option>
-                      <option value="BML">BML</option>
-                      <option value="BOM">BOM</option>
-                      <option value="BSH">BSH</option>
-                      <option value="BUR">BUR</option>
-                      <option value="CHA">CHA</option>
-                      <option value="CRX">CRX</option>
-                      <option value="DRX">DRX</option>
-                      <option value="DSP">DSP</option>
-                      <option value="EUR">EUR</option>
-                      <option value="EXO">EXO</option>
-                      <option value="GRX">GRX</option>
-                      <option value="HCL">HCL</option>
-                      <option value="HCS">HCS</option>
-                      <option value="JBS">JBS</option>
-                      <option value="KBL">KBL</option>
-                      <option value="KBS">KBS</option>
-                      <option value="KOR">KOR</option>
-                      <option value="LPL">LPL</option>
-                      <option value="LPS">LPS</option>
-                      <option value="LYO">LYO</option>
-                      <option value="MAU">MAU</option>
-                      <option value="MCO">MCO</option>
-                      <option value="NEM">NEM</option>
-                      <option value="NFO">NFO</option>
-                      <option value="OCI">OCI</option>
-                      <option value="OLH">OLH</option>
-                      <option value="OSH">OSH</option>
-                      <option value="PEB">PEB</option>
-                      <option value="PER">PER</option>
-                      <option value="RAG">RAG</option>
-                      <option value="RUS">RUS</option>
-                      <option value="SBI">SBI</option>
-                      <option value="SIA">SIA</option>
-                      <option value="SIB">SIB</option>
-                      <option value="SIN">SIN</option>
-                      <option value="SNO">SNO</option>
-                      <option value="SOK">SOK</option>
-                      <option value="SOM">SOM</option>
-                      <option value="SPH">SPH</option>
-                      <option value="SRL">SRL</option>
-                      <option value="SRS">SRS</option>
-                      <option value="THA">THA</option>
-                      <option value="TUA">TUA</option>
-                      <option value="TUV">TUV</option>
+                      <% [
+                        "ABY","ACL","ACS","BAL","BEN","BLH","BML","BOM","BSH","BUR","CHA","CRX","DRX","DSP","EUR","EXO","GRX","HCL","HCS","JBS","KBL","KBS","KOR","LPL","LPS","LYO","MAU","MCO","NEM","NFO","OCI","OLH","OSH","PEB","PER","RAG","RUS","SBI","SIA","SIB","SIN","SNO","SOK","SOM","SPH","SRL","SRS","THA","TUA","TUV"
+                      ].forEach(function (breed) { %>
+                        <option value="<%= breed %>" <%= importedKitten?.breed === breed ? 'selected' : '' %>><%= breed %></option>
+                      <% }) %>
                     </select>
                   </div>
 
@@ -364,6 +354,7 @@
                       id="kitten<%= i %>_ems"
                       name="kitten<%= i %>_ems"
                       data-kitten-ems="<%= i %>"
+                      data-imported-ems="<%= importedKitten?.emsEyes || '' %>"
                       data-required-when-visible="true"
                     >
                       <option value="">Selecione uma raça primeiro...</option>
@@ -379,8 +370,8 @@
                       data-required-when-visible="true"
                     >
                       <option value="">Selecione...</option>
-                      <option value="M">Macho</option>
-                      <option value="F">Fêmea</option>
+                      <option value="M" <%= importedKitten?.sex === 'M' ? 'selected' : '' %>>Macho</option>
+                      <option value="F" <%= importedKitten?.sex === 'F' ? 'selected' : '' %>>Fêmea</option>
                     </select>
                   </div>
 
@@ -395,6 +386,7 @@
     name="kitten<%= i %>_microchip"
     class="kitten-microchip"
     placeholder="000.000.000.000.000"
+    value="<%= importedKitten?.microchip || '' %>"
   />
 </div>
 
@@ -405,6 +397,7 @@
       type="checkbox"
       name="kitten<%= i %>_breeding"
       value="Breeding"
+      <%= importedKitten?.breeding ? 'checked' : '' %>
     />
     Uso para Reprodução
   </label>
@@ -532,32 +525,36 @@
 
         // ---------- Preencher dados do macho ----------
         const maleSelect = document.getElementById("maleCatId");
-        if (maleSelect) {
-          maleSelect.addEventListener("change", () => {
-            const opt = maleSelect.options[maleSelect.selectedIndex];
-            if (!opt || !opt.dataset) return;
+        function syncMaleFields() {
+          const opt = maleSelect.options[maleSelect.selectedIndex];
+          if (!opt || !opt.dataset) return;
 
-            document.getElementById("maleName").value = opt.dataset.name || "";
-            document.getElementById("maleBreed").value = opt.dataset.breed || "";
-            document.getElementById("maleEms").value = opt.dataset.ems || "";
-            document.getElementById("maleMicrochip").value =
-              formatMicrochip(opt.dataset.microchip || "");
-          });
+          document.getElementById("maleName").value = opt.dataset.name || "";
+          document.getElementById("maleBreed").value = opt.dataset.breed || "";
+          document.getElementById("maleEms").value = opt.dataset.ems || "";
+          document.getElementById("maleMicrochip").value =
+            formatMicrochip(opt.dataset.microchip || "");
+        }
+        if (maleSelect) {
+          maleSelect.addEventListener("change", syncMaleFields);
+          syncMaleFields();
         }
 
         // ---------- Preencher dados da fêmea ----------
         const femaleSelect = document.getElementById("femaleCatId");
-        if (femaleSelect) {
-          femaleSelect.addEventListener("change", () => {
-            const opt = femaleSelect.options[femaleSelect.selectedIndex];
-            if (!opt || !opt.dataset) return;
+        function syncFemaleFields() {
+          const opt = femaleSelect.options[femaleSelect.selectedIndex];
+          if (!opt || !opt.dataset) return;
 
-            document.getElementById("femaleName").value = opt.dataset.name || "";
-            document.getElementById("femaleBreed").value = opt.dataset.breed || "";
-            document.getElementById("femaleEms").value = opt.dataset.ems || "";
-            document.getElementById("femaleMicrochip").value =
-              formatMicrochip(opt.dataset.microchip || "");
-          });
+          document.getElementById("femaleName").value = opt.dataset.name || "";
+          document.getElementById("femaleBreed").value = opt.dataset.breed || "";
+          document.getElementById("femaleEms").value = opt.dataset.ems || "";
+          document.getElementById("femaleMicrochip").value =
+            formatMicrochip(opt.dataset.microchip || "");
+        }
+        if (femaleSelect) {
+          femaleSelect.addEventListener("change", syncFemaleFields);
+          syncFemaleFields();
         }
 
         // ---------- Toggle propriedade do macho ----------
@@ -744,6 +741,10 @@ refreshMaleOwnership();
       breedSelect.addEventListener("change", () => {
         updateEMSOptions(breedSelect, emsSelect);
       });
+      updateEMSOptions(breedSelect, emsSelect);
+      if (emsSelect.dataset.importedEms) {
+        emsSelect.value = emsSelect.dataset.importedEms;
+      }
     });
   });
 </script>

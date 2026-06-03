@@ -102,6 +102,23 @@ function deriveKittenStatus(cat) {
   return cat.kittenAvailabilityStatus || "AVAILABLE";
 }
 
+function clientOwnerInfo(client) {
+  if (!client) return null;
+  return {
+    name: client.fullName || "",
+    document: client.document || "",
+    cep: client.cep || "",
+    city: client.city || "",
+    street: client.street || "",
+    number: client.number || "",
+    neighborhood: client.neighborhood || "",
+    state: client.state || "",
+    country: client.country || "",
+    phone: client.phone || "",
+    email: client.email || "",
+  };
+}
+
 function mapRevenueForForm(revenue = null) {
   if (!revenue) {
     return {
@@ -424,6 +441,23 @@ function buildRevenueData(body, existing = null) {
       error: extra.error || null,
       homePath: req.session?.userId ? "/dashboard" : "/login",
       currentPath: "/receitas",
+  });
+  }
+
+  async function syncKittenOwnerFromSale(tx, kittenId, client) {
+    if (!kittenId || !client) return;
+
+    await tx.cat.update({
+      where: { id: kittenId },
+      data: {
+        currentOwnerClientId: client.id,
+        currentOwnerId: null,
+        ownershipSource: "SALE",
+        ownershipType: "OWNER",
+        newOwnerInfoJson: JSON.stringify(clientOwnerInfo(client)),
+        sold: true,
+        kittenAvailabilityStatus: "RESERVED",
+      },
     });
   }
 
@@ -442,12 +476,23 @@ function buildRevenueData(body, existing = null) {
       const productServiceId = revenueItem.startsWith("product:")
         ? Number(revenueItem.replace("product:", ""))
         : null;
+      const client = req.body.clientId
+        ? await prisma.revenueClient.findFirst({
+            where: { id: Number(req.body.clientId), ...clientScope(req) },
+          })
+        : null;
+      if (kittenId && !client) {
+        throw new Error("Selecione um cliente cadastrado para registrar a venda do filhote.");
+      }
       const kitten = kittenId
         ? await prisma.cat.findFirst({
             where: { id: kittenId, ...ownerScope(req) },
             include: { litterKitten: true, mother: true },
           })
         : null;
+      if (kittenId && !kitten) {
+        throw new Error("Filhote selecionado não encontrado para este usuário.");
+      }
       const productService = productServiceId
         ? await prisma.revenueProductService.findFirst({
             where: { id: productServiceId, ...ownerScope(req), active: true },
@@ -463,11 +508,14 @@ function buildRevenueData(body, existing = null) {
             : req.body.kittenLabel,
       });
 
-      await prisma.revenueEntry.create({
-        data: {
-          ownerId: req.session?.userId || null,
-          ...data,
-        },
+      await prisma.$transaction(async (tx) => {
+        await tx.revenueEntry.create({
+          data: {
+            ownerId: req.session?.userId || null,
+            ...data,
+          },
+        });
+        await syncKittenOwnerFromSale(tx, data.kittenId, client);
       });
       res.redirect("/receitas?ok=1");
     } catch (err) {
@@ -548,7 +596,7 @@ function buildRevenueData(body, existing = null) {
     const productServiceId = revenueItem.startsWith("product:")
       ? Number(revenueItem.replace("product:", ""))
       : null;
-    const [kitten, productService] = await Promise.all([
+    const [kitten, productService, client] = await Promise.all([
       kittenId
         ? prisma.cat.findFirst({
             where: { id: kittenId, ...ownerScope(req) },
@@ -560,19 +608,49 @@ function buildRevenueData(body, existing = null) {
             where: { id: productServiceId, ...ownerScope(req), active: true },
           })
         : null,
+      req.body.clientId
+        ? prisma.revenueClient.findFirst({
+            where: { id: Number(req.body.clientId), ...clientScope(req) },
+          })
+        : null,
     ]);
 
-    await prisma.revenueEntry.update({
-      where: { id: existing.id },
-      data: buildRevenueData({
-        ...req.body,
-        revenueItem,
-        kittenLabel: kitten
-          ? buildKittenLabel(kitten)
-          : productService
-            ? `${productService.type === "PRODUCT" ? "Produto" : "Serviço"} - ${productService.name}`
-            : req.body.kittenLabel,
-      }, existing),
+    if (kittenId && !kitten) {
+      return await renderForm(req, res, {
+        status: 400,
+        revenue: existing,
+        formAction: `/vendas/${existing.id}`,
+        backPath: "/vendas",
+        error: "Filhote selecionado não encontrado para este usuário.",
+      });
+    }
+
+    if (kittenId && !client) {
+      return await renderForm(req, res, {
+        status: 400,
+        revenue: existing,
+        formAction: `/vendas/${existing.id}`,
+        backPath: "/vendas",
+        error: "Selecione um cliente cadastrado para registrar a venda do filhote.",
+      });
+    }
+
+    const data = buildRevenueData({
+      ...req.body,
+      revenueItem,
+      kittenLabel: kitten
+        ? buildKittenLabel(kitten)
+        : productService
+          ? `${productService.type === "PRODUCT" ? "Produto" : "Serviço"} - ${productService.name}`
+          : req.body.kittenLabel,
+    }, existing);
+
+    await prisma.$transaction(async (tx) => {
+      await tx.revenueEntry.update({
+        where: { id: existing.id },
+        data,
+      });
+      await syncKittenOwnerFromSale(tx, data.kittenId, client);
     });
     res.redirect("/vendas");
   });

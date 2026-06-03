@@ -68,6 +68,50 @@ function canAppearAsLitterParent(cat) {
   return cat.breedingProspect === true;
 }
 
+function formatDateForInput(date) {
+  if (!date) return "";
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return parsed.toISOString().slice(0, 10);
+}
+
+function normalizeMicrochip(value) {
+  return value ? String(value).replace(/\D/g, "").slice(0, 15) : null;
+}
+
+function sameUtcDay(date) {
+  if (!date) return null;
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return new Date(Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate()));
+}
+
+function nextUtcDay(date) {
+  const next = new Date(date);
+  next.setUTCDate(next.getUTCDate() + 1);
+  return next;
+}
+
+function buildImportLabel(litter) {
+  const number = litter.litterNumber || String(litter.id).padStart(3, "0");
+  const date = formatDateForInput(litter.litterBirthDate).split("-").reverse().join("/");
+  return `${number} - ${litter.femaleName || "Fêmea"} x ${litter.maleName || "Macho"} - ${date || "-"}`;
+}
+
+function findMatchingCat(cats, litter, type) {
+  const microchip = normalizeMicrochip(type === "male" ? litter?.maleMicrochip : litter?.femaleMicrochip);
+  const name = String(type === "male" ? litter?.maleName : litter?.femaleName || "").trim().toLowerCase();
+
+  return cats.find((cat) => {
+    const catMicrochip = normalizeMicrochip(cat.microchip);
+    if (microchip && catMicrochip === microchip) return true;
+    return name && String(cat.name || "").trim().toLowerCase() === name;
+  }) || null;
+}
+
+function importedKittenAt(litter, index) {
+  return (litter?.kittens || []).find((kitten) => Number(kitten.index) === index) || null;
+}
 
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
@@ -102,12 +146,34 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         include: { litterKitten: true },
         orderBy: { name: "asc" },
       });
+      const importableLitters = await prisma.litter.findMany({
+        where: { ownerId: userId },
+        include: { kittens: { orderBy: { index: "asc" } } },
+        orderBy: [{ litterBirthDate: "desc" }, { id: "desc" }],
+      });
+      const importedLitterId = req.query.importLitterId ? Number(req.query.importLitterId) : null;
+      const importedLitter = importedLitterId
+        ? importableLitters.find((litter) => litter.id === importedLitterId)
+        : null;
+      const filteredMaleCats = maleCats.filter(canAppearAsLitterParent);
+      const filteredFemaleCats = femaleCats.filter(canAppearAsLitterParent);
+      const importedMaleCat = findMatchingCat(filteredMaleCats, importedLitter, "male");
+      const importedFemaleCat = findMatchingCat(filteredFemaleCats, importedLitter, "female");
 
       res.render("litters/new", {
         user: req.user,
         currentPath: req.path,
-        maleCats: maleCats.filter(canAppearAsLitterParent),
-        femaleCats: femaleCats.filter(canAppearAsLitterParent),
+        maleCats: filteredMaleCats,
+        femaleCats: filteredFemaleCats,
+        importableLitters: importableLitters.map((litter) => ({
+          ...litter,
+          importLabel: buildImportLabel(litter),
+        })),
+        importedLitter,
+        importedMaleCatId: importedMaleCat?.id || "",
+        importedFemaleCatId: importedFemaleCat?.id || "",
+        importedKittenAt,
+        formatDateForInput,
         userId,
       });
     } catch (err) {
@@ -143,9 +209,55 @@ console.log("=======================");
   const isMaleNotOwner = req.body.maleOwnership === "NOT_OWNER";
 
 
-  const authorizationFile = req.file
+      const authorizationFile = req.file
     ? `/uploads/litters/${req.file.filename}`
     : null;
+  const importedLitterId = req.body.importedLitterId ? Number(req.body.importedLitterId) : null;
+  const importedLitter = importedLitterId
+    ? await prisma.litter.findFirst({
+        where: { id: importedLitterId, ownerId: userId },
+        include: { kittens: { orderBy: { index: "asc" } } },
+      })
+    : null;
+
+  if (importedLitterId && !importedLitter) {
+    throw requiredFieldError("Ninhada importada não encontrada para este usuário.");
+  }
+
+  if (importedLitter) {
+    const existingService = await prisma.serviceRequest.findFirst({
+      where: {
+        userId,
+        litterId: importedLitter.id,
+        type: "Registro de Ninhada",
+      },
+      select: { id: true },
+    });
+
+    if (existingService) {
+      throw requiredFieldError("Esta ninhada já possui um Registro de Ninhada enviado. Acompanhe ou corrija o serviço em Meus Serviços.");
+    }
+
+    const service = await prisma.serviceRequest.create({
+      data: {
+        userId,
+        litterId: importedLitter.id,
+        type: "Registro de Ninhada",
+        description: `Registro de ninhada #${importedLitter.id}`,
+        status: "ENVIADO_GATARINA",
+        statuses: {
+          create: {
+            status: "ENVIADO_GATARINA",
+          },
+        },
+      },
+    });
+
+    await notifyNewService(prisma, service);
+    await notifyUserServiceConfirmation(prisma, service);
+
+    return res.redirect("/my-services");
+  }
 
   if (isMaleNotOwner && !req.file) {
     return res.status(400).send(
@@ -309,7 +421,7 @@ if (litterBirthDate && litterBirthDate.trim() !== "") {
 
         if (hasAnyValue) {
           const microchipDigits = mcRaw
-            ? mcRaw.replace(/\D/g, "").slice(0, 15)
+            ? normalizeMicrochip(mcRaw)
             : null;
 
           kittensData.push({
@@ -327,9 +439,47 @@ if (litterBirthDate && litterBirthDate.trim() !== "") {
 
       console.log("DEBUG LITTER POST - kittensData:", kittensData);
 
-      // 1) CRIA A NINHADA + FILHOTES
-      const litter = await prisma.litter.create({
-        data: {
+      if (!importedLitter) {
+        const birthDay = sameUtcDay(litterBirthDateObj);
+        if (birthDay) {
+          const motherFilters = [
+            ...(femaleMicrochip ? [{ femaleMicrochip }] : []),
+            ...(femaleName ? [{ femaleName }] : []),
+          ];
+          const duplicateByMother = motherFilters.length
+            ? await prisma.litter.findFirst({
+                where: {
+                  ownerId: userId,
+                  litterBirthDate: { gte: birthDay, lt: nextUtcDay(birthDay) },
+                  OR: motherFilters,
+                },
+                select: { id: true },
+              })
+            : null;
+
+          if (duplicateByMother) {
+            throw requiredFieldError("Esta ninhada já foi registrada em Ninhadas. Use o botão Importar Ninhada para enviar o Registro de Ninhada.");
+          }
+        }
+
+        const kittenMicrochips = kittensData.map((kitten) => kitten.microchip).filter(Boolean);
+        if (kittenMicrochips.length) {
+          const duplicatedKittenMicrochip = await prisma.litterKitten.findFirst({
+            where: { microchip: { in: kittenMicrochips } },
+            select: { microchip: true },
+          });
+          const duplicatedCatMicrochip = await prisma.cat.findFirst({
+            where: { microchip: { in: kittenMicrochips } },
+            select: { microchip: true },
+          });
+
+          if (duplicatedKittenMicrochip || duplicatedCatMicrochip) {
+            throw requiredFieldError("Um dos microchips dos filhotes já foi registrado. Use o botão Importar Ninhada para enviar a ninhada cadastrada anteriormente.");
+          }
+        }
+      }
+
+      const litterData = {
           owner: {
   connect: { id: userId },
 },
@@ -377,7 +527,11 @@ externalOwnerCattery: isMaleNotOwner ? externalOwnerCattery || null : null,
           kittens: {
             create: kittensData,
           },
-        },
+        };
+
+      // 1) CRIA A NINHADA + FILHOTES
+      const litter = await prisma.litter.create({
+        data: litterData,
         include: {
           kittens: true,
         },

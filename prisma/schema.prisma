@@ -640,6 +640,7 @@ model RevenueClient {
   createdAt    DateTime @default(now())
   deletedAt    DateTime?
   revenues     RevenueEntry[]
+  ownedKittens  Cat[]    @relation("CurrentKittenOwnerClient")
 }
 
 model CrmEmailContact {
@@ -801,6 +802,9 @@ model Cat {
   kittenAvailabilityStatus String?
   currentOwnerId   Int?
   currentOwner     User?             @relation("CurrentKittenOwner", fields: [currentOwnerId], references: [id])
+  currentOwnerClientId Int?
+  currentOwnerClient   RevenueClient? @relation("CurrentKittenOwnerClient", fields: [currentOwnerClientId], references: [id])
+  ownershipSource      String?
   newOwnerInfoJson String?
   historyNotes     String?
   matingPlansAsFemale MatingPlan[]   @relation("MatingFemale")
