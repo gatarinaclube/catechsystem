@@ -64,7 +64,6 @@ const administrativeRouterFactory = require("./modules/administrative");
 const academyRouterFactory = require("./modules/academy");
 const kittenShowcaseRouterFactory = require("./modules/kitten-showcase");
 const gatarinaShowPhotosRouterFactory = require("./modules/gatarina-show-photos");
-const { isAcademyPaidEnrollment, isAcademyActiveSubscription } = require("./modules/academy/services/academyService");
 const {generateTitleHomologationPDF,} = require("./modules/pdf/titleHomologationPdf");
 const {generatePedigreeHomologationPDF,} = require("./modules/pdf/pedigreeHomologationPdf");
 const { generateCatteryRegistrationPDF } = require("./modules/pdf/catteryRegistrationPdf");
@@ -173,7 +172,12 @@ function buildProfileAccessGroups(role) {
 }
 
 function buildProfilePlanCards(currentRole) {
-  return [ROLES.PREMIUM, ROLES.MASTER, ROLES.BASIC].map((role) => {
+  const normalizedCurrentRole = normalizeRole(currentRole);
+  const comparisonRoles = [ROLES.ASSOCIADO_A, ROLES.ASSOCIADO_B].includes(normalizedCurrentRole)
+    ? [ROLES.ASSOCIADO_B, ROLES.ASSOCIADO_A, ROLES.PREMIUM]
+    : [ROLES.PREMIUM, ROLES.MASTER, ROLES.BASIC];
+
+  return comparisonRoles.map((role) => {
     const limits = getCreationLimits(role);
     const uploadLimit = getFileUploadLimit(role);
     const limitLabel = (value) => (value === null ? "Ilimitado" : value);
@@ -187,7 +191,7 @@ function buildProfilePlanCards(currentRole) {
     return {
       role,
       title: getRoleLabel(role),
-      isCurrent: normalizeRole(currentRole) === role,
+      isCurrent: normalizedCurrentRole === role,
       accessGroups: buildProfileAccessGroups(role),
       items: [
         { label: "Padreadores", value: limitLabel(limits.breeders) },
@@ -286,6 +290,26 @@ function buildAbsoluteUrl(req, pathValue) {
   return `${req.protocol}://${req.get("host")}${pathValue}`;
 }
 
+async function ensureExpensePublicToken(user) {
+  if (user.expensePublicToken) return user.expensePublicToken;
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const token = crypto.randomBytes(24).toString("hex");
+
+    try {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { expensePublicToken: token },
+      });
+      return token;
+    } catch (err) {
+      if (err.code !== "P2002") throw err;
+    }
+  }
+
+  throw new Error("Não foi possível gerar o link público de despesas.");
+}
+
 function hashResetToken(token) {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
@@ -326,12 +350,6 @@ app.use(async (req, res, next) => {
 
     const normalizedRole = normalizeRole(currentUser.role || sessionRole);
     const userAccess = buildAccessContext(normalizedRole);
-    const academyEnrollment = currentUser.academyEnrollments?.[0] || null;
-    const academySubscription = currentUser.academySubscriptions?.[0] || null;
-    userAccess.canAccessAcademy =
-      userAccess.canAccessAcademy ||
-      isAcademyPaidEnrollment(academyEnrollment) ||
-      isAcademyActiveSubscription(academySubscription);
     req.session.userRole = normalizedRole;
 
     req.user = {
@@ -1094,12 +1112,14 @@ app.get("/meus-dados", requireAuth, async (req, res) => {
     }
 
     const user = req.user;
+    const expensePublicToken = await ensureExpensePublicToken(user);
     await loadPlanLimitOverrides(prisma);
 
     res.render("users/my-profile", {
       user,
       currentPath: "/meus-dados",
       profilePlanCards: buildProfilePlanCards(user.role),
+      expensePublicLink: buildAbsoluteUrl(req, `/despesas/u/${expensePublicToken}`),
     });
   } catch (err) {
     console.error("Erro ao carregar Meus Dados:", err);

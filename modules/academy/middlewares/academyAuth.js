@@ -13,7 +13,7 @@ function requireAcademyAccess(prisma) {
   return async (req, res, next) => {
     const academy = await getAcademyContext(prisma, req);
     if (!academy.hasMemberAccess) {
-      return res.status(403).send("Acesso restrito a administradores, usuários Premium ou alunos com plano Academy ativo.");
+      return res.status(403).send("CatBreeder Pro está em preparação e, por enquanto, o acesso é restrito ao administrador.");
     }
     res.locals.academy = academy;
     return next();

@@ -1,13 +1,7 @@
 const express = require("express");
 const { canViewAllData } = require("../utils/access");
 const { getCreationLimits, yearlyRange } = require("../utils/planLimits");
-
-const BREEDS = [
-  "ABY","SOM","ACL","ACS","BAL","SIA","BEN","BLH","BSH","BML","BOM","BUR",
-  "CHA","CRX","DRX","DSP","EUR","EXO","PER","GRX","HCL","HCS","JBS","KBL",
-  "KBS","KOR","LPL","LPS","LYO","MAU","MCO","NEM","NFO","OCI","OLH","OSH",
-  "PEB","RAG","RUS","SBI","SIB","SNO","SOK","SPH","SRL","SRS","THA","TUA","TUV"
-];
+const { selectedBreedsFromSettings } = require("../utils/userPreferences");
 
 const DEATH_CAUSES_AT_BIRTH = [
   "Fenda Palatina",
@@ -207,11 +201,16 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   }
 
   async function buildFormContext(req, litter = null, error = null) {
+    const ownerIdForSettings = litter?.ownerId || req.session.userId;
     const catteryName = await getCatteryNameForUser(
-      litter?.ownerId || req.session.userId,
+      ownerIdForSettings,
       litter
     );
     const kittenNameMaxLength = getKittenNameMaxLength(catteryName);
+    const ownerSettings = await prisma.userSettings.findUnique({
+      where: { userId: ownerIdForSettings },
+      select: { breedsJson: true },
+    });
 
     const scopedOwner = ownerScope(req);
     const females = await prisma.cat.findMany({
@@ -252,6 +251,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const kittens = litter?.kittens?.length
       ? litter.kittens
       : [];
+    const selectedBreeds = selectedBreedsFromSettings(ownerSettings, [
+      litter?.litterBreed,
+      ...kittens.map((kitten) => kitten.breed),
+    ]);
 
     return {
       user: req.user,
@@ -264,7 +267,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         ...cat,
         displayName: getFullCatName(cat, catteryNameByUserId.get(cat.ownerId) || catteryName),
       })),
-      breeds: BREEDS,
+      breeds: selectedBreeds,
       deathCausesAtBirth: DEATH_CAUSES_AT_BIRTH,
       deathCausesAfterBirth: DEATH_CAUSES_AFTER_BIRTH,
       deadAtBirthCauses: parseJsonArray(litter?.deadAtBirthCausesJson),

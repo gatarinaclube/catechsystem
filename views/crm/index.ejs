@@ -86,12 +86,38 @@
             <div class="history-section-head" style="margin-bottom:12px;">
               <div>
                 <div class="content-title">E-mails cadastrados</div>
-                <div class="content-sub">Somente estes contatos receberão campanhas.</div>
+                <div class="content-sub">
+                  Somente estes contatos receberão campanhas.
+                  <% if (emailPagination && emailPagination.total) { %>
+                    Página <%= emailPagination.page %> de <%= emailPagination.totalPages %>.
+                  <% } %>
+                </div>
               </div>
-              <span class="status-pill is-green"><%= emailContacts.length %></span>
+              <span class="status-pill is-green"><%= emailPagination ? emailPagination.total : emailContacts.length %></span>
             </div>
+            <form method="get" action="/crm" class="grid-2" style="align-items:end; margin-bottom:14px;">
+              <input type="hidden" name="tab" value="emails" />
+              <div class="field">
+                <label class="field-label" for="emailSearch">Pesquisar e-mail</label>
+                <input
+                  id="emailSearch"
+                  name="emailSearch"
+                  type="search"
+                  value="<%= emailPagination?.search || '' %>"
+                  placeholder="Digite parte do e-mail"
+                />
+              </div>
+              <div class="actions">
+                <button type="submit" class="btn btn-primary">Pesquisar</button>
+                <% if (emailPagination && emailPagination.search) { %>
+                  <a href="/crm?tab=emails" class="btn">Limpar</a>
+                <% } %>
+              </div>
+            </form>
             <% if (!emailContacts.length) { %>
-              <div class="empty">Nenhum e-mail cadastrado para marketing.</div>
+              <div class="empty">
+                <%= emailPagination && emailPagination.search ? 'Nenhum e-mail encontrado para esta pesquisa.' : 'Nenhum e-mail cadastrado para marketing.' %>
+              </div>
             <% } else { %>
               <div class="record-list">
                 <% emailContacts.forEach(function(contact) { %>
@@ -111,6 +137,21 @@
                   </div>
                 <% }) %>
               </div>
+              <% if (emailPagination && emailPagination.totalPages > 1) { %>
+                <div class="history-section-head" style="margin-top:14px;">
+                  <div class="content-sub">
+                    Mostrando <%= emailContacts.length %> de <%= emailPagination.total %> contato(s).
+                  </div>
+                  <div class="actions">
+                    <% if (emailPagination.previousUrl) { %>
+                      <a href="<%= emailPagination.previousUrl %>" class="btn">Anterior</a>
+                    <% } %>
+                    <% if (emailPagination.nextUrl) { %>
+                      <a href="<%= emailPagination.nextUrl %>" class="btn btn-primary">Próxima página</a>
+                    <% } %>
+                  </div>
+                </div>
+              <% } %>
             <% } %>
           </div>
         <% } %>
@@ -324,11 +365,11 @@
                     </label>
                   </div>
                   <div id="selectedRecipientsBox" style="display:none; margin-top:12px;">
-                    <% if (!emailContacts.length) { %>
+                    <% if (!marketingContacts.length) { %>
                       <div class="empty">Nenhum contato cadastrado.</div>
                     <% } else { %>
                       <div style="max-height:220px; overflow:auto; border:1px solid var(--border-soft); border-radius:8px; padding:10px;">
-                        <% emailContacts.forEach(function(contact) { %>
+                        <% marketingContacts.forEach(function(contact) { %>
                           <label class="settings-check" style="margin:4px;">
                             <input type="checkbox" name="selectedContacts" value="<%= contact.id %>" />
                             <span><%= contact.email %></span>
@@ -390,7 +431,7 @@
                   </div>
                 </div>
                 <div class="form-actions" style="text-align:right; margin-top:12px;">
-                  <span class="status-pill is-green" style="margin-right:8px;"><%= emailContacts.length %> destinatário(s)</span>
+                  <span class="status-pill is-green" style="margin-right:8px;"><%= marketingContacts.length %> destinatário(s)</span>
                   <button type="submit" class="btn" formaction="/crm/marketing/drafts">
                     <%= selectedDraft.id ? 'Atualizar e-mail salvo' : 'Salvar e-mail' %>
                   </button>

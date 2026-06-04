@@ -119,6 +119,27 @@ function isFemaleAvailable(female) {
   return ageInMonths(female.birthDate) >= 10;
 }
 
+function isKittenRecord(cat) {
+  return Boolean(cat.kittenNumber || cat.litterKitten);
+}
+
+function isDeceased(cat) {
+  return cat.deceased === true || cat.kittenAvailabilityStatus === "DECEASED";
+}
+
+function isDeliveredOrSold(cat) {
+  return cat.delivered === true ||
+    cat.sold === true ||
+    cat.kittenAvailabilityStatus === "DELIVERED" ||
+    cat.kittenAvailabilityStatus === "RESERVED";
+}
+
+function isMonitoredCat(cat) {
+  if (isDeceased(cat)) return false;
+  if (isKittenRecord(cat)) return !isDeliveredOrSold(cat);
+  return true;
+}
+
 async function ensureDashboardPublicToken(prisma, userId) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -247,8 +268,9 @@ async function buildPanelData(prisma, ownerId) {
     matings: matings.slice(0, 10),
     exams: exams.slice(0, 5),
     summary: {
-      cats: cats.length,
+      cats: cats.filter(isMonitoredCat).length,
       alerts: medications.length + vaccines.length + matings.length + exams.length,
+      matingFemales: matings.length,
       overdueVaccines: vaccines.filter((item) => item.status.days < 0).length,
       overdueExams: exams.filter((item) => item.status.days < 0).length,
     },

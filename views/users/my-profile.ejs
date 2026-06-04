@@ -79,6 +79,23 @@
           </div>
         </div>
 
+        <div class="section">
+          <div class="section-title">Lançamento rápido de despesas</div>
+          <div class="field">
+            <label class="field-label" for="expensePublicLink">Link para salvar no celular</label>
+            <input
+              id="expensePublicLink"
+              type="text"
+              value="<%= expensePublicLink || '' %>"
+              readonly
+              onclick="this.select()"
+            />
+            <small style="display:block; margin-top:6px; color:var(--text-muted);">
+              Abra este link no celular e use “Adicionar à tela inicial” no Android ou “Adicionar à Tela de Início” no iPhone.
+            </small>
+          </div>
+        </div>
+
         <% if (typeof profilePlanCards !== 'undefined' && profilePlanCards.length) { %>
           <div class="section">
             <div class="section-title">Perfis e limitações</div>

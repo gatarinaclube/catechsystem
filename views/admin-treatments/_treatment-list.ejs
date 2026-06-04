@@ -1,0 +1,96 @@
+<% if (!treatments.length) { %>
+  <div class="empty"><%= emptyText || 'Nenhum tratamento registrado.' %></div>
+<% } else { %>
+  <div class="record-list">
+    <% treatments.forEach(function(treatment) { %>
+      <details class="record-row treatment-edit-row">
+        <summary class="medication-row-summary">
+          <div class="record-main">
+            <div class="record-title"><%= treatment.catName %></div>
+            <div class="record-sub">
+              <strong><%= treatment.medicationName %></strong>
+              <% if (treatment.dosage) { %> · Dose: <%= treatment.dosage %><% } %>
+              <% if (treatment.duration) { %> · Tempo: <%= treatment.duration %><% } %>
+            </div>
+            <div class="record-sub">
+              Início: <%= treatment.startDateLabel %>
+              <% if (treatment.endDate) { %> · Final: <%= treatment.endDateLabel %><% } %>
+              <% if (treatment.administrationTime) { %> · Horário: <%= treatment.administrationTime %><% } %>
+              <% if (treatment.administrationRoute) { %> · Via: <%= treatment.administrationRoute %><% } %>
+            </div>
+            <% if (treatment.notes) { %>
+              <div class="record-sub"><%= treatment.notes %></div>
+            <% } %>
+          </div>
+          <span class="status-pill is-blue">Editar</span>
+        </summary>
+
+        <form method="post" action="/admin/treatments/<%= treatment.id %>/update" class="treatment-form treatment-edit-form">
+          <div class="field">
+            <label class="field-label">Medicação</label>
+            <input class="medication-picker" name="medicationName" list="medicationOptions" value="<%= treatment.medicationName || '' %>" autocomplete="off" required />
+            <input class="medication-id" type="hidden" name="medicationId" value="<%= treatment.medicationId || '' %>" />
+          </div>
+          <div class="field">
+            <label class="field-label">Dose</label>
+            <input name="dosageAmount" inputmode="decimal" value="<%= treatment.dosageParts.amount || '' %>" />
+          </div>
+          <div class="field">
+            <label class="field-label">Unidade</label>
+            <select name="dosageUnit">
+              <option value="">Selecione...</option>
+              <% dosageUnits.forEach(function(unit) { %>
+                <option value="<%= unit %>" <%= treatment.dosageParts.unit === unit ? 'selected' : '' %>><%= unit %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label">Tempo de tratamento em dias</label>
+            <input class="duration-days" name="durationDays" type="number" min="1" step="1" value="<%= treatment.durationDays || '' %>" />
+          </div>
+          <div class="field">
+            <label class="field-label">Frequência</label>
+            <select name="frequency" class="frequency-select">
+              <option value="">Selecione...</option>
+              <% frequencies.forEach(function(frequency) { %>
+                <option value="<%= frequency %>" <%= treatment.administrationParts.frequency === frequency ? 'selected' : '' %>><%= frequency %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="field treatment-full treatment-times-field">
+            <label class="field-label">Horários</label>
+            <div class="schedule-times" data-times='<%- JSON.stringify(treatment.administrationParts.times || []) %>'></div>
+          </div>
+          <div class="field">
+            <label class="field-label">Via de administração</label>
+            <select name="administrationRoute">
+              <option value="">Selecione...</option>
+              <% routes.forEach(function(route) { %>
+                <option value="<%= route %>" <%= treatment.administrationRoute === route ? 'selected' : '' %>><%= route %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label">Data de início</label>
+            <input class="start-date" name="startDate" type="date" value="<%= treatment.startDateInput %>" required />
+          </div>
+          <div class="field">
+            <label class="field-label">Data final</label>
+            <input class="end-date" name="endDate" type="date" value="<%= treatment.endDateInput %>" />
+          </div>
+          <div class="field treatment-full">
+            <label class="field-label">Observações</label>
+            <textarea name="notes" rows="3"><%= treatment.notes || '' %></textarea>
+          </div>
+          <div class="form-actions treatment-full">
+            <button class="btn btn-primary" type="submit">Salvar edição</button>
+            <a class="btn" href="/admin/history/<%= treatment.catId %>#tratamentos">Ver histórico</a>
+          </div>
+        </form>
+        <form method="post" action="/admin/treatments/<%= treatment.id %>/delete" onsubmit="return confirm('Excluir este tratamento? Ele também será removido do histórico deste animal.');">
+          <button class="btn btn-danger" type="submit">Excluir tratamento</button>
+        </form>
+      </details>
+    <% }) %>
+  </div>
+<% } %>

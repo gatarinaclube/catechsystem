@@ -664,8 +664,28 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     );
   }
 
+  function positiveInteger(value, fallback = 1) {
+    const number = Number(value);
+    return Number.isFinite(number) && number > 0 ? Math.floor(number) : fallback;
+  }
+
   router.get("/crm", requireAuth, requirePermission("admin.crm"), async (req, res) => {
-    const [clients, emailContacts, campaigns, drafts, userSettings] = await Promise.all([
+    const emailPageSize = 25;
+    const emailPage = positiveInteger(req.query.emailPage, 1);
+    const emailSearch = cleanText(req.query.emailSearch) || "";
+    const emailContactWhere = {
+      ...marketingScope(req),
+      ...(emailSearch
+        ? {
+            email: {
+              contains: emailSearch,
+              mode: "insensitive",
+            },
+          }
+        : {}),
+    };
+
+    const [clients, emailContacts, emailContactsTotal, marketingContacts, campaigns, drafts, userSettings] = await Promise.all([
       prisma.revenueClient.findMany({
         where: clientScope(req),
         orderBy: { fullName: "asc" },
@@ -676,8 +696,17 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         },
       }),
       prisma.crmEmailContact.findMany({
-        where: marketingScope(req),
+        where: emailContactWhere,
         orderBy: { createdAt: "desc" },
+        skip: (emailPage - 1) * emailPageSize,
+        take: emailPageSize,
+      }),
+      prisma.crmEmailContact.count({
+        where: emailContactWhere,
+      }),
+      prisma.crmEmailContact.findMany({
+        where: marketingScope(req),
+        orderBy: { email: "asc" },
       }),
       prisma.crmEmailCampaign.findMany({
         where: marketingScope(req),
@@ -696,6 +725,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const selectedDraft = selectedDraftId
       ? drafts.find((draft) => draft.id === selectedDraftId)
       : null;
+    const totalEmailPages = Math.max(1, Math.ceil(emailContactsTotal / emailPageSize));
+    const safeEmailPage = Math.min(emailPage, totalEmailPages);
+    if (emailPage !== safeEmailPage) {
+      return res.redirect(`/crm?tab=emails&emailPage=${safeEmailPage}&emailSearch=${encodeURIComponent(emailSearch)}`);
+    }
     const mappedClients = clients.map((client) => ({
       ...client,
       createdAtLabel: formatDateLabel(client.createdAt),
@@ -712,6 +746,23 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         ...contact,
         createdAtLabel: formatDateLabel(contact.createdAt),
       })),
+      marketingContacts: marketingContacts.map((contact) => ({
+        ...contact,
+        createdAtLabel: formatDateLabel(contact.createdAt),
+      })),
+      emailPagination: {
+        page: safeEmailPage,
+        pageSize: emailPageSize,
+        total: emailContactsTotal,
+        totalPages: totalEmailPages,
+        search: emailSearch,
+        previousUrl: safeEmailPage > 1
+          ? `/crm?tab=emails&emailPage=${safeEmailPage - 1}&emailSearch=${encodeURIComponent(emailSearch)}`
+          : "",
+        nextUrl: safeEmailPage < totalEmailPages
+          ? `/crm?tab=emails&emailPage=${safeEmailPage + 1}&emailSearch=${encodeURIComponent(emailSearch)}`
+          : "",
+      },
       campaigns: campaigns.map((campaign) => ({
         ...campaign,
         sentAtLabel: formatDateLabel(campaign.sentAt),
@@ -739,7 +790,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         complete: mappedClients.filter((client) => client.isComplete).length,
         incomplete: mappedClients.filter((client) => !client.isComplete).length,
         withSales: mappedClients.filter((client) => client.salesCount > 0).length,
-        emailContacts: emailContacts.length,
+        emailContacts: marketingContacts.length,
         campaigns: campaigns.length,
         delivered: campaigns.reduce((sum, campaign) => sum + (campaign.deliveredCount || 0), 0),
         failed: campaigns.reduce((sum, campaign) => sum + (campaign.failedCount || 0), 0),

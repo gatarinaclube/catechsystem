@@ -8,6 +8,15 @@ const {
   getCreationLimits,
   validateFilesForRole,
 } = require("../utils/planLimits");
+const {
+  DEATH_CAUSE_OPTIONS,
+  parseDeathCauseData,
+  syncDeathHistoryEntry,
+} = require("../utils/deathCause");
+const {
+  selectedBreedsFromSettings,
+  selectedExamsFromSettings,
+} = require("../utils/userPreferences");
 
 const COUNTRIES = [
   "BR","AR","AT","BE","BG","BY","CA","CH","CL","CO","CY","CZ",
@@ -15,15 +24,6 @@ const COUNTRIES = [
   "IS","IT","KO","KR","LI","LT","LU","LV","MX","MY","NL","NO",
   "PL","PT","RO","RS","RU","SE","SI","SK","TR","UA","US","UY"
 ];
-
-const BREEDS = [
-  "ABY","SOM","ACL","ACS","BAL","SIA","BEN","BLH","BSH","BML","BOM","BUR",
-  "CHA","CRX","DRX","DSP","EUR","EXO","PER","GRX","HCL","HCS","JBS","KBL",
-  "KBS","KOR","LPL","LPS","LYO","MAU","MCO","NEM","NFO","OCI","OLH","OSH",
-  "PEB","RAG","RUS","SBI","SIB","SNO","SOK","SPH","SRL","SRS","THA","TUA","TUV"
-];
-
-const EXAM_OPTIONS = ["PKDef", "PKD", "PRA", "HCM - Genético", "HCM - Doppler"];
 
 function createUploadMiddleware() {
   const diskRoot =
@@ -75,13 +75,6 @@ function normalizeExamKey(value) {
     .replace(/[^a-zA-Z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "")
     .toLowerCase();
-}
-
-function parseExamList(value) {
-  const parsed = safeJsonParse(value, []);
-  return Array.isArray(parsed)
-    ? parsed.filter((exam) => EXAM_OPTIONS.includes(exam))
-    : [];
 }
 
 function validateUploadedFiles(req) {
@@ -310,7 +303,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const ownerIdForSettings = cat?.ownerId || req.session.userId;
     const ownerSettings = await prisma.userSettings.findUnique({
       where: { userId: ownerIdForSettings },
-      select: { catteryName: true, examsJson: true },
+      select: { catteryName: true, breedsJson: true, examsJson: true },
     });
     const maleCats = await prisma.cat.findMany({
       where: {
@@ -345,14 +338,19 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         ? "YES"
         : "NO"
       : "NO";
-    const selectedExams = parseExamList(ownerSettings?.examsJson);
+    const selectedBreeds = selectedBreedsFromSettings(ownerSettings, [
+      cat?.breed,
+      cat?.fatherBreed,
+      cat?.motherBreed,
+    ]);
+    const selectedExams = selectedExamsFromSettings(ownerSettings, { defaultAll: true });
     const catteryName = ownerSettings?.catteryName || "";
 
     return {
       user: req.user,
       currentPath: req.path,
       countries: COUNTRIES,
-      breeds: BREEDS,
+      breeds: selectedBreeds,
       maleCats: maleCats.filter(canAppearAsParentOption).map((maleCat) => ({
         ...maleCat,
         displayName: buildBreederDisplayName(maleCat, catteryName),
@@ -367,6 +365,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       breedingValue,
       ownershipValue,
       deceasedValue,
+      deathCauseOptions: DEATH_CAUSE_OPTIONS,
       uploadLimit: getUploadLimit(req.session?.userRole),
       selectedExams,
       examDocs: safeJsonParse(cat?.examDocsJson, {}),
@@ -489,6 +488,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       motherEmsCode: motherEmsCodeValue,
       neutered: breedingStatus === "NOT_FOR_BREEDING",
       deceased: deceased === "YES",
+      ...deathCauseData,
       ownershipType: mapOwnershipType(ownershipMode),
       status: existingCat ? existingCat.status : "NOVO",
     };
@@ -625,6 +625,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         const data = await parseBreederPayload(req);
         applyUploadedDocuments(req, data, null);
         const breeder = await prisma.cat.create({ data });
+        await syncDeathHistoryEntry(prisma, breeder.id, breeder);
         res.redirect(`/breeders/${breeder.id}`);
       } catch (err) {
         removeUploadedFiles(req.files);
@@ -642,7 +643,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               err.code === "DUPLICATE_MICROCHIP" || err.code === "UPLOAD_LIMIT"
                 || err.code === "PLAN_LIMIT"
                 ? err.message
-                : "Erro ao salvar o reprodutor.",
+                : err.message || "Erro ao salvar o reprodutor.",
           }
         );
       }
@@ -699,10 +700,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       try {
         const data = await parseBreederPayload(req, existingCat);
         applyUploadedDocuments(req, data, existingCat);
-        await prisma.cat.update({
+        const updated = await prisma.cat.update({
           where: { id: existingCat.id },
           data,
         });
+        await syncDeathHistoryEntry(prisma, existingCat.id, updated);
         res.redirect(`/breeders/${existingCat.id}`);
       } catch (err) {
         removeUploadedFiles(req.files);
@@ -719,7 +721,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             error:
               err.code === "DUPLICATE_MICROCHIP" || err.code === "UPLOAD_LIMIT"
                 ? err.message
-                : "Erro ao atualizar o reprodutor.",
+                : err.message || "Erro ao atualizar o reprodutor.",
           }
         );
       }

@@ -367,7 +367,7 @@ function buildCatTimeline({
     entries.push(buildTimelineEntry({
       date: item.date,
       section: "Outros",
-      title: "Outro histórico",
+      title: item.source === "death-status" ? "Óbito" : "Outro histórico",
       description: item.notes || "Sem observações.",
     }));
   });

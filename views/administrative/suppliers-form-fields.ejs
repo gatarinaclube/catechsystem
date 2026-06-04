@@ -1,5 +1,9 @@
 <div class="form-grid">
   <div class="field">
+    <label class="field-label" for="<%= prefix %>-cnpj">CNPJ</label>
+    <input id="<%= prefix %>-cnpj" name="cnpj" inputmode="numeric" value="<%= supplier.cnpj || '' %>" placeholder="00.000.000/0000-00" />
+  </div>
+  <div class="field">
     <label class="field-label" for="<%= prefix %>-commercialName">Nome Comercial</label>
     <input id="<%= prefix %>-commercialName" name="commercialName" value="<%= supplier.commercialName || '' %>" required />
   </div>
@@ -9,16 +13,12 @@
   </div>
   <div class="field">
     <label class="field-label" for="<%= prefix %>-defaultCategory">Categoria padrão</label>
-    <select id="<%= prefix %>-defaultCategory" name="defaultCategory">
-      <option value="">Sem categoria padrão</option>
+    <select id="<%= prefix %>-defaultCategory" name="defaultCategory" required>
+      <option value="">Selecione...</option>
       <% (categories || []).forEach(function(category) { %>
         <option value="<%= category %>" <%= supplier.defaultCategory === category ? 'selected' : '' %>><%= category %></option>
       <% }) %>
     </select>
-  </div>
-  <div class="field">
-    <label class="field-label" for="<%= prefix %>-cnpj">CNPJ</label>
-    <input id="<%= prefix %>-cnpj" name="cnpj" inputmode="numeric" value="<%= supplier.cnpj || '' %>" placeholder="00.000.000/0000-00" />
   </div>
   <div class="field">
     <label class="field-label" for="<%= prefix %>-cep">CEP</label>

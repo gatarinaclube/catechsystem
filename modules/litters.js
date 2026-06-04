@@ -8,6 +8,7 @@ const {
   notifyUserServiceConfirmation,
 } = require("../utils/adminNotifications");
 const { getFileUploadLimit, validateFilesForRole } = require("../utils/planLimits");
+const { selectedBreedsFromSettings } = require("../utils/userPreferences");
 
 const baseUploadsDir =
   process.env.UPLOADS_DIR
@@ -159,6 +160,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const filteredFemaleCats = femaleCats.filter(canAppearAsLitterParent);
       const importedMaleCat = findMatchingCat(filteredMaleCats, importedLitter, "male");
       const importedFemaleCat = findMatchingCat(filteredFemaleCats, importedLitter, "female");
+      const settings = await prisma.userSettings.findUnique({
+        where: { userId },
+        select: { breedsJson: true },
+      });
+      const breeds = selectedBreedsFromSettings(settings, [
+        importedLitter?.litterBreed,
+        ...(importedLitter?.kittens || []).map((kitten) => kitten.breed),
+      ]);
 
       res.render("litters/new", {
         user: req.user,
@@ -174,6 +183,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         importedFemaleCatId: importedFemaleCat?.id || "",
         importedKittenAt,
         formatDateForInput,
+        breeds,
         userId,
       });
     } catch (err) {

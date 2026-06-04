@@ -247,17 +247,45 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   }
 
   async function loadPageData(req) {
-    const [cats, medications, treatments, medicationUsage] = await Promise.all([
+    const today = parseDateInput(todayForInput());
+    const mapTreatmentRows = (rows) => rows.map((treatment) => ({
+      ...treatment,
+      catName: treatment.cat ? buildDisplayName(treatment.cat) : "-",
+      dosageParts: splitDosage(treatment.dosage),
+      durationDays: durationDays(treatment.duration),
+      administrationParts: splitAdministrationTime(treatment.administrationTime),
+      startDateInput: formatDateInput(treatment.startDate),
+      endDateInput: formatDateInput(treatment.endDate),
+      startDateLabel: formatDate(treatment.startDate) || "-",
+      endDateLabel: formatDate(treatment.endDate) || "-",
+    }));
+
+    const [cats, medications, activeTreatments, recentFinishedTreatments, medicationUsage] = await Promise.all([
       loadEligibleCats(req),
       prisma.treatmentMedication.findMany({
         where: { ...ownerScope(req), active: true },
         orderBy: { name: "asc" },
       }),
       prisma.catTreatment.findMany({
-        where: ownerScope(req),
+        where: {
+          ...ownerScope(req),
+          startDate: { lte: today },
+          OR: [
+            { endDate: null },
+            { endDate: { gte: today } },
+          ],
+        },
         include: { cat: true, medication: true },
         orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
-        take: 120,
+      }),
+      prisma.catTreatment.findMany({
+        where: {
+          ...ownerScope(req),
+          endDate: { lt: today },
+        },
+        include: { cat: true, medication: true },
+        orderBy: [{ endDate: "desc" }, { createdAt: "desc" }],
+        take: 10,
       }),
       prisma.catTreatment.groupBy({
         by: ["medicationId"],
@@ -275,17 +303,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         ...medication,
         usageCount: usageByMedication.get(medication.id) || 0,
       })),
-      treatments: treatments.map((treatment) => ({
-        ...treatment,
-        catName: treatment.cat ? buildDisplayName(treatment.cat) : "-",
-        dosageParts: splitDosage(treatment.dosage),
-        durationDays: durationDays(treatment.duration),
-        administrationParts: splitAdministrationTime(treatment.administrationTime),
-        startDateInput: formatDateInput(treatment.startDate),
-        endDateInput: formatDateInput(treatment.endDate),
-        startDateLabel: formatDate(treatment.startDate) || "-",
-        endDateLabel: formatDate(treatment.endDate) || "-",
-      })),
+      activeTreatments: mapTreatmentRows(activeTreatments),
+      recentFinishedTreatments: mapTreatmentRows(recentFinishedTreatments),
     };
   }
 
@@ -299,15 +318,30 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     });
   }
 
-  async function findMedicationFromBody(req) {
-    const medicationId = Number(req.body.medicationId);
-    const name = cleanText(req.body.medicationName);
+  async function findMedicationFromBody(req, body = req.body) {
+    const medicationId = Number(body.medicationId);
+    const name = cleanText(body.medicationName);
     const where = medicationId
       ? { id: medicationId, ...ownerScope(req), active: true }
       : name
         ? { name, ...ownerScope(req), active: true }
         : null;
     return where ? prisma.treatmentMedication.findFirst({ where }) : null;
+  }
+
+  function treatmentBlocksFromBody(body) {
+    const blocks = body.treatments
+      ? Array.isArray(body.treatments)
+        ? body.treatments
+        : Object.keys(body.treatments)
+            .sort((a, b) => Number(a) - Number(b))
+            .map((key) => body.treatments[key])
+      : [body];
+
+    return blocks.filter((block) => {
+      if (!block || typeof block !== "object") return false;
+      return cleanText(block.medicationName) || cleanText(block.medicationId);
+    });
   }
 
   router.get(
@@ -435,10 +469,18 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         return res.redirect(`/admin/treatments?error=${encodeURIComponent("Selecione ao menos um animal.")}`);
       }
 
-      const medication = await findMedicationFromBody(req);
-
       try {
-        const data = treatmentFormData(req.body, medication);
+        const blocks = treatmentBlocksFromBody(req.body);
+        if (!blocks.length) {
+          throw new Error("Inclua ao menos uma medicação para o tratamento.");
+        }
+
+        const treatmentData = [];
+        for (const block of blocks) {
+          const medication = await findMedicationFromBody(req, block);
+          treatmentData.push(treatmentFormData(block, medication));
+        }
+
         const allowedCats = await loadEligibleCats(req);
         const allowedIds = new Set(allowedCats.map((cat) => cat.id));
         const selectedIds = catIds.filter((id) => allowedIds.has(id));
@@ -447,16 +489,20 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           throw new Error("Nenhum dos animais selecionados está disponível para lançamento.");
         }
 
-        for (const catId of selectedIds) {
-          const treatment = await prisma.catTreatment.create({
-            data: {
-              ownerId: req.session?.userId || null,
-              catId,
-              ...data,
-            },
-          });
-          await syncHistoryEntry(prisma, treatment);
-        }
+        await prisma.$transaction(async (tx) => {
+          for (const catId of selectedIds) {
+            for (const data of treatmentData) {
+              const treatment = await tx.catTreatment.create({
+                data: {
+                  ownerId: req.session?.userId || null,
+                  catId,
+                  ...data,
+                },
+              });
+              await syncHistoryEntry(tx, treatment);
+            }
+          }
+        });
 
         res.redirect("/admin/treatments?ok=1");
       } catch (err) {

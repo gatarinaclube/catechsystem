@@ -163,6 +163,24 @@ input[type="file"] {
   padding: 14px 0 0;
 }
 
+.quick-install-card {
+  display: grid;
+  gap: 5px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.quick-install-card strong {
+  color: #111827;
+  font-size: 13px;
+}
+
 .quick-options-link {
   color: #9ca3af;
   font-size: 22px;

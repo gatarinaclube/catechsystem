@@ -307,6 +307,22 @@
               </div>
             </div>
 
+            <div id="deathCauseBlock" class="grid-2" style="margin-top:12px;">
+              <div class="field">
+                <label class="field-label" for="deathCause">Causa do óbito</label>
+                <select id="deathCause" name="deathCause">
+                  <option value="">Selecione...</option>
+                  <% deathCauseOptions.forEach(function(option) { %>
+                    <option value="<%= option %>" <%= cat?.deathCause === option ? "selected" : "" %>><%= option %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="field" id="deathCauseDescriptionBlock">
+                <label class="field-label" for="deathCauseDescription">Descrição da causa</label>
+                <input id="deathCauseDescription" name="deathCauseDescription" value="<%= cat?.deathCauseDescription || '' %>" placeholder="Descreva a causa do óbito" />
+              </div>
+            </div>
+
             <div class="form-actions" style="margin-top: 24px; text-align: right;">
               <button type="submit" class="btn btn-primary"><%= submitLabel %></button>
               <a href="<%= cancelPath %>" class="btn">Cancelar</a>
@@ -331,6 +347,11 @@
       const motherModeValue = document.getElementById("motherModeValue");
       const motherSelect = document.getElementById("motherId");
       const motherManualBlock = document.getElementById("motherManualBlock");
+      const deceasedSelect = document.getElementById("deceased");
+      const deathCauseBlock = document.getElementById("deathCauseBlock");
+      const deathCauseSelect = document.getElementById("deathCause");
+      const deathCauseDescriptionBlock = document.getElementById("deathCauseDescriptionBlock");
+      const deathCauseDescription = document.getElementById("deathCauseDescription");
 
       function updateAge() {
         if (!birthInput || !birthInput.value) {
@@ -387,6 +408,19 @@
         motherManualBlock.style.display = manual ? "block" : "none";
       }
 
+      function toggleDeathCause() {
+        const isDeceased = deceasedSelect.value === "YES";
+        const needsDescription = ["Outro", "Causa Desconhecida"].includes(deathCauseSelect.value);
+        deathCauseBlock.style.display = isDeceased ? "grid" : "none";
+        deathCauseSelect.required = isDeceased;
+        deathCauseDescriptionBlock.style.display = isDeceased && needsDescription ? "block" : "none";
+        deathCauseDescription.required = isDeceased && needsDescription;
+        if (!isDeceased) {
+          deathCauseSelect.value = "";
+          deathCauseDescription.value = "";
+        }
+      }
+
       function bindBreedToEms(breedSelectId, emsSelectId, initialValue) {
         const breedSelect = document.getElementById(breedSelectId);
         const emsSelect = document.getElementById(emsSelectId);
@@ -435,10 +469,13 @@
       breederTypeInputs.forEach((input) => input.addEventListener("change", toggleBreederName));
       fatherModeCheckbox.addEventListener("change", toggleFatherMode);
       motherModeCheckbox.addEventListener("change", toggleMotherMode);
+      deceasedSelect.addEventListener("change", toggleDeathCause);
+      deathCauseSelect.addEventListener("change", toggleDeathCause);
 
       toggleBreederName();
       toggleFatherMode();
       toggleMotherMode();
+      toggleDeathCause();
 
       bindBreedToEms("breed", "emsCode", "<%= cat?.emsCode || '' %>");
       bindBreedToEms("fatherBreed", "fatherEmsCode", "<%= cat?.fatherEmsCode || '' %>");

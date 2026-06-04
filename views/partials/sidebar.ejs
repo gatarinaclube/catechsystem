@@ -41,20 +41,59 @@
 
     <nav class="menu">
       <%
+        function moduleHelp(item) {
+          const helpByLabel = {
+            "Página inicial": "Mostra os principais indicadores e atalhos do sistema, reunindo pendências, rotina do gatil e acesso rápido aos módulos.",
+            "Todos os gatos": "Lista os gatos cadastrados no sistema para consulta, edição e acompanhamento dos registros.",
+            "Meus gatos": "Lista os gatos do seu gatil para consulta, edição e acompanhamento dos registros.",
+            "Serviços": "Área para solicitar serviços, acompanhar protocolos enviados e corrigir pendências quando necessário.",
+            "Serviços FFB": "Área administrativa para revisar serviços recebidos, alterar status, gerar documentos e acompanhar pendências.",
+            "Fotos Gatarina 2026": "Administração da galeria pública do evento, incluindo upload, seleção, valores e solicitações de fotos.",
+            "Usuários": "Gerenciamento dos usuários, perfis, dados cadastrais, aprovações e links individuais do sistema.",
+            "Configurações": "Configura dados do gatil, veterinário, logo, raças, exames e limites disponíveis por perfil.",
+            "Reprodutores": "Cadastro e gestão de padreadores, matrizes e gatos reprodutores do gatil.",
+            "Ninhadas": "Registro operacional das ninhadas, estatísticas de parto, filhotes e acompanhamento da reprodução.",
+            "Filhotes": "Gestão dos filhotes cadastrados, disponibilidade, propriedade, histórico e dados individuais.",
+            "Acasalamentos": "Planejamento e acompanhamento de acasalamentos, períodos reprodutivos e gatas aptas.",
+            "Vacinação": "Controle de vacinas, próximas datas, aplicações vencidas e histórico sanitário.",
+            "Vermifugação": "Controle de vermífugos, datas de aplicação e próximas rotinas dos gatos.",
+            "Pesagem": "Registro de peso dos gatos e filhotes para acompanhamento de crescimento e condição corporal.",
+            "Tratamento": "Registro de medicações, doses, frequência, período de tratamento e envio automático ao histórico do animal.",
+            "Exames": "Controle de exames genéticos, HCM, uploads de laudos e impressão de comprovações.",
+            "Histórico": "Consulta consolidada do histórico individual do gato, incluindo eventos, saúde, tratamentos e registros anteriores.",
+            "Painel": "Painel público de rotina do gatil para exibir em tela, com medicações, vacinas, acasalamentos e exames.",
+            "CRM": "Gestão de clientes, contatos de e-mail e campanhas de e-mail marketing por usuário.",
+            "Vitrine de Filhotes": "Configuração da página pública de filhotes disponíveis, cores, textos, fotos, pagamento e informações do gatil.",
+            "Relatórios": "Relatórios financeiros, fluxo de caixa, despesas, receitas e acompanhamento estratégico.",
+            "Administrativo": "Área financeira e administrativa com contas, receitas, despesas, clientes, fornecedores e contas a pagar/receber.",
+            "CatBreeder Pro": "Área de cursos e conteúdos da plataforma Academy vinculada ao sistema.",
+          };
+          return item.help || helpByLabel[item.label] || `Abre o módulo ${item.label}.`;
+        }
+
         function renderMenuItem(item) {
           const allowed = item.allowed !== false;
           if (!allowed && item.hideWhenDenied) return;
           const active = allowed && currentPath && currentPath.startsWith(item.match);
           const classes = [active ? "active" : "", allowed ? "" : "menu-disabled"].filter(Boolean).join(" ");
       %>
-        <a
-          href="<%= allowed ? item.href : '#' %>"
-          class="<%= classes %>"
-          <%= allowed ? "" : 'aria-disabled="true" tabindex="-1"' %>
-        >
-          <span class="menu-icon"><%= item.icon %></span>
-          <span><%= item.label %></span>
-        </a>
+        <div class="menu-item-row">
+          <a
+            href="<%= allowed ? item.href : '#' %>"
+            class="<%= classes %>"
+            <%= allowed ? "" : 'aria-disabled="true" tabindex="-1"' %>
+          >
+            <span class="menu-icon"><%= item.icon %></span>
+            <span><%= item.label %></span>
+          </a>
+          <button
+            class="help-info-button"
+            type="button"
+            aria-label="Informações sobre <%= item.label %>"
+            data-help-title="<%= item.label %>"
+            data-help-text="<%= moduleHelp(item) %>"
+          >i</button>
+        </div>
       <% } %>
 
       <% [
@@ -168,3 +207,4 @@
     </div>
   </div>
 </aside>
+<script src="/js/help-popups.js"></script>

@@ -207,11 +207,15 @@ module.exports = (prisma) => {
 
   function ownerScope(req) {
     if (canViewAllData(req.session?.userRole)) return {};
-    return { ownerId: req.session?.userId || null };
+    return { ownerId: currentOwnerId(req) };
+  }
+
+  function currentOwnerId(req) {
+    return req.session?.userId || req.publicExpenseUser?.id || null;
   }
 
   function optionOwnerId(req) {
-    return null;
+    return req.publicExpenseUser?.id || null;
   }
 
   async function hasColumn(tableName, columnName) {
@@ -253,7 +257,7 @@ module.exports = (prisma) => {
     if (!(await hasColumn(tableName, "ownerId"))) return Prisma.empty;
     const ownerId = optionOwnerId(req);
     return ownerId
-      ? Prisma.sql`AND "ownerId" = ${ownerId}`
+      ? Prisma.sql`AND ("ownerId" = ${ownerId} OR "ownerId" IS NULL)`
       : Prisma.sql`AND "ownerId" IS NULL`;
   }
 
@@ -336,7 +340,7 @@ module.exports = (prisma) => {
       const supplierRows = await prisma.expenseSupplier.findMany({
         where: canViewAllData(req.session?.userRole)
           ? {}
-          : { ownerId: req.session?.userId || null },
+          : { ownerId: currentOwnerId(req) },
         select: { commercialName: true, tradeName: true, cnpj: true, defaultCategory: true },
         orderBy: { commercialName: "asc" },
       });
@@ -354,7 +358,7 @@ module.exports = (prisma) => {
       const accountRows = await prisma.financialAccountSetting.findMany({
         where: canViewAllData(req.session?.userRole)
           ? {}
-          : { ownerId: req.session?.userId || null },
+          : { ownerId: currentOwnerId(req) },
         select: { accountName: true, isCreditCard: true },
       });
       creditCardNames = new Set(accountRows.filter((row) => row.isCreditCard).map((row) => row.accountName));
@@ -391,7 +395,7 @@ module.exports = (prisma) => {
   }
 
   async function loadExpenseCreditCardNames(req, fallbackOwnerId = null) {
-    const ownerId = req.session?.userId || fallbackOwnerId;
+    const ownerId = currentOwnerId(req) || fallbackOwnerId;
     const rows = await prisma.financialAccountSetting.findMany({
       where: canViewAllData(req.session?.userRole)
         ? { isCreditCard: true }
@@ -577,6 +581,8 @@ module.exports = (prisma) => {
       error: extra.error || null,
       homePath: req.session?.userId ? "/dashboard" : "/login",
       canManageSuppliers: req.session?.userId && userCan(req.session.userRole, "admin.administrative"),
+      isPublicExpenseLink: Boolean(req.publicExpenseUser),
+      publicExpenseToken: req.params?.token || "",
       currentPath: "/despesas",
     });
   }
@@ -625,11 +631,12 @@ module.exports = (prisma) => {
         expensePublicToken: cleanToken,
         approvalStatus: { not: "RESTRICOES" },
       },
-      select: { id: true },
+      select: { id: true, role: true },
     });
   }
 
   async function renderPublicExpenseForm(req, res, user, extra = {}) {
+    req.publicExpenseUser = user;
     await renderExpenseForm(res, req, {
       ...extra,
       formAction: `/despesas/u/${req.params.token}`,
@@ -638,6 +645,36 @@ module.exports = (prisma) => {
 
   router.get("/lancamento", (req, res) => res.redirect("/despesas"));
   router.get("/lancamento/opcoes", (req, res) => res.redirect("/despesas/opcoes"));
+
+  router.get("/despesas/u/:token/manifest.webmanifest", async (req, res) => {
+    const user = await findPublicExpenseUser(req.params.token);
+    if (!user) return res.status(404).send("Link de lançamento não encontrado.");
+
+    res.type("application/manifest+json").send({
+      name: "Lançar Despesas - CaTech",
+      short_name: "Despesas",
+      description: "Lançamento rápido de despesas do gatil.",
+      start_url: `/despesas/u/${req.params.token}`,
+      scope: `/despesas/u/${req.params.token}`,
+      display: "standalone",
+      background_color: "#f3f4f6",
+      theme_color: "#111827",
+      icons: [
+        {
+          src: "/logos/logo1.png",
+          sizes: "192x192",
+          type: "image/png",
+          purpose: "any maskable",
+        },
+        {
+          src: "/logos/logo1.png",
+          sizes: "512x512",
+          type: "image/png",
+          purpose: "any maskable",
+        },
+      ],
+    });
+  });
 
   router.get("/despesas/u/:token", async (req, res) => {
     const user = await findPublicExpenseUser(req.params.token);
@@ -649,6 +686,7 @@ module.exports = (prisma) => {
   router.post("/despesas/u/:token", upload.single("receipt"), async (req, res) => {
     const user = await findPublicExpenseUser(req.params.token);
     if (!user) return res.status(404).send("Link de lançamento não encontrado.");
+    req.publicExpenseUser = user;
 
     try {
       validateFilesForRole(req.file ? [req.file] : [], user.role);

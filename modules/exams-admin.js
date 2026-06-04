@@ -5,6 +5,7 @@ const multer = require("multer");
 const archiver = require("archiver");
 const { canViewAllData } = require("../utils/access");
 const { getFileUploadLimit, validateFilesForRole } = require("../utils/planLimits");
+const { selectedExamsFromSettings } = require("../utils/userPreferences");
 const {
   parseDate,
   formatDate,
@@ -110,6 +111,14 @@ function isUrgentRow(pkdefSource, prabfSource, nextEco) {
   }
 
   return Boolean(nextEco && nextEco < today);
+}
+
+function buildActiveExamFields(selectedExams) {
+  return {
+    pkdef: selectedExams.includes("PKDef"),
+    pra: selectedExams.includes("PRA"),
+    hcm: selectedExams.includes("HCM - Doppler"),
+  };
 }
 
 function safeFileName(value) {
@@ -276,6 +285,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     return Boolean(cat);
   }
 
+  async function loadActiveExamFields(req, ownerId = req.session.userId) {
+    const settings = await prisma.userSettings.findUnique({
+      where: { userId: ownerId },
+      select: { examsJson: true },
+    });
+    return buildActiveExamFields(selectedExamsFromSettings(settings, { defaultAll: true }));
+  }
+
   router.get(
     "/admin/exams",
     requireAuth,
@@ -288,6 +305,16 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         },
         orderBy: { name: "asc" },
       });
+      const ownerIds = Array.from(new Set(cats.map((cat) => cat.ownerId).filter(Boolean)));
+      const settingsRows = ownerIds.length
+        ? await prisma.userSettings.findMany({
+            where: { userId: { in: ownerIds } },
+            select: { userId: true, examsJson: true },
+          })
+        : [];
+      const settingsByUserId = new Map(settingsRows.map((settings) => [settings.userId, settings]));
+      const currentUserActiveExams = await loadActiveExamFields(req);
+      const defaultActiveExams = buildActiveExamFields(selectedExamsFromSettings(null, { defaultAll: true }));
 
       const grouped = Object.fromEntries(
         CATEGORY_META.map((category) => [category.key, []])
@@ -307,7 +334,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         const pkdefResult = cat.examPlan?.pkdefResult || "";
         const prabfSource = cat.examPlan?.prabfSource || "";
         const prabfResult = cat.examPlan?.prabfResult || "";
-        const urgent = isUrgentRow(pkdefSource, prabfSource, nextEco);
+        const activeExams = settingsByUserId.has(cat.ownerId)
+          ? buildActiveExamFields(selectedExamsFromSettings(settingsByUserId.get(cat.ownerId), { defaultAll: true }))
+          : defaultActiveExams;
+        const urgent = isUrgentRow(
+          activeExams.pkdef ? pkdefSource : "",
+          activeExams.pra ? prabfSource : "",
+          activeExams.hcm ? nextEco : null
+        );
         const examDocs = parseExamDocs(cat.examDocsJson);
 
         grouped[category].push({
@@ -322,6 +356,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           examDocs,
           nextEco,
           urgent,
+          activeExams,
         });
       });
 
@@ -346,6 +381,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         sourceOptions: SourceOptions,
         pkdefResults: PkdefResults,
         prabfResults: PrabfResults,
+        activeExams: currentUserActiveExams,
         formatDate,
       });
     }
@@ -358,28 +394,29 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     async (req, res) => {
       const cat = await loadCatForPrint(prisma, ownerScope(req), req.query.catId);
       if (!cat) return res.status(404).send("Gato não encontrado.");
+      const activeExams = await loadActiveExamFields(req, cat.ownerId);
 
       const type = String(req.query.type || "");
       let docs = [];
       let label = "Exames";
 
-      if (type === "pkdef") {
+      if (type === "pkdef" && activeExams.pkdef) {
         docs = (await collectGeneticExamDocs(prisma, cat, "pkdef")).docs;
         label = "PKDef";
-      } else if (type === "pra") {
+      } else if (type === "pra" && activeExams.pra) {
         docs = (await collectGeneticExamDocs(prisma, cat, "pra")).docs;
         label = "PRA";
-      } else if (type === "hcm-latest") {
+      } else if (type === "hcm-latest" && activeExams.hcm) {
         docs = hcmDocs(cat, true);
         label = "Ultimo-HCM";
-      } else if (type === "hcm-all") {
+      } else if (type === "hcm-all" && activeExams.hcm) {
         docs = hcmDocs(cat, false);
         label = "Todos-HCM";
       } else if (type === "all") {
         docs = [
-          ...(await collectGeneticExamDocs(prisma, cat, "pkdef")).docs,
-          ...(await collectGeneticExamDocs(prisma, cat, "pra")).docs,
-          ...hcmDocs(cat, false),
+          ...(activeExams.pkdef ? (await collectGeneticExamDocs(prisma, cat, "pkdef")).docs : []),
+          ...(activeExams.pra ? (await collectGeneticExamDocs(prisma, cat, "pra")).docs : []),
+          ...(activeExams.hcm ? hcmDocs(cat, false) : []),
         ];
         label = "Todos-Exames";
       } else {
@@ -413,46 +450,49 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         validateFilesForRole(req.files || [], req.session?.userRole);
         const existingCat = await prisma.cat.findUnique({
           where: { id: catId },
-          select: { examDocsJson: true },
+          select: { ownerId: true, examDocsJson: true, examPlan: true },
         });
+        const activeExams = await loadActiveExamFields(req, existingCat?.ownerId || req.session.userId);
         const examDocs = parseExamDocs(existingCat?.examDocsJson);
         const uploaded = filesByField(req.files || []);
         const ecoDates = [].concat(req.body.ecoDates || []);
         const ecoFiles = [].concat(req.body.ecoFiles || []);
 
-        const ecoHistory = ecoDates
-          .map((date, index) => ({
-            date: formatDateInput(date),
-            file: examFilePath(uploaded.get(`hcmDoc_${index}`)?.[0]) || ecoFiles[index] || "",
-          }))
-          .filter((item) => item.date !== "");
+        const ecoHistory = activeExams.hcm
+          ? ecoDates
+              .map((date, index) => ({
+                date: formatDateInput(date),
+                file: examFilePath(uploaded.get(`hcmDoc_${index}`)?.[0]) || ecoFiles[index] || "",
+              }))
+              .filter((item) => item.date !== "")
+          : safeJsonParse(existingCat?.examPlan?.ecoHistoryJson, []);
 
-        const pkdefUpload = examFilePath(uploaded.get("pkdefDoc")?.[0]);
-        const prabfUpload = examFilePath(uploaded.get("prabfDoc")?.[0]);
+        const pkdefUpload = activeExams.pkdef ? examFilePath(uploaded.get("pkdefDoc")?.[0]) : null;
+        const prabfUpload = activeExams.pra ? examFilePath(uploaded.get("prabfDoc")?.[0]) : null;
 
-        if (pkdefUpload) examDocs.pkdef = pkdefUpload;
-        if (prabfUpload) examDocs.pra = prabfUpload;
-        examDocs.hcm = ecoHistory
-          .filter((item) => item.file)
-          .map((item) => ({ date: item.date, file: item.file }));
+        if (activeExams.pkdef && pkdefUpload) examDocs.pkdef = pkdefUpload;
+        if (activeExams.pra && prabfUpload) examDocs.pra = prabfUpload;
+        if (activeExams.hcm) {
+          examDocs.hcm = ecoHistory
+            .filter((item) => item.file)
+            .map((item) => ({ date: item.date, file: item.file }));
+        }
+
+        const planData = {
+          pkdefSource: activeExams.pkdef ? req.body.pkdefSource || null : existingCat?.examPlan?.pkdefSource || null,
+          pkdefResult: activeExams.pkdef ? req.body.pkdefResult || null : existingCat?.examPlan?.pkdefResult || null,
+          prabfSource: activeExams.pra ? req.body.prabfSource || null : existingCat?.examPlan?.prabfSource || null,
+          prabfResult: activeExams.pra ? req.body.prabfResult || null : existingCat?.examPlan?.prabfResult || null,
+          ecoHistoryJson: JSON.stringify(ecoHistory),
+        };
 
         await prisma.examPlan.upsert({
           where: { catId },
           create: {
             catId,
-            pkdefSource: req.body.pkdefSource || null,
-            pkdefResult: req.body.pkdefResult || null,
-            prabfSource: req.body.prabfSource || null,
-            prabfResult: req.body.prabfResult || null,
-            ecoHistoryJson: JSON.stringify(ecoHistory),
+            ...planData,
           },
-          update: {
-            pkdefSource: req.body.pkdefSource || null,
-            pkdefResult: req.body.pkdefResult || null,
-            prabfSource: req.body.prabfSource || null,
-            prabfResult: req.body.prabfResult || null,
-            ecoHistoryJson: JSON.stringify(ecoHistory),
-          },
+          update: planData,
         });
 
         await prisma.cat.update({

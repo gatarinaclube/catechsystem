@@ -111,14 +111,18 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
   function supplierData(req) {
     const commercialName = cleanText(req.body.commercialName);
+    const defaultCategory = cleanText(req.body.defaultCategory);
     if (!commercialName) {
       throw new Error("Informe o Nome Comercial do fornecedor.");
+    }
+    if (!defaultCategory) {
+      throw new Error("Informe a Categoria Padrão do fornecedor.");
     }
 
     return {
       ownerId: req.session?.userId || null,
       commercialName,
-      defaultCategory: cleanText(req.body.defaultCategory) || null,
+      defaultCategory,
       tradeName: cleanText(req.body.tradeName) || null,
       cnpj: onlyDigits(req.body.cnpj) || null,
       cep: onlyDigits(req.body.cep) || null,

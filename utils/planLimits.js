@@ -1,11 +1,19 @@
 const { ROLES, normalizeRole, getRoleLabel } = require("./access");
 
-const MANAGED_PLAN_ROLES = [ROLES.PREMIUM, ROLES.MASTER, ROLES.BASIC];
+const MANAGED_PLAN_ROLES = [
+  ROLES.PREMIUM,
+  ROLES.ASSOCIADO_A,
+  ROLES.ASSOCIADO_B,
+  ROLES.MASTER,
+  ROLES.BASIC,
+];
 
 const DEFAULT_FILE_UPLOAD_LIMITS = {
   [ROLES.ADMIN]: { bytes: 5 * 1024 * 1024, label: "5 MB", kb: 5 * 1024 },
   [ROLES.PREMIUM]: { bytes: 2 * 1024 * 1024, label: "2 MB", kb: 2 * 1024 },
   [ROLES.MASTER]: { bytes: 1 * 1024 * 1024, label: "1 MB", kb: 1 * 1024 },
+  [ROLES.ASSOCIADO_A]: { bytes: 1 * 1024 * 1024, label: "1 MB", kb: 1 * 1024 },
+  [ROLES.ASSOCIADO_B]: { bytes: 500 * 1024, label: "500 KB", kb: 500 },
   [ROLES.BASIC]: { bytes: 500 * 1024, label: "500 KB", kb: 500 },
   [ROLES.CATBREED]: { bytes: 500 * 1024, label: "500 KB", kb: 500 },
 };
@@ -28,6 +36,18 @@ const DEFAULT_CREATION_LIMITS = {
     showcaseLitters: 3,
     littersPerYear: 10,
     kittensPerYear: 40,
+  },
+  [ROLES.ASSOCIADO_A]: {
+    breeders: 10,
+    showcaseLitters: 3,
+    littersPerYear: 10,
+    kittensPerYear: 40,
+  },
+  [ROLES.ASSOCIADO_B]: {
+    breeders: 3,
+    showcaseLitters: 1,
+    littersPerYear: 2,
+    kittensPerYear: 10,
   },
   [ROLES.BASIC]: {
     breeders: 3,

@@ -1719,6 +1719,48 @@ textarea:focus {
   min-height: 220px;
 }
 
+.treatment-medications {
+  display: grid;
+  gap: 12px;
+}
+
+.treatment-medication-block {
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 14px;
+  background: #fbfcfe;
+}
+
+.treatment-medication-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.treatment-medication-grid {
+  gap: 12px;
+}
+
+.treatment-add-actions {
+  justify-content: flex-start;
+}
+
+.treatment-remove-medication {
+  width: auto;
+  min-height: 36px;
+  padding: 0 12px;
+}
+
+.treatment-finished-panel {
+  display: block;
+}
+
+.treatment-finished-body {
+  padding: 0 16px 18px;
+}
+
 .medication-manager {
   margin-bottom: 18px;
 }

@@ -337,9 +337,7 @@
                       data-required-when-visible="true"
                     >
                       <option value="">Selecione...</option>
-                      <% [
-                        "ABY","ACL","ACS","BAL","BEN","BLH","BML","BOM","BSH","BUR","CHA","CRX","DRX","DSP","EUR","EXO","GRX","HCL","HCS","JBS","KBL","KBS","KOR","LPL","LPS","LYO","MAU","MCO","NEM","NFO","OCI","OLH","OSH","PEB","PER","RAG","RUS","SBI","SIA","SIB","SIN","SNO","SOK","SOM","SPH","SRL","SRS","THA","TUA","TUV"
-                      ].forEach(function (breed) { %>
+                      <% (breeds || []).forEach(function (breed) { %>
                         <option value="<%= breed %>" <%= importedKitten?.breed === breed ? 'selected' : '' %>><%= breed %></option>
                       <% }) %>
                     </select>

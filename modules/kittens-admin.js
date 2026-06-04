@@ -2,13 +2,12 @@ const express = require("express");
 const { canViewAllData } = require("../utils/access");
 const { getCreationLimits, yearlyRange } = require("../utils/planLimits");
 const { kittenFallbackDisplayName } = require("../utils/cattery-admin");
-
-const BREEDS = [
-  "ABY","SOM","ACL","ACS","BAL","SIA","BEN","BLH","BSH","BML","BOM","BUR",
-  "CHA","CRX","DRX","DSP","EUR","EXO","PER","GRX","HCL","HCS","JBS","KBL",
-  "KBS","KOR","LPL","LPS","LYO","MAU","MCO","NEM","NFO","OCI","OLH","OSH",
-  "PEB","RAG","RUS","SBI","SIB","SNO","SOK","SPH","SRL","SRS","THA","TUA","TUV"
-];
+const { selectedBreedsFromSettings } = require("../utils/userPreferences");
+const {
+  DEATH_CAUSE_OPTIONS,
+  parseDeathCauseData,
+  syncDeathHistoryEntry,
+} = require("../utils/deathCause");
 
 const KITTEN_STATUS_OPTIONS = [
   { value: "UNAVAILABLE", label: "Indisponível" },
@@ -144,6 +143,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
   async function buildContext(req, kitten = null, error = null) {
     const scopedOwner = ownerScope(req);
+    const ownerIdForSettings = kitten?.ownerId || req.session.userId;
+    const ownerSettings = await prisma.userSettings.findUnique({
+      where: { userId: ownerIdForSettings },
+      select: { breedsJson: true },
+    });
     const females = await prisma.cat.findMany({
       where: { ...scopedOwner, gender: "F" },
       orderBy: { name: "asc" },
@@ -170,6 +174,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       orderBy: { fullName: "asc" },
     });
 
+    const selectedBreeds = selectedBreedsFromSettings(ownerSettings, [kitten?.breed]);
+
     return {
       user: req.user,
       currentPath: req.path,
@@ -181,8 +187,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         label: clientLabel(client),
         normalizedDocument: normalizeDocument(client.document),
       })),
-      breeds: BREEDS,
+      breeds: selectedBreeds,
       kittenStatusOptions: KITTEN_STATUS_OPTIONS,
+      deathCauseOptions: DEATH_CAUSE_OPTIONS,
       kitten,
       error,
     };
@@ -276,6 +283,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     if (selectedOwnerClientId && !ownerLockedBySale && !selectedOwnerClient) {
       throw new Error("Selecione um cliente cadastrado válido para o proprietário.");
     }
+    const availabilityData = statusFlags(req.body.kittenAvailabilityStatus || existingKitten?.kittenAvailabilityStatus || "UNAVAILABLE");
+    const deathCauseData = parseDeathCauseData(req.body, availabilityData.deceased === true);
 
     return {
       kittenNumber: req.body.kittenNumber || null,
@@ -303,7 +312,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           ? "MANUAL"
           : null,
       newOwnerInfoJson: ownerLockedBySale ? existingKitten.newOwnerInfoJson : null,
-      ...statusFlags(req.body.kittenAvailabilityStatus || existingKitten?.kittenAvailabilityStatus || "UNAVAILABLE"),
+      ...availabilityData,
+      ...deathCauseData,
       ownerId: existingKitten?.ownerId || req.session.userId,
       status: existingKitten?.status || "APROVADO",
       historyNotes: req.body.historyNotes || null,
@@ -407,10 +417,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         return res.status(403).send("Você não pode editar este filhote.");
       }
 
-      const data = statusFlags(req.body.kittenAvailabilityStatus);
+      const data = {
+        ...statusFlags(req.body.kittenAvailabilityStatus),
+        ...parseDeathCauseData(req.body, req.body.kittenAvailabilityStatus === "DECEASED"),
+      };
 
       await prisma.$transaction(async (tx) => {
-        await tx.cat.update({
+        const updated = await tx.cat.update({
           where: { id: existingKitten.id },
           data,
         });
@@ -419,6 +432,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           where: { kittenCatId: existingKitten.id },
           data: { deceased: data.deceased },
         });
+        await syncDeathHistoryEntry(tx, existingKitten.id, updated);
       });
 
       if (req.get("X-Autosave") === "true") {
@@ -438,6 +452,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         await ensureKittenLimit(req);
         const data = await parsePayload(req);
         const kitten = await prisma.cat.create({ data });
+        await syncDeathHistoryEntry(prisma, kitten.id, kitten);
         res.redirect(`/admin/kittens/${kitten.id}`);
       } catch (err) {
         res.status(400).render("admin-kittens/form", {
@@ -506,11 +521,12 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       try {
         const data = await parsePayload(req, existingKitten);
         await prisma.$transaction(async (tx) => {
-          await tx.cat.update({
+          const updated = await tx.cat.update({
             where: { id: existingKitten.id },
             data,
           });
           await syncLitterKitten(tx, existingKitten.id, data);
+          await syncDeathHistoryEntry(tx, existingKitten.id, updated);
         });
         res.redirect(`/admin/kittens/${existingKitten.id}`);
       } catch (err) {

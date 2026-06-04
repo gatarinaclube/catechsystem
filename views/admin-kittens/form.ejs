@@ -210,6 +210,21 @@
                 </select>
               </div>
             </div>
+            <div id="deathCauseBlock" class="grid-2" style="margin-top:12px;">
+              <div class="field">
+                <label class="field-label" for="deathCause">Causa do óbito</label>
+                <select id="deathCause" name="deathCause">
+                  <option value="">Selecione...</option>
+                  <% deathCauseOptions.forEach(function(option) { %>
+                    <option value="<%= option %>" <%= kitten?.deathCause === option ? "selected" : "" %>><%= option %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="field" id="deathCauseDescriptionBlock">
+                <label class="field-label" for="deathCauseDescription">Descrição da causa</label>
+                <input id="deathCauseDescription" name="deathCauseDescription" value="<%= kitten?.deathCauseDescription || '' %>" placeholder="Descreva a causa do óbito" />
+              </div>
+            </div>
             <div id="ownerClientInfoBox" class="content-card" style="display:none; padding:12px; margin-top:12px;"></div>
           </div>
 
@@ -237,6 +252,11 @@
       const microchipInput = document.getElementById("microchip");
       const breedSelect = document.getElementById("breed");
       const emsSelect = document.getElementById("emsCode");
+      const kittenAvailabilityStatus = document.getElementById("kittenAvailabilityStatus");
+      const deathCauseBlock = document.getElementById("deathCauseBlock");
+      const deathCauseSelect = document.getElementById("deathCause");
+      const deathCauseDescriptionBlock = document.getElementById("deathCauseDescriptionBlock");
+      const deathCauseDescription = document.getElementById("deathCauseDescription");
 
       function formatMicrochip() {
         let digits = microchipInput.value.replace(/\D/g, "").slice(0, 15);
@@ -293,14 +313,30 @@
         });
       }
 
+      function toggleDeathCause() {
+        const isDeceased = kittenAvailabilityStatus.value === "DECEASED";
+        const needsDescription = ["Outro", "Causa Desconhecida"].includes(deathCauseSelect.value);
+        deathCauseBlock.style.display = isDeceased ? "grid" : "none";
+        deathCauseSelect.required = isDeceased;
+        deathCauseDescriptionBlock.style.display = isDeceased && needsDescription ? "block" : "none";
+        deathCauseDescription.required = isDeceased && needsDescription;
+        if (!isDeceased) {
+          deathCauseSelect.value = "";
+          deathCauseDescription.value = "";
+        }
+      }
+
       ownerClientSearch.addEventListener("input", syncOwnerClientId);
       ownerClientSearch.addEventListener("change", syncOwnerClientId);
       microchipInput.addEventListener("input", formatMicrochip);
       breedSelect.addEventListener("change", bindBreedToEms);
+      kittenAvailabilityStatus.addEventListener("change", toggleDeathCause);
+      deathCauseSelect.addEventListener("change", toggleDeathCause);
 
       renderOwnerClientInfo();
       formatMicrochip();
       bindBreedToEms();
+      toggleDeathCause();
     </script>
   </body>
 </html>

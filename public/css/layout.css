@@ -89,6 +89,13 @@ body {
   gap: 4px;
 }
 
+.menu-item-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 6px;
+}
+
 .menu a {
   display: flex;
   align-items: center;
@@ -139,6 +146,97 @@ body {
 
 .menu a.active .menu-icon {
   opacity: 0.95;
+}
+
+.help-info-button {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-soft);
+  border-radius: 50%;
+  background: #ffffff;
+  color: var(--accent-hover);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.help-info-button:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.help-modal[hidden] {
+  display: none;
+}
+
+.help-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+
+.help-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.help-modal-card {
+  position: relative;
+  width: min(460px, 100%);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 20px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.26);
+}
+
+.help-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-soft);
+  border-radius: 50%;
+  background: #ffffff;
+  color: var(--text-main);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.help-modal-kicker {
+  color: var(--accent-hover);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.help-modal-title {
+  margin: 6px 40px 8px 0;
+  color: var(--text-main);
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.help-modal-text {
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+body.help-modal-open {
+  overflow: hidden;
 }
 
 .menu-footer {
@@ -205,6 +303,12 @@ body {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-main);
+}
+
+.title-with-help {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .content-sub {
@@ -286,6 +390,11 @@ body {
   font-weight: 500;
   color: var(--accent-hover);
   text-decoration: none;
+}
+
+.item-link + .help-info-button {
+  margin-left: 6px;
+  vertical-align: middle;
 }
 
 .item-link:hover {

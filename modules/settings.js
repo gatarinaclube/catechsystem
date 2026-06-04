@@ -10,15 +10,15 @@ const {
   setPlanLimitOverrides,
   validateFilesForRole,
 } = require("../utils/planLimits");
+const {
+  BREED_OPTIONS,
+  EXAM_OPTIONS,
+  filterAllowed,
+  parseJsonList,
+  selectedExamsFromSettings,
+} = require("../utils/userPreferences");
 
 const MEMBERSHIP_OPTIONS = ["FIFe", "TICa", "WCF"];
-const EXAM_OPTIONS = ["PKDef", "PKD", "PRA", "HCM - Genético", "HCM - Doppler"];
-const BREED_OPTIONS = [
-  "ABY","SOM","ACL","ACS","BAL","SIA","BEN","BLH","BSH","BML","BOM","BUR",
-  "CHA","CRX","DRX","DSP","EUR","EXO","PER","GRX","HCL","HCS","JBS","KBL",
-  "KBS","KOR","LPL","LPS","LYO","MAU","MCO","NEM","NFO","OCI","OLH","OSH",
-  "PEB","RAG","RUS","SBI","SIB","SNO","SOK","SPH","SRL","SRS","THA","TUA","TUV",
-];
 
 function createLogoUploadMiddleware() {
   const diskRoot =
@@ -49,29 +49,6 @@ function createLogoUploadMiddleware() {
       cb(null, true);
     },
   });
-}
-
-function normalizeList(value) {
-  if (!value) return [];
-  return Array.isArray(value) ? value.filter(Boolean) : [value].filter(Boolean);
-}
-
-function filterAllowed(values, allowedValues) {
-  const allowed = new Set(allowedValues);
-  return normalizeList(values).filter((value, index, array) => {
-    return allowed.has(value) && array.indexOf(value) === index;
-  });
-}
-
-function parseJsonList(value) {
-  if (!value) return [];
-
-  try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (err) {
-    return [];
-  }
 }
 
 function parseNullableInteger(value) {
@@ -125,22 +102,22 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       LIMIT 1
     `;
 
-    const settings = rows[0] || {};
+    const settings = rows[0] || null;
 
     return {
-      catteryName: settings.catteryName || "",
-      catteryEmail: settings.catteryEmail || "",
-      veterinarian: settings.veterinarian || settings.veterinarianName || "",
-      veterinarianName: settings.veterinarianName || "",
-      crmv: settings.crmv || "",
-      crmvUf: settings.crmvUf || "",
-      veterinarianAddress: settings.veterinarianAddress || "",
-      veterinarianPhone: settings.veterinarianPhone || "",
-      veterinarianEmail: settings.veterinarianEmail || "",
-      logoPath: settings.logoPath || "",
-      memberships: filterAllowed(parseJsonList(settings.membershipsJson), MEMBERSHIP_OPTIONS),
-      breeds: filterAllowed(parseJsonList(settings.breedsJson), BREED_OPTIONS),
-      exams: filterAllowed(parseJsonList(settings.examsJson), EXAM_OPTIONS),
+      catteryName: settings?.catteryName || "",
+      catteryEmail: settings?.catteryEmail || "",
+      veterinarian: settings?.veterinarian || settings?.veterinarianName || "",
+      veterinarianName: settings?.veterinarianName || "",
+      crmv: settings?.crmv || "",
+      crmvUf: settings?.crmvUf || "",
+      veterinarianAddress: settings?.veterinarianAddress || "",
+      veterinarianPhone: settings?.veterinarianPhone || "",
+      veterinarianEmail: settings?.veterinarianEmail || "",
+      logoPath: settings?.logoPath || "",
+      memberships: filterAllowed(parseJsonList(settings?.membershipsJson), MEMBERSHIP_OPTIONS),
+      breeds: filterAllowed(parseJsonList(settings?.breedsJson), BREED_OPTIONS),
+      exams: selectedExamsFromSettings(settings, { defaultAll: true }),
     };
   }
 

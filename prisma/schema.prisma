@@ -26,6 +26,8 @@ enum UserRole {
   ADMIN
   PREMIUM
   MASTER
+  ASSOCIADO_A
+  ASSOCIADO_B
   BASIC
   CATBREED
 }
@@ -795,6 +797,8 @@ model Cat {
   otherDocsFile    String?
   examDocsJson     String?
   deceased         Boolean?          @default(false)
+  deathCause       String?
+  deathCauseDescription String?
   kittenNumber     String?
   sold             Boolean?          @default(false)
   breedingProspect Boolean?          @default(false)

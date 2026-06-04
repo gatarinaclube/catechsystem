@@ -115,11 +115,19 @@
               </select>
             </div>
             <div class="exam-print-actions">
-              <a class="btn" href="#" data-print-type="pkdef">PKDef</a>
-              <a class="btn" href="#" data-print-type="pra">PRA</a>
-              <a class="btn" href="#" data-print-type="hcm-latest">Último HCM</a>
-              <a class="btn" href="#" data-print-type="hcm-all">Todos HCM</a>
-              <a class="btn btn-primary" href="#" data-print-type="all">Todos</a>
+              <% if (activeExams && activeExams.pkdef) { %>
+                <a class="btn" href="#" data-print-type="pkdef">PKDef</a>
+              <% } %>
+              <% if (activeExams && activeExams.pra) { %>
+                <a class="btn" href="#" data-print-type="pra">PRA</a>
+              <% } %>
+              <% if (activeExams && activeExams.hcm) { %>
+                <a class="btn" href="#" data-print-type="hcm-latest">Último HCM</a>
+                <a class="btn" href="#" data-print-type="hcm-all">Todos HCM</a>
+              <% } %>
+              <% if (activeExams && (activeExams.pkdef || activeExams.pra || activeExams.hcm)) { %>
+                <a class="btn btn-primary" href="#" data-print-type="all">Todos</a>
+              <% } %>
             </div>
           </div>
         </section>
@@ -138,10 +146,7 @@
               <div class="exam-grid exam-header">
                 <div>Nome do Gato</div>
                 <div>Data de Nascimento</div>
-                <div>PKDef</div>
-                <div>PRA-bf</div>
-                <div>Ecocardiodoppler</div>
-                <div>Próximo Eco</div>
+                <div>Exames selecionados</div>
               </div>
 
               <% if (!items.length) { %>
@@ -167,78 +172,90 @@
                       <strong><%= row.birthDateLabel %></strong>
                     </div>
 
-                    <div class="mini-stack">
-                      <div class="exam-cell-label">PKDef</div>
-                      <select name="pkdefSource" data-source-toggle="pkdef">
-                        <option value="">Selecione</option>
-                        <% sourceOptions.forEach(function(option) { %>
-                          <option value="<%= option %>" <%= row.pkdefSource === option ? "selected" : "" %>><%= option %></option>
-                        <% }) %>
-                      </select>
-                      <select name="pkdefResult">
-                        <option value="">Resultado</option>
-                        <% pkdefResults.forEach(function(option) { %>
-                          <option value="<%= option %>" <%= row.pkdefResult === option ? "selected" : "" %>><%= option %></option>
-                        <% }) %>
-                      </select>
-                      <div class="exam-upload" data-upload-box="pkdef">
-                        <% if (row.examDocs && row.examDocs.pkdef) { %>
-                          <a class="exam-file-link" href="<%= row.examDocs.pkdef %>" target="_blank">Arquivo atual</a>
-                        <% } %>
-                        <input type="file" name="pkdefDoc" accept=".pdf,image/*" />
-                      </div>
-                    </div>
-
-                    <div class="mini-stack">
-                      <div class="exam-cell-label">PRA-bf</div>
-                      <select name="prabfSource" data-source-toggle="prabf">
-                        <option value="">Selecione</option>
-                        <% sourceOptions.forEach(function(option) { %>
-                          <option value="<%= option %>" <%= row.prabfSource === option ? "selected" : "" %>><%= option %></option>
-                        <% }) %>
-                      </select>
-                      <select name="prabfResult">
-                        <option value="">Resultado</option>
-                        <% prabfResults.forEach(function(option) { %>
-                          <option value="<%= option %>" <%= row.prabfResult === option ? "selected" : "" %>><%= option %></option>
-                        <% }) %>
-                      </select>
-                      <div class="exam-upload" data-upload-box="prabf">
-                        <% if (row.examDocs && row.examDocs.pra) { %>
-                          <a class="exam-file-link" href="<%= row.examDocs.pra %>" target="_blank">Arquivo atual</a>
-                        <% } %>
-                        <input type="file" name="prabfDoc" accept=".pdf,image/*" />
-                      </div>
-                    </div>
-
-                    <div class="mini-stack" data-eco-box>
-                      <div class="exam-cell-label">Ecocardiodoppler</div>
-                      <% row.ecoHistory.forEach(function(item, index) { %>
-                        <div class="inline-plus exam-eco-row" data-eco-row>
-                          <% if (item.date) { %>
-                            <input type="hidden" name="ecoDates" value="<%= item.date %>" />
-                            <input type="hidden" name="ecoFiles" value="<%= item.file || '' %>" />
-                            <span class="history-date-display"><%= formatDate(item.date) %></span>
-                            <% if (item.file) { %>
-                              <a class="exam-file-link" href="<%= item.file %>" target="_blank">Arquivo</a>
+                    <div class="exam-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); grid-column: span 4;">
+                      <% if (row.activeExams && row.activeExams.pkdef) { %>
+                        <div class="mini-stack">
+                          <div class="exam-cell-label">PKDef</div>
+                          <select name="pkdefSource" data-source-toggle="pkdef">
+                            <option value="">Selecione</option>
+                            <% sourceOptions.forEach(function(option) { %>
+                              <option value="<%= option %>" <%= row.pkdefSource === option ? "selected" : "" %>><%= option %></option>
+                            <% }) %>
+                          </select>
+                          <select name="pkdefResult">
+                            <option value="">Resultado</option>
+                            <% pkdefResults.forEach(function(option) { %>
+                              <option value="<%= option %>" <%= row.pkdefResult === option ? "selected" : "" %>><%= option %></option>
+                            <% }) %>
+                          </select>
+                          <div class="exam-upload" data-upload-box="pkdef">
+                            <% if (row.examDocs && row.examDocs.pkdef) { %>
+                              <a class="exam-file-link" href="<%= row.examDocs.pkdef %>" target="_blank">Arquivo atual</a>
                             <% } %>
-                            <input type="file" name="hcmDoc_<%= index %>" accept=".pdf,image/*" />
-                            <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
-                          <% } else { %>
-                            <input type="date" name="ecoDates" value="" />
-                            <input type="hidden" name="ecoFiles" value="" />
-                          <% } %>
+                            <input type="file" name="pkdefDoc" accept=".pdf,image/*" />
+                          </div>
                         </div>
-                      <% }) %>
-                      <div class="history-add-row">
-                        <button type="button" class="btn add-eco">+</button>
-                      </div>
-                    </div>
+                      <% } %>
 
-                    <div class="mini-stack">
-                      <div class="exam-cell-label">Próximo Eco</div>
-                      <div><strong><%= row.nextEco ? formatDate(row.nextEco) : "-" %></strong></div>
-                    </div>
+                      <% if (row.activeExams && row.activeExams.pra) { %>
+                        <div class="mini-stack">
+                          <div class="exam-cell-label">PRA-bf</div>
+                          <select name="prabfSource" data-source-toggle="prabf">
+                            <option value="">Selecione</option>
+                            <% sourceOptions.forEach(function(option) { %>
+                              <option value="<%= option %>" <%= row.prabfSource === option ? "selected" : "" %>><%= option %></option>
+                            <% }) %>
+                          </select>
+                          <select name="prabfResult">
+                            <option value="">Resultado</option>
+                            <% prabfResults.forEach(function(option) { %>
+                              <option value="<%= option %>" <%= row.prabfResult === option ? "selected" : "" %>><%= option %></option>
+                            <% }) %>
+                          </select>
+                          <div class="exam-upload" data-upload-box="prabf">
+                            <% if (row.examDocs && row.examDocs.pra) { %>
+                              <a class="exam-file-link" href="<%= row.examDocs.pra %>" target="_blank">Arquivo atual</a>
+                            <% } %>
+                            <input type="file" name="prabfDoc" accept=".pdf,image/*" />
+                          </div>
+                        </div>
+                      <% } %>
+
+                      <% if (row.activeExams && row.activeExams.hcm) { %>
+                        <div class="mini-stack" data-eco-box>
+                          <div class="exam-cell-label">Ecocardiodoppler</div>
+                          <% row.ecoHistory.forEach(function(item, index) { %>
+                            <div class="inline-plus exam-eco-row" data-eco-row>
+                              <% if (item.date) { %>
+                                <input type="hidden" name="ecoDates" value="<%= item.date %>" />
+                                <input type="hidden" name="ecoFiles" value="<%= item.file || '' %>" />
+                                <span class="history-date-display"><%= formatDate(item.date) %></span>
+                                <% if (item.file) { %>
+                                  <a class="exam-file-link" href="<%= item.file %>" target="_blank">Arquivo</a>
+                                <% } %>
+                                <input type="file" name="hcmDoc_<%= index %>" accept=".pdf,image/*" />
+                                <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
+                              <% } else { %>
+                                <input type="date" name="ecoDates" value="" />
+                                <input type="hidden" name="ecoFiles" value="" />
+                              <% } %>
+                            </div>
+                          <% }) %>
+                          <div class="history-add-row">
+                            <button type="button" class="btn add-eco">+</button>
+                          </div>
+                        </div>
+
+                        <div class="mini-stack">
+                          <div class="exam-cell-label">Próximo Eco</div>
+                          <div><strong><%= row.nextEco ? formatDate(row.nextEco) : "-" %></strong></div>
+                        </div>
+                      <% } %>
+
+                      <% if (!row.activeExams || (!row.activeExams.pkdef && !row.activeExams.pra && !row.activeExams.hcm)) { %>
+                        <div class="empty">Nenhum exame selecionado nas Configurações.</div>
+                      <% } %>
+                      </div>
                   </div>
                 </form>
                 <% }) %>

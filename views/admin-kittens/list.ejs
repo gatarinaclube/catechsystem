@@ -41,6 +41,16 @@
         padding: 0 10px;
         font-size: 13px;
       }
+      .kitten-quick-death-fields {
+        grid-template-columns: minmax(150px, 180px) minmax(160px, 220px);
+        gap: 6px;
+        margin-left: 6px;
+      }
+      .kitten-status-input {
+        height: 36px;
+        padding: 0 10px;
+        font-size: 13px;
+      }
       @media (max-width: 900px) {
         .kitten-list-item {
           align-items: stretch;
@@ -48,6 +58,12 @@
         }
         .kitten-list-actions {
           justify-content: flex-start;
+          flex-wrap: wrap;
+        }
+        .kitten-quick-death-fields {
+          grid-template-columns: 1fr;
+          margin-left: 0;
+          width: 100%;
         }
       }
     </style>
@@ -133,6 +149,16 @@
                                 <% }) %>
                               </select>
                             </div>
+                            <div class="kitten-quick-death-fields" data-quick-death-fields style="display:none;">
+                              <select name="deathCause" class="kitten-status-select">
+                                <option value="">Causa...</option>
+                                <option value="Castração" <%= kitten.deathCause === "Castração" ? "selected" : "" %>>Castração</option>
+                                <option value="Trauma" <%= kitten.deathCause === "Trauma" ? "selected" : "" %>>Trauma</option>
+                                <option value="Causa Desconhecida" <%= kitten.deathCause === "Causa Desconhecida" ? "selected" : "" %>>Causa Desconhecida</option>
+                                <option value="Outro" <%= kitten.deathCause === "Outro" ? "selected" : "" %>>Outro</option>
+                              </select>
+                              <input name="deathCauseDescription" class="kitten-status-input" value="<%= kitten.deathCauseDescription || '' %>" placeholder="Descrição" />
+                            </div>
                           </form>
                         </div>
                       </li>
@@ -160,8 +186,27 @@
         searchInput.addEventListener("change", syncOwnerId);
 
         document.querySelectorAll("[data-quick-kitten-status]").forEach((form) => {
-          form.querySelectorAll("select").forEach((select) => {
-            select.addEventListener("change", async () => {
+          const statusSelect = form.querySelector('[name="kittenAvailabilityStatus"]');
+          const deathFields = form.querySelector("[data-quick-death-fields]");
+          const deathCause = form.querySelector('[name="deathCause"]');
+          const deathDescription = form.querySelector('[name="deathCauseDescription"]');
+
+          function refreshDeathFields() {
+            const isDeceased = statusSelect.value === "DECEASED";
+            const needsDescription = ["Outro", "Causa Desconhecida"].includes(deathCause.value);
+            deathFields.style.display = isDeceased ? "grid" : "none";
+            deathCause.required = isDeceased;
+            deathDescription.style.display = isDeceased && needsDescription ? "block" : "none";
+            deathDescription.required = isDeceased && needsDescription;
+            if (!isDeceased) {
+              deathCause.value = "";
+              deathDescription.value = "";
+            }
+          }
+
+          async function saveQuickStatus() {
+            refreshDeathFields();
+            if (!form.reportValidity()) return;
               try {
                 const response = await fetch(form.action, {
                   method: "POST",
@@ -181,8 +226,20 @@
               } catch (error) {
                 console.error(error);
               }
-            });
+          }
+
+          statusSelect.addEventListener("change", () => {
+            refreshDeathFields();
+            if (statusSelect.value !== "DECEASED") saveQuickStatus();
           });
+          deathCause.addEventListener("change", () => {
+            refreshDeathFields();
+            if (statusSelect.value === "DECEASED" && deathCause.value && !deathDescription.required) saveQuickStatus();
+          });
+          deathDescription.addEventListener("change", () => {
+            if (statusSelect.value === "DECEASED") saveQuickStatus();
+          });
+          refreshDeathFields();
         });
       })();
     </script>

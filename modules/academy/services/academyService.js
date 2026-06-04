@@ -110,7 +110,7 @@ function isAcademyActiveSubscription(subscription) {
 
 function userHasAcademyAccess(user, enrollment, subscription = null) {
   const role = String(user?.role || "").toUpperCase();
-  return role === "ADMIN" || role === "PREMIUM" || isAcademyPaidEnrollment(enrollment) || isAcademyActiveSubscription(subscription);
+  return role === "ADMIN";
 }
 
 function resolveAcademyLevel(user, enrollment, subscription) {
