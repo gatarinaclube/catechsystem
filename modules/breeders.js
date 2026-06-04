@@ -141,45 +141,21 @@ function buildDisplayName(cat) {
     .join(" ");
 }
 
-function shouldShowCatteryPrefix(cat) {
-  return Boolean((cat.kittenNumber || cat.litterKitten) && cat.breedingProspect === true);
-}
-
-function buildBreederDisplayName(cat, catteryName = "") {
-  const cleanCatteryName = String(catteryName || "").trim();
-  const baseName = String(cat.name || "").trim();
-  const prefixedName =
-    cleanCatteryName &&
-    shouldShowCatteryPrefix(cat) &&
-    !baseName.toLowerCase().startsWith(`${cleanCatteryName.toLowerCase()} `)
-      ? `${cleanCatteryName} ${baseName}`
-      : baseName;
+function buildBreederDisplayName(cat) {
   const displayName = [
     cat.titleBeforeName,
     cat.country ? `${cat.country}*` : null,
-    prefixedName,
+    cat.name,
     cat.titleAfterName,
   ].filter(Boolean).join(" ");
 
-  if (!shouldShowCatteryPrefix(cat) || !cleanCatteryName) {
-    return displayName;
-  }
   return displayName;
 }
 
-function buildCatSelectName(cat, catteryName = "") {
-  const cleanCatteryName = String(catteryName || "").trim();
-  const baseName = String(cat.name || "").trim();
-  const prefixedName =
-    cleanCatteryName &&
-    shouldShowCatteryPrefix(cat) &&
-    !baseName.toLowerCase().startsWith(`${cleanCatteryName.toLowerCase()} `)
-      ? `${cleanCatteryName} ${baseName}`
-      : baseName;
-
+function buildCatSelectName(cat) {
   return [
     cat.country ? `${cat.country}*` : null,
-    prefixedName,
+    cat.name,
   ].filter(Boolean).join(" ");
 }
 
@@ -490,7 +466,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       deceased: deceased === "YES",
       ...deathCauseData,
       ownershipType: mapOwnershipType(ownershipMode),
-      status: existingCat ? existingCat.status : "NOVO",
+      status: existingCat ? existingCat.status : "APROVADO",
     };
   }
 

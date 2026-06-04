@@ -441,6 +441,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       deadAfterBirthCausesJson: JSON.stringify(payload.deadAfterBirthCauses || []),
       historyNotes: payload.historyNotes || null,
       litterBreed: payload.kittens[0]?.breed || existingLitter?.litterBreed || null,
+      catteryName: payload.catteryName || existingLitter?.catteryName || null,
     };
 
     const litter = existingLitter
@@ -574,6 +575,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
         const payload = {
           ownerId: req.session.userId,
+          catteryName,
           litterNumber: req.body.litterNumber?.trim().slice(0, 5).padStart(3, "0") || null,
           femaleCatId: req.body.femaleCatId ? Number(req.body.femaleCatId) : null,
           maleCatId: req.body.maleCatId ? Number(req.body.maleCatId) : null,
@@ -704,6 +706,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
         const payload = {
           ownerId: existingLitter.ownerId || req.session.userId,
+          catteryName,
           litterNumber: req.body.litterNumber?.trim().slice(0, 5).padStart(3, "0") || null,
           femaleCatId: req.body.femaleCatId ? Number(req.body.femaleCatId) : null,
           maleCatId: req.body.maleCatId ? Number(req.body.maleCatId) : null,

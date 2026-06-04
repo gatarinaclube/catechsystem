@@ -76,11 +76,46 @@ function isOwnerSelf(cat) {
   return !cat.currentOwnerId || cat.currentOwnerId === cat.ownerId;
 }
 
+function isKittenRecord(cat) {
+  return Boolean(cat?.kittenNumber || cat?.litterKitten);
+}
+
+function compactText(value) {
+  return String(value || "").trim();
+}
+
+function catteryNameForCat(cat) {
+  const litterCatteryName = compactText(
+    cat?.catteryName ||
+    cat?.litter?.catteryName ||
+    cat?.litterKitten?.litter?.catteryName
+  );
+  if (litterCatteryName) return litterCatteryName;
+
+  const isLinkedToLitter = Boolean(cat?.litter || cat?.litterKitten?.litter);
+  if (isLinkedToLitter) {
+    return compactText(cat?.owner?.settings?.catteryName);
+  }
+
+  return compactText(
+    cat?.catteryName
+  );
+}
+
+function prefixWithCatteryName(name, catteryName) {
+  const cleanName = compactText(name);
+  const cleanCatteryName = compactText(catteryName);
+  if (!cleanName || !cleanCatteryName) return cleanName;
+  if (cleanName.toLowerCase().startsWith(`${cleanCatteryName.toLowerCase()} `)) {
+    return cleanName;
+  }
+  return `${cleanCatteryName} ${cleanName}`;
+}
+
 function kittenFallbackDisplayName(cat) {
-  const isKittenRecord = Boolean(cat?.kittenNumber || cat?.litterKitten);
   const name = String(cat?.name || "").trim();
   const hasRealName = Boolean(name) && !/^filhote\s+\d+$/i.test(name);
-  if (!isKittenRecord || hasRealName) return "";
+  if (!isKittenRecord(cat) || hasRealName) return "";
 
   const number = cat.kittenNumber || cat.litterKitten?.kittenNumber || cat.litterKitten?.index || "-";
   const sexValue = cat.gender || cat.sex || cat.litterKitten?.sex || "";
@@ -90,9 +125,23 @@ function kittenFallbackDisplayName(cat) {
   return [number, sex, motherName, birthDate].join(" - ");
 }
 
+function buildKittenRegisteredName(cat) {
+  if (!isKittenRecord(cat)) return "";
+  const name = compactText(cat?.name);
+  if (!name || /^filhote\s+\d+$/i.test(name)) return "";
+  if (/^[A-Z]{2}\*/i.test(name)) return name;
+
+  return [
+    cat.country ? `${cat.country}*` : null,
+    prefixWithCatteryName(name, catteryNameForCat(cat)),
+  ].filter(Boolean).join("");
+}
+
 function buildDisplayName(cat) {
   const kittenFallback = kittenFallbackDisplayName(cat);
   if (kittenFallback) return kittenFallback;
+  const kittenRegisteredName = buildKittenRegisteredName(cat);
+  if (kittenRegisteredName) return kittenRegisteredName;
 
   return [
     cat.titleBeforeName,
@@ -157,6 +206,10 @@ module.exports = {
   addYears,
   ageInMonths,
   isOwnerSelf,
+  isKittenRecord,
+  catteryNameForCat,
+  prefixWithCatteryName,
+  buildKittenRegisteredName,
   buildDisplayName,
   kittenFallbackDisplayName,
   classifyOperationalCat,

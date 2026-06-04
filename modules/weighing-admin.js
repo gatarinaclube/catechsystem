@@ -142,6 +142,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         where: ownerScope(req),
         include: {
           mother: true,
+          owner: { include: { settings: true } },
+          litterKitten: { include: { litter: true } },
           weighingPlan: true,
         },
         orderBy: { name: "asc" },

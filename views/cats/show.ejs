@@ -22,45 +22,6 @@
             </div>
           </div>
 
-  <!-- SOMENTE ADMIN -->
-  <% if (isAdmin) { %>
-
-    <form
-      method="post"
-      action="/cats/<%= cat.id %>/status"
-      class="cat-status-buttons"
-      style="display:inline-flex; gap:6px; margin-left:8px;"
-    >
-      <button
-        type="submit"
-        name="status"
-        value="NOVO"
-        class="btn <%= cat.status === 'NOVO' ? 'btn-warning' : '' %>"
-      >
-        Em análise
-      </button>
-
-      <button
-        type="submit"
-        name="status"
-        value="APROVADO"
-        class="btn <%= cat.status === 'APROVADO' ? 'btn-success' : '' %>"
-      >
-        Aprovado
-      </button>
-
-      <button
-        type="submit"
-        name="status"
-        value="NAO_APROVADO"
-        class="btn <%= cat.status === 'NAO_APROVADO' ? 'btn-danger' : '' %>"
-      >
-        Não aprovado
-      </button>
-    </form>
-  <% } %>
-
-
 <div class="header-actions">
   <!-- SEMPRE VISÍVEL (USER e ADMIN) -->
   <a href="/cats" class="btn">← Voltar à lista</a>
@@ -365,4 +326,3 @@
           </div>
         </div>
       </div>
-

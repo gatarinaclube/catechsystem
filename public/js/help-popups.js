@@ -26,7 +26,7 @@
     "E-mails Salvos": "Guarde campanhas prontas para editar e reutilizar em novos envios.",
     "Enviar E-mail Marketing": "Monte a campanha com assunto, imagem, texto, anexos, botões e destinatários antes do envio.",
     "Exames": "Controle somente os exames selecionados nas Configurações, anexando laudos e imprimindo comprovações quando necessário.",
-    "Filhotes": "Cadastre e acompanhe filhotes, dados de origem, disponibilidade, propriedade e histórico.",
+    "Filhotes": "Acompanhe e edite filhotes já cadastrados pelo Registro de Ninhada ou pelo módulo Ninhadas. Novos filhotes devem entrar por esses fluxos; filhotes adquiridos externamente para reprodução devem ser cadastrados como reprodutor ou matriz.",
     "Fluxo de Caixa": "Mostra entradas e saídas por período, incluindo movimentações entre contas e estornos quando aplicável.",
     "Fornecedores": "Cadastre fornecedores com CNPJ, contato, endereço e categoria padrão para agilizar despesas.",
     "Formas de pagamento": "Configure textos e condições de pagamento exibidas na página pública da vitrine.",

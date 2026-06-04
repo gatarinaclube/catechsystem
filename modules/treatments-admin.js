@@ -220,7 +220,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           { OR: [{ kittenAvailabilityStatus: { not: "DECEASED" } }, { kittenAvailabilityStatus: null }] },
         ],
       },
-      include: { litterKitten: true, mother: true },
+      include: {
+        litterKitten: { include: { litter: true } },
+        mother: true,
+        owner: { include: { settings: true } },
+      },
       orderBy: [{ name: "asc" }],
     });
 
@@ -275,7 +279,16 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             { endDate: { gte: today } },
           ],
         },
-        include: { cat: true, medication: true },
+        include: {
+          cat: {
+            include: {
+              litterKitten: { include: { litter: true } },
+              mother: true,
+              owner: { include: { settings: true } },
+            },
+          },
+          medication: true,
+        },
         orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
       }),
       prisma.catTreatment.findMany({
@@ -283,7 +296,16 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           ...ownerScope(req),
           endDate: { lt: today },
         },
-        include: { cat: true, medication: true },
+        include: {
+          cat: {
+            include: {
+              litterKitten: { include: { litter: true } },
+              mother: true,
+              owner: { include: { settings: true } },
+            },
+          },
+          medication: true,
+        },
         orderBy: [{ endDate: "desc" }, { createdAt: "desc" }],
         take: 10,
       }),

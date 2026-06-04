@@ -84,7 +84,7 @@
                           data-microchip="<%= c.microchip || '' %>"
                           <%= String(importedFemaleCatId || '') === String(c.id) ? 'selected' : '' %>
                         >
-                          <%= c.name %>
+                          <%= c.displayName || c.name %>
                           <% if (c.pedigreeNumber) { %> - <%= c.pedigreeNumber %><% } %>
                         </option>
                       <% }); %>
@@ -124,7 +124,7 @@
                           data-microchip="<%= c.microchip || '' %>"
                           <%= String(importedMaleCatId || '') === String(c.id) ? 'selected' : '' %>
                         >
-                          <%= c.name %>
+                          <%= c.displayName || c.name %>
                           <% if (c.pedigreeNumber) { %> - <%= c.pedigreeNumber %><% } %>
                         </option>
                       <% }); %>

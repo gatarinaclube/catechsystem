@@ -11,6 +11,7 @@ const {
   getFileUploadLimit,
   validateFilesForRole,
 } = require("../utils/planLimits");
+const { buildDisplayName } = require("../utils/cattery-admin");
 
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
@@ -179,7 +180,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
     return {
       ownerId,
-      status: "NOVO",
+      status: "APROVADO",
       country: cleanText(pick(row, ["pais", "país", "country"])) || "BR",
       titleBeforeName: cleanText(pick(row, ["titulos antes", "títulos antes", "title before", "prefixo"])),
       titleAfterName: cleanText(pick(row, ["titulos depois", "títulos depois", "title after", "sufixo"])),
@@ -275,16 +276,17 @@ router.get("/cats", requireAuth, async (req, res) => {
 
     const catsFromDb = await prisma.cat.findMany({
       where,
+      include: {
+        owner: { include: { settings: true } },
+        mother: true,
+        litterKitten: { include: { litter: true } },
+      },
       orderBy: { id: "desc" },
     });
 
-    const catsEmAnalise = catsFromDb.filter(c => c.status === "NOVO");
-const catsAprovados = catsFromDb.filter(c => c.status === "APROVADO");
-const catsNaoAprovados = catsFromDb.filter(c => c.status === "NAO_APROVADO");
-
-
     const cats = catsFromDb.map((cat) => ({
       ...cat,
+      displayName: buildDisplayName(cat),
       microchipFormatted: cat.microchip
         ? formatMicrochip(cat.microchip)
         : null,
@@ -292,11 +294,9 @@ const catsNaoAprovados = catsFromDb.filter(c => c.status === "NAO_APROVADO");
 
     const selectedOwnerId = isAdmin ? (req.query.ownerId || "") : "";
 
-    res.render("cats/list", {
+  res.render("cats/list", {
   user,
-  catsEmAnalise,
-  catsAprovados,
-  catsNaoAprovados,
+  cats,
   owners,
   selectedOwnerId,
   currentPath: req.path,
@@ -330,18 +330,28 @@ router.get("/cats/new", requireAuth, async (req, res) => {
 
     const maleCats = await prisma.cat.findMany({
       where: maleWhere,
+      include: {
+        owner: { include: { settings: true } },
+        mother: true,
+        litterKitten: { include: { litter: true } },
+      },
       orderBy: { name: "asc" },
     });
 
     const femaleCats = await prisma.cat.findMany({
       where: femaleWhere,
+      include: {
+        owner: { include: { settings: true } },
+        mother: true,
+        litterKitten: { include: { litter: true } },
+      },
       orderBy: { name: "asc" },
     });
 
     res.render("cats/new", {
       cat: null,
-      maleCats,
-      femaleCats,
+      maleCats: maleCats.map((cat) => ({ ...cat, displayName: buildDisplayName(cat) })),
+      femaleCats: femaleCats.map((cat) => ({ ...cat, displayName: buildDisplayName(cat) })),
       user,
       currentPath: req.path,
       microchipError: null,
@@ -678,11 +688,21 @@ const otherDocsPath =
           // listas de machos e fêmeas para repopular o formulário
           const maleCats = await prisma.cat.findMany({
             where: { gender: "M" },
+            include: {
+              owner: { include: { settings: true } },
+              mother: true,
+              litterKitten: { include: { litter: true } },
+            },
             orderBy: { name: "asc" },
           });
 
           const femaleCats = await prisma.cat.findMany({
             where: { gender: "F" },
+            include: {
+              owner: { include: { settings: true } },
+              mother: true,
+              litterKitten: { include: { litter: true } },
+            },
             orderBy: { name: "asc" },
           });
 
@@ -698,8 +718,8 @@ const otherDocsPath =
   breed,
   emsCode,
 },
-            maleCats,
-            femaleCats,
+            maleCats: maleCats.map((cat) => ({ ...cat, displayName: buildDisplayName(cat) })),
+            femaleCats: femaleCats.map((cat) => ({ ...cat, displayName: buildDisplayName(cat) })),
             user,
             currentPath: "/cats/new",
             microchipError: "Já existe um gato cadastrado com este microchip.",
@@ -711,7 +731,7 @@ const otherDocsPath =
       const createdCat = await prisma.cat.create({
   data: {
     ownerId: userId,
-    status: "NOVO",
+    status: "APROVADO",
 
     // Informações básicas
     country: country || null,
@@ -1030,13 +1050,6 @@ router.post(
           motherBreed: motherBreedValue,
         });
       }
-
-      // --------------------------------------------------
-// REGRA: SE USER EDITAR, VOLTA STATUS PARA "NOVO"
-// --------------------------------------------------
-if (!isAdmin) {
-  data.status = "NOVO";
-}
 
       await prisma.$transaction(async (tx) => {
         await tx.cat.update({

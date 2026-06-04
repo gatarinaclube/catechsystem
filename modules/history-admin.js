@@ -411,6 +411,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             }
           : ownerScope(req),
         orderBy: [{ name: "asc" }],
+        include: {
+          owner: { include: { settings: true } },
+          mother: true,
+          litterKitten: { include: { litter: true } },
+        },
       });
 
       const grouped = Object.fromEntries(
@@ -453,7 +458,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const cat = await prisma.cat.findUnique({
         where: { id: catId },
         include: {
-          owner: true,
+          owner: { include: { settings: true } },
           currentOwner: true,
           currentOwnerClient: true,
           father: true,

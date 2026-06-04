@@ -7,6 +7,7 @@ const {
   getCreationLimits,
   validateFilesForRole,
 } = require("../utils/planLimits");
+const { ROLES, normalizeRole } = require("../utils/access");
 
 const SHOWCASE_UPLOAD_LIMIT = getFileUploadLimit("ADMIN");
 const DEFAULT_SHOWCASE_THEME = {
@@ -37,6 +38,12 @@ const RESERVED_SLUGS = new Set([
   "users",
   "vitrine",
   "vendas",
+]);
+
+const ASSOCIATED_SHOWCASE_ROLES = new Set([
+  ROLES.ASSOCIADO_B,
+  ROLES.ASSOCIADO_A,
+  ROLES.ASSOCIADO_PREMIUM,
 ]);
 
 function createUpload() {
@@ -154,8 +161,10 @@ function emptyShowcase(settings, user) {
     paymentText: "",
     aboutText: "",
     aboutPdfPath: "",
+    evolutionText: "",
     published: false,
     litters: [],
+    evolutionComparisons: [],
   };
 }
 
@@ -174,6 +183,11 @@ function shapeShowcase(showcase, settings, user) {
     paymentText: showcase.paymentText || "",
     aboutText: showcase.aboutText || "",
     aboutPdfPath: showcase.aboutPdfPath || "",
+    evolutionText: showcase.evolutionText || "",
+    evolutionComparisons: (showcase.evolutionComparisons || []).map((comparison) => ({
+      ...comparison,
+      key: `comparison_${comparison.id}`,
+    })),
     litters: (showcase.litters || []).map((litter) => ({
       ...litter,
       birthDate: formatDateInput(litter.birthDate),
@@ -203,6 +217,10 @@ function publicKittenName(kitten, counters) {
   return `${sex} ${String(counters[kitten.sex]).padStart(2, "0")}`;
 }
 
+function isAssociatedShowcaseOwner(user) {
+  return ASSOCIATED_SHOWCASE_ROLES.has(normalizeRole(user?.role));
+}
+
 async function renderPublicShowcase(prisma, req, res, next, rawSlug) {
   try {
     const slug = slugify(rawSlug);
@@ -224,6 +242,9 @@ async function renderPublicShowcase(prisma, req, res, next, rawSlug) {
               include: { photos: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }] } },
             },
           },
+        },
+        evolutionComparisons: {
+          orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
         },
       },
     });
@@ -254,6 +275,11 @@ async function renderPublicShowcase(prisma, req, res, next, rawSlug) {
         compact(showcase.paymentText)
       ),
       hasAboutInfo: Boolean(compact(showcase.aboutText) || compact(showcase.aboutPdfPath)),
+      hasEvolutionInfo: Boolean(
+        showcase.evolutionComparisons.length &&
+        showcase.evolutionComparisons.some((item) => item.reservePhoto && item.deliveryPhoto && item.oneYearPhoto)
+      ),
+      isAssociatedShowcase: isAssociatedShowcaseOwner(showcase.owner),
     });
   } catch (err) {
     return next(err);
@@ -291,6 +317,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             },
           },
         },
+        evolutionComparisons: {
+          orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+        },
       },
     });
   }
@@ -299,6 +328,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const settings = await getSettings(req.session.userId);
     const showcase = await getShowcase(req.session.userId);
     const showcaseLitterLimit = getCreationLimits(req.session.userRole).showcaseLitters;
+    const showcaseEvolutionLimit = getCreationLimits(req.session.userRole).showcaseEvolutionComparisons;
     const uploadLimit = getFileUploadLimit(req.session.userRole);
     const publicBaseUrl = `${req.protocol}://${req.get("host")}/vitrine`;
 
@@ -314,6 +344,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         littersNote: showcaseLitterLimit === 1
           ? "Seu perfil permite manter 1 ninhada publicada na vitrine. Ninhadas ocultas ficam salvas e não entram neste limite."
           : null,
+        evolutionComparisons: showcaseEvolutionLimit,
+        evolutionComparisonsLabel: showcaseEvolutionLimit === null
+          ? "Ilimitado"
+          : `${showcaseEvolutionLimit} comparativo${showcaseEvolutionLimit === 1 ? "" : "s"}`,
         uploadLimitBytes: uploadLimit.bytes,
         uploadLimitLabel: uploadLimit.label,
       },
@@ -401,10 +435,17 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         }
 
         const litters = Array.isArray(payload.litters) ? payload.litters : [];
+        const evolutionComparisons = Array.isArray(payload.evolutionComparisons)
+          ? payload.evolutionComparisons
+          : [];
         const showcaseLitterLimit = getCreationLimits(req.session.userRole).showcaseLitters;
+        const showcaseEvolutionLimit = getCreationLimits(req.session.userRole).showcaseEvolutionComparisons;
         const publishedLitters = litters.filter((litter) => litter.published !== false);
         if (showcaseLitterLimit !== null && publishedLitters.length > showcaseLitterLimit) {
           throw new Error(`Seu perfil permite até ${showcaseLitterLimit} ninhada${showcaseLitterLimit === 1 ? "" : "s"} publicada${showcaseLitterLimit === 1 ? "" : "s"} na vitrine por vez. Ninhadas ocultas não entram neste limite.`);
+        }
+        if (showcaseEvolutionLimit !== null && evolutionComparisons.length > showcaseEvolutionLimit) {
+          throw new Error(`Seu perfil permite até ${showcaseEvolutionLimit} comparativo${showcaseEvolutionLimit === 1 ? "" : "s"} de evolução na vitrine.`);
         }
 
         for (const litter of litters) {
@@ -418,6 +459,15 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             if (!["M", "F"].includes(kitten.sex)) {
               throw new Error("Informe o sexo de todos os filhotes.");
             }
+          }
+        }
+        for (const comparison of evolutionComparisons) {
+          const key = comparison.key;
+          const reservePhoto = (uploaded.get(`comparisonReservePhoto_${key}`)?.[0] || compact(comparison.reservePhoto));
+          const deliveryPhoto = (uploaded.get(`comparisonDeliveryPhoto_${key}`)?.[0] || compact(comparison.deliveryPhoto));
+          const oneYearPhoto = (uploaded.get(`comparisonOneYearPhoto_${key}`)?.[0] || compact(comparison.oneYearPhoto));
+          if (!reservePhoto || !deliveryPhoto || !oneYearPhoto) {
+            throw new Error("Cada comparativo de evolução precisa ter as fotos: momento da reserva, momento da entrega e 1 ano de idade.");
           }
         }
 
@@ -445,6 +495,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               paymentText: compact(payload.paymentText),
               aboutText: compact(payload.aboutText),
               aboutPdfPath: aboutPdfUpload || compact(payload.aboutPdfPath),
+              evolutionText: compact(payload.evolutionText),
               published: payload.published === true,
             },
             create: {
@@ -469,11 +520,15 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               paymentText: compact(payload.paymentText),
               aboutText: compact(payload.aboutText),
               aboutPdfPath: aboutPdfUpload || compact(payload.aboutPdfPath),
+              evolutionText: compact(payload.evolutionText),
               published: payload.published === true,
             },
           });
 
           await tx.catteryShowcaseLitter.deleteMany({
+            where: { showcaseId: showcase.id },
+          });
+          await tx.catteryShowcaseEvolutionComparison.deleteMany({
             where: { showcaseId: showcase.id },
           });
 
@@ -543,6 +598,19 @@ module.exports = (prisma, requireAuth, requirePermission) => {
                 });
               }
             }
+          }
+          for (const [comparisonIndex, comparison] of evolutionComparisons.entries()) {
+            const key = comparison.key;
+            await tx.catteryShowcaseEvolutionComparison.create({
+              data: {
+                showcaseId: showcase.id,
+                caption: compact(comparison.caption),
+                reservePhoto: uploaded.get(`comparisonReservePhoto_${key}`)?.[0] || compact(comparison.reservePhoto),
+                deliveryPhoto: uploaded.get(`comparisonDeliveryPhoto_${key}`)?.[0] || compact(comparison.deliveryPhoto),
+                oneYearPhoto: uploaded.get(`comparisonOneYearPhoto_${key}`)?.[0] || compact(comparison.oneYearPhoto),
+                sortOrder: comparisonIndex,
+              },
+            });
           }
         });
 

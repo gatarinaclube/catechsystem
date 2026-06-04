@@ -180,7 +180,11 @@ function ownsNnExam(cat, config) {
 async function loadCatForPrint(prisma, scope, catId) {
   return prisma.cat.findFirst({
     where: { id: Number(catId), ...scope },
-    include: { examPlan: true },
+    include: {
+      owner: { include: { settings: true } },
+      litterKitten: { include: { litter: true } },
+      examPlan: true,
+    },
   });
 }
 
@@ -188,7 +192,11 @@ async function loadAncestor(prisma, id) {
   if (!id) return null;
   return prisma.cat.findUnique({
     where: { id },
-    include: { examPlan: true },
+    include: {
+      owner: { include: { settings: true } },
+      litterKitten: { include: { litter: true } },
+      examPlan: true,
+    },
   });
 }
 
@@ -301,6 +309,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const cats = await prisma.cat.findMany({
         where: ownerScope(req),
         include: {
+          owner: { include: { settings: true } },
+          litterKitten: { include: { litter: true } },
           examPlan: true,
         },
         orderBy: { name: "asc" },

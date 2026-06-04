@@ -173,9 +173,9 @@ function buildProfileAccessGroups(role) {
 
 function buildProfilePlanCards(currentRole) {
   const normalizedCurrentRole = normalizeRole(currentRole);
-  const comparisonRoles = [ROLES.ASSOCIADO_A, ROLES.ASSOCIADO_B].includes(normalizedCurrentRole)
-    ? [ROLES.ASSOCIADO_B, ROLES.ASSOCIADO_A, ROLES.PREMIUM]
-    : [ROLES.PREMIUM, ROLES.MASTER, ROLES.BASIC];
+  const comparisonRoles = [ROLES.ASSOCIADO_PREMIUM, ROLES.ASSOCIADO_A, ROLES.ASSOCIADO_B].includes(normalizedCurrentRole)
+    ? [ROLES.ASSOCIADO_B, ROLES.ASSOCIADO_A, ROLES.ASSOCIADO_PREMIUM]
+    : [ROLES.BASIC, ROLES.MASTER, ROLES.PREMIUM];
 
   return comparisonRoles.map((role) => {
     const limits = getCreationLimits(role);
@@ -199,6 +199,7 @@ function buildProfilePlanCards(currentRole) {
         { label: "Ninhadas por ano", value: limitLabel(limits.littersPerYear) },
         { label: "Filhotes por ano", value: limitLabel(limits.kittensPerYear) },
         { label: "Vitrine de filhotes", value: showcaseLitterLabel, note: showcaseLitterNote },
+        { label: "Comparativos de evolução", value: limitLabel(limits.showcaseEvolutionComparisons) },
       ],
     };
   });
@@ -726,14 +727,6 @@ app.get("/dashboard", requireAuth, async (req, res) => {
     }
 
     let catsInReviewCount = 0;
-
-if (isAdminRole(req.session.userRole)) {
-  catsInReviewCount = await prisma.cat.count({
-    where: {
-      status: "NOVO", // Em análise
-    },
-  });
-}
 
 let usersPendingApprovalCount = 0;
 

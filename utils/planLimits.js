@@ -2,15 +2,17 @@ const { ROLES, normalizeRole, getRoleLabel } = require("./access");
 
 const MANAGED_PLAN_ROLES = [
   ROLES.PREMIUM,
-  ROLES.ASSOCIADO_A,
-  ROLES.ASSOCIADO_B,
+  ROLES.ASSOCIADO_PREMIUM,
   ROLES.MASTER,
+  ROLES.ASSOCIADO_A,
   ROLES.BASIC,
+  ROLES.ASSOCIADO_B,
 ];
 
 const DEFAULT_FILE_UPLOAD_LIMITS = {
   [ROLES.ADMIN]: { bytes: 5 * 1024 * 1024, label: "5 MB", kb: 5 * 1024 },
   [ROLES.PREMIUM]: { bytes: 2 * 1024 * 1024, label: "2 MB", kb: 2 * 1024 },
+  [ROLES.ASSOCIADO_PREMIUM]: { bytes: 2 * 1024 * 1024, label: "2 MB", kb: 2 * 1024 },
   [ROLES.MASTER]: { bytes: 1 * 1024 * 1024, label: "1 MB", kb: 1 * 1024 },
   [ROLES.ASSOCIADO_A]: { bytes: 1 * 1024 * 1024, label: "1 MB", kb: 1 * 1024 },
   [ROLES.ASSOCIADO_B]: { bytes: 500 * 1024, label: "500 KB", kb: 500 },
@@ -22,42 +24,56 @@ const DEFAULT_CREATION_LIMITS = {
   [ROLES.ADMIN]: {
     breeders: null,
     showcaseLitters: null,
+    showcaseEvolutionComparisons: null,
     littersPerYear: null,
     kittensPerYear: null,
   },
   [ROLES.PREMIUM]: {
     breeders: null,
     showcaseLitters: null,
+    showcaseEvolutionComparisons: null,
+    littersPerYear: null,
+    kittensPerYear: null,
+  },
+  [ROLES.ASSOCIADO_PREMIUM]: {
+    breeders: null,
+    showcaseLitters: null,
+    showcaseEvolutionComparisons: null,
     littersPerYear: null,
     kittensPerYear: null,
   },
   [ROLES.MASTER]: {
     breeders: 10,
     showcaseLitters: 3,
+    showcaseEvolutionComparisons: 3,
     littersPerYear: 10,
     kittensPerYear: 40,
   },
   [ROLES.ASSOCIADO_A]: {
     breeders: 10,
     showcaseLitters: 3,
+    showcaseEvolutionComparisons: 3,
     littersPerYear: 10,
     kittensPerYear: 40,
   },
   [ROLES.ASSOCIADO_B]: {
     breeders: 3,
     showcaseLitters: 1,
+    showcaseEvolutionComparisons: 1,
     littersPerYear: 2,
     kittensPerYear: 10,
   },
   [ROLES.BASIC]: {
     breeders: 3,
     showcaseLitters: 1,
+    showcaseEvolutionComparisons: 1,
     littersPerYear: 2,
     kittensPerYear: 10,
   },
   [ROLES.CATBREED]: {
     breeders: 0,
     showcaseLitters: 0,
+    showcaseEvolutionComparisons: 0,
     littersPerYear: 0,
     kittensPerYear: 0,
   },
@@ -88,6 +104,7 @@ function rowToOverride(row) {
     uploadLimitKb: normalizeNullableNumber(row.uploadLimitKb),
     breeders: normalizeNullableNumber(row.breeders),
     showcaseLitters: normalizeNullableNumber(row.showcaseLitters),
+    showcaseEvolutionComparisons: normalizeNullableNumber(row.showcaseEvolutionComparisons),
     littersPerYear: normalizeNullableNumber(row.littersPerYear),
     kittensPerYear: normalizeNullableNumber(row.kittensPerYear),
   };
@@ -133,6 +150,7 @@ function getCreationLimits(role) {
   return {
     breeders: override.breeders,
     showcaseLitters: override.showcaseLitters,
+    showcaseEvolutionComparisons: override.showcaseEvolutionComparisons,
     littersPerYear: override.littersPerYear,
     kittensPerYear: override.kittensPerYear,
   };

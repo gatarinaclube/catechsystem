@@ -250,7 +250,7 @@
       <option value="">Nenhum selecionado</option>
       <% if (maleCats && maleCats.length) { %>
         <% maleCats.forEach(function(m) { %>
-          <option value="<%= m.id %>"><%= m.name %></option>
+          <option value="<%= m.id %>"><%= m.displayName || m.name %></option>
         <% }); %>
       <% } %>
     </select>
@@ -374,7 +374,7 @@
       <option value="">Nenhum selecionado</option>
       <% if (femaleCats && femaleCats.length) { %>
         <% femaleCats.forEach(function(f) { %>
-          <option value="<%= f.id %>"><%= f.name %></option>
+          <option value="<%= f.id %>"><%= f.displayName || f.name %></option>
         <% }); %>
       <% } %>
     </select>

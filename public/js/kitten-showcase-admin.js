@@ -4,7 +4,10 @@
   const payloadInput = document.getElementById("payload");
   const litterTemplate = document.getElementById("litterTemplate");
   const kittenTemplate = document.getElementById("kittenTemplate");
+  const comparisonsRoot = document.getElementById("comparisonsRoot");
+  const comparisonTemplate = document.getElementById("comparisonTemplate");
   const addLitterButton = document.getElementById("addLitterButton");
+  const addComparisonButton = document.getElementById("addComparisonButton");
   const slugInput = document.getElementById("slug");
   const publicLinkButton = document.getElementById("publicLinkButton");
   const paymentCardInstallments = document.getElementById("paymentCardInstallments");
@@ -28,6 +31,10 @@
 
   function kittenField(container, name) {
     return container.querySelector(`[data-kitten-field="${name}"]`);
+  }
+
+  function comparisonField(container, name) {
+    return container.querySelector(`[data-comparison-field="${name}"]`);
   }
 
   function setValue(input, value) {
@@ -62,6 +69,10 @@
         kittenTitle.textContent = `Filhote ${kittenIndex + 1}`;
       });
       syncLitterSummary(litter);
+    });
+    comparisonsRoot.querySelectorAll("[data-comparison]").forEach((comparison, comparisonIndex) => {
+      const comparisonTitle = comparison.querySelector("[data-comparison-title]");
+      if (comparisonTitle) comparisonTitle.textContent = `Comparativo ${comparisonIndex + 1}`;
     });
   }
 
@@ -181,6 +192,19 @@
     card.dataset.path = path;
     card.innerHTML = `<img src="${path}" alt="" /><span>Remover</span>`;
     card.addEventListener("click", () => card.remove());
+    return card;
+  }
+
+  function makeComparisonPhotoCard(path, hiddenInput) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "showcase-photo-card";
+    card.dataset.path = path;
+    card.innerHTML = `<img src="${path}" alt="" /><span>Remover</span>`;
+    card.addEventListener("click", () => {
+      if (hiddenInput && hiddenInput.value === path) hiddenInput.value = "";
+      card.remove();
+    });
     return card;
   }
 
@@ -330,6 +354,72 @@
     syncLitterLimit();
   }
 
+  function comparisonLimitReached() {
+    if (!Number.isInteger(limits.evolutionComparisons)) return false;
+    return comparisonsRoot.querySelectorAll("[data-comparison]").length >= limits.evolutionComparisons;
+  }
+
+  function syncComparisonLimit() {
+    if (!addComparisonButton || !Number.isInteger(limits.evolutionComparisons)) return;
+    addComparisonButton.disabled = comparisonLimitReached();
+    addComparisonButton.title = addComparisonButton.disabled
+      ? `Seu perfil permite ${limits.evolutionComparisonsLabel || `${limits.evolutionComparisons} comparativo(s)`}.`
+      : "";
+  }
+
+  function setComparisonPhoto(comparison, fieldName, path) {
+    const hidden = comparisonField(comparison, fieldName);
+    const preview = comparison.querySelector(`[data-comparison-preview="${fieldName}"]`);
+    if (!hidden || !preview || !path) return;
+    hidden.value = path;
+    preview.innerHTML = "";
+    preview.appendChild(makeComparisonPhotoCard(path, hidden));
+  }
+
+  function addComparison(data) {
+    if (comparisonLimitReached()) {
+      alert(`Seu perfil permite ${limits.evolutionComparisonsLabel || `${limits.evolutionComparisons} comparativo(s)`}.`);
+      syncComparisonLimit();
+      return;
+    }
+
+    const key = data?.key || makeKey("comparison");
+    const node = comparisonTemplate.content.firstElementChild.cloneNode(true);
+    node.dataset.key = key;
+    setValue(comparisonField(node, "caption"), data?.caption);
+    setComparisonPhoto(node, "reservePhoto", data?.reservePhoto);
+    setComparisonPhoto(node, "deliveryPhoto", data?.deliveryPhoto);
+    setComparisonPhoto(node, "oneYearPhoto", data?.oneYearPhoto);
+
+    node.querySelectorAll("[data-comparison-photo]").forEach((input) => {
+      const fieldName = input.dataset.comparisonPhoto;
+      input.name = `comparison${fieldName.charAt(0).toUpperCase()}${fieldName.slice(1)}_${key}`;
+      input.addEventListener("change", () => {
+        if (!validateFiles(input)) return;
+        const file = input.files?.[0];
+        if (!file) return;
+        const hidden = comparisonField(node, fieldName);
+        const preview = node.querySelector(`[data-comparison-preview="${fieldName}"]`);
+        hidden.value = "";
+        preview.innerHTML = "";
+        const card = makeComparisonPhotoCard(URL.createObjectURL(file), hidden);
+        card.classList.add("is-new");
+        preview.appendChild(card);
+      });
+    });
+
+    node.querySelector("[data-remove-comparison]").addEventListener("click", () => {
+      node.remove();
+      updateTitles();
+      syncComparisonLimit();
+    });
+
+    addDragHandlers(node, "[data-comparison]");
+    comparisonsRoot.appendChild(node);
+    updateTitles();
+    syncComparisonLimit();
+  }
+
   function collectPayload() {
     const litters = Array.from(root.querySelectorAll("[data-litter]")).map((litter) => ({
       key: litter.dataset.key,
@@ -393,8 +483,16 @@
       paymentText: document.getElementById("paymentText").value.trim(),
       aboutText: document.getElementById("aboutText").value.trim(),
       aboutPdfPath: document.getElementById("aboutPdfPath").value.trim(),
+      evolutionText: document.getElementById("evolutionText").value.trim(),
       published: document.getElementById("published").checked,
       litters,
+      evolutionComparisons: Array.from(comparisonsRoot.querySelectorAll("[data-comparison]")).map((comparison) => ({
+        key: comparison.dataset.key,
+        caption: getValue(comparisonField(comparison, "caption")),
+        reservePhoto: getValue(comparisonField(comparison, "reservePhoto")),
+        deliveryPhoto: getValue(comparisonField(comparison, "deliveryPhoto")),
+        oneYearPhoto: getValue(comparisonField(comparison, "oneYearPhoto")),
+      })),
     };
   }
 
@@ -406,6 +504,7 @@
     }
     addLitter();
   });
+  addComparisonButton.addEventListener("click", () => addComparison());
   slugInput.addEventListener("input", updatePublicLink);
   paymentCardInstallments.addEventListener("change", syncPaymentInstallments);
   themeColorInputs.forEach((input) => input.addEventListener("input", syncThemePreview));
@@ -425,8 +524,10 @@
   } else {
     addLitter();
   }
+  (initial.evolutionComparisons || []).forEach(addComparison);
   updatePublicLink();
   syncPaymentInstallments();
   syncThemePreview();
   syncLitterLimit();
+  syncComparisonLimit();
 })();

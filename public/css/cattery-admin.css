@@ -421,7 +421,8 @@ textarea:focus {
 }
 
 .showcase-stack,
-.showcase-kittens {
+.showcase-kittens,
+.showcase-comparison-stack {
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -622,7 +623,8 @@ textarea:focus {
   margin-top: 12px;
 }
 
-.showcase-payment-panel {
+.showcase-payment-panel,
+.showcase-evolution-panel {
   margin-top: 16px;
 }
 
@@ -701,12 +703,20 @@ textarea:focus {
   margin-top: 8px;
 }
 
-.showcase-kitten {
+.showcase-kitten,
+.showcase-comparison {
   border: 1px solid var(--border-soft);
   border-radius: 12px;
   background: #ffffff;
   padding: 14px;
   cursor: grab;
+}
+
+.showcase-comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
 }
 
 .showcase-kitten.dragging,
@@ -774,7 +784,8 @@ textarea:focus {
 
 @media (max-width: 1000px) {
   .showcase-header-editor,
-  .showcase-parent-grid {
+  .showcase-parent-grid,
+  .showcase-comparison-grid {
     grid-template-columns: 1fr;
   }
 }

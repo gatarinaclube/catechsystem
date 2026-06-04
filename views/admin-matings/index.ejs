@@ -375,7 +375,7 @@
                         <select name="maleCatId">
                           <option value="">Selecione...</option>
                           <% row.maleOptions.forEach(function(male) { %>
-                            <option value="<%= male.id %>" <%= String(row.plan?.maleCatId || '') === String(male.id) ? "selected" : "" %>><%= male.name %></option>
+                            <option value="<%= male.id %>" <%= String(row.plan?.maleCatId || '') === String(male.id) ? "selected" : "" %>><%= male.displayName || male.name %></option>
                           <% }) %>
                         </select>
                       </div>

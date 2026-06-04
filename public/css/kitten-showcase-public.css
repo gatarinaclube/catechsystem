@@ -71,6 +71,16 @@ body {
   letter-spacing: 0;
 }
 
+.showcase-official-note {
+  max-width: 720px;
+  margin: 10px 0 0;
+  color: var(--showcase-text, #475569);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+  opacity: 0.62;
+}
+
 .showcase-hero-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
@@ -234,7 +244,9 @@ body {
 }
 
 .public-payment h2,
-.public-about h2 {
+.public-about h2,
+.public-evolution h2,
+.public-recommendations h2 {
   margin: 2px 0 0;
   font-size: 19px;
   letter-spacing: 0;
@@ -574,6 +586,89 @@ body {
   text-decoration: none;
 }
 
+.public-evolution-grid {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.public-evolution-card {
+  padding: 14px;
+  border: 1px solid rgba(100, 116, 139, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.public-evolution-card h3 {
+  margin: 0 0 12px;
+  color: var(--showcase-text, #334155);
+  font-size: 17px;
+  letter-spacing: 0;
+}
+
+.public-evolution-photos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.public-evolution-photo {
+  overflow: hidden;
+  border: 1px solid rgba(100, 116, 139, 0.18);
+  border-radius: 8px;
+  background: var(--showcase-card, #ffffff);
+}
+
+.public-evolution-photo img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.public-evolution-photo span {
+  display: block;
+  padding: 9px 10px;
+  color: var(--showcase-text, #334155);
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.public-recommendations {
+  border-top: 4px solid var(--showcase-accent, #8a5a20);
+}
+
+.public-recommendation-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.public-recommendation-list article {
+  padding: 12px 14px;
+  border: 1px solid rgba(100, 116, 139, 0.18);
+  border-radius: 8px;
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.public-recommendation-list h3 {
+  margin: 0;
+  color: var(--showcase-text, #334155);
+  font-size: 15px;
+  line-height: 1.45;
+  letter-spacing: 0;
+}
+
+.public-recommendation-list p {
+  margin: 7px 0 0;
+  color: var(--showcase-text, #475569);
+  font-size: 14px;
+  line-height: 1.6;
+  opacity: 0.82;
+  text-align: justify;
+}
+
 .lightbox {
   position: fixed;
   inset: 0;
@@ -636,7 +731,8 @@ body {
 @media (max-width: 920px) {
   .showcase-hero-grid,
   .public-parent-grid,
-  .public-kitten-grid {
+  .public-kitten-grid,
+  .public-evolution-photos {
     grid-template-columns: 1fr;
   }
 

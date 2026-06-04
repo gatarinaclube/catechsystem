@@ -64,10 +64,7 @@
           <% } %>
 
           <%
-  const totalCats =
-    (catsEmAnalise?.length || 0) +
-    (catsAprovados?.length || 0) +
-    (catsNaoAprovados?.length || 0);
+  const totalCats = cats?.length || 0;
 %>
 
 <% if (totalCats === 0) { %>
@@ -84,41 +81,10 @@
             </div>
           <% } else { %>
 
-            <h3 style="margin-top:16px;">Em análise</h3>
+            <h3 style="margin-top:16px;">Gatos cadastrados</h3>
 
 <ul class="list">
-  <% catsEmAnalise.forEach(function(cat) { %>
-    <li class="item">
-      <div>
-        <a class="item-link status-novo" href="/cats/<%= cat.id %>">
-          <%
-            const fullNameParts = [
-              cat.titleBeforeName,
-              cat.country ? cat.country + "*" : null,
-              cat.name,
-              cat.titleAfterName
-            ].filter(Boolean);
-
-            const fullName = fullNameParts.join(" ");
-          %>
-
-          <%= fullName %>
-        </a>
-
-        <% if (cat.microchipFormatted) { %>
-          <div class="item-sub">
-            Microchip: <%= cat.microchipFormatted %>
-          </div>
-        <% } %>
-      </div>
-    </li>
-  <% }); %>
-</ul>
-
-<h3 style="margin-top:16px;">Aprovados</h3>
-
-<ul class="list">
-  <% catsAprovados.forEach(function(cat) { %>
+  <% cats.forEach(function(cat) { %>
     <li class="item">
       <div>
         <a class="item-link status-aprovado" href="/cats/<%= cat.id %>">
@@ -130,38 +96,7 @@
               cat.titleAfterName
             ].filter(Boolean);
 
-            const fullName = fullNameParts.join(" ");
-          %>
-
-          <%= fullName %>
-        </a>
-
-        <% if (cat.microchipFormatted) { %>
-          <div class="item-sub">
-            Microchip: <%= cat.microchipFormatted %>
-          </div>
-        <% } %>
-      </div>
-    </li>
-  <% }); %>
-</ul>
-
-<h3 style="margin-top:16px;">Não aprovados</h3>
-
-<ul class="list">
-  <% catsNaoAprovados.forEach(function(cat) { %>
-    <li class="item">
-      <div>
-        <a class="item-link status-reprovado" href="/cats/<%= cat.id %>">
-          <%
-            const fullNameParts = [
-              cat.titleBeforeName,
-              cat.country ? cat.country + "*" : null,
-              cat.name,
-              cat.titleAfterName
-            ].filter(Boolean);
-
-            const fullName = fullNameParts.join(" ");
+            const fullName = cat.displayName || fullNameParts.join(" ");
           %>
 
           <%= fullName %>

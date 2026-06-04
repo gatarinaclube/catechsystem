@@ -1,6 +1,6 @@
 const express = require("express");
 const { canViewAllData, userCan } = require("../utils/access");
-const { kittenFallbackDisplayName } = require("../utils/cattery-admin");
+const { buildDisplayName, kittenFallbackDisplayName } = require("../utils/cattery-admin");
 
 const DEFAULT_PAYMENT_ACCOUNT = "";
 
@@ -89,6 +89,8 @@ function safeJsonParse(value, fallback = []) {
 
 function buildKittenLabel(cat) {
   const number = cat.kittenNumber || cat.litterKitten?.kittenNumber || cat.litterKitten?.index || "-";
+  const displayName = buildDisplayName(cat);
+  if (displayName) return `${number} - ${displayName}`;
   const fallback = kittenFallbackDisplayName(cat);
   if (fallback) return fallback;
   return `${number} - ${cat.name || "Sem nome"}`;
@@ -334,7 +336,11 @@ module.exports = (prisma) => {
         delivered: false,
         breedingProspect: false,
       },
-      include: { litterKitten: true, mother: true },
+      include: {
+        litterKitten: { include: { litter: true } },
+        mother: true,
+        owner: { include: { settings: true } },
+      },
       orderBy: [{ kittenNumber: "asc" }, { name: "asc" }],
     });
     const products = await prisma.revenueProductService.findMany({
@@ -487,7 +493,11 @@ function buildRevenueData(body, existing = null) {
       const kitten = kittenId
         ? await prisma.cat.findFirst({
             where: { id: kittenId, ...ownerScope(req) },
-            include: { litterKitten: true, mother: true },
+            include: {
+              litterKitten: { include: { litter: true } },
+              mother: true,
+              owner: { include: { settings: true } },
+            },
           })
         : null;
       if (kittenId && !kitten) {
@@ -600,7 +610,11 @@ function buildRevenueData(body, existing = null) {
       kittenId
         ? prisma.cat.findFirst({
             where: { id: kittenId, ...ownerScope(req) },
-            include: { litterKitten: true, mother: true },
+            include: {
+              litterKitten: { include: { litter: true } },
+              mother: true,
+              owner: { include: { settings: true } },
+            },
           })
         : null,
       productServiceId

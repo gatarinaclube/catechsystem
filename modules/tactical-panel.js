@@ -170,13 +170,14 @@ async function buildPanelData(prisma, ownerId) {
   const cats = await prisma.cat.findMany({
     where: { ownerId },
     include: {
+      owner: { include: { settings: true } },
       vaccinationPlan: true,
       examPlan: true,
       historyEntries: {
         where: { section: "TREATMENT" },
         orderBy: { sortOrder: "asc" },
       },
-      litterKitten: true,
+      litterKitten: { include: { litter: true } },
       matingPlansAsFemale: true,
     },
     orderBy: { name: "asc" },

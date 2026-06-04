@@ -1,7 +1,6 @@
 const express = require("express");
 const { canViewAllData } = require("../utils/access");
-const { getCreationLimits, yearlyRange } = require("../utils/planLimits");
-const { kittenFallbackDisplayName } = require("../utils/cattery-admin");
+const { buildKittenRegisteredName, kittenFallbackDisplayName } = require("../utils/cattery-admin");
 const { selectedBreedsFromSettings } = require("../utils/userPreferences");
 const {
   DEATH_CAUSE_OPTIONS,
@@ -110,29 +109,6 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       : { ownerId: req.session.userId, deletedAt: null };
   }
 
-  async function ensureKittenLimit(req) {
-    if (canViewAllData(req.session?.userRole)) return;
-
-    const limit = getCreationLimits(req.session?.userRole).kittensPerYear;
-    if (limit === null) return;
-
-    const { start, end } = yearlyRange();
-    const currentCount = await prisma.cat.count({
-      where: {
-        ownerId: req.session.userId,
-        OR: [
-          { kittenNumber: { not: null } },
-          { litterKitten: { isNot: null } },
-        ],
-        createdAt: { gte: start, lt: end },
-      },
-    });
-
-    if (currentCount >= limit) {
-      throw new Error(`Seu perfil permite até ${limit} cadastros de filhotes por ano.`);
-    }
-  }
-
   async function ensureCatAccess(req, catId) {
     const cat = await prisma.cat.findFirst({
       where: { id: catId, ...ownerScope(req) },
@@ -230,7 +206,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       cat.kittenNumber ||
       cat.litterKitten?.kittenNumber ||
       (cat.litterKitten?.index ? String(cat.litterKitten.index).padStart(4, "0") : "----");
-    const displayName = kittenFallbackDisplayName(cat) || `${linkedKittenNumber} - ${cat.name || "Sem nome"}`;
+    const displayName = buildKittenRegisteredName(cat) || kittenFallbackDisplayName(cat) || `${linkedKittenNumber} - ${cat.name || "Sem nome"}`;
 
     return `${displayName} - ${formatMicrochip(cat.microchip)}`;
   }
@@ -343,8 +319,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             : ownerScope(req)),
         },
         include: {
-          litterKitten: true,
+          litterKitten: { include: { litter: true } },
           mother: true,
+          owner: { include: { settings: true } },
         },
         orderBy: [{ birthDate: "asc" }, { name: "asc" }],
       });
@@ -389,13 +366,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requireAuth,
     requirePermission("admin.kittens"),
     async (req, res) => {
-      res.render("admin-kittens/form", {
-        ...(await buildContext(req)),
-        formTitle: "Novo Filhote",
-        formAction: "/admin/kittens",
-        cancelPath: "/admin/kittens",
-        historyPath: null,
-      });
+      res.redirect("/admin/kittens");
     }
   );
 
@@ -448,21 +419,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requireAuth,
     requirePermission("admin.kittens"),
     async (req, res) => {
-      try {
-        await ensureKittenLimit(req);
-        const data = await parsePayload(req);
-        const kitten = await prisma.cat.create({ data });
-        await syncDeathHistoryEntry(prisma, kitten.id, kitten);
-        res.redirect(`/admin/kittens/${kitten.id}`);
-      } catch (err) {
-        res.status(400).render("admin-kittens/form", {
-          ...(await buildContext(req, req.body, err.message || "Erro ao salvar o filhote.")),
-          formTitle: "Novo Filhote",
-          formAction: "/admin/kittens",
-          cancelPath: "/admin/kittens",
-          historyPath: null,
-        });
-      }
+      res.status(405).send("O cadastro manual de filhotes foi desativado. Registre filhotes pelo Registro de Ninhada/Ninhadas ou cadastre como reprodutor/matriz quando for adquirido externamente para reprodução.");
     }
   );
 
@@ -474,8 +431,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const kitten = await prisma.cat.findUnique({
         where: { id: Number(req.params.id) },
         include: {
-          litterKitten: true,
+          litterKitten: { include: { litter: true } },
           currentOwnerClient: true,
+          owner: { include: { settings: true } },
         },
       });
 
@@ -505,8 +463,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const existingKitten = await prisma.cat.findUnique({
         where: { id: Number(req.params.id) },
         include: {
-          litterKitten: true,
+          litterKitten: { include: { litter: true } },
           currentOwnerClient: true,
+          owner: { include: { settings: true } },
         },
       });
 

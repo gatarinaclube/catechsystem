@@ -9,6 +9,7 @@ const {
 } = require("../utils/adminNotifications");
 const { getFileUploadLimit, validateFilesForRole } = require("../utils/planLimits");
 const { selectedBreedsFromSettings } = require("../utils/userPreferences");
+const { buildDisplayName } = require("../utils/cattery-admin");
 
 const baseUploadsDir =
   process.env.UPLOADS_DIR
@@ -138,13 +139,21 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       // machos e fêmeas do próprio usuário; filhotes de ninhada só entram se marcados como reprodutores
       const maleCats = await prisma.cat.findMany({
         where: { ownerId: userId, gender: "M" },
-        include: { litterKitten: true },
+        include: {
+          owner: { include: { settings: true } },
+          mother: true,
+          litterKitten: { include: { litter: true } },
+        },
         orderBy: { name: "asc" },
       });
 
       const femaleCats = await prisma.cat.findMany({
         where: { ownerId: userId, gender: "F" },
-        include: { litterKitten: true },
+        include: {
+          owner: { include: { settings: true } },
+          mother: true,
+          litterKitten: { include: { litter: true } },
+        },
         orderBy: { name: "asc" },
       });
       const importableLitters = await prisma.litter.findMany({
@@ -172,8 +181,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       res.render("litters/new", {
         user: req.user,
         currentPath: req.path,
-        maleCats: filteredMaleCats,
-        femaleCats: filteredFemaleCats,
+        maleCats: filteredMaleCats.map((cat) => ({ ...cat, displayName: buildDisplayName(cat) })),
+        femaleCats: filteredFemaleCats.map((cat) => ({ ...cat, displayName: buildDisplayName(cat) })),
         importableLitters: importableLitters.map((litter) => ({
           ...litter,
           importLabel: buildImportLabel(litter),

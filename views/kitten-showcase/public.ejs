@@ -18,6 +18,9 @@
         <div>
           <p class="showcase-kicker">Filhotes disponíveis</p>
           <h1><%= showcase.title || settings?.catteryName || 'Gatil' %></h1>
+          <% if (isAssociatedShowcase) { %>
+            <p class="showcase-official-note">Página do sistema oficial da Associação Catarinense de Felinos - Gatarina.</p>
+          <% } %>
         </div>
       </div>
 
@@ -200,6 +203,64 @@
               <a href="<%= showcase.aboutPdfPath %>" target="_blank" rel="noopener noreferrer">Abrir apresentação em PDF</a>
             </div>
           <% } %>
+        </section>
+      <% } %>
+
+      <% if (hasEvolutionInfo) { %>
+        <section class="public-info-section public-evolution">
+          <div class="public-info-head">
+            <p class="public-label">Crescimento</p>
+            <h2>Evolução de Filhotes</h2>
+          </div>
+          <% if (showcase.evolutionText) { %>
+            <p class="public-info-text"><%= showcase.evolutionText %></p>
+          <% } %>
+          <div class="public-evolution-grid">
+            <% showcase.evolutionComparisons.forEach(function(comparison) { %>
+              <article class="public-evolution-card">
+                <% if (comparison.caption) { %>
+                  <h3><%= comparison.caption %></h3>
+                <% } %>
+                <div class="public-evolution-photos">
+                  <% [
+                    { label: 'Momento da reserva', path: comparison.reservePhoto },
+                    { label: 'Momento da entrega (4 meses)', path: comparison.deliveryPhoto },
+                    { label: '1 ano de idade', path: comparison.oneYearPhoto }
+                  ].forEach(function(item, index) { %>
+                    <button class="gallery-trigger public-evolution-photo" type="button" data-gallery='<%- JSON.stringify([comparison.reservePhoto, comparison.deliveryPhoto, comparison.oneYearPhoto]) %>' data-index="<%= index %>" aria-label="Abrir foto - <%= item.label %>">
+                      <img class="protected-image" src="<%= item.path %>" alt="<%= item.label %>" draggable="false" />
+                      <span><%= item.label %></span>
+                    </button>
+                  <% }) %>
+                </div>
+              </article>
+            <% }) %>
+          </div>
+        </section>
+      <% } %>
+
+      <% if (isAssociatedShowcase) { %>
+        <section class="public-info-section public-recommendations">
+          <div class="public-info-head">
+            <p class="public-label">Orientação oficial</p>
+            <h2>Recomendações da Associação Catarinense de Felinos para aquisição de um filhote</h2>
+          </div>
+          <div class="public-recommendation-list">
+            <article>
+              <h3>Filhotes entregues após 4 meses de idade.</h3>
+              <p>Apenas receba um filhote de raça após completar 4 meses. Idade necessária para desmame natural e segurança imunológica dos filhotes.</p>
+            </article>
+            <article>
+              <h3>Todos os filhotes devem ser castrados e microchipados antes da entrega.</h3>
+            </article>
+            <article>
+              <h3>Todos os filhotes precisam ser registrados na Federação Internacional de Felinos (FIFe), através da Federação Felina Brasileira (FFB).</h3>
+            </article>
+            <article>
+              <h3>Dê preferência para criadores que participam e tenham bons resultados em Competições de Beleza Felina.</h3>
+              <p>Somente assim é possível ter certeza da procedência e qualidade genética dos filhotes a serem adquiridos.</p>
+            </article>
+          </div>
         </section>
       <% } %>
     </main>

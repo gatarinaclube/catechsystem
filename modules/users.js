@@ -6,11 +6,12 @@ const { ROLES, getRoleLabel, normalizeRole, isAdminRole } = require("../utils/ac
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
   const roleOptions = [
-    { value: ROLES.BASIC, label: getRoleLabel(ROLES.BASIC) },
-    { value: ROLES.ASSOCIADO_B, label: getRoleLabel(ROLES.ASSOCIADO_B) },
+    { value: ROLES.PREMIUM, label: getRoleLabel(ROLES.PREMIUM) },
+    { value: ROLES.ASSOCIADO_PREMIUM, label: getRoleLabel(ROLES.ASSOCIADO_PREMIUM) },
     { value: ROLES.MASTER, label: getRoleLabel(ROLES.MASTER) },
     { value: ROLES.ASSOCIADO_A, label: getRoleLabel(ROLES.ASSOCIADO_A) },
-    { value: ROLES.PREMIUM, label: getRoleLabel(ROLES.PREMIUM) },
+    { value: ROLES.BASIC, label: getRoleLabel(ROLES.BASIC) },
+    { value: ROLES.ASSOCIADO_B, label: getRoleLabel(ROLES.ASSOCIADO_B) },
     { value: ROLES.CATBREED, label: getRoleLabel(ROLES.CATBREED) },
     { value: ROLES.ADMIN, label: getRoleLabel(ROLES.ADMIN) },
   ];
@@ -73,10 +74,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const userGroups = [
         { key: "admin", title: getRoleLabel(ROLES.ADMIN), users: [] },
         { key: "premium", title: getRoleLabel(ROLES.PREMIUM), users: [] },
-        { key: "associado_a", title: getRoleLabel(ROLES.ASSOCIADO_A), users: [] },
+        { key: "associado_premium", title: getRoleLabel(ROLES.ASSOCIADO_PREMIUM), users: [] },
         { key: "master", title: getRoleLabel(ROLES.MASTER), users: [] },
-        { key: "associado_b", title: getRoleLabel(ROLES.ASSOCIADO_B), users: [] },
+        { key: "associado_a", title: getRoleLabel(ROLES.ASSOCIADO_A), users: [] },
         { key: "basic", title: getRoleLabel(ROLES.BASIC), users: [] },
+        { key: "associado_b", title: getRoleLabel(ROLES.ASSOCIADO_B), users: [] },
         { key: "catbreed", title: getRoleLabel(ROLES.CATBREED), users: [] },
         { key: "inactive", title: "Inativo", users: [] },
       ];

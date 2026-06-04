@@ -282,6 +282,7 @@
                     <th>Arquivo máx. (MB)</th>
                     <th>Padreadores</th>
                     <th>Ninhadas na vitrine</th>
+                    <th>Comparativos na vitrine</th>
                     <th>Ninhadas por ano</th>
                     <th>Filhotes por ano</th>
                   </tr>
@@ -304,6 +305,9 @@
                       </td>
                       <td>
                         <input name="plan_<%= plan.role %>_showcaseLitters" type="number" min="0" step="1" value="<%= plan.showcaseLitters ?? '' %>" />
+                      </td>
+                      <td>
+                        <input name="plan_<%= plan.role %>_showcaseEvolutionComparisons" type="number" min="0" step="1" value="<%= plan.showcaseEvolutionComparisons ?? '' %>" />
                       </td>
                       <td>
                         <input name="plan_<%= plan.role %>_littersPerYear" type="number" min="0" step="1" value="<%= plan.littersPerYear ?? '' %>" />

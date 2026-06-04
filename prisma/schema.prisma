@@ -25,6 +25,7 @@ enum ServiceStatusType {
 enum UserRole {
   ADMIN
   PREMIUM
+  ASSOCIADO_PREMIUM
   MASTER
   ASSOCIADO_A
   ASSOCIADO_B
@@ -347,6 +348,7 @@ model RolePlanLimit {
   uploadLimitKb   Int?
   breeders        Int?
   showcaseLitters Int?
+  showcaseEvolutionComparisons Int?
   littersPerYear  Int?
   kittensPerYear  Int?
   createdAt       DateTime @default(now())
@@ -375,11 +377,26 @@ model CatteryKittenShowcase {
   paymentText String?
   aboutText   String?
   aboutPdfPath String?
+  evolutionText String?
   published   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   litters CatteryShowcaseLitter[]
+  evolutionComparisons CatteryShowcaseEvolutionComparison[]
+}
+
+model CatteryShowcaseEvolutionComparison {
+  id          Int      @id @default(autoincrement())
+  showcase    CatteryKittenShowcase @relation(fields: [showcaseId], references: [id], onDelete: Cascade)
+  showcaseId  Int
+  caption     String?
+  reservePhoto String
+  deliveryPhoto String
+  oneYearPhoto String
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model CatteryShowcaseLitter {
@@ -826,7 +843,7 @@ model Cat {
   historyEntries   CatHistoryEntry[]
   treatments       CatTreatment[]
 
-  status    CatStatus @default(NOVO)
+  status    CatStatus @default(APROVADO)
 }
 
 model TreatmentMedication {

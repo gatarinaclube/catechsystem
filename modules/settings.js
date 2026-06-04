@@ -72,6 +72,7 @@ function buildPlanLimitRows(body) {
     uploadLimitKb: parseUploadLimitKb(body[`plan_${role}_uploadLimitMb`]),
     breeders: parseNullableInteger(body[`plan_${role}_breeders`]),
     showcaseLitters: parseNullableInteger(body[`plan_${role}_showcaseLitters`]),
+    showcaseEvolutionComparisons: parseNullableInteger(body[`plan_${role}_showcaseEvolutionComparisons`]),
     littersPerYear: parseNullableInteger(body[`plan_${role}_littersPerYear`]),
     kittensPerYear: parseNullableInteger(body[`plan_${role}_kittensPerYear`]),
   }));
@@ -236,6 +237,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               uploadLimitKb: row.uploadLimitKb,
               breeders: row.breeders,
               showcaseLitters: row.showcaseLitters,
+              showcaseEvolutionComparisons: row.showcaseEvolutionComparisons,
               littersPerYear: row.littersPerYear,
               kittensPerYear: row.kittensPerYear,
             },

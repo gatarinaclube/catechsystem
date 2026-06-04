@@ -173,6 +173,27 @@
                 <% } %>
               </div>
             </div>
+
+            <div class="field-panel showcase-evolution-panel">
+              <div class="showcase-section-head">
+                <div>
+                  <div class="content-title">Evolução de Filhotes</div>
+                  <div class="content-sub">
+                    <% if (showcaseLimits.evolutionComparisons !== null) { %>
+                      Seu perfil permite <%= showcaseLimits.evolutionComparisonsLabel %>.
+                    <% } else { %>
+                      Seu perfil permite comparativos ilimitados.
+                    <% } %>
+                  </div>
+                </div>
+                <button id="addComparisonButton" type="button" class="btn">+ comparativo</button>
+              </div>
+              <div class="field" style="margin-top:12px;">
+                <label class="field-label" for="evolutionText">Texto antes das fotos</label>
+                <textarea id="evolutionText" rows="4" placeholder="Ex.: veja a evolução dos filhotes desde a reserva até a fase adulta"><%= showcase.evolutionText || '' %></textarea>
+              </div>
+              <div id="comparisonsRoot" class="showcase-comparison-stack"></div>
+            </div>
           </section>
 
           <div id="littersRoot" class="showcase-stack"></div>
@@ -277,6 +298,41 @@
         <button type="button" class="btn" data-add-kitten>+ filhote</button>
         </div>
       </section>
+    </template>
+
+    <template id="comparisonTemplate">
+      <article class="showcase-comparison" data-comparison draggable="true">
+        <div class="showcase-kitten-head">
+          <div class="content-title" data-comparison-title>Comparativo</div>
+          <div class="actions">
+            <button type="button" class="btn" data-remove-comparison>Remover</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Identificação do filhote (opcional)</label>
+          <input data-comparison-field="caption" type="text" placeholder="Ex.: Gael, macho azul, ninhada de janeiro" />
+        </div>
+        <div class="showcase-comparison-grid">
+          <div class="field showcase-photo-input">
+            <label class="field-label">Momento da reserva</label>
+            <input data-comparison-photo="reservePhoto" type="file" accept="image/*" />
+            <input data-comparison-field="reservePhoto" type="hidden" />
+            <div class="showcase-photo-grid" data-comparison-preview="reservePhoto"></div>
+          </div>
+          <div class="field showcase-photo-input">
+            <label class="field-label">Momento da entrega (4 meses)</label>
+            <input data-comparison-photo="deliveryPhoto" type="file" accept="image/*" />
+            <input data-comparison-field="deliveryPhoto" type="hidden" />
+            <div class="showcase-photo-grid" data-comparison-preview="deliveryPhoto"></div>
+          </div>
+          <div class="field showcase-photo-input">
+            <label class="field-label">1 ano de idade</label>
+            <input data-comparison-photo="oneYearPhoto" type="file" accept="image/*" />
+            <input data-comparison-field="oneYearPhoto" type="hidden" />
+            <div class="showcase-photo-grid" data-comparison-preview="oneYearPhoto"></div>
+          </div>
+        </div>
+      </article>
     </template>
 
     <template id="kittenTemplate">

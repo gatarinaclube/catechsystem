@@ -209,12 +209,12 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       orderBy: { name: "asc" },
       include: {
         ...buildAncestorInclude(5),
-        owner: true,
-        litterKitten: true,
+        owner: { include: { settings: true } },
+        litterKitten: { include: { litter: true } },
       },
     });
 
-    const males = await prisma.cat.findMany({
+    const males = (await prisma.cat.findMany({
       where: {
         ...ownerScope(req),
         gender: "M",
@@ -235,9 +235,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         gender: true,
         birthDate: true,
         breedingProspect: true,
-        litterKitten: { select: { id: true } },
+        owner: { select: { fifeCatteryName: true, settings: true } },
+        litterKitten: { include: { litter: true } },
       },
-    });
+    })).map((male) => ({
+      ...male,
+      displayName: buildDisplayName(male),
+    }));
 
     const plans = await prisma.matingPlan.findMany({
       where: {
