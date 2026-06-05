@@ -24,6 +24,52 @@
           </div>
         </div>
 
+        <div class="content-card" style="border-left:4px solid #d97706;">
+          <div class="content-title">Usuários em teste gratuito</div>
+          <div class="content-sub">
+            Usuários de planos não associados que ainda estão no período de 7 dias grátis.
+          </div>
+
+          <% if (!trialUsers || !trialUsers.length) { %>
+            <div class="empty" style="margin-top:12px;">Nenhum usuário em teste no momento.</div>
+          <% } else { %>
+            <ul class="list" style="margin-top:12px;">
+              <% trialUsers.forEach(function(u) { %>
+                <%
+                  const endDate = u.trialEndsAt ? new Date(u.trialEndsAt) : null;
+                  let daysLabel = "Sem data final";
+                  if (endDate) {
+                    const today = new Date();
+                    const trialEnd = new Date(endDate);
+                    trialEnd.setHours(23, 59, 59, 999);
+                    today.setHours(0, 0, 0, 0);
+                    const daysLeft = Math.ceil((trialEnd - today) / (1000 * 60 * 60 * 24));
+                    if (daysLeft > 1) daysLabel = `${daysLeft} dias restantes`;
+                    else if (daysLeft === 1) daysLabel = "1 dia restante";
+                    else if (daysLeft === 0) daysLabel = "Finaliza hoje";
+                    else daysLabel = "Teste vencido";
+                  }
+                %>
+                <li class="item">
+                  <div>
+                    <a class="item-link" href="/users/<%= u.id %>"><%= u.name || "(sem nome)" %></a>
+                    <div class="item-sub">
+                      Email: <%= u.email || "-" %>
+                      • Plano: <%= u.selectedPlan || "-" %>
+                      <% if (endDate) { %>
+                        • Fim do teste: <%= endDate.toLocaleDateString('pt-BR') %>
+                      <% } %>
+                    </div>
+                  </div>
+                  <span class="badge-status <%= daysLabel === 'Teste vencido' ? 'badge-status--inactive' : 'badge-status--new' %>">
+                    <%= daysLabel %>
+                  </span>
+                </li>
+              <% }); %>
+            </ul>
+          <% } %>
+        </div>
+
         <div class="content-card">
           <% userGroups.forEach(function(group) { %>
             <section style="margin-bottom: 20px;">

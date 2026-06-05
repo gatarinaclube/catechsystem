@@ -23,15 +23,9 @@
         <% } %>
 
         <form method="post" action="/planos/<%= plan.slug %>/cadastro" class="commercial-register-form">
-          <div class="grid-2">
-            <div class="field">
-              <label class="field-label" for="name">Nome completo</label>
-              <input id="name" name="name" type="text" required />
-            </div>
-            <div class="field">
-              <label class="field-label" for="catteryName">Nome do gatil</label>
-              <input id="catteryName" name="catteryName" type="text" />
-            </div>
+          <div class="field">
+            <label class="field-label" for="name">Nome completo</label>
+            <input id="name" name="name" type="text" required />
           </div>
 
           <div class="grid-3">
@@ -65,6 +59,29 @@
 
         <div class="auth-footer">
           Já possui acesso? <a href="/login">Entrar</a>
+        </div>
+
+        <div style="margin-top:22px; padding-top:18px; border-top:1px solid var(--border-soft);">
+          <h2 style="margin:0; font-size:18px;">Já tenho cadastro</h2>
+          <p style="font-size:13px; color:var(--text-muted); line-height:1.5;">
+            Use esta opção se você já se cadastrou como associado, está aguardando aprovação
+            ou possui restrição, mas deseja contratar apenas o sistema. Este caminho não libera
+            novo teste gratuito.
+          </p>
+
+          <form method="post" action="/planos/<%= plan.slug %>/comprar" class="commercial-register-form">
+            <div class="grid-2">
+              <div class="field">
+                <label class="field-label" for="existingEmail">E-mail já cadastrado</label>
+                <input id="existingEmail" name="existingEmail" type="email" required />
+              </div>
+              <div class="field">
+                <label class="field-label" for="existingPassword">Senha</label>
+                <input id="existingPassword" name="existingPassword" type="password" required />
+              </div>
+            </div>
+            <button class="btn btn-primary" type="submit">Contratar este plano</button>
+          </form>
         </div>
       </section>
     </main>

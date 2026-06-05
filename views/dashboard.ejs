@@ -38,14 +38,30 @@
     <div class="content-title">Plano em período de teste</div>
     <div class="content-sub">
       <% if (user.trialEndsAt) { %>
-        Seu teste gratuito vai até <strong><%= new Date(user.trialEndsAt).toLocaleDateString('pt-BR') %></strong>.
+        <%
+          const trialEndDate = new Date(user.trialEndsAt);
+          const today = new Date();
+          trialEndDate.setHours(23, 59, 59, 999);
+          today.setHours(0, 0, 0, 0);
+          const trialDaysLeft = Math.ceil((trialEndDate - today) / (1000 * 60 * 60 * 24));
+        %>
+        Seu teste gratuito vai até <strong><%= trialEndDate.toLocaleDateString('pt-BR') %></strong>.
+        <% if (trialDaysLeft > 1) { %>
+          Faltam <strong><%= trialDaysLeft %> dias</strong> para finalizar o teste gratuito.
+        <% } else if (trialDaysLeft === 1) { %>
+          Falta <strong>1 dia</strong> para finalizar o teste gratuito.
+        <% } else if (trialDaysLeft === 0) { %>
+          Seu teste gratuito finaliza hoje.
+        <% } else { %>
+          Seu teste gratuito já venceu. Ative um plano para manter o acesso.
+        <% } %>
       <% } else { %>
         Seu acesso está em período de teste.
       <% } %>
       Após esse período, o acesso depende da ativação de um plano.
     </div>
     <div style="margin-top:10px;">
-      <a href="/billing/pay" class="btn btn-primary">Abrir pagamento do plano</a>
+      <a href="/billing/pay" class="btn btn-primary">Comprar / ativar plano</a>
     </div>
   </div>
 <% } %>

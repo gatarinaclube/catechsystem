@@ -106,9 +106,23 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         }
       });
 
+      const trialUsers = allUsers
+        .filter((u) => u.accountOrigin === "NON_ASSOCIATE" && u.subscriptionStatus === "TRIALING")
+        .map((u) => ({
+          ...u,
+          role: normalizeRole(u.role),
+          roleLabel: getRoleLabel(normalizeRole(u.role)),
+        }))
+        .sort((a, b) => {
+          const aTime = a.trialEndsAt ? new Date(a.trialEndsAt).getTime() : Number.MAX_SAFE_INTEGER;
+          const bTime = b.trialEndsAt ? new Date(b.trialEndsAt).getTime() : Number.MAX_SAFE_INTEGER;
+          return aTime - bTime;
+        });
+
       res.render("users/list", {
         user: currentUser,
         userGroups,
+        trialUsers,
         roleOptions,
         approvalOptions,
         currentPath: req.path,

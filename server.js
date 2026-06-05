@@ -427,6 +427,26 @@ async function configureAsaasSubscriptionForUser(user, plan) {
   return billing;
 }
 
+async function configureAsaasPurchaseForExistingUser(user, plan) {
+  if (!isAsaasConfigured()) return null;
+
+  const billing = await createPlanSubscription({ ...user, trialEndsAt: null }, plan);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      accountOrigin: "NON_ASSOCIATE",
+      selectedPlan: plan.key,
+      subscriptionStatus: "PENDING",
+      trialEndsAt: null,
+      asaasCustomerId: billing.customerId,
+      asaasSubscriptionId: billing.subscription?.id || null,
+      asaasPaymentId: billing.firstPayment?.id || null,
+      asaasPaymentUrl: billing.paymentUrl || null,
+    },
+  });
+  return billing;
+}
+
 async function handleSystemLogin(req, res, loginKind) {
   const email = String(req.body.email || "").trim().toLowerCase();
   const { password } = req.body;
@@ -838,7 +858,6 @@ app.post("/planos/:plan/cadastro", async (req, res) => {
     cpf,
     password,
     confirmPassword,
-    catteryName,
   } = req.body;
   const normalizedEmail = String(email || "").trim().toLowerCase();
 
@@ -870,7 +889,7 @@ app.post("/planos/:plan/cadastro", async (req, res) => {
     const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (existing) {
       return res.render("commercial-register", {
-        error: "E-mail já cadastrado. Use o login ou recupere sua senha.",
+        error: "E-mail já cadastrado. Se este cadastro é seu, use a opção abaixo para contratar o plano sem novo teste gratuito.",
         plan,
         plans: commercialPlanList(),
       });
@@ -892,13 +911,6 @@ app.post("/planos/:plan/cadastro", async (req, res) => {
         selectedPlan: plan.key,
         subscriptionStatus: "TRIALING",
         trialEndsAt,
-        settings: catteryName
-          ? {
-              create: {
-                catteryName: String(catteryName || "").trim(),
-              },
-            }
-          : undefined,
       },
     });
 
@@ -916,6 +928,56 @@ app.post("/planos/:plan/cadastro", async (req, res) => {
     console.error("Erro no cadastro comercial:", err);
     return res.status(500).render("commercial-register", {
       error: "Não foi possível iniciar o teste agora.",
+      plan,
+      plans: commercialPlanList(),
+    });
+  }
+});
+
+app.post("/planos/:plan/comprar", async (req, res) => {
+  const plan = resolveCommercialPlan(req.params.plan);
+  const email = String(req.body.existingEmail || "").trim().toLowerCase();
+  const password = String(req.body.existingPassword || "");
+
+  try {
+    if (!email || !password) {
+      return res.render("commercial-register", {
+        error: "Informe e-mail e senha do cadastro existente para contratar o plano.",
+        plan,
+        plans: commercialPlanList(),
+      });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return res.render("commercial-register", {
+        error: "Cadastro não encontrado. Para novo cadastro, use o formulário de teste gratuito.",
+        plan,
+        plans: commercialPlanList(),
+      });
+    }
+
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) {
+      return res.render("commercial-register", {
+        error: "Senha inválida para este cadastro.",
+        plan,
+        plans: commercialPlanList(),
+      });
+    }
+
+    const billing = await configureAsaasPurchaseForExistingUser(user, plan);
+    if (billing?.paymentUrl) return res.redirect(billing.paymentUrl);
+
+    return res.status(400).render("commercial-register", {
+      error: "Não foi possível gerar o link de pagamento. Verifique se o Asaas e o valor do plano estão configurados.",
+      plan,
+      plans: commercialPlanList(),
+    });
+  } catch (err) {
+    console.error("Erro ao contratar plano para cadastro existente:", err);
+    return res.status(500).render("commercial-register", {
+      error: "Não foi possível iniciar a contratação agora.",
       plan,
       plans: commercialPlanList(),
     });

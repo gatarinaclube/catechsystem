@@ -295,6 +295,14 @@
 
             <section style="margin-bottom:16px;">
               <h3 class="section-title">Plano comercial</h3>
+              <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+                <button class="btn" type="button" id="startTrialButton">
+                  Colocar em teste por 7 dias
+                </button>
+                <small style="font-size:11px; color:var(--text-muted);">
+                  Preenche automaticamente como plano não associado, Premium em teste, cadastro ativo e fim do teste em 7 dias.
+                </small>
+              </div>
               <div class="grid-3" style="margin-top:10px;">
                 <div class="field">
                   <label class="field-label" for="accountOrigin">Origem do cadastro</label>
@@ -399,5 +407,31 @@
         </div>
       </main>
     </div>
+    <script>
+      (function () {
+        const button = document.getElementById("startTrialButton");
+        if (!button) return;
+
+        function setValue(id, value) {
+          const field = document.getElementById(id);
+          if (field) field.value = value;
+        }
+
+        button.addEventListener("click", function () {
+          const trialEnd = new Date();
+          trialEnd.setDate(trialEnd.getDate() + 7);
+          const yyyy = trialEnd.getFullYear();
+          const mm = String(trialEnd.getMonth() + 1).padStart(2, "0");
+          const dd = String(trialEnd.getDate()).padStart(2, "0");
+
+          setValue("accountOrigin", "NON_ASSOCIATE");
+          setValue("selectedPlan", "PREMIUM");
+          setValue("subscriptionStatus", "TRIALING");
+          setValue("trialEndsAt", `${yyyy}-${mm}-${dd}`);
+          setValue("role", "PREMIUM");
+          setValue("approvalStatus", "DEFERIDO");
+        });
+      })();
+    </script>
   </body>
 </html>
