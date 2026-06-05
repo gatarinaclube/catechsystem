@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Teste grátis - CaTech System</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body class="public-site-body">
+    <main class="commercial-register-page">
+      <section class="commercial-register-card">
+        <a class="commercial-back-link" href="/">← Voltar</a>
+        <span class="public-eyebrow">Plano <%= plan.title %></span>
+        <h1>Iniciar teste Premium por 7 dias</h1>
+        <p>
+          Seu acesso começa liberado como Premium. Após 7 dias, caso nenhum plano seja ativado,
+          o login será bloqueado automaticamente.
+        </p>
+
+        <% if (typeof error !== "undefined" && error) { %>
+          <div class="auth-error"><%= error %></div>
+        <% } %>
+
+        <form method="post" action="/planos/<%= plan.slug %>/cadastro" class="commercial-register-form">
+          <div class="grid-2">
+            <div class="field">
+              <label class="field-label" for="name">Nome completo</label>
+              <input id="name" name="name" type="text" required />
+            </div>
+            <div class="field">
+              <label class="field-label" for="catteryName">Nome do gatil</label>
+              <input id="catteryName" name="catteryName" type="text" />
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="field">
+              <label class="field-label" for="email">E-mail</label>
+              <input id="email" name="email" type="email" required />
+            </div>
+            <div class="field">
+              <label class="field-label" for="phones">Telefone</label>
+              <input id="phones" name="phones" type="text" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="cpf">CPF/CNPJ</label>
+              <input id="cpf" name="cpf" type="text" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="field">
+              <label class="field-label" for="password">Senha</label>
+              <input id="password" name="password" type="password" minlength="6" required />
+            </div>
+            <div class="field">
+              <label class="field-label" for="confirmPassword">Confirmar senha</label>
+              <input id="confirmPassword" name="confirmPassword" type="password" minlength="6" required />
+            </div>
+          </div>
+
+          <button class="auth-button" type="submit">Começar teste gratuito</button>
+        </form>
+
+        <div class="auth-footer">
+          Já possui acesso? <a href="/login">Entrar</a>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

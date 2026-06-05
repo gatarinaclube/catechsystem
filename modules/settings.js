@@ -19,6 +19,16 @@ const {
 } = require("../utils/userPreferences");
 
 const MEMBERSHIP_OPTIONS = ["FIFe", "TICa", "WCF"];
+const VACCINE_REMINDER_GROUP_OPTIONS = [
+  { value: "SIRES", label: "Padreadores" },
+  { value: "DAMS", label: "Matrizes" },
+  { value: "FOUNDERS", label: "Fundadores" },
+  { value: "KITTEN_AVAILABLE", label: "Filhotes Disponíveis" },
+  { value: "KITTEN_RESERVED", label: "Filhotes Reservados" },
+  { value: "KITTEN_UNAVAILABLE", label: "Filhotes Indisponíveis" },
+  { value: "KITTEN_BREEDER", label: "Filhotes Futuros Padreadores/Matrizes" },
+  { value: "KITTEN_DELIVERED", label: "Filhotes Entregues/Vendidos" },
+];
 
 function createLogoUploadMiddleware() {
   const diskRoot =
@@ -97,7 +107,18 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         "logoPath",
         "membershipsJson",
         "breedsJson",
-        "examsJson"
+        "examsJson",
+        "vaccineReminderEnabled",
+        "vaccineReminderDaysBefore",
+        "vaccineReminderGroupsJson",
+        "antirabicFirstDoseMonths",
+        "antirabicAnnualBooster",
+        "antirabicBoosterIntervalYears",
+        "felineFirstDoseMonths",
+        "felineSecondDoseDays",
+        "felineThirdDoseDays",
+        "felineAnnualBooster",
+        "felineBoosterIntervalYears"
       FROM "UserSettings"
       WHERE "userId" = ${userId}
       LIMIT 1
@@ -119,6 +140,20 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       memberships: filterAllowed(parseJsonList(settings?.membershipsJson), MEMBERSHIP_OPTIONS),
       breeds: filterAllowed(parseJsonList(settings?.breedsJson), BREED_OPTIONS),
       exams: selectedExamsFromSettings(settings, { defaultAll: true }),
+      vaccineReminderEnabled: Boolean(settings?.vaccineReminderEnabled),
+      vaccineReminderDaysBefore: settings?.vaccineReminderDaysBefore ?? 15,
+      vaccineReminderGroups: filterAllowed(
+        parseJsonList(settings?.vaccineReminderGroupsJson),
+        VACCINE_REMINDER_GROUP_OPTIONS.map((option) => option.value)
+      ),
+      antirabicFirstDoseMonths: settings?.antirabicFirstDoseMonths ?? 3,
+      antirabicAnnualBooster: settings?.antirabicAnnualBooster !== false,
+      antirabicBoosterIntervalYears: settings?.antirabicBoosterIntervalYears ?? 1,
+      felineFirstDoseMonths: settings?.felineFirstDoseMonths ?? 2,
+      felineSecondDoseDays: settings?.felineSecondDoseDays ?? 21,
+      felineThirdDoseDays: settings?.felineThirdDoseDays ?? "",
+      felineAnnualBooster: settings?.felineAnnualBooster !== false,
+      felineBoosterIntervalYears: settings?.felineBoosterIntervalYears ?? 1,
     };
   }
 
@@ -133,6 +168,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         membershipOptions: MEMBERSHIP_OPTIONS,
         breedOptions: BREED_OPTIONS,
         examOptions: EXAM_OPTIONS,
+        vaccineReminderGroupOptions: VACCINE_REMINDER_GROUP_OPTIONS,
         planLimits: isAdminRole(req.session.userRole) ? getPlanLimitRows() : [],
         canManagePlanLimits: isAdminRole(req.session.userRole),
         success: req.query.saved === "1",
@@ -167,6 +203,20 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       memberships: filterAllowed(req.body.memberships, MEMBERSHIP_OPTIONS),
       breeds: filterAllowed(req.body.breeds, BREED_OPTIONS),
       exams: filterAllowed(req.body.exams, EXAM_OPTIONS),
+      vaccineReminderEnabled: req.body.vaccineReminderEnabled === "on",
+      vaccineReminderDaysBefore: parseNullableInteger(req.body.vaccineReminderDaysBefore) ?? 15,
+      vaccineReminderGroups: filterAllowed(
+        req.body.vaccineReminderGroups,
+        VACCINE_REMINDER_GROUP_OPTIONS.map((option) => option.value)
+      ),
+      antirabicFirstDoseMonths: parseNullableInteger(req.body.antirabicFirstDoseMonths) ?? 3,
+      antirabicAnnualBooster: req.body.antirabicAnnualBooster !== "NO",
+      antirabicBoosterIntervalYears: parseNullableInteger(req.body.antirabicBoosterIntervalYears) ?? 1,
+      felineFirstDoseMonths: parseNullableInteger(req.body.felineFirstDoseMonths) ?? 2,
+      felineSecondDoseDays: parseNullableInteger(req.body.felineSecondDoseDays) ?? 21,
+      felineThirdDoseDays: parseNullableInteger(req.body.felineThirdDoseDays),
+      felineAnnualBooster: req.body.felineAnnualBooster !== "NO",
+      felineBoosterIntervalYears: parseNullableInteger(req.body.felineBoosterIntervalYears) ?? 1,
     };
     const canManagePlanLimits = isAdminRole(req.session.userRole);
     const planLimits = canManagePlanLimits ? buildPlanLimitRows(req.body) : getPlanLimitRows();
@@ -193,6 +243,17 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           "membershipsJson",
           "breedsJson",
           "examsJson",
+          "vaccineReminderEnabled",
+          "vaccineReminderDaysBefore",
+          "vaccineReminderGroupsJson",
+          "antirabicFirstDoseMonths",
+          "antirabicAnnualBooster",
+          "antirabicBoosterIntervalYears",
+          "felineFirstDoseMonths",
+          "felineSecondDoseDays",
+          "felineThirdDoseDays",
+          "felineAnnualBooster",
+          "felineBoosterIntervalYears",
           "updatedAt"
         )
         VALUES (
@@ -210,6 +271,17 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           ${JSON.stringify(settings.memberships)},
           ${JSON.stringify(settings.breeds)},
           ${JSON.stringify(settings.exams)},
+          ${settings.vaccineReminderEnabled},
+          ${settings.vaccineReminderDaysBefore},
+          ${JSON.stringify(settings.vaccineReminderGroups)},
+          ${settings.antirabicFirstDoseMonths},
+          ${settings.antirabicAnnualBooster},
+          ${settings.antirabicBoosterIntervalYears},
+          ${settings.felineFirstDoseMonths},
+          ${settings.felineSecondDoseDays},
+          ${settings.felineThirdDoseDays},
+          ${settings.felineAnnualBooster},
+          ${settings.felineBoosterIntervalYears},
           CURRENT_TIMESTAMP
         )
         ON CONFLICT ("userId") DO UPDATE SET
@@ -226,6 +298,17 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           "membershipsJson" = EXCLUDED."membershipsJson",
           "breedsJson" = EXCLUDED."breedsJson",
           "examsJson" = EXCLUDED."examsJson",
+          "vaccineReminderEnabled" = EXCLUDED."vaccineReminderEnabled",
+          "vaccineReminderDaysBefore" = EXCLUDED."vaccineReminderDaysBefore",
+          "vaccineReminderGroupsJson" = EXCLUDED."vaccineReminderGroupsJson",
+          "antirabicFirstDoseMonths" = EXCLUDED."antirabicFirstDoseMonths",
+          "antirabicAnnualBooster" = EXCLUDED."antirabicAnnualBooster",
+          "antirabicBoosterIntervalYears" = EXCLUDED."antirabicBoosterIntervalYears",
+          "felineFirstDoseMonths" = EXCLUDED."felineFirstDoseMonths",
+          "felineSecondDoseDays" = EXCLUDED."felineSecondDoseDays",
+          "felineThirdDoseDays" = EXCLUDED."felineThirdDoseDays",
+          "felineAnnualBooster" = EXCLUDED."felineAnnualBooster",
+          "felineBoosterIntervalYears" = EXCLUDED."felineBoosterIntervalYears",
           "updatedAt" = CURRENT_TIMESTAMP
       `;
 
@@ -257,6 +340,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         membershipOptions: MEMBERSHIP_OPTIONS,
         breedOptions: BREED_OPTIONS,
         examOptions: EXAM_OPTIONS,
+        vaccineReminderGroupOptions: VACCINE_REMINDER_GROUP_OPTIONS,
         planLimits,
         canManagePlanLimits,
         success: false,

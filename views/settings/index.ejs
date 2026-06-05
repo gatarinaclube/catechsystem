@@ -23,6 +23,55 @@
         background: #ffffff;
         font-size: 13px;
       }
+      .settings-toggle-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        align-items: center;
+        margin-top: 12px;
+      }
+      .settings-switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 800;
+      }
+      .settings-switch input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .settings-switch-track {
+        position: relative;
+        width: 50px;
+        height: 28px;
+        border-radius: 999px;
+        background: #cbd5e1;
+        transition: 0.2s ease;
+      }
+      .settings-switch-track::after {
+        content: "";
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        width: 20px;
+        height: 20px;
+        border-radius: 999px;
+        background: #ffffff;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.22);
+        transition: 0.2s ease;
+      }
+      .settings-switch input:checked + .settings-switch-track {
+        background: #16a34a;
+      }
+      .settings-switch input:checked + .settings-switch-track::after {
+        transform: translateX(22px);
+      }
+      .settings-collapsible {
+        margin-top: 14px;
+      }
       .breed-picker {
         display: grid;
         grid-template-columns: minmax(220px, 360px) auto;
@@ -268,6 +317,153 @@
             </div>
           </div>
 
+          <div class="content-card" style="margin-bottom:18px;">
+            <div class="content-title">Aviso automático de vacinas</div>
+            <div class="section-note">
+              Quando ativado, o sistema envia e-mail avisando sobre vacinas próximas do vencimento,
+              conforme a antecedência e os grupos de gatos selecionados.
+            </div>
+
+            <div class="settings-toggle-row">
+              <label class="settings-switch">
+                <input
+                  id="vaccineReminderEnabled"
+                  name="vaccineReminderEnabled"
+                  type="checkbox"
+                  <%= settings.vaccineReminderEnabled ? "checked" : "" %>
+                />
+                <span class="settings-switch-track"></span>
+                <span>Enviar e-mail automático</span>
+              </label>
+            </div>
+
+            <div class="settings-collapsible" id="vaccineReminderFields">
+              <div class="section-note" style="margin-top:0;">
+                Regras usadas para calcular os vencimentos das vacinas no módulo Vacinação, Painel e nos e-mails automáticos.
+              </div>
+              <div class="grid-3" style="margin-top:12px;">
+                <div class="field">
+                  <label class="field-label" for="antirabicFirstDoseMonths">Primeira dose Antirrábica (meses)</label>
+                  <input
+                    id="antirabicFirstDoseMonths"
+                    name="antirabicFirstDoseMonths"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value="<%= settings.antirabicFirstDoseMonths ?? 3 %>"
+                  />
+                </div>
+                <div class="field">
+                  <label class="field-label" for="antirabicAnnualBooster">Reforço Antirrábica Anual</label>
+                  <select id="antirabicAnnualBooster" name="antirabicAnnualBooster">
+                    <option value="YES" <%= settings.antirabicAnnualBooster ? "selected" : "" %>>Sim</option>
+                    <option value="NO" <%= !settings.antirabicAnnualBooster ? "selected" : "" %>>Não</option>
+                  </select>
+                </div>
+                <div class="field" id="antirabicIntervalField">
+                  <label class="field-label" for="antirabicBoosterIntervalYears">Intervalo Antirrábica (anos)</label>
+                  <input
+                    id="antirabicBoosterIntervalYears"
+                    name="antirabicBoosterIntervalYears"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value="<%= settings.antirabicBoosterIntervalYears ?? 1 %>"
+                  />
+                </div>
+              </div>
+
+              <div class="grid-3" style="margin-top:12px;">
+                <div class="field">
+                  <label class="field-label" for="felineFirstDoseMonths">Primeira dose Feline (meses)</label>
+                  <input
+                    id="felineFirstDoseMonths"
+                    name="felineFirstDoseMonths"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value="<%= settings.felineFirstDoseMonths ?? 2 %>"
+                  />
+                </div>
+                <div class="field">
+                  <label class="field-label" for="felineSecondDoseDays">Segunda dose Feline (dias após a primeira)</label>
+                  <input
+                    id="felineSecondDoseDays"
+                    name="felineSecondDoseDays"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value="<%= settings.felineSecondDoseDays ?? 21 %>"
+                  />
+                </div>
+                <div class="field">
+                  <label class="field-label" for="felineThirdDoseDays">Terceira dose Feline (dias após a segunda)</label>
+                  <input
+                    id="felineThirdDoseDays"
+                    name="felineThirdDoseDays"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value="<%= settings.felineThirdDoseDays ?? '' %>"
+                    placeholder="Deixe vazio para não usar terceira dose"
+                  />
+                </div>
+              </div>
+
+              <div class="grid-3" style="margin-top:12px;">
+                <div class="field">
+                  <label class="field-label" for="felineAnnualBooster">Reforço Feline Anual</label>
+                  <select id="felineAnnualBooster" name="felineAnnualBooster">
+                    <option value="YES" <%= settings.felineAnnualBooster ? "selected" : "" %>>Sim</option>
+                    <option value="NO" <%= !settings.felineAnnualBooster ? "selected" : "" %>>Não</option>
+                  </select>
+                </div>
+                <div class="field" id="felineIntervalField">
+                  <label class="field-label" for="felineBoosterIntervalYears">Intervalo Feline (anos)</label>
+                  <input
+                    id="felineBoosterIntervalYears"
+                    name="felineBoosterIntervalYears"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value="<%= settings.felineBoosterIntervalYears ?? 1 %>"
+                  />
+                </div>
+              </div>
+
+              <div class="grid-3">
+                <div class="field">
+                  <label class="field-label" for="vaccineReminderDaysBefore">Avisar quantos dias antes?</label>
+                  <input
+                    id="vaccineReminderDaysBefore"
+                    name="vaccineReminderDaysBefore"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value="<%= settings.vaccineReminderDaysBefore ?? 15 %>"
+                  />
+                </div>
+              </div>
+
+              <div class="field" style="margin-top:14px;">
+                <label class="field-label">Receber notificações de</label>
+                <div class="settings-options">
+                  <% vaccineReminderGroupOptions.forEach(function(option) { %>
+                    <label class="settings-check">
+                      <input
+                        type="checkbox"
+                        name="vaccineReminderGroups"
+                        value="<%= option.value %>"
+                        <%= settings.vaccineReminderGroups.includes(option.value) ? "checked" : "" %>
+                      />
+                      <span><%= option.label %></span>
+                    </label>
+                  <% }) %>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <% if (canManagePlanLimits) { %>
             <div class="content-card" style="margin-bottom:18px;">
               <div class="content-title">Limites dos perfis</div>
@@ -382,6 +578,30 @@
         });
 
         renderBreeds();
+
+        const vaccineToggle = document.getElementById("vaccineReminderEnabled");
+        const vaccineFields = document.getElementById("vaccineReminderFields");
+        const antirabicAnnualBooster = document.getElementById("antirabicAnnualBooster");
+        const antirabicIntervalField = document.getElementById("antirabicIntervalField");
+        const felineAnnualBooster = document.getElementById("felineAnnualBooster");
+        const felineIntervalField = document.getElementById("felineIntervalField");
+        function refreshVaccineFields() {
+          if (!vaccineToggle || !vaccineFields) return;
+          vaccineFields.style.display = vaccineToggle.checked ? "block" : "none";
+        }
+        function refreshVaccineIntervals() {
+          if (antirabicAnnualBooster && antirabicIntervalField) {
+            antirabicIntervalField.style.display = antirabicAnnualBooster.value === "NO" ? "block" : "none";
+          }
+          if (felineAnnualBooster && felineIntervalField) {
+            felineIntervalField.style.display = felineAnnualBooster.value === "NO" ? "block" : "none";
+          }
+        }
+        vaccineToggle?.addEventListener("change", refreshVaccineFields);
+        antirabicAnnualBooster?.addEventListener("change", refreshVaccineIntervals);
+        felineAnnualBooster?.addEventListener("change", refreshVaccineIntervals);
+        refreshVaccineFields();
+        refreshVaccineIntervals();
       })();
     </script>
   </body>

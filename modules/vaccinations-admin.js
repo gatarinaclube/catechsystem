@@ -4,12 +4,14 @@ const {
   parseDate,
   formatDate,
   formatDateInput,
-  addDays,
-  addMonths,
-  addYears,
   buildDisplayName,
   classifyOperationalCat,
 } = require("../utils/cattery-admin");
+const {
+  computeNextAntirabic,
+  computeNextFeline,
+  safeJsonParse,
+} = require("../utils/vaccines");
 
 const CATEGORY_META = [
   { key: "sires", label: "Padreadores", color: "#2563eb" },
@@ -19,60 +21,6 @@ const CATEGORY_META = [
 ];
 
 const FelineTypes = ["Feline IV", "Feline V", "IV + FeLV"];
-
-function safeJsonParse(value, fallback = []) {
-  if (!value) return fallback;
-  try {
-    return JSON.parse(value);
-  } catch {
-    return fallback;
-  }
-}
-
-function sortHistoryDates(history) {
-  return [...history]
-    .map((value) => ({
-      ...value,
-      date: formatDateInput(value.date),
-    }))
-    .sort((a, b) => {
-      const aDate = parseDate(a.date);
-      const bDate = parseDate(b.date);
-      if (!aDate && !bDate) return 0;
-      if (!aDate) return -1;
-      if (!bDate) return 1;
-      return aDate - bDate;
-    });
-}
-
-function computeNextAntirabic(birthDate, history) {
-  const sorted = sortHistoryDates(history).filter((item) => parseDate(item.date));
-  const birth = parseDate(birthDate);
-
-  if (!sorted.length) {
-    return birth ? addMonths(birth, 3) : null;
-  }
-
-  const last = parseDate(sorted[sorted.length - 1].date);
-  return last ? addDays(addYears(last, 1), -1) : null;
-}
-
-function computeNextFeline(birthDate, history) {
-  const sorted = sortHistoryDates(history).filter((item) => parseDate(item.date));
-  const birth = parseDate(birthDate);
-
-  if (!sorted.length) {
-    return birth ? addDays(addMonths(birth, 2), 0) : null;
-  }
-
-  if (sorted.length === 1) {
-    const first = parseDate(sorted[0].date);
-    return first ? addDays(first, 21) : null;
-  }
-
-  const last = parseDate(sorted[sorted.length - 1].date);
-  return last ? addDays(addYears(last, 1), -1) : null;
-}
 
 function getVaccinationState(nextAntirabic, nextFeline) {
   const today = new Date();
@@ -158,8 +106,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           [{ date: "", type: "" }]
         );
 
-        const nextAntirabic = computeNextAntirabic(cat.birthDate, antirabicHistory);
-        const nextFeline = computeNextFeline(cat.birthDate, felineHistory);
+        const nextAntirabic = computeNextAntirabic(cat.birthDate, antirabicHistory, cat.owner?.settings);
+        const nextFeline = computeNextFeline(cat.birthDate, felineHistory, cat.owner?.settings);
         const vaccinationState = getVaccinationState(nextAntirabic, nextFeline);
 
         grouped[category].push({

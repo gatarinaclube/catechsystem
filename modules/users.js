@@ -188,6 +188,10 @@ router.post("/users/:id", requireAuth, requirePermission("admin.users"), async (
       role,
       approvalStatus,
       adminNotes,
+      accountOrigin,
+      selectedPlan,
+      subscriptionStatus,
+      trialEndsAt,
 
       // 🔹 CAMPOS DO GATIL FIFe
       hasFifeCattery,
@@ -235,6 +239,11 @@ router.post("/users/:id", requireAuth, requirePermission("admin.users"), async (
         role: isAdmin ? normalizeRole(role) || ROLES.BASIC : existingUser?.role || ROLES.PREMIUM,
         approvalStatus: isAdmin ? finalStatus : existingUser?.approvalStatus || "DEFERIDO",
         adminNotes: isAdmin ? adminNotes || null : undefined,
+        accountOrigin: isAdmin ? accountOrigin || null : undefined,
+        selectedPlan: isAdmin ? selectedPlan || null : undefined,
+        subscriptionStatus: isAdmin ? subscriptionStatus || null : undefined,
+        trialEndsAt: isAdmin && trialEndsAt ? new Date(`${trialEndsAt}T23:59:59`) : isAdmin ? null : undefined,
+        planActivatedAt: isAdmin && subscriptionStatus === "ACTIVE" ? new Date() : undefined,
 
         // 🔹 SALVANDO GATIL
         hasFifeCattery: hasFifeCattery || "NO",

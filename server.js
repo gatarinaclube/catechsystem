@@ -32,6 +32,7 @@ const {
   classifyOperationalCat,
 } = require("./utils/cattery-admin");
 const { sendStatusEmail } = require("./utils/mailer");
+const { buildVaccineDueItems } = require("./utils/vaccines");
 const {
   notifyNewUser,
   notifyUserRegistrationConfirmation,
@@ -64,6 +65,7 @@ const administrativeRouterFactory = require("./modules/administrative");
 const academyRouterFactory = require("./modules/academy");
 const kittenShowcaseRouterFactory = require("./modules/kitten-showcase");
 const gatarinaShowPhotosRouterFactory = require("./modules/gatarina-show-photos");
+const { startVaccineReminderScheduler } = require("./utils/vaccineReminderJob");
 const {generateTitleHomologationPDF,} = require("./modules/pdf/titleHomologationPdf");
 const {generatePedigreeHomologationPDF,} = require("./modules/pdf/pedigreeHomologationPdf");
 const { generateCatteryRegistrationPDF } = require("./modules/pdf/catteryRegistrationPdf");
@@ -324,6 +326,122 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
+const COMMERCIAL_PLANS = {
+  basic: {
+    key: "BASIC",
+    slug: "basic",
+    title: "Básico",
+    price: "Plano de entrada",
+    role: ROLES.BASIC,
+    summary: "Para iniciar a organização do gatil com vitrine e controles essenciais.",
+    features: ["1 ninhada publicada na vitrine", "Controles operacionais essenciais", "Cadastro e histórico dos gatos"],
+  },
+  master: {
+    key: "MASTER",
+    slug: "master",
+    title: "Master",
+    price: "Plano intermediário",
+    role: ROLES.MASTER,
+    summary: "Para criadores que precisam de gestão financeira, CRM e mais capacidade.",
+    features: ["3 ninhadas publicadas na vitrine", "CRM e administrativo", "Relatórios e painel tático"],
+  },
+  premium: {
+    key: "PREMIUM",
+    slug: "premium",
+    title: "Premium",
+    price: "Teste grátis por 7 dias",
+    role: ROLES.PREMIUM,
+    summary: "Acesso completo para experimentar todos os recursos de gestão.",
+    features: ["Vitrine e comparativos sem limite", "Todos os módulos liberados", "Melhor opção para testar o sistema completo"],
+  },
+};
+
+function commercialPlanList() {
+  return [COMMERCIAL_PLANS.basic, COMMERCIAL_PLANS.master, COMMERCIAL_PLANS.premium];
+}
+
+function resolveCommercialPlan(slug) {
+  return COMMERCIAL_PLANS[String(slug || "").trim().toLowerCase()] || COMMERCIAL_PLANS.premium;
+}
+
+function addDaysDate(date, days) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function loginViewOptions(kind, extra = {}) {
+  const isGatarina = kind === "gatarina";
+  return {
+    error: null,
+    title: isGatarina ? "Login Gatarina" : "Login CaTech System",
+    subtitle: isGatarina
+      ? "Acesso para associados ativos da Associação Catarinense de Felinos"
+      : "Acesso para usuários dos planos Básico, Master e Premium",
+    formAction: isGatarina ? "/login-gatarina" : "/login",
+    showRegisterLink: isGatarina,
+    registerText: "Ainda não é associado?",
+    registerHref: "/register",
+    registerLabel: "Solicitar associação",
+    alternateLoginHref: isGatarina ? "/login" : "/login-gatarina",
+    alternateLoginLabel: isGatarina ? "Login para planos não associados" : "Login para associados Gatarina",
+    ...extra,
+  };
+}
+
+function isExpiredCommercialTrial(user) {
+  if (!user || user.accountOrigin !== "NON_ASSOCIATE") return false;
+  if (String(user.subscriptionStatus || "").toUpperCase() !== "TRIALING") return false;
+  return user.trialEndsAt && new Date(user.trialEndsAt) < new Date();
+}
+
+async function handleSystemLogin(req, res, loginKind) {
+  const email = String(req.body.email || "").trim().toLowerCase();
+  const { password } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      return res.render("login", loginViewOptions(loginKind, { error: "Usuário ou senha inválidos" }));
+    }
+
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) {
+      return res.render("login", loginViewOptions(loginKind, { error: "Usuário ou senha inválidos" }));
+    }
+
+    if (isExpiredCommercialTrial(user)) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { approvalStatus: "RESTRICOES", subscriptionStatus: "EXPIRED" },
+      });
+
+      return res.render("login", loginViewOptions(loginKind, {
+        error: "Seu teste gratuito de 7 dias venceu. Escolha um plano ou entre em contato para reativar o acesso.",
+      }));
+    }
+
+    // Bloqueia login se não estiver DEFERIDO
+    if (user.approvalStatus && user.approvalStatus !== "DEFERIDO") {
+      return res.render("login", loginViewOptions(loginKind, {
+        error:
+          "Seu cadastro ainda não foi aprovado ou está com restrições, entre em contato com o Administrador.",
+      }));
+    }
+
+    req.session.userId = user.id;
+    req.session.userRole = normalizeRole(user.role);
+
+    return res.redirect("/dashboard");
+  } catch (err) {
+    console.error("Erro no login:", err);
+    return res.status(500).send("Erro no login");
+  }
+}
+
 app.use(async (req, res, next) => {
   try {
     const sessionRole = normalizeRole(req.session?.userRole);
@@ -371,50 +489,29 @@ app.use(async (req, res, next) => {
 
 // ---------- ROTAS BÁSICAS ----------
 app.get("/", (req, res) => {
-  return res.redirect("/dashboard");
+  res.render("public-home", {
+    user: req.user,
+    plans: commercialPlanList(),
+  });
 });
 
 app.use(kittenShowcaseRouterFactory.publicRouter(prisma));
 
 // ---------- LOGIN ----------
 app.get("/login", (req, res) => {
-  res.render("login", { error: null });
+  res.render("login", loginViewOptions("commercial"));
+});
+
+app.get("/login-gatarina", (req, res) => {
+  res.render("login", loginViewOptions("gatarina"));
 });
 
 app.post("/login", async (req, res) => {
-  const email = String(req.body.email || "").trim().toLowerCase();
-  const { password } = req.body;
+  return handleSystemLogin(req, res, "commercial");
+});
 
-  try {
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (!user) {
-      return res.render("login", { error: "Usuário ou senha inválidos" });
-    }
-
-    const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid) {
-      return res.render("login", { error: "Usuário ou senha inválidos" });
-    }
-
-    // Bloqueia login se não estiver DEFERIDO
-    if (user.approvalStatus && user.approvalStatus !== "DEFERIDO") {
-      return res.render("login", {
-        error:
-          "Seu cadastro ainda não foi aprovado ou está com restrições, entre em contato com o Administrador.",
-      });
-    }
-
-    req.session.userId = user.id;
-    req.session.userRole = normalizeRole(user.role); // <- importante p/ saber o perfil atual
-
-    return res.redirect("/dashboard");
-  } catch (err) {
-    console.error("Erro no login:", err);
-    return res.status(500).send("Erro no login");
-  }
+app.post("/login-gatarina", async (req, res) => {
+  return handleSystemLogin(req, res, "gatarina");
 });
 
 app.get("/forgot-password", (req, res) => {
@@ -644,10 +741,106 @@ const createdUser = await prisma.user.create({
 await notifyNewUser(prisma, createdUser);
 await notifyUserRegistrationConfirmation(createdUser);
 
-    return res.redirect("/login");
+    return res.redirect("/login-gatarina");
   } catch (err) {
     console.error("Erro no cadastro:", err);
     return res.status(500).send("Erro no cadastro");
+  }
+});
+
+app.get("/planos/:plan/cadastro", (req, res) => {
+  const plan = resolveCommercialPlan(req.params.plan);
+  res.render("commercial-register", {
+    error: null,
+    plan,
+    plans: commercialPlanList(),
+  });
+});
+
+app.post("/planos/:plan/cadastro", async (req, res) => {
+  const plan = resolveCommercialPlan(req.params.plan);
+  const {
+    name,
+    email,
+    phones,
+    cpf,
+    password,
+    confirmPassword,
+    catteryName,
+  } = req.body;
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+
+  try {
+    if (!name || !normalizedEmail || !password || !confirmPassword) {
+      return res.render("commercial-register", {
+        error: "Preencha nome, e-mail e senha para iniciar o teste.",
+        plan,
+        plans: commercialPlanList(),
+      });
+    }
+
+    if (password !== confirmPassword) {
+      return res.render("commercial-register", {
+        error: "As senhas não conferem.",
+        plan,
+        plans: commercialPlanList(),
+      });
+    }
+
+    if (String(password).length < 6) {
+      return res.render("commercial-register", {
+        error: "Informe uma senha com pelo menos 6 caracteres.",
+        plan,
+        plans: commercialPlanList(),
+      });
+    }
+
+    const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (existing) {
+      return res.render("commercial-register", {
+        error: "E-mail já cadastrado. Use o login ou recupere sua senha.",
+        plan,
+        plans: commercialPlanList(),
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const trialEndsAt = addDaysDate(new Date(), 7);
+
+    const createdUser = await prisma.user.create({
+      data: {
+        name,
+        email: normalizedEmail,
+        phones,
+        cpf,
+        password: passwordHash,
+        role: ROLES.PREMIUM,
+        approvalStatus: "DEFERIDO",
+        accountOrigin: "NON_ASSOCIATE",
+        selectedPlan: plan.key,
+        subscriptionStatus: "TRIALING",
+        trialEndsAt,
+        settings: catteryName
+          ? {
+              create: {
+                catteryName: String(catteryName || "").trim(),
+              },
+            }
+          : undefined,
+      },
+    });
+
+    req.session.userId = createdUser.id;
+    req.session.userRole = normalizeRole(createdUser.role);
+
+    return res.redirect("/dashboard");
+  } catch (err) {
+    console.error("Erro no cadastro comercial:", err);
+    return res.status(500).render("commercial-register", {
+      error: "Não foi possível iniciar o teste agora.",
+      plan,
+      plans: commercialPlanList(),
+    });
   }
 });
 
@@ -887,6 +1080,7 @@ const weighingAttentionCount = await prisma.weighingPlan.count({
 const vaccinationCats = await prisma.cat.findMany({
   where: userScope,
   include: {
+    owner: { include: { settings: true } },
     mother: true,
     vaccinationPlan: true,
     litterKitten: true,
@@ -894,11 +1088,7 @@ const vaccinationCats = await prisma.cat.findMany({
 });
 const overdueVaccinesCount = vaccinationCats.reduce((count, cat) => {
   if (!classifyOperationalCat(cat)) return count;
-  const antirabicHistory = parseJsonList(cat.vaccinationPlan?.antirabicHistoryJson);
-  const felineHistory = parseJsonList(cat.vaccinationPlan?.felineHistoryJson);
-  const nextAntirabic = computeNextAntirabic(cat.birthDate, antirabicHistory);
-  const nextFeline = computeNextFeline(cat.birthDate, felineHistory);
-  return [nextAntirabic, nextFeline].some((date) => date && date < today)
+  return buildVaccineDueItems(cat).some((item) => item.dueDate && item.dueDate < today)
     ? count + 1
     : count;
 }, 0);
@@ -2649,7 +2839,8 @@ app.use((req, res) => {
 // ---------- INICIALIZAÇÃO DO SERVIDOR ----------
 const PORT = process.env.PORT || 3000;
 loadPlanLimitOverrides(prisma).finally(() => {
-  app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
-  });
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+  startVaccineReminderScheduler(prisma);
+});
 });

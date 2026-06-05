@@ -2,7 +2,7 @@
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
-    <title>Login - CaTech</title>
+    <title><%= typeof title !== "undefined" ? title : "Login - CaTech" %></title>
 
     <!-- CSS GLOBAL -->
     <link rel="stylesheet" href="/css/theme.css" />
@@ -11,14 +11,14 @@
   <body class="auth-body">
     <div class="auth-card">
       <div class="auth-logo">CaTech System</div>
-      <h1 class="auth-title">Bem-vindo</h1>
-      <div class="auth-subtitle">Faça login para acessar o painel</div>
+      <h1 class="auth-title"><%= typeof title !== "undefined" ? title : "Bem-vindo" %></h1>
+      <div class="auth-subtitle"><%= typeof subtitle !== "undefined" ? subtitle : "Faça login para acessar o painel" %></div>
 
       <% if (typeof error !== "undefined" && error) { %>
         <div class="auth-error"><%= error %></div>
       <% } %>
 
-      <form method="post" action="/login" class="auth-form">
+      <form method="post" action="<%= typeof formAction !== 'undefined' ? formAction : '/login' %>" class="auth-form">
         <div class="auth-field">
           <label for="email">E-mail</label>
           <input
@@ -44,13 +44,20 @@
         <button type="submit" class="auth-button">Entrar</button>
       </form>
 
-      <div class="auth-footer">
-        Ainda não é associado?
-        <a href="/register">Solicitar</a>
-      </div>
+      <% if (typeof showRegisterLink !== "undefined" && showRegisterLink) { %>
+        <div class="auth-footer">
+          <%= typeof registerText !== "undefined" ? registerText : "Ainda não é associado?" %>
+          <a href="<%= typeof registerHref !== 'undefined' ? registerHref : '/register' %>"><%= typeof registerLabel !== "undefined" ? registerLabel : "Solicitar" %></a>
+        </div>
+      <% } %>
       <div class="auth-footer auth-footer-secondary">
         <a href="/forgot-password">Esqueci minha senha</a>
       </div>
+      <% if (typeof alternateLoginHref !== "undefined" && alternateLoginHref) { %>
+        <div class="auth-footer auth-footer-secondary">
+          <a href="<%= alternateLoginHref %>"><%= alternateLoginLabel || "Outro login" %></a>
+        </div>
+      <% } %>
     </div>
   </body>
 </html>

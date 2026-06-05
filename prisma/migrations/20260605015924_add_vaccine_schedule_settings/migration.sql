@@ -1,0 +1,9 @@
+ALTER TABLE "UserSettings"
+ADD COLUMN IF NOT EXISTS "antirabicFirstDoseMonths" INTEGER,
+ADD COLUMN IF NOT EXISTS "antirabicAnnualBooster" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN IF NOT EXISTS "antirabicBoosterIntervalYears" INTEGER,
+ADD COLUMN IF NOT EXISTS "felineFirstDoseMonths" INTEGER,
+ADD COLUMN IF NOT EXISTS "felineSecondDoseDays" INTEGER,
+ADD COLUMN IF NOT EXISTS "felineThirdDoseDays" INTEGER,
+ADD COLUMN IF NOT EXISTS "felineAnnualBooster" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN IF NOT EXISTS "felineBoosterIntervalYears" INTEGER;

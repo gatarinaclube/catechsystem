@@ -57,6 +57,11 @@ model User {
   // Status de aprovação
   approvalStatus ApprovalStatus @default(INDEFERIDO)
   adminNotes     String?
+  accountOrigin  String?
+  selectedPlan   String?
+  subscriptionStatus String?
+  trialEndsAt    DateTime?
+  planActivatedAt DateTime?
 
   createdAt DateTime @default(now())
 
@@ -322,6 +327,17 @@ model UserSettings {
   membershipsJson String?
   breedsJson      String?
   examsJson       String?
+  vaccineReminderEnabled Boolean @default(false)
+  vaccineReminderDaysBefore Int?
+  vaccineReminderGroupsJson String?
+  antirabicFirstDoseMonths Int?
+  antirabicAnnualBooster Boolean @default(true)
+  antirabicBoosterIntervalYears Int?
+  felineFirstDoseMonths Int?
+  felineSecondDoseDays Int?
+  felineThirdDoseDays Int?
+  felineAnnualBooster Boolean @default(true)
+  felineBoosterIntervalYears Int?
   marketingFromName String?
   marketingFromEmail String?
   marketingSmtpHost String?
@@ -340,6 +356,18 @@ model UserSettings {
   marketingFooterText String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model VaccineReminderEmailLog {
+  id          Int      @id @default(autoincrement())
+  ownerId     Int
+  catId       Int
+  vaccineType String
+  dueDate     DateTime
+  sentAt      DateTime @default(now())
+
+  @@unique([ownerId, catId, vaccineType, dueDate])
+  @@index([ownerId, sentAt])
 }
 
 model RolePlanLimit {

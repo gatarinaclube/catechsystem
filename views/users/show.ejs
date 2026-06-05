@@ -293,6 +293,61 @@
               </div>
             </section>
 
+            <section style="margin-bottom:16px;">
+              <h3 class="section-title">Plano comercial</h3>
+              <div class="grid-3" style="margin-top:10px;">
+                <div class="field">
+                  <label class="field-label" for="accountOrigin">Origem do cadastro</label>
+                  <select id="accountOrigin" name="accountOrigin">
+                    <option value="" <%= !userDetail.accountOrigin ? "selected" : "" %>>Associado / interno</option>
+                    <option value="NON_ASSOCIATE" <%= userDetail.accountOrigin === "NON_ASSOCIATE" ? "selected" : "" %>>Plano não associado</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label class="field-label" for="selectedPlan">Plano escolhido</label>
+                  <select id="selectedPlan" name="selectedPlan">
+                    <option value="" <%= !userDetail.selectedPlan ? "selected" : "" %>>Não informado</option>
+                    <option value="BASIC" <%= userDetail.selectedPlan === "BASIC" ? "selected" : "" %>>Básico</option>
+                    <option value="MASTER" <%= userDetail.selectedPlan === "MASTER" ? "selected" : "" %>>Master</option>
+                    <option value="PREMIUM" <%= userDetail.selectedPlan === "PREMIUM" ? "selected" : "" %>>Premium</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label class="field-label" for="subscriptionStatus">Status da assinatura</label>
+                  <select id="subscriptionStatus" name="subscriptionStatus">
+                    <option value="" <%= !userDetail.subscriptionStatus ? "selected" : "" %>>Não informado</option>
+                    <option value="TRIALING" <%= userDetail.subscriptionStatus === "TRIALING" ? "selected" : "" %>>Teste gratuito</option>
+                    <option value="ACTIVE" <%= userDetail.subscriptionStatus === "ACTIVE" ? "selected" : "" %>>Pago / ativo</option>
+                    <option value="PENDING" <%= userDetail.subscriptionStatus === "PENDING" ? "selected" : "" %>>Pagamento pendente</option>
+                    <option value="EXPIRED" <%= userDetail.subscriptionStatus === "EXPIRED" ? "selected" : "" %>>Teste vencido</option>
+                    <option value="CANCELED" <%= userDetail.subscriptionStatus === "CANCELED" ? "selected" : "" %>>Cancelado</option>
+                  </select>
+                </div>
+              </div>
+              <div class="grid-3" style="margin-top:10px;">
+                <div class="field">
+                  <label class="field-label" for="trialEndsAt">Fim do teste</label>
+                  <input
+                    id="trialEndsAt"
+                    name="trialEndsAt"
+                    type="date"
+                    value="<%= userDetail.trialEndsAt ? userDetail.trialEndsAt.toISOString().slice(0,10) : '' %>"
+                  />
+                </div>
+                <div class="field">
+                  <label class="field-label">Ativação do plano</label>
+                  <input
+                    type="text"
+                    value="<%= userDetail.planActivatedAt ? new Date(userDetail.planActivatedAt).toLocaleString('pt-BR') : 'Ainda não ativado' %>"
+                    readonly
+                  />
+                </div>
+              </div>
+              <small style="font-size:11px; color:var(--text-muted);">
+                Para usuários de planos não associados, o teste começa como Premium por 7 dias. Após pagamento, marque a assinatura como "Pago / ativo", ajuste o perfil e mantenha o cadastro como Deferido.
+              </small>
+            </section>
+
             <div class="footer" style="margin-top:16px;">
               <button type="submit" class="btn btn-primary">
                 Salvar alterações

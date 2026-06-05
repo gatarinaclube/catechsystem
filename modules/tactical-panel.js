@@ -10,6 +10,7 @@ const {
   formatDateInput,
   parseDate,
 } = require("../utils/cattery-admin");
+const vaccineUtils = require("../utils/vaccines");
 
 function safeJsonParse(value, fallback = []) {
   if (!value) return fallback;
@@ -213,8 +214,8 @@ async function buildPanelData(prisma, ownerId) {
     const antirabicHistory = safeJsonParse(cat.vaccinationPlan?.antirabicHistoryJson, []);
     const felineHistory = safeJsonParse(cat.vaccinationPlan?.felineHistoryJson, []);
     const vaccineDates = [
-      { type: "Antirrábica", date: computeNextAntirabic(cat.birthDate, antirabicHistory) },
-      { type: "Feline", date: computeNextFeline(cat.birthDate, felineHistory) },
+      { type: "Antirrábica", date: vaccineUtils.computeNextAntirabic(cat.birthDate, antirabicHistory, cat.owner?.settings) },
+      { type: "Feline", date: vaccineUtils.computeNextFeline(cat.birthDate, felineHistory, cat.owner?.settings) },
     ]
       .filter((item) => item.date && item.date <= upcomingLimit)
       .sort((a, b) => a.date - b.date);

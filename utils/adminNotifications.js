@@ -86,7 +86,7 @@ async function notifyUserRegistrationConfirmation(user) {
       <p><strong>E-mail:</strong> ${escapeHtml(user.email)}</p>
       <p><strong>Telefone:</strong> ${escapeHtml(user.phones || "-")}</p>
       <p><strong>Gatil FIFe:</strong> ${escapeHtml(user.hasFifeCattery === "YES" ? (user.fifeCatteryName || "Sim") : "Não")}</p>
-      <p>Acesse o sistema em: <a href="${appUrl("/login")}">${appUrl("/login")}</a></p>
+      <p>Acesse o sistema em: <a href="${appUrl("/login-gatarina")}">${appUrl("/login-gatarina")}</a></p>
     `,
   });
 }

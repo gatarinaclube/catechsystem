@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CaTech System - Gestão para Gatis</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body class="public-site-body">
+    <header class="public-site-header">
+      <a class="public-site-brand" href="/">CaTech System</a>
+      <nav class="public-site-nav">
+        <a href="#planos">Planos</a>
+        <a href="/login-gatarina">Login associados</a>
+        <a class="public-site-login" href="/login">Login</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="public-hero">
+        <div class="public-hero-copy">
+          <span class="public-eyebrow">Sistema de gestão para criação felina</span>
+          <h1>Controle o gatil, acompanhe filhotes e apresente seu trabalho com mais profissionalismo.</h1>
+          <p>
+            O CaTech reúne cadastro de gatos, ninhadas, tratamentos, exames, vitrine pública,
+            financeiro, CRM e relatórios em uma única plataforma.
+          </p>
+          <div class="public-hero-actions">
+            <a class="public-primary-button" href="/planos/premium/cadastro">Testar Premium por 7 dias</a>
+            <a class="public-secondary-button" href="/login">Já tenho acesso</a>
+          </div>
+        </div>
+        <aside class="public-login-panel">
+          <h2>Acessar o sistema</h2>
+          <p>Use o login comercial para planos contratados ou o login Gatarina para associados ativos.</p>
+          <a class="public-panel-button" href="/login">Login planos</a>
+          <a class="public-panel-link" href="/login-gatarina">Login associados Gatarina</a>
+        </aside>
+      </section>
+
+      <section class="public-feature-band">
+        <div>
+          <strong>Vitrine pública</strong>
+          <span>Filhotes, textos, cores, fotos e materiais do gatil em uma página compartilhável.</span>
+        </div>
+        <div>
+          <strong>Rotina sanitária</strong>
+          <span>Vacinas, exames, pesagens, tratamentos e histórico sempre vinculados aos gatos.</span>
+        </div>
+        <div>
+          <strong>Gestão financeira</strong>
+          <span>Receitas, despesas, contas, fornecedores, clientes, cartões e relatórios.</span>
+        </div>
+      </section>
+
+      <section id="planos" class="public-plans-section">
+        <div class="public-section-heading">
+          <span class="public-eyebrow">Planos para não associados</span>
+          <h2>Comece com 7 dias grátis no Premium</h2>
+          <p>Depois do teste, o acesso permanece ativo somente com contratação de um plano.</p>
+        </div>
+
+        <div class="public-plan-grid">
+          <% plans.forEach(function(plan) { %>
+            <article class="public-plan-card <%= plan.slug === 'premium' ? 'public-plan-card-featured' : '' %>">
+              <div class="public-plan-name"><%= plan.title %></div>
+              <div class="public-plan-price"><%= plan.price %></div>
+              <p><%= plan.summary %></p>
+              <ul>
+                <% plan.features.forEach(function(feature) { %>
+                  <li><%= feature %></li>
+                <% }) %>
+              </ul>
+              <a href="/planos/<%= plan.slug %>/cadastro">Escolher <%= plan.title %></a>
+            </article>
+          <% }) %>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
