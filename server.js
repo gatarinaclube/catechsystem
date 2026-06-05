@@ -34,7 +34,9 @@ const {
 const { sendStatusEmail } = require("./utils/mailer");
 const { buildVaccineDueItems } = require("./utils/vaccines");
 const {
+  createAnnualPlanPayment,
   createPlanSubscription,
+  formatAnnualPlanPrice,
   formatPlanPrice,
   getSubscriptionPaymentUrl,
   isAsaasConfigured,
@@ -374,6 +376,34 @@ function commercialPlanList() {
   }));
 }
 
+function billingOptionsForPlan(plan) {
+  return [
+    {
+      mode: "MONTHLY",
+      title: "Mensal",
+      subtitle: `${formatPlanPrice(plan.key)} por mês`,
+      detail: "Cobrança recorrente mensal.",
+    },
+    {
+      mode: "ANNUAL_CARD",
+      title: "Anual no cartão",
+      subtitle: `${formatAnnualPlanPrice(plan.key, "ANNUAL_CARD")} em até 12x`,
+      detail: "Cobrança anual parcelada no cartão de crédito.",
+    },
+    {
+      mode: "ANNUAL_PIX",
+      title: "Anual no PIX",
+      subtitle: `${formatAnnualPlanPrice(plan.key, "ANNUAL_PIX")} à vista`,
+      detail: "Pagamento anual à vista com 10% de desconto.",
+    },
+  ];
+}
+
+function normalizeBillingMode(value) {
+  const mode = String(value || "").toUpperCase();
+  return ["MONTHLY", "ANNUAL_CARD", "ANNUAL_PIX"].includes(mode) ? mode : "MONTHLY";
+}
+
 function resolveCommercialPlan(slug) {
   return COMMERCIAL_PLANS[String(slug || "").trim().toLowerCase()] || COMMERCIAL_PLANS.premium;
 }
@@ -410,41 +440,31 @@ function isExpiredCommercialTrial(user) {
   return user.trialEndsAt && new Date(user.trialEndsAt) < new Date();
 }
 
-async function configureAsaasSubscriptionForUser(user, plan) {
+async function configureAsaasBillingForUser(user, plan, billingMode = "MONTHLY", status = "PENDING") {
   if (!isAsaasConfigured()) return null;
 
-  const billing = await createPlanSubscription(user, plan);
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      asaasCustomerId: billing.customerId,
-      asaasSubscriptionId: billing.subscription?.id || null,
-      asaasPaymentId: billing.firstPayment?.id || null,
-      asaasPaymentUrl: billing.paymentUrl || null,
-      subscriptionStatus: "TRIALING",
-    },
-  });
-  return billing;
+  const mode = normalizeBillingMode(billingMode);
+  const billing = mode === "MONTHLY"
+    ? await createPlanSubscription(user, plan)
+    : await createAnnualPlanPayment(user, plan, mode);
+
+  const data = {
+    accountOrigin: "NON_ASSOCIATE",
+    selectedPlan: plan.key,
+    subscriptionStatus: status,
+    asaasCustomerId: billing.customerId,
+    asaasSubscriptionId: billing.subscription?.id || null,
+    asaasPaymentId: billing.firstPayment?.id || billing.payment?.id || null,
+    asaasPaymentUrl: billing.paymentUrl || null,
+    asaasLastEvent: `BILLING_${mode}`,
+  };
+
+  await prisma.user.update({ where: { id: user.id }, data });
+  return { ...billing, mode };
 }
 
-async function configureAsaasPurchaseForExistingUser(user, plan) {
-  if (!isAsaasConfigured()) return null;
-
-  const billing = await createPlanSubscription({ ...user, trialEndsAt: null }, plan);
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      accountOrigin: "NON_ASSOCIATE",
-      selectedPlan: plan.key,
-      subscriptionStatus: "PENDING",
-      trialEndsAt: null,
-      asaasCustomerId: billing.customerId,
-      asaasSubscriptionId: billing.subscription?.id || null,
-      asaasPaymentId: billing.firstPayment?.id || null,
-      asaasPaymentUrl: billing.paymentUrl || null,
-    },
-  });
-  return billing;
+async function configureAsaasPurchaseForExistingUser(user, plan, billingMode = "MONTHLY") {
+  return configureAsaasBillingForUser({ ...user, trialEndsAt: null }, plan, billingMode, "PENDING");
 }
 
 async function handleSystemLogin(req, res, loginKind) {
@@ -554,6 +574,10 @@ function escapePublicContactValue(value) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function billingDocumentDigits(value) {
+  return String(value || "").replace(/\D/g, "");
 }
 
 app.post("/contato", async (req, res) => {
@@ -846,6 +870,7 @@ app.get("/planos/:plan/cadastro", (req, res) => {
     error: null,
     plan,
     plans: commercialPlanList(),
+    billingOptions: billingOptionsForPlan(plan),
   });
 });
 
@@ -862,11 +887,21 @@ app.post("/planos/:plan/cadastro", async (req, res) => {
   const normalizedEmail = String(email || "").trim().toLowerCase();
 
   try {
-    if (!name || !normalizedEmail || !password || !confirmPassword) {
+    if (!name || !normalizedEmail || !cpf || !password || !confirmPassword) {
       return res.render("commercial-register", {
-        error: "Preencha nome, e-mail e senha para iniciar o teste.",
+        error: "Preencha nome, e-mail, CPF/CNPJ e senha para iniciar o teste.",
         plan,
         plans: commercialPlanList(),
+        billingOptions: billingOptionsForPlan(plan),
+      });
+    }
+
+    if (![11, 14].includes(billingDocumentDigits(cpf).length)) {
+      return res.render("commercial-register", {
+        error: "Informe um CPF ou CNPJ válido para gerar a cobrança.",
+        plan,
+        plans: commercialPlanList(),
+        billingOptions: billingOptionsForPlan(plan),
       });
     }
 
@@ -875,6 +910,7 @@ app.post("/planos/:plan/cadastro", async (req, res) => {
         error: "As senhas não conferem.",
         plan,
         plans: commercialPlanList(),
+        billingOptions: billingOptionsForPlan(plan),
       });
     }
 
@@ -883,6 +919,7 @@ app.post("/planos/:plan/cadastro", async (req, res) => {
         error: "Informe uma senha com pelo menos 6 caracteres.",
         plan,
         plans: commercialPlanList(),
+        billingOptions: billingOptionsForPlan(plan),
       });
     }
 
@@ -892,6 +929,7 @@ app.post("/planos/:plan/cadastro", async (req, res) => {
         error: "E-mail já cadastrado. Se este cadastro é seu, use a opção abaixo para contratar o plano sem novo teste gratuito.",
         plan,
         plans: commercialPlanList(),
+        billingOptions: billingOptionsForPlan(plan),
       });
     }
 
@@ -914,12 +952,6 @@ app.post("/planos/:plan/cadastro", async (req, res) => {
       },
     });
 
-    try {
-      await configureAsaasSubscriptionForUser(createdUser, plan);
-    } catch (billingErr) {
-      console.error("Erro ao configurar assinatura Asaas:", billingErr.message);
-    }
-
     req.session.userId = createdUser.id;
     req.session.userRole = normalizeRole(createdUser.role);
 
@@ -930,6 +962,7 @@ app.post("/planos/:plan/cadastro", async (req, res) => {
       error: "Não foi possível iniciar o teste agora.",
       plan,
       plans: commercialPlanList(),
+      billingOptions: billingOptionsForPlan(plan),
     });
   }
 });
@@ -938,6 +971,9 @@ app.post("/planos/:plan/comprar", async (req, res) => {
   const plan = resolveCommercialPlan(req.params.plan);
   const email = String(req.body.existingEmail || "").trim().toLowerCase();
   const password = String(req.body.existingPassword || "");
+  const existingCpf = String(req.body.existingCpf || "").trim();
+  const existingPhones = String(req.body.existingPhones || "").trim();
+  const billingMode = normalizeBillingMode(req.body.billingMode);
 
   try {
     if (!email || !password) {
@@ -945,6 +981,7 @@ app.post("/planos/:plan/comprar", async (req, res) => {
         error: "Informe e-mail e senha do cadastro existente para contratar o plano.",
         plan,
         plans: commercialPlanList(),
+        billingOptions: billingOptionsForPlan(plan),
       });
     }
 
@@ -954,6 +991,7 @@ app.post("/planos/:plan/comprar", async (req, res) => {
         error: "Cadastro não encontrado. Para novo cadastro, use o formulário de teste gratuito.",
         plan,
         plans: commercialPlanList(),
+        billingOptions: billingOptionsForPlan(plan),
       });
     }
 
@@ -963,16 +1001,36 @@ app.post("/planos/:plan/comprar", async (req, res) => {
         error: "Senha inválida para este cadastro.",
         plan,
         plans: commercialPlanList(),
+        billingOptions: billingOptionsForPlan(plan),
       });
     }
 
-    const billing = await configureAsaasPurchaseForExistingUser(user, plan);
+    const cpfForBilling = user.cpf || existingCpf;
+    if (![11, 14].includes(billingDocumentDigits(cpfForBilling).length)) {
+      return res.render("commercial-register", {
+        error: "Informe o CPF ou CNPJ para contratar o plano.",
+        plan,
+        plans: commercialPlanList(),
+        billingOptions: billingOptionsForPlan(plan),
+      });
+    }
+
+    const userForBilling = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        cpf: user.cpf || existingCpf,
+        phones: user.phones || existingPhones || undefined,
+      },
+    });
+
+    const billing = await configureAsaasPurchaseForExistingUser(userForBilling, plan, billingMode);
     if (billing?.paymentUrl) return res.redirect(billing.paymentUrl);
 
     return res.status(400).render("commercial-register", {
       error: "Não foi possível gerar o link de pagamento. Verifique se o Asaas e o valor do plano estão configurados.",
       plan,
       plans: commercialPlanList(),
+      billingOptions: billingOptionsForPlan(plan),
     });
   } catch (err) {
     console.error("Erro ao contratar plano para cadastro existente:", err);
@@ -980,8 +1038,44 @@ app.post("/planos/:plan/comprar", async (req, res) => {
       error: "Não foi possível iniciar a contratação agora.",
       plan,
       plans: commercialPlanList(),
+      billingOptions: billingOptionsForPlan(plan),
     });
   }
+});
+
+app.get("/billing/dados", requireAuth, async (req, res) => {
+  const user = await prisma.user.findUnique({ where: { id: req.session.userId } });
+  if (!user) return res.redirect("/login");
+
+  return res.render("billing-customer-data", {
+    error: null,
+    user,
+  });
+});
+
+app.post("/billing/dados", requireAuth, async (req, res) => {
+  const cpf = String(req.body.cpf || "").trim();
+  const phones = String(req.body.phones || "").trim();
+
+  const user = await prisma.user.findUnique({ where: { id: req.session.userId } });
+  if (!user) return res.redirect("/login");
+
+  if (![11, 14].includes(billingDocumentDigits(cpf).length)) {
+    return res.render("billing-customer-data", {
+      error: "Informe um CPF ou CNPJ válido para gerar a cobrança.",
+      user: { ...user, cpf, phones },
+    });
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      cpf,
+      phones: user.phones || phones || undefined,
+    },
+  });
+
+  return res.redirect("/billing/pay");
 });
 
 app.get("/billing/pay", requireAuth, async (req, res) => {
@@ -992,8 +1086,39 @@ app.get("/billing/pay", requireAuth, async (req, res) => {
 
     if (!user) return res.redirect("/login");
     if (user.asaasPaymentUrl) return res.redirect(user.asaasPaymentUrl);
+    if (![11, 14].includes(billingDocumentDigits(user.cpf).length)) {
+      return res.redirect("/billing/dados");
+    }
 
-    if (user.asaasSubscriptionId && isAsaasConfigured()) {
+    const plan = Object.values(COMMERCIAL_PLANS).find((item) => item.key === user.selectedPlan) || COMMERCIAL_PLANS.premium;
+    return res.render("billing-plan-choice", {
+      error: null,
+      user,
+      plan,
+      billingOptions: billingOptionsForPlan(plan),
+    });
+  } catch (err) {
+    console.error("Erro ao abrir pagamento:", err);
+    return res.status(500).send("Erro ao abrir pagamento.");
+  }
+});
+
+app.post("/billing/pay", requireAuth, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.session.userId },
+    });
+
+    if (!user) return res.redirect("/login");
+    if (user.asaasPaymentUrl) return res.redirect(user.asaasPaymentUrl);
+    if (![11, 14].includes(billingDocumentDigits(user.cpf).length)) {
+      return res.redirect("/billing/dados");
+    }
+
+    const plan = Object.values(COMMERCIAL_PLANS).find((item) => item.key === user.selectedPlan) || COMMERCIAL_PLANS.premium;
+    const billingMode = normalizeBillingMode(req.body.billingMode);
+
+    if (user.asaasSubscriptionId && billingMode === "MONTHLY" && isAsaasConfigured()) {
       const existingPayment = await getSubscriptionPaymentUrl(user.asaasSubscriptionId);
       if (existingPayment?.paymentUrl) {
         await prisma.user.update({
@@ -1007,14 +1132,25 @@ app.get("/billing/pay", requireAuth, async (req, res) => {
       }
     }
 
-    const plan = Object.values(COMMERCIAL_PLANS).find((item) => item.key === user.selectedPlan) || COMMERCIAL_PLANS.premium;
-    const billing = await configureAsaasSubscriptionForUser(user, plan);
-
+    const billing = await configureAsaasBillingForUser(user, plan, billingMode, "PENDING");
     if (billing?.paymentUrl) return res.redirect(billing.paymentUrl);
-    return res.status(400).send("Não foi possível gerar o link de pagamento. Verifique se o Asaas e o valor do plano estão configurados.");
+
+    return res.status(400).render("billing-plan-choice", {
+      error: "Não foi possível gerar o link de pagamento. Verifique se o Asaas e o valor do plano estão configurados.",
+      user,
+      plan,
+      billingOptions: billingOptionsForPlan(plan),
+    });
   } catch (err) {
-    console.error("Erro ao abrir pagamento:", err);
-    return res.status(500).send("Erro ao abrir pagamento.");
+    console.error("Erro ao gerar pagamento:", err);
+    const user = req.session.userId ? await prisma.user.findUnique({ where: { id: req.session.userId } }) : null;
+    const plan = Object.values(COMMERCIAL_PLANS).find((item) => item.key === user?.selectedPlan) || COMMERCIAL_PLANS.premium;
+    return res.status(500).render("billing-plan-choice", {
+      error: err.message || "Erro ao gerar pagamento.",
+      user,
+      plan,
+      billingOptions: billingOptionsForPlan(plan),
+    });
   }
 });
 

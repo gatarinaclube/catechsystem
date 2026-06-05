@@ -39,7 +39,7 @@
             </div>
             <div class="field">
               <label class="field-label" for="cpf">CPF/CNPJ</label>
-              <input id="cpf" name="cpf" type="text" />
+              <input id="cpf" name="cpf" type="text" required />
             </div>
           </div>
 
@@ -70,6 +70,19 @@
           </p>
 
           <form method="post" action="/planos/<%= plan.slug %>/comprar" class="commercial-register-form">
+            <div style="display:grid; gap:8px;">
+              <% billingOptions.forEach(function(option, index) { %>
+                <label style="display:grid; grid-template-columns:22px 1fr; gap:10px; align-items:start; border:1px solid var(--border-soft); border-radius:10px; padding:10px; cursor:pointer;">
+                  <input type="radio" name="billingMode" value="<%= option.mode %>" <%= index === 0 ? 'checked' : '' %> />
+                  <span>
+                    <strong style="display:block;"><%= option.title %></strong>
+                    <span style="display:block; color:var(--accent-hover); font-weight:700; margin-top:2px;"><%= option.subtitle %></span>
+                    <span style="display:block; color:var(--text-muted); font-size:12px; margin-top:4px;"><%= option.detail %></span>
+                  </span>
+                </label>
+              <% }) %>
+            </div>
+
             <div class="grid-2">
               <div class="field">
                 <label class="field-label" for="existingEmail">E-mail já cadastrado</label>
@@ -78,6 +91,19 @@
               <div class="field">
                 <label class="field-label" for="existingPassword">Senha</label>
                 <input id="existingPassword" name="existingPassword" type="password" required />
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label class="field-label" for="existingCpf">CPF/CNPJ</label>
+                <input id="existingCpf" name="existingCpf" type="text" />
+                <small style="font-size:11px; color:var(--text-muted);">
+                  Obrigatório se ainda não estiver preenchido no cadastro.
+                </small>
+              </div>
+              <div class="field">
+                <label class="field-label" for="existingPhones">Telefone</label>
+                <input id="existingPhones" name="existingPhones" type="text" />
               </div>
             </div>
             <button class="btn btn-primary" type="submit">Contratar este plano</button>

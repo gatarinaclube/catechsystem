@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dados para pagamento - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body class="auth-body">
+    <div class="auth-card">
+      <div class="auth-logo">CaTech System</div>
+      <h1 class="auth-title">Dados para pagamento</h1>
+      <div class="auth-subtitle">
+        O Asaas exige CPF ou CNPJ para gerar a cobrança do plano.
+      </div>
+
+      <% if (typeof error !== "undefined" && error) { %>
+        <div class="auth-error"><%= error %></div>
+      <% } %>
+
+      <form method="post" action="/billing/dados" class="auth-form">
+        <div class="auth-field">
+          <label for="cpf">CPF/CNPJ</label>
+          <input id="cpf" name="cpf" type="text" value="<%= user.cpf || '' %>" required />
+        </div>
+
+        <div class="auth-field">
+          <label for="phones">Telefone</label>
+          <input id="phones" name="phones" type="text" value="<%= user.phones || '' %>" />
+        </div>
+
+        <button type="submit" class="auth-button">Continuar para pagamento</button>
+      </form>
+
+      <div class="auth-footer">
+        <a href="/dashboard">Voltar ao painel</a>
+      </div>
+    </div>
+  </body>
+</html>

@@ -7,6 +7,12 @@ const PLAN_ENV = {
   PREMIUM: "ASAAS_PLAN_PREMIUM_CENTS",
 };
 
+const PLAN_DEFAULT_CENTS = {
+  BASIC: 2990,
+  MASTER: 4990,
+  PREMIUM: 9990,
+};
+
 function cleanDigits(value) {
   return String(value || "").replace(/\D/g, "");
 }
@@ -22,10 +28,11 @@ function asaasBaseUrl() {
 }
 
 function planPriceCents(planKey) {
-  const envName = PLAN_ENV[String(planKey || "").toUpperCase()];
+  const key = String(planKey || "").toUpperCase();
+  const envName = PLAN_ENV[key];
   if (!envName) return null;
   const value = Number(process.env[envName]);
-  if (!Number.isFinite(value) || value <= 0) return null;
+  if (!Number.isFinite(value) || value <= 0) return PLAN_DEFAULT_CENTS[key] || null;
   return Math.round(value);
 }
 
@@ -52,8 +59,35 @@ function formatDateInput(date) {
   return `${year}-${month}-${day}`;
 }
 
-function externalReference(userId, planKey) {
-  return `catech:${userId}:${String(planKey || "").toUpperCase()}`;
+function externalReference(userId, planKey, billingMode = "MONTHLY") {
+  return `catech:${userId}:${String(planKey || "").toUpperCase()}:${String(billingMode || "MONTHLY").toUpperCase()}`;
+}
+
+function paymentUrlFrom(payment) {
+  return payment?.invoiceUrl || payment?.bankSlipUrl || payment?.checkoutUrl || null;
+}
+
+function centsToValue(cents) {
+  return Number((Number(cents || 0) / 100).toFixed(2));
+}
+
+function annualTotalCents(planKey) {
+  const monthly = planPriceCents(planKey);
+  return monthly ? monthly * 12 : null;
+}
+
+function annualPixCents(planKey) {
+  const annual = annualTotalCents(planKey);
+  return annual ? Math.round(annual * 0.9) : null;
+}
+
+function formatAnnualPlanPrice(planKey, mode, fallback = "Valor a configurar") {
+  const cents = mode === "ANNUAL_PIX" ? annualPixCents(planKey) : annualTotalCents(planKey);
+  if (!cents) return fallback;
+  return (cents / 100).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
 }
 
 async function asaasRequest(path, options = {}) {
@@ -99,17 +133,54 @@ async function findCustomerByExternalReference(reference) {
 }
 
 async function ensureCustomerForUser(user) {
-  if (user.asaasCustomerId) return user.asaasCustomerId;
+  const cpfCnpj = cleanDigits(user.cpf);
+  const mobilePhone = cleanDigits(user.phones) || undefined;
+
+  if (!cpfCnpj) {
+    throw new Error("Para criar esta cobrança é necessário preencher o CPF ou CNPJ do cliente.");
+  }
+
+  if (user.asaasCustomerId) {
+    try {
+      await asaasRequest(`/customers/${user.asaasCustomerId}`, {
+        method: "PUT",
+        body: {
+          name: user.name,
+          email: user.email,
+          cpfCnpj,
+          mobilePhone,
+        },
+      });
+    } catch (err) {
+      console.warn("Não foi possível atualizar o cliente Asaas antes da cobrança:", err.message);
+    }
+    return user.asaasCustomerId;
+  }
 
   const reference = `catech-user-${user.id}`;
   const existing = await findCustomerByExternalReference(reference);
-  if (existing?.id) return existing.id;
+  if (existing?.id) {
+    try {
+      await asaasRequest(`/customers/${existing.id}`, {
+        method: "PUT",
+        body: {
+          name: user.name,
+          email: user.email,
+          cpfCnpj,
+          mobilePhone,
+        },
+      });
+    } catch (err) {
+      console.warn("Não foi possível atualizar o cliente Asaas existente:", err.message);
+    }
+    return existing.id;
+  }
 
   const payload = {
     name: user.name,
     email: user.email,
-    cpfCnpj: cleanDigits(user.cpf) || undefined,
-    mobilePhone: cleanDigits(user.phones) || undefined,
+    cpfCnpj,
+    mobilePhone,
     externalReference: reference,
     notificationDisabled: false,
   };
@@ -140,7 +211,7 @@ async function createPlanSubscription(user, plan) {
       nextDueDate,
       cycle: "MONTHLY",
       description: `Assinatura CaTech System - Plano ${plan.title}`,
-      externalReference: externalReference(user.id, planKey),
+      externalReference: externalReference(user.id, planKey, "MONTHLY"),
     },
   });
 
@@ -156,7 +227,50 @@ async function createPlanSubscription(user, plan) {
     customerId,
     subscription,
     firstPayment,
-    paymentUrl: firstPayment?.invoiceUrl || firstPayment?.bankSlipUrl || firstPayment?.checkoutUrl || null,
+    paymentUrl: paymentUrlFrom(firstPayment),
+  };
+}
+
+async function createAnnualPlanPayment(user, plan, mode) {
+  const billingMode = String(mode || "").toUpperCase();
+  const planKey = String(plan?.key || "").toUpperCase();
+  const customerId = await ensureCustomerForUser(user);
+  const annualCents = annualTotalCents(planKey);
+  const pixCents = annualPixCents(planKey);
+
+  if (!annualCents || !pixCents) {
+    throw new Error(`Valor do plano ${planKey} não configurado.`);
+  }
+
+  const common = {
+    customer: customerId,
+    dueDate: formatDateInput(new Date()),
+    description: `Plano anual CaTech System - ${plan.title}`,
+    externalReference: externalReference(user.id, planKey, billingMode),
+  };
+
+  const body = billingMode === "ANNUAL_PIX"
+    ? {
+        ...common,
+        billingType: "PIX",
+        value: centsToValue(pixCents),
+      }
+    : {
+        ...common,
+        billingType: "CREDIT_CARD",
+        installmentCount: 12,
+        totalValue: centsToValue(annualCents),
+      };
+
+  const payment = await asaasRequest("/payments", {
+    method: "POST",
+    body,
+  });
+
+  return {
+    customerId,
+    payment,
+    paymentUrl: paymentUrlFrom(payment),
   };
 }
 
@@ -172,11 +286,12 @@ async function getSubscriptionPaymentUrl(subscriptionId) {
 
 function planFromExternalReference(reference) {
   const parts = String(reference || "").split(":");
-  if (parts.length !== 3 || parts[0] !== "catech") return null;
+  if (parts.length < 3 || parts[0] !== "catech") return null;
   const userId = Number(parts[1]);
   const planKey = parts[2];
+  const billingMode = parts[3] || "MONTHLY";
   if (!Number.isFinite(userId) || !planKey) return null;
-  return { userId, planKey };
+  return { userId, planKey, billingMode };
 }
 
 function verifyWebhookToken(req) {
@@ -190,6 +305,8 @@ module.exports = {
   isAsaasConfigured,
   planPriceCents,
   formatPlanPrice,
+  formatAnnualPlanPrice,
+  createAnnualPlanPayment,
   createPlanSubscription,
   getSubscriptionPaymentUrl,
   planFromExternalReference,
