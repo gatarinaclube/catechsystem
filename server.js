@@ -524,7 +524,47 @@ app.get("/", (req, res) => {
   res.render("public-home", {
     user: req.user,
     plans: commercialPlanList(),
+    contactStatus: req.query.contato || null,
   });
+});
+
+function escapePublicContactValue(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+app.post("/contato", async (req, res) => {
+  const name = String(req.body.name || "").trim();
+  const email = String(req.body.email || "").trim();
+  const phone = String(req.body.phone || "").trim();
+
+  if (!name || !email || !phone) {
+    return res.redirect("/?contato=erro#contato");
+  }
+
+  try {
+    await sendStatusEmail({
+      to: "contato@gatarina.com.br",
+      subject: "Novo contato pelo site CaTech System",
+      html: `
+        <div style="font-family:Arial,sans-serif;color:#1f2933;line-height:1.6">
+          <h2>Novo pedido de informações</h2>
+          <p>Uma pessoa preencheu o formulário de contato da página pública do CaTech System.</p>
+          <p><strong>Nome:</strong> ${escapePublicContactValue(name)}</p>
+          <p><strong>E-mail:</strong> ${escapePublicContactValue(email)}</p>
+          <p><strong>Telefone:</strong> ${escapePublicContactValue(phone)}</p>
+        </div>
+      `,
+    });
+
+    return res.redirect("/?contato=ok#contato");
+  } catch (err) {
+    console.error("Erro ao enviar contato público:", err);
+    return res.redirect("/?contato=erro#contato");
+  }
 });
 
 app.use(kittenShowcaseRouterFactory.publicRouter(prisma));
