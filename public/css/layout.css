@@ -245,13 +245,32 @@ body.help-modal-open {
   color: var(--text-muted);
 }
 
+.menu-footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 6px;
+}
+
 .menu-footer a {
   color: var(--accent-hover);
   text-decoration: none;
   font-weight: 500;
 }
 
-.menu-footer a:hover {
+.menu-footer-help {
+  border: 0;
+  background: transparent;
+  color: var(--accent-hover);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 500;
+  padding: 0;
+}
+
+.menu-footer a:hover,
+.menu-footer-help:hover {
   text-decoration: underline;
 }
 

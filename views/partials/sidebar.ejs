@@ -202,7 +202,13 @@
 
   <div class="menu-footer">
     <div>Logado como <%= user && user.email ? user.email : "" %></div>
-    <div style="margin-top:6px;">
+    <div class="menu-footer-actions">
+      <button
+        type="button"
+        class="menu-footer-help"
+        data-help-title="Ajuda"
+        data-help-text="Precisa de ajuda com o CaTech System? Entre em contato pelo e-mail contato@gatarina.com.br ou pelo WhatsApp +55 49 93381-6900."
+      >Ajuda</button>
       <a href="/logout">Sair</a>
     </div>
   </div>
