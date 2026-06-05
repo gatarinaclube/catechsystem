@@ -343,6 +343,25 @@
                   />
                 </div>
               </div>
+              <div class="grid-3" style="margin-top:10px;">
+                <div class="field">
+                  <label class="field-label">Cliente Asaas</label>
+                  <input type="text" value="<%= userDetail.asaasCustomerId || '-' %>" readonly />
+                </div>
+                <div class="field">
+                  <label class="field-label">Assinatura Asaas</label>
+                  <input type="text" value="<%= userDetail.asaasSubscriptionId || '-' %>" readonly />
+                </div>
+                <div class="field">
+                  <label class="field-label">Último evento Asaas</label>
+                  <input type="text" value="<%= userDetail.asaasLastEvent || '-' %>" readonly />
+                </div>
+              </div>
+              <% if (userDetail.asaasPaymentUrl) { %>
+                <div style="margin-top:10px;">
+                  <a class="btn" href="<%= userDetail.asaasPaymentUrl %>" target="_blank" rel="noopener">Abrir cobrança Asaas</a>
+                </div>
+              <% } %>
               <small style="font-size:11px; color:var(--text-muted);">
                 Para usuários de planos não associados, o teste começa como Premium por 7 dias. Após pagamento, marque a assinatura como "Pago / ativo", ajuste o perfil e mantenha o cadastro como Deferido.
               </small>

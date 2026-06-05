@@ -34,6 +34,14 @@ const {
 const { sendStatusEmail } = require("./utils/mailer");
 const { buildVaccineDueItems } = require("./utils/vaccines");
 const {
+  createPlanSubscription,
+  formatPlanPrice,
+  getSubscriptionPaymentUrl,
+  isAsaasConfigured,
+  planFromExternalReference,
+  verifyWebhookToken,
+} = require("./utils/asaas");
+const {
   notifyNewUser,
   notifyUserRegistrationConfirmation,
 } = require("./utils/adminNotifications");
@@ -357,7 +365,13 @@ const COMMERCIAL_PLANS = {
 };
 
 function commercialPlanList() {
-  return [COMMERCIAL_PLANS.basic, COMMERCIAL_PLANS.master, COMMERCIAL_PLANS.premium];
+  return [COMMERCIAL_PLANS.basic, COMMERCIAL_PLANS.master, COMMERCIAL_PLANS.premium].map((plan) => ({
+    ...plan,
+    price: plan.slug === "premium"
+      ? `${formatPlanPrice(plan.key)} após 7 dias grátis`
+      : formatPlanPrice(plan.key),
+    paymentConfigured: isAsaasConfigured(),
+  }));
 }
 
 function resolveCommercialPlan(slug) {
@@ -391,8 +405,26 @@ function loginViewOptions(kind, extra = {}) {
 
 function isExpiredCommercialTrial(user) {
   if (!user || user.accountOrigin !== "NON_ASSOCIATE") return false;
-  if (String(user.subscriptionStatus || "").toUpperCase() !== "TRIALING") return false;
+  if (["ACTIVE", "TRIALING"].includes(String(user.subscriptionStatus || "").toUpperCase()) === false) return false;
+  if (String(user.subscriptionStatus || "").toUpperCase() === "ACTIVE") return false;
   return user.trialEndsAt && new Date(user.trialEndsAt) < new Date();
+}
+
+async function configureAsaasSubscriptionForUser(user, plan) {
+  if (!isAsaasConfigured()) return null;
+
+  const billing = await createPlanSubscription(user, plan);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      asaasCustomerId: billing.customerId,
+      asaasSubscriptionId: billing.subscription?.id || null,
+      asaasPaymentId: billing.firstPayment?.id || null,
+      asaasPaymentUrl: billing.paymentUrl || null,
+      subscriptionStatus: "TRIALING",
+    },
+  });
+  return billing;
 }
 
 async function handleSystemLogin(req, res, loginKind) {
@@ -830,6 +862,12 @@ app.post("/planos/:plan/cadastro", async (req, res) => {
       },
     });
 
+    try {
+      await configureAsaasSubscriptionForUser(createdUser, plan);
+    } catch (billingErr) {
+      console.error("Erro ao configurar assinatura Asaas:", billingErr.message);
+    }
+
     req.session.userId = createdUser.id;
     req.session.userRole = normalizeRole(createdUser.role);
 
@@ -841,6 +879,124 @@ app.post("/planos/:plan/cadastro", async (req, res) => {
       plan,
       plans: commercialPlanList(),
     });
+  }
+});
+
+app.get("/billing/pay", requireAuth, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.session.userId },
+    });
+
+    if (!user) return res.redirect("/login");
+    if (user.asaasPaymentUrl) return res.redirect(user.asaasPaymentUrl);
+
+    if (user.asaasSubscriptionId && isAsaasConfigured()) {
+      const existingPayment = await getSubscriptionPaymentUrl(user.asaasSubscriptionId);
+      if (existingPayment?.paymentUrl) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            asaasPaymentId: existingPayment.firstPayment?.id || user.asaasPaymentId,
+            asaasPaymentUrl: existingPayment.paymentUrl,
+          },
+        });
+        return res.redirect(existingPayment.paymentUrl);
+      }
+    }
+
+    const plan = Object.values(COMMERCIAL_PLANS).find((item) => item.key === user.selectedPlan) || COMMERCIAL_PLANS.premium;
+    const billing = await configureAsaasSubscriptionForUser(user, plan);
+
+    if (billing?.paymentUrl) return res.redirect(billing.paymentUrl);
+    return res.status(400).send("Não foi possível gerar o link de pagamento. Verifique se o Asaas e o valor do plano estão configurados.");
+  } catch (err) {
+    console.error("Erro ao abrir pagamento:", err);
+    return res.status(500).send("Erro ao abrir pagamento.");
+  }
+});
+
+app.post("/webhooks/asaas", async (req, res) => {
+  if (!verifyWebhookToken(req)) {
+    return res.status(401).send("Webhook não autorizado.");
+  }
+
+  const eventName = String(req.body?.event || "");
+  const payment = req.body?.payment || {};
+  const reference = planFromExternalReference(payment.externalReference);
+
+  try {
+    let user = null;
+
+    if (reference?.userId) {
+      user = await prisma.user.findUnique({ where: { id: reference.userId } });
+    }
+
+    if (!user && payment.id) {
+      user = await prisma.user.findFirst({ where: { asaasPaymentId: payment.id } });
+    }
+
+    if (!user && payment.subscription) {
+      user = await prisma.user.findFirst({ where: { asaasSubscriptionId: payment.subscription } });
+    }
+
+    if (!user) {
+      console.warn("Webhook Asaas sem usuário correspondente:", {
+        event: eventName,
+        paymentId: payment.id,
+        subscription: payment.subscription,
+        externalReference: payment.externalReference,
+      });
+      return res.sendStatus(200);
+    }
+
+    const planKey = reference?.planKey || user.selectedPlan || "PREMIUM";
+    const nextRole = [ROLES.BASIC, ROLES.MASTER, ROLES.PREMIUM].includes(planKey)
+      ? planKey
+      : ROLES.PREMIUM;
+
+    const activateEvents = new Set(["PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"]);
+    const restrictEvents = new Set(["PAYMENT_OVERDUE", "PAYMENT_DELETED", "PAYMENT_REFUNDED", "CHARGEBACK_REQUESTED"]);
+
+    if (activateEvents.has(eventName)) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          role: nextRole,
+          approvalStatus: "DEFERIDO",
+          selectedPlan: nextRole,
+          subscriptionStatus: "ACTIVE",
+          planActivatedAt: new Date(),
+          asaasPaymentId: payment.id || user.asaasPaymentId,
+          asaasSubscriptionId: payment.subscription || user.asaasSubscriptionId,
+          asaasPaymentUrl: payment.invoiceUrl || payment.bankSlipUrl || user.asaasPaymentUrl,
+          asaasLastEvent: eventName,
+        },
+      });
+    } else if (restrictEvents.has(eventName)) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          subscriptionStatus: eventName === "PAYMENT_OVERDUE" ? "PENDING" : "CANCELED",
+          asaasLastEvent: eventName,
+        },
+      });
+    } else {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          asaasPaymentId: payment.id || user.asaasPaymentId,
+          asaasSubscriptionId: payment.subscription || user.asaasSubscriptionId,
+          asaasPaymentUrl: payment.invoiceUrl || payment.bankSlipUrl || user.asaasPaymentUrl,
+          asaasLastEvent: eventName,
+        },
+      });
+    }
+
+    return res.sendStatus(200);
+  } catch (err) {
+    console.error("Erro ao processar webhook Asaas:", err);
+    return res.sendStatus(500);
   }
 });
 

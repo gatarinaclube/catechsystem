@@ -33,6 +33,23 @@
           </div>
         </div>
 
+<% if (user && user.accountOrigin === "NON_ASSOCIATE" && user.subscriptionStatus !== "ACTIVE") { %>
+  <div class="content-card" style="border-left:4px solid #d97706; margin-bottom:20px;">
+    <div class="content-title">Plano em período de teste</div>
+    <div class="content-sub">
+      <% if (user.trialEndsAt) { %>
+        Seu teste gratuito vai até <strong><%= new Date(user.trialEndsAt).toLocaleDateString('pt-BR') %></strong>.
+      <% } else { %>
+        Seu acesso está em período de teste.
+      <% } %>
+      Após esse período, o acesso depende da ativação de um plano.
+    </div>
+    <div style="margin-top:10px;">
+      <a href="/billing/pay" class="btn btn-primary">Abrir pagamento do plano</a>
+    </div>
+  </div>
+<% } %>
+
 <% if (access && access.isAdmin && usersPendingApprovalCount > 0) { %>
   <div class="content-card" style="border-left: 4px solid #dc2626; margin-bottom: 20px;">
     <div class="content-title">👤 Novos cadastros</div>
