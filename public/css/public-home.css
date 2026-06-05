@@ -1,8 +1,16 @@
 .public-site-body {
+  display: block;
+  align-items: initial;
+  justify-content: initial;
   min-width: 320px;
   overflow-x: hidden;
   background: #f7f2ea;
   color: #1f2933;
+}
+
+.public-site-body main {
+  display: block;
+  width: 100%;
 }
 
 .public-site-body a,
