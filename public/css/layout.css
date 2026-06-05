@@ -1147,6 +1147,300 @@ a:hover {
   text-decoration: none;
 }
 
+/* Página pública CaTech */
+.public-site-body {
+  background: #f5f1ea;
+  color: #1f2933;
+}
+
+.public-site-header {
+  padding: 14px clamp(18px, 5vw, 76px);
+  border-bottom: 1px solid rgba(116, 38, 31, 0.12);
+  background: rgba(255, 252, 246, 0.94);
+  box-shadow: 0 10px 30px rgba(31, 41, 51, 0.06);
+}
+
+.public-site-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #7f2d25;
+  font-size: 17px;
+  letter-spacing: 0.02em;
+}
+
+.public-site-brand img {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+}
+
+.public-site-nav {
+  gap: 8px;
+}
+
+.public-site-nav a {
+  border-radius: 999px;
+  color: #475569;
+  padding: 9px 13px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.public-site-nav a:hover {
+  background: rgba(127, 45, 37, 0.08);
+  color: #7f2d25;
+}
+
+.public-site-login {
+  background: #7f2d25 !important;
+  color: #ffffff !important;
+}
+
+.public-hero {
+  position: relative;
+  grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.75fr);
+  min-height: calc(100vh - 68px);
+  overflow: hidden;
+  padding: clamp(46px, 7vw, 96px) clamp(18px, 5vw, 76px);
+  background:
+    linear-gradient(120deg, rgba(255, 252, 246, 0.96), rgba(245, 241, 234, 0.88)),
+    url("/uploads/cats/1767805388880-830900256.jpeg") center right / cover no-repeat;
+}
+
+.public-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(245, 241, 234, 0.98) 0%, rgba(245, 241, 234, 0.86) 52%, rgba(245, 241, 234, 0.58) 100%);
+  pointer-events: none;
+}
+
+.public-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.public-hero-copy h1 {
+  max-width: 720px;
+  color: #1f2933;
+  font-size: clamp(44px, 6vw, 82px);
+  line-height: 0.98;
+}
+
+.public-hero-intro,
+.public-hero-copy p {
+  max-width: 690px;
+  color: #405066;
+  font-size: 18px;
+}
+
+.public-eyebrow {
+  color: #7f2d25;
+}
+
+.public-primary-button,
+.public-panel-button,
+.public-plan-card a {
+  background: #7f2d25;
+  box-shadow: 0 14px 26px rgba(127, 45, 37, 0.2);
+}
+
+.public-primary-button:hover,
+.public-plan-card a:hover {
+  background: #66231d;
+}
+
+.public-secondary-button {
+  border-color: rgba(127, 45, 37, 0.24);
+  background: rgba(255, 255, 255, 0.72);
+  color: #7f2d25;
+}
+
+.public-hero-panel {
+  display: grid;
+  gap: 20px;
+  border: 1px solid rgba(127, 45, 37, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 252, 246, 0.9);
+  box-shadow: 0 30px 70px rgba(31, 41, 51, 0.14);
+  padding: 30px;
+}
+
+.public-hero-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 108px;
+  height: 108px;
+  border: 1px solid rgba(127, 45, 37, 0.18);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.public-hero-logo img {
+  width: 82px;
+  height: 82px;
+}
+
+.public-panel-kicker {
+  color: #7f2d25;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.public-hero-panel h2 {
+  margin: 8px 0 0;
+  color: #1f2933;
+  font-size: 28px;
+  line-height: 1.15;
+}
+
+.public-hero-panel p {
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.public-panel-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.public-panel-metrics span {
+  border: 1px solid rgba(127, 45, 37, 0.14);
+  border-radius: 6px;
+  background: rgba(127, 45, 37, 0.06);
+  color: #7f2d25;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 10px;
+  text-align: center;
+}
+
+.public-system-section,
+.public-contact-section,
+.public-plans-section {
+  padding: clamp(48px, 7vw, 88px) clamp(18px, 5vw, 76px);
+}
+
+.public-system-section {
+  background: #fffdf8;
+}
+
+.public-section-heading {
+  max-width: 850px;
+}
+
+.public-section-heading h2 {
+  color: #1f2933;
+  line-height: 1.05;
+}
+
+.public-section-heading p {
+  color: #64748b;
+  line-height: 1.65;
+}
+
+.public-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.public-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 64px;
+  border: 1px solid rgba(127, 45, 37, 0.1);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 16px;
+  box-shadow: 0 12px 28px rgba(31, 41, 51, 0.05);
+}
+
+.public-feature-item span {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 9px;
+  border-radius: 999px;
+  background: #7f2d25;
+}
+
+.public-feature-item strong {
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.public-feature-band {
+  border-top: 1px solid rgba(127, 45, 37, 0.12);
+  border-bottom: 1px solid rgba(127, 45, 37, 0.12);
+  background: rgba(127, 45, 37, 0.12);
+}
+
+.public-feature-band div {
+  background: #f5f1ea;
+}
+
+.public-plan-card {
+  border-color: rgba(127, 45, 37, 0.13);
+  background: #fffdf8;
+}
+
+.public-plan-card-featured {
+  border-color: #7f2d25;
+  box-shadow: 0 24px 58px rgba(127, 45, 37, 0.14);
+}
+
+.public-plan-price {
+  color: #7f2d25;
+}
+
+.public-contact-section {
+  background: #1f2933;
+}
+
+.public-contact-card {
+  max-width: 900px;
+  color: #ffffff;
+}
+
+.public-contact-card h2 {
+  margin: 10px 0;
+  color: #ffffff;
+  font-size: clamp(30px, 4vw, 52px);
+  line-height: 1.05;
+}
+
+.public-contact-card p {
+  max-width: 720px;
+  color: #d9e1ec;
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.public-contact-card .public-secondary-button {
+  border-color: rgba(255, 255, 255, 0.26);
+  background: transparent;
+  color: #ffffff;
+}
+
+.public-site-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  background: #111827;
+  color: #d9e1ec;
+  padding: 22px clamp(18px, 5vw, 76px);
+  font-size: 13px;
+}
+
 @media (max-width: 480px) {
   .auth-card {
     margin: 12px;
@@ -1169,6 +1463,14 @@ a:hover {
 
   .public-hero {
     min-height: auto;
+  }
+
+  .public-feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .public-site-footer {
+    flex-direction: column;
   }
 }
 
