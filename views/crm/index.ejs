@@ -157,70 +157,25 @@
         <% } %>
 
         <% if (activeTab === 'marketing') { %>
-          <details class="content-card" style="margin-bottom:18px;" <%= smtpSettings.isComplete ? '' : 'open' %>>
-            <summary class="history-section-head" style="margin-bottom:12px; cursor:pointer;">
+          <div class="content-card" style="margin-bottom:18px;">
+            <div class="history-section-head" style="margin-bottom:12px;">
               <div>
                 <div class="content-title">Configuração do Remetente</div>
                 <div class="content-sub">
-                  <%= smtpSettings.isComplete ? `${smtpSettings.fromName || 'Remetente'} · ${smtpSettings.fromEmail || ''}` : 'Configure o remetente dos seus envios.' %>
+                  <%= smtpSettings.isComplete ? `${smtpSettings.fromName || 'Remetente'} · ${smtpSettings.fromEmail || ''}` : 'Configure o SMTP próprio em Configurações para liberar envios.' %>
                 </div>
               </div>
               <span class="status-pill <%= smtpSettings.isComplete ? 'is-green' : 'is-yellow' %>">
-                <%= smtpSettings.isComplete ? 'SMTP próprio ativo' : 'Usando SMTP padrão' %>
+                <%= smtpSettings.isComplete ? 'SMTP configurado' : 'SMTP pendente' %>
               </span>
-            </summary>
-            <form method="post" action="/crm/marketing/smtp">
-              <div class="grid-2">
-                <div class="field">
-                  <label class="field-label" for="fromName">Nome do remetente</label>
-                  <input id="fromName" name="fromName" type="text" value="<%= smtpSettings.fromName || '' %>" placeholder="Nome do gatil" />
-                </div>
-                <div class="field">
-                  <label class="field-label" for="fromEmail">E-mail remetente</label>
-                  <input id="fromEmail" name="fromEmail" type="email" value="<%= smtpSettings.fromEmail || '' %>" placeholder="contato@seudominio.com" />
-                </div>
-              </div>
-              <div class="grid-3" style="margin-top:12px;">
-                <div class="field">
-                  <label class="field-label" for="smtpHost">Servidor SMTP</label>
-                  <input id="smtpHost" name="smtpHost" type="text" value="<%= smtpSettings.host || '' %>" placeholder="smtp.seudominio.com" />
-                </div>
-                <div class="field">
-                  <label class="field-label" for="smtpPort">Porta</label>
-                  <input id="smtpPort" name="smtpPort" type="number" min="1" max="65535" value="<%= smtpSettings.port || 587 %>" />
-                </div>
-                <div class="field">
-                  <label class="field-label">&nbsp;</label>
-                  <label class="settings-check" style="margin:0;">
-                    <input type="checkbox" name="smtpSecure" <%= smtpSettings.secure ? 'checked' : '' %> />
-                    <span>Usar SSL/TLS</span>
-                  </label>
-                </div>
-              </div>
-              <div class="grid-2" style="margin-top:12px;">
-                <div class="field">
-                  <label class="field-label" for="smtpUser">Usuário SMTP</label>
-                  <input id="smtpUser" name="smtpUser" type="text" value="<%= smtpSettings.user || '' %>" autocomplete="off" />
-                </div>
-                <div class="field">
-                  <label class="field-label" for="smtpPassword">Senha SMTP</label>
-                  <input id="smtpPassword" name="smtpPassword" type="password" placeholder="<%= smtpSettings.hasPassword ? 'Senha já cadastrada' : 'Senha ou senha de app' %>" autocomplete="new-password" />
-                </div>
-              </div>
-              <% if (smtpSettings.hasPassword) { %>
-                <label class="settings-check" style="margin-top:12px;">
-                  <input type="checkbox" name="clearSmtpPassword" />
-                  <span>Remover senha SMTP salva</span>
-                </label>
-              <% } %>
-              <div class="form-actions" style="text-align:right; margin-top:12px;">
-                <button type="submit" class="btn btn-primary">Salvar remetente</button>
-              </div>
-            </form>
-            <form method="post" action="/crm/marketing/smtp/testar" style="margin-top:10px; text-align:right;">
-              <button type="submit" class="btn" <%= smtpSettings.isComplete ? '' : 'disabled' %>>Enviar teste</button>
-            </form>
-          </details>
+            </div>
+            <div class="section-note">
+              O remetente de campanhas e documentos agora é configurado em Configurações, mantendo os dados já salvos.
+            </div>
+            <div class="form-actions" style="text-align:right; margin-top:12px;">
+              <a href="/settings" class="btn btn-primary">Ir para Configurações</a>
+            </div>
+          </div>
 
           <details class="content-card" style="margin-bottom:18px;" <%= marketingTemplate ? '' : 'open' %>>
             <summary style="cursor:pointer;">

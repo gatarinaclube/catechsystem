@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Assinatura eletrônica - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <style>
+      body {
+        margin: 0;
+        background: #f4f1ea;
+        color: #1f2933;
+        font-family: Arial, sans-serif;
+      }
+      .sign-shell {
+        width: min(980px, calc(100% - 28px));
+        margin: 0 auto;
+        padding: 28px 0 42px;
+      }
+      .sign-header,
+      .sign-card {
+        background: #fff;
+        border: 1px solid #e5ded3;
+        border-radius: 8px;
+        box-shadow: 0 18px 45px rgba(31, 41, 51, 0.08);
+      }
+      .sign-header {
+        padding: 22px;
+        margin-bottom: 16px;
+      }
+      .sign-kicker {
+        color: #8a3328;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 8px 0 0;
+        font-family: Georgia, serif;
+        font-size: clamp(28px, 4vw, 44px);
+      }
+      .sign-card {
+        padding: 24px;
+        margin-bottom: 16px;
+      }
+      .contract-body {
+        white-space: pre-wrap;
+        line-height: 1.75;
+        text-align: justify;
+      }
+      .grid-2 {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+      label {
+        display: block;
+        font-weight: 700;
+        font-size: 13px;
+        margin-bottom: 6px;
+      }
+      input {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #d6d3ce;
+        border-radius: 6px;
+        padding: 11px 12px;
+        font-size: 15px;
+      }
+      .notice {
+        padding: 12px 14px;
+        border-radius: 6px;
+        margin-bottom: 14px;
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+      }
+      .notice.ok {
+        background: #ecfdf5;
+        border-color: #bbf7d0;
+      }
+      .actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        margin-top: 16px;
+      }
+      .btn {
+        border: 1px solid #8a3328;
+        border-radius: 6px;
+        padding: 11px 16px;
+        background: #fff;
+        color: #8a3328;
+        font-weight: 800;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .btn-primary {
+        background: #8a3328;
+        color: #fff;
+      }
+      .muted {
+        color: #667085;
+        font-size: 13px;
+      }
+      @media (max-width: 720px) {
+        .grid-2 {
+          grid-template-columns: 1fr;
+        }
+        .sign-card {
+          padding: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="sign-shell">
+      <header class="sign-header">
+        <div class="sign-kicker">Assinatura eletrônica</div>
+        <h1><%= document.title || 'Contrato' %></h1>
+        <p class="muted">
+          Leia o contrato, confirme sua identidade, receba o código OTP por e-mail e assine eletronicamente.
+        </p>
+      </header>
+
+      <% if (success) { %><div class="notice ok"><%= success %></div><% } %>
+      <% if (error) { %><div class="notice"><%= error %></div><% } %>
+
+      <% if (typeof unavailableStatus !== 'undefined' && unavailableStatus) { %>
+        <section class="sign-card">
+          <h2>Contrato indisponível</h2>
+          <p>
+            <% if (unavailableStatus === 'CANCELED') { %>
+              Este contrato foi cancelado pelo remetente e não pode mais ser acessado.
+            <% } else { %>
+              Este contrato está bloqueado temporariamente pelo remetente.
+            <% } %>
+          </p>
+        </section>
+      <% } else { %>
+        <section class="sign-card">
+          <h2>Contrato</h2>
+          <div class="contract-body"><%= bodyText %></div>
+        </section>
+      <% } %>
+
+      <% if (typeof unavailableStatus !== 'undefined' && unavailableStatus) { %>
+      <% } else if (signatureRequest.status === 'SIGNED') { %>
+        <section class="sign-card">
+          <h2>Contrato assinado</h2>
+          <p>
+            Assinado por <strong><%= signatureRequest.signatureText || signatureRequest.signerName %></strong>
+            em <strong><%= new Date(signatureRequest.signedAt).toLocaleString('pt-BR') %></strong>.
+          </p>
+          <p class="muted">Hash SHA-256 do documento: <%= signatureRequest.documentHash || '-' %></p>
+          <% if (signatureRequest.evidencePdfPath) { %>
+            <div class="actions">
+              <a class="btn btn-primary" href="<%= signatureRequest.evidencePdfPath %>" target="_blank">Abrir PDF assinado</a>
+            </div>
+          <% } %>
+        </section>
+      <% } else { %>
+        <section class="sign-card">
+          <h2>Confirmação de identidade</h2>
+          <form method="post" action="/assinatura/<%= signatureRequest.token %>/otp">
+            <div class="grid-2">
+              <div>
+                <label for="signerName">Nome completo</label>
+                <input id="signerName" name="signerName" value="<%= signatureRequest.signerName || '' %>" required />
+              </div>
+              <div>
+                <label for="signerDocument">CPF/CNPJ ou documento</label>
+                <input id="signerDocument" name="signerDocument" value="<%= signatureRequest.signerDocument || '' %>" required />
+              </div>
+              <div>
+                <label for="signerEmail">E-mail para receber o OTP</label>
+                <input id="signerEmail" name="signerEmail" type="email" value="<%= signatureRequest.signerEmail || '' %>" required />
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn" type="submit">Enviar código OTP</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="sign-card">
+          <h2>Assinatura</h2>
+          <form method="post" action="/assinatura/<%= signatureRequest.token %>/assinar" id="signForm">
+            <input type="hidden" id="latitude" name="latitude" />
+            <input type="hidden" id="longitude" name="longitude" />
+            <div class="grid-2">
+              <div>
+                <label for="otp">Código OTP</label>
+                <input id="otp" name="otp" inputmode="numeric" maxlength="6" required />
+              </div>
+              <div>
+                <label for="signatureText">Assinatura digitada</label>
+                <input id="signatureText" name="signatureText" value="<%= signatureRequest.signerName || '' %>" required />
+              </div>
+            </div>
+            <label style="margin-top:14px;">
+              <input type="checkbox" name="acceptTerms" required style="width:auto; margin-right:8px;" />
+              Li o contrato, confirmo minha identidade e aceito assinar eletronicamente este documento.
+            </label>
+            <p class="muted">
+              O sistema registrará IP, data e hora, navegador utilizado, hash do documento e, se autorizado pelo navegador, geolocalização.
+            </p>
+            <div class="actions">
+              <button class="btn btn-primary" type="submit">Assinar contrato</button>
+            </div>
+          </form>
+        </section>
+      <% } %>
+    </main>
+
+    <script>
+      if (navigator.geolocation && document.getElementById("latitude") && document.getElementById("longitude")) {
+        navigator.geolocation.getCurrentPosition((position) => {
+          document.getElementById("latitude").value = position.coords.latitude;
+          document.getElementById("longitude").value = position.coords.longitude;
+        }, () => {}, { enableHighAccuracy: false, timeout: 5000 });
+      }
+    </script>
+  </body>
+</html>

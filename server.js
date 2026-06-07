@@ -74,6 +74,7 @@ const tacticalPanelRouterFactory = require("./modules/tactical-panel");
 const administrativeRouterFactory = require("./modules/administrative");
 const academyRouterFactory = require("./modules/academy");
 const kittenShowcaseRouterFactory = require("./modules/kitten-showcase");
+const documentsRouterFactory = require("./modules/documents");
 const gatarinaShowPhotosRouterFactory = require("./modules/gatarina-show-photos");
 const { startVaccineReminderScheduler } = require("./utils/vaccineReminderJob");
 const {generateTitleHomologationPDF,} = require("./modules/pdf/titleHomologationPdf");
@@ -2135,6 +2136,13 @@ const kittenShowcaseRouter = kittenShowcaseRouterFactory(
   requirePermission
 );
 app.use(kittenShowcaseRouter);
+
+const documentsRouter = documentsRouterFactory(
+  prisma,
+  requireAuth,
+  requirePermission
+);
+app.use(documentsRouter);
 
 const gatarinaShowPhotosRouter = gatarinaShowPhotosRouterFactory(
   prisma,

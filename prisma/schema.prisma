@@ -100,6 +100,9 @@ model User {
   academySubscriptions AcademySubscription[]
   academyCertificates AcademyCertificate[]
   kittenShowcase CatteryKittenShowcase?
+  documents CatteryDocument[]
+  documentEmailLogs DocumentEmailLog[]
+  documentSignatureRequests DocumentSignatureRequest[]
 
   @@index([asaasCustomerId])
   @@index([asaasSubscriptionId])
@@ -333,6 +336,8 @@ model UserSettings {
   veterinarianPhone String?
   veterinarianEmail String?
   logoPath        String?
+  veterinarianLogoPath String?
+  healthCertificateLogoPreference String?
   membershipsJson String?
   breedsJson      String?
   examsJson       String?
@@ -697,6 +702,7 @@ model RevenueClient {
   deletedAt    DateTime?
   revenues     RevenueEntry[]
   ownedKittens  Cat[]    @relation("CurrentKittenOwnerClient")
+  documents     CatteryDocument[]
 }
 
 model CrmEmailContact {
@@ -868,6 +874,7 @@ model Cat {
   matingPlansAsFemale MatingPlan[]   @relation("MatingFemale")
   matingPlansAsMale   MatingPlan[]   @relation("MatingMale")
   revenueEntries      RevenueEntry[]  @relation("RevenueKitten")
+  documents           CatteryDocument[]
 
   createdAt        DateTime          @default(now())
   transferRequests TransferRequest[]
@@ -881,6 +888,95 @@ model Cat {
   treatments       CatTreatment[]
 
   status    CatStatus @default(APROVADO)
+}
+
+model CatteryDocument {
+  id              Int      @id @default(autoincrement())
+  owner           User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId         Int
+  type            String
+  title           String
+  body            String?
+  cat             Cat?     @relation(fields: [catId], references: [id], onDelete: SetNull)
+  catId           Int?
+  client          RevenueClient? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  clientId        Int?
+  documentDate    DateTime?
+  logoChoice      String?
+  attachmentsJson String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  emailLogs DocumentEmailLog[]
+  signatureRequests DocumentSignatureRequest[]
+
+  @@index([ownerId, type])
+  @@index([catId])
+  @@index([clientId])
+}
+
+model DocumentSignatureRequest {
+  id              Int      @id @default(autoincrement())
+  owner           User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId         Int
+  document        CatteryDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentId      Int
+  token           String   @unique
+  signerName      String?
+  signerEmail     String?
+  signerDocument  String?
+  signerPhone     String?
+  status          String   @default("PENDING")
+  otpHash         String?
+  otpExpiresAt    DateTime?
+  otpVerifiedAt   DateTime?
+  signedAt        DateTime?
+  signatureText   String?
+  ipAddress       String?
+  userAgent       String?
+  browser         String?
+  latitude        Float?
+  longitude       Float?
+  documentHash    String?
+  evidencePdfPath String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  events DocumentSignatureEvent[]
+
+  @@index([ownerId, status])
+  @@index([documentId])
+}
+
+model DocumentSignatureEvent {
+  id          Int      @id @default(autoincrement())
+  request    DocumentSignatureRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  requestId  Int
+  type        String
+  message     String?
+  ipAddress   String?
+  userAgent   String?
+  latitude    Float?
+  longitude   Float?
+  createdAt   DateTime @default(now())
+
+  @@index([requestId, createdAt])
+}
+
+model DocumentEmailLog {
+  id             Int      @id @default(autoincrement())
+  owner          User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId        Int
+  document       CatteryDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentId     Int
+  recipientEmail String
+  recipientName  String?
+  status         String
+  message        String?
+  sentAt         DateTime @default(now())
+
+  @@index([ownerId, sentAt])
+  @@index([documentId])
 }
 
 model TreatmentMedication {

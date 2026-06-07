@@ -64,6 +64,7 @@
             "Painel": "Painel público de rotina do gatil para exibir em tela, com medicações, vacinas, acasalamentos e exames.",
             "CRM": "Gestão de clientes, contatos de e-mail e campanhas de e-mail marketing por usuário.",
             "Vitrine de Filhotes": "Configuração da página pública de filhotes disponíveis, cores, textos, fotos, pagamento e informações do gatil.",
+            "Documentos": "Criação e arquivo de contratos de venda, atestados de saúde e manuais de cuidados com geração de PDF e envio por e-mail.",
             "Relatórios": "Relatórios financeiros, fluxo de caixa, despesas, receitas e acompanhamento estratégico.",
             "Administrativo": "Área financeira e administrativa com contas, receitas, despesas, clientes, fornecedores e contas a pagar/receber.",
             "CatBreeder Pro": "Área de cursos e conteúdos da plataforma Academy vinculada ao sistema.",
@@ -161,6 +162,7 @@
         { href: "/painel", match: "/painel", icon: "🖥️", label: "Painel", allowed: access && access.canAccessTacticalPanel },
         { href: "/crm", match: "/crm", icon: "🤝", label: "CRM", allowed: access && access.canAccessCrm },
         { href: "/admin/vitrine-filhotes", match: "/admin/vitrine-filhotes", icon: "📷", label: "Vitrine de Filhotes", allowed: access && access.canManageShowcase },
+        { href: "/documentos", match: "/documentos", icon: "📄", label: "Documentos", allowed: access && access.canAccessDocuments },
       ].forEach(renderMenuItem); %>
 
       <div

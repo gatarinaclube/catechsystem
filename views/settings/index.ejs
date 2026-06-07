@@ -252,6 +252,22 @@
               Quando preenchidas, essas informações poderão ser utilizadas em documentos do sistema,
               como atestados de saúde e outros documentos pertinentes.
             </div>
+            <div class="logo-panel" style="margin-top:14px;">
+              <div class="logo-preview">
+                <% if (settings.veterinarianLogoPath) { %>
+                  <img src="<%= settings.veterinarianLogoPath %>" alt="Logo do veterinário" />
+                <% } else { %>
+                  Nenhum logo veterinário
+                <% } %>
+              </div>
+              <div class="field">
+                <label class="field-label" for="veterinarianLogo">Logo do veterinário</label>
+                <input id="veterinarianLogo" name="veterinarianLogo" type="file" accept="image/png,image/jpeg,image/webp" />
+                <div class="section-note">
+                  Usado no cabeçalho do Atestado de Saúde quando essa opção for escolhida no documento.
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="content-card" style="margin-bottom:18px;">
@@ -273,6 +289,64 @@
                   perto de 1200 x 600 px.
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div class="content-card" style="margin-bottom:18px;">
+            <div class="history-section-head" style="margin-bottom:12px;">
+              <div>
+                <div class="content-title">E-mail do Usuário</div>
+                <div class="content-sub">SMTP próprio usado em e-mail marketing e envio de documentos.</div>
+              </div>
+              <span class="status-pill <%= settings.smtpSettings && settings.smtpSettings.isComplete ? 'is-green' : 'is-yellow' %>">
+                <%= settings.smtpSettings && settings.smtpSettings.isComplete ? 'SMTP configurado' : 'SMTP não configurado' %>
+              </span>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label class="field-label" for="fromName">Nome do remetente</label>
+                <input id="fromName" name="fromName" type="text" value="<%= settings.smtpSettings?.fromName || '' %>" placeholder="Nome do gatil" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="fromEmail">E-mail remetente</label>
+                <input id="fromEmail" name="fromEmail" type="email" value="<%= settings.smtpSettings?.fromEmail || '' %>" placeholder="contato@seudominio.com" />
+              </div>
+            </div>
+            <div class="grid-3" style="margin-top:12px;">
+              <div class="field">
+                <label class="field-label" for="smtpHost">Servidor SMTP</label>
+                <input id="smtpHost" name="smtpHost" type="text" value="<%= settings.smtpSettings?.host || '' %>" placeholder="smtp.seudominio.com" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="smtpPort">Porta</label>
+                <input id="smtpPort" name="smtpPort" type="number" min="1" max="65535" value="<%= settings.smtpSettings?.port || 587 %>" />
+              </div>
+              <div class="field">
+                <label class="field-label">&nbsp;</label>
+                <label class="settings-check" style="margin:0;">
+                  <input type="checkbox" name="smtpSecure" <%= settings.smtpSettings?.secure ? 'checked' : '' %> />
+                  <span>Usar SSL/TLS</span>
+                </label>
+              </div>
+            </div>
+            <div class="grid-2" style="margin-top:12px;">
+              <div class="field">
+                <label class="field-label" for="smtpUser">Usuário SMTP</label>
+                <input id="smtpUser" name="smtpUser" type="text" value="<%= settings.smtpSettings?.user || '' %>" autocomplete="off" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="smtpPassword">Senha SMTP</label>
+                <input id="smtpPassword" name="smtpPassword" type="password" placeholder="<%= settings.smtpSettings?.hasPassword ? 'Senha já cadastrada' : 'Senha ou senha de app' %>" autocomplete="new-password" />
+              </div>
+            </div>
+            <% if (settings.smtpSettings?.hasPassword) { %>
+              <label class="settings-check" style="margin-top:12px;">
+                <input type="checkbox" name="clearSmtpPassword" />
+                <span>Remover senha SMTP salva</span>
+              </label>
+            <% } %>
+            <div class="section-note">
+              Para enviar manuais e campanhas, configure um SMTP próprio do usuário. As notificações gerais do sistema continuam usando a configuração global.
             </div>
           </div>
 

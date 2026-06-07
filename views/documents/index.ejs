@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Documentos - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Documentos</h2>
+            <div class="welcome-sub">Contratos, atestados e manuais salvos por usuário.</div>
+          </div>
+          <div class="actions">
+            <a href="/dashboard" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <% if (success) { %>
+          <div class="content-card" style="border-left:4px solid #16a34a; margin-bottom:18px;">
+            <div class="content-sub">Operação realizada com sucesso.</div>
+          </div>
+        <% } %>
+        <% if (error) { %>
+          <div class="content-card" style="border-left:4px solid #b91c1c; margin-bottom:18px;">
+            <div class="content-sub"><%= error %></div>
+          </div>
+        <% } %>
+
+        <div class="grid-3" style="margin-bottom:18px;">
+          <% Object.entries(documentTypes).forEach(function(entry) { const type = entry[0]; const config = entry[1]; %>
+            <section class="content-card">
+              <div class="content-title"><%= config.label %></div>
+              <div class="content-sub" style="margin:8px 0 14px;">
+                <% if (type === 'SALE_CONTRACT') { %>
+                  Texto editável, comprador, gato, assinatura e PDF.
+                <% } else if (type === 'HEALTH_CERTIFICATE') { %>
+                  Cabeçalho veterinário, data, gato e PDF.
+                <% } else { %>
+                  Manual com texto, anexos e envio por e-mail.
+                <% } %>
+              </div>
+              <a class="btn btn-primary" href="/documentos/novo/<%= config.route %>">Criar</a>
+            </section>
+          <% }) %>
+        </div>
+
+        <% Object.entries(documentTypes).forEach(function(entry) { const type = entry[0]; const config = entry[1]; const docs = grouped[type] || []; %>
+          <section class="content-card module-list-card" style="margin-bottom:18px;">
+            <div class="history-section-head" style="margin-bottom:12px;">
+              <div>
+                <div class="content-title"><%= config.label %> salvos</div>
+                <div class="content-sub"><%= docs.length %> documento(s)</div>
+              </div>
+              <a class="btn" href="/documentos/novo/<%= config.route %>">Novo</a>
+            </div>
+            <% if (!docs.length) { %>
+              <div class="empty">Nenhum documento salvo ainda.</div>
+            <% } else { %>
+              <div class="record-list">
+                <% docs.forEach(function(document) { %>
+                  <div class="record-row">
+                    <div class="record-main">
+                      <div class="record-title"><%= document.title %></div>
+                      <div class="record-sub">
+                        <%= document.client ? document.client.fullName : 'Sem comprador vinculado' %>
+                        <% if (document.cat) { %> · <%= document.cat.name %><% } %>
+                      </div>
+                    </div>
+                    <div class="record-meta actions">
+                      <a class="btn" href="/documentos/<%= document.id %>/editar">Editar</a>
+                      <a class="btn btn-primary" href="/documentos/<%= document.id %>/pdf" target="_blank">PDF</a>
+                    </div>
+                  </div>
+                <% }) %>
+              </div>
+            <% } %>
+          </section>
+        <% }) %>
+      </main>
+    </div>
+  </body>
+</html>

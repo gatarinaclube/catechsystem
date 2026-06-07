@@ -3,6 +3,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const { isAdminRole } = require("../utils/access");
+const { encryptSecret, shapeSmtpSettings } = require("../utils/userSmtp");
 const {
   MANAGED_PLAN_ROLES,
   getFileUploadLimit,
@@ -105,6 +106,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         "veterinarianPhone",
         "veterinarianEmail",
         "logoPath",
+        "veterinarianLogoPath",
+        "healthCertificateLogoPreference",
         "membershipsJson",
         "breedsJson",
         "examsJson",
@@ -118,7 +121,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         "felineSecondDoseDays",
         "felineThirdDoseDays",
         "felineAnnualBooster",
-        "felineBoosterIntervalYears"
+        "felineBoosterIntervalYears",
+        "marketingFromName",
+        "marketingFromEmail",
+        "marketingSmtpHost",
+        "marketingSmtpPort",
+        "marketingSmtpSecure",
+        "marketingSmtpUser",
+        "marketingSmtpPassEncrypted"
       FROM "UserSettings"
       WHERE "userId" = ${userId}
       LIMIT 1
@@ -137,6 +147,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       veterinarianPhone: settings?.veterinarianPhone || "",
       veterinarianEmail: settings?.veterinarianEmail || "",
       logoPath: settings?.logoPath || "",
+      veterinarianLogoPath: settings?.veterinarianLogoPath || "",
+      healthCertificateLogoPreference: settings?.healthCertificateLogoPreference || "NONE",
       memberships: filterAllowed(parseJsonList(settings?.membershipsJson), MEMBERSHIP_OPTIONS),
       breeds: filterAllowed(parseJsonList(settings?.breedsJson), BREED_OPTIONS),
       exams: selectedExamsFromSettings(settings, { defaultAll: true }),
@@ -154,6 +166,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       felineThirdDoseDays: settings?.felineThirdDoseDays ?? "",
       felineAnnualBooster: settings?.felineAnnualBooster !== false,
       felineBoosterIntervalYears: settings?.felineBoosterIntervalYears ?? 1,
+      marketingFromName: settings?.marketingFromName || "",
+      marketingFromEmail: settings?.marketingFromEmail || "",
+      marketingSmtpHost: settings?.marketingSmtpHost || "",
+      marketingSmtpPort: settings?.marketingSmtpPort || 587,
+      marketingSmtpSecure: Boolean(settings?.marketingSmtpSecure),
+      marketingSmtpUser: settings?.marketingSmtpUser || "",
+      marketingSmtpPassEncrypted: settings?.marketingSmtpPassEncrypted || null,
+      smtpSettings: shapeSmtpSettings(settings),
     };
   }
 
@@ -181,7 +201,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   });
 
   router.post("/settings", requireAuth, requirePermission("admin.settings"), (req, res, next) => {
-    logoUpload.single("logo")(req, res, (err) => {
+    logoUpload.fields([
+      { name: "logo", maxCount: 1 },
+      { name: "veterinarianLogo", maxCount: 1 },
+    ])(req, res, (err) => {
       if (err) {
         req.uploadError = err.message || "Erro ao enviar o logo.";
       }
@@ -189,6 +212,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     });
   }, async (req, res) => {
     const existingSettings = await getSettings(req.session.userId);
+    const logoFile = req.files?.logo?.[0] || null;
+    const veterinarianLogoFile = req.files?.veterinarianLogo?.[0] || null;
+    const smtpPassword = (req.body.smtpPassword || "").trim();
+    const clearSmtpPassword = req.body.clearSmtpPassword === "on";
     const settings = {
       catteryName: (req.body.catteryName || "").trim(),
       catteryEmail: (req.body.catteryEmail || "").trim(),
@@ -199,7 +226,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       veterinarianAddress: (req.body.veterinarianAddress || "").trim(),
       veterinarianPhone: (req.body.veterinarianPhone || "").trim(),
       veterinarianEmail: (req.body.veterinarianEmail || "").trim(),
-      logoPath: req.file ? `/uploads/settings-logos/${req.file.filename}` : existingSettings.logoPath,
+      logoPath: logoFile ? `/uploads/settings-logos/${logoFile.filename}` : existingSettings.logoPath,
+      veterinarianLogoPath: veterinarianLogoFile
+        ? `/uploads/settings-logos/${veterinarianLogoFile.filename}`
+        : existingSettings.veterinarianLogoPath,
+      healthCertificateLogoPreference: ["CATTERY", "VET", "NONE"].includes(req.body.healthCertificateLogoPreference)
+        ? req.body.healthCertificateLogoPreference
+        : existingSettings.healthCertificateLogoPreference || "NONE",
       memberships: filterAllowed(req.body.memberships, MEMBERSHIP_OPTIONS),
       breeds: filterAllowed(req.body.breeds, BREED_OPTIONS),
       exams: filterAllowed(req.body.exams, EXAM_OPTIONS),
@@ -217,7 +250,19 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       felineThirdDoseDays: parseNullableInteger(req.body.felineThirdDoseDays),
       felineAnnualBooster: req.body.felineAnnualBooster !== "NO",
       felineBoosterIntervalYears: parseNullableInteger(req.body.felineBoosterIntervalYears) ?? 1,
+      marketingFromName: (req.body.fromName || "").trim(),
+      marketingFromEmail: (req.body.fromEmail || "").trim(),
+      marketingSmtpHost: (req.body.smtpHost || "").trim(),
+      marketingSmtpPort: parseNullableInteger(req.body.smtpPort) || 587,
+      marketingSmtpSecure: req.body.smtpSecure === "on",
+      marketingSmtpUser: (req.body.smtpUser || "").trim(),
+      marketingSmtpPassEncrypted: clearSmtpPassword
+        ? null
+        : smtpPassword
+          ? encryptSecret(smtpPassword)
+          : existingSettings.marketingSmtpPassEncrypted || null,
     };
+    settings.smtpSettings = shapeSmtpSettings(settings);
     const canManagePlanLimits = isAdminRole(req.session.userRole);
     const planLimits = canManagePlanLimits ? buildPlanLimitRows(req.body) : getPlanLimitRows();
 
@@ -225,7 +270,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       if (req.uploadError) {
         throw new Error(req.uploadError);
       }
-      validateFilesForRole(req.file ? [req.file] : [], req.session?.userRole);
+      validateFilesForRole([logoFile, veterinarianLogoFile].filter(Boolean), req.session?.userRole);
 
       await prisma.$executeRaw`
         INSERT INTO "UserSettings" (
@@ -240,6 +285,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           "veterinarianPhone",
           "veterinarianEmail",
           "logoPath",
+          "veterinarianLogoPath",
+          "healthCertificateLogoPreference",
           "membershipsJson",
           "breedsJson",
           "examsJson",
@@ -254,6 +301,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           "felineThirdDoseDays",
           "felineAnnualBooster",
           "felineBoosterIntervalYears",
+          "marketingFromName",
+          "marketingFromEmail",
+          "marketingSmtpHost",
+          "marketingSmtpPort",
+          "marketingSmtpSecure",
+          "marketingSmtpUser",
+          "marketingSmtpPassEncrypted",
           "updatedAt"
         )
         VALUES (
@@ -268,6 +322,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           ${settings.veterinarianPhone || null},
           ${settings.veterinarianEmail || null},
           ${settings.logoPath || null},
+          ${settings.veterinarianLogoPath || null},
+          ${settings.healthCertificateLogoPreference || "NONE"},
           ${JSON.stringify(settings.memberships)},
           ${JSON.stringify(settings.breeds)},
           ${JSON.stringify(settings.exams)},
@@ -282,6 +338,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           ${settings.felineThirdDoseDays},
           ${settings.felineAnnualBooster},
           ${settings.felineBoosterIntervalYears},
+          ${settings.marketingFromName || null},
+          ${settings.marketingFromEmail || null},
+          ${settings.marketingSmtpHost || null},
+          ${settings.marketingSmtpPort},
+          ${settings.marketingSmtpSecure},
+          ${settings.marketingSmtpUser || null},
+          ${settings.marketingSmtpPassEncrypted || null},
           CURRENT_TIMESTAMP
         )
         ON CONFLICT ("userId") DO UPDATE SET
@@ -295,6 +358,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           "veterinarianPhone" = EXCLUDED."veterinarianPhone",
           "veterinarianEmail" = EXCLUDED."veterinarianEmail",
           "logoPath" = EXCLUDED."logoPath",
+          "veterinarianLogoPath" = EXCLUDED."veterinarianLogoPath",
+          "healthCertificateLogoPreference" = EXCLUDED."healthCertificateLogoPreference",
           "membershipsJson" = EXCLUDED."membershipsJson",
           "breedsJson" = EXCLUDED."breedsJson",
           "examsJson" = EXCLUDED."examsJson",
@@ -309,6 +374,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           "felineThirdDoseDays" = EXCLUDED."felineThirdDoseDays",
           "felineAnnualBooster" = EXCLUDED."felineAnnualBooster",
           "felineBoosterIntervalYears" = EXCLUDED."felineBoosterIntervalYears",
+          "marketingFromName" = EXCLUDED."marketingFromName",
+          "marketingFromEmail" = EXCLUDED."marketingFromEmail",
+          "marketingSmtpHost" = EXCLUDED."marketingSmtpHost",
+          "marketingSmtpPort" = EXCLUDED."marketingSmtpPort",
+          "marketingSmtpSecure" = EXCLUDED."marketingSmtpSecure",
+          "marketingSmtpUser" = EXCLUDED."marketingSmtpUser",
+          "marketingSmtpPassEncrypted" = EXCLUDED."marketingSmtpPassEncrypted",
           "updatedAt" = CURRENT_TIMESTAMP
       `;
 
