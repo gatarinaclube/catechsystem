@@ -182,48 +182,75 @@
             </form>
 
             <% if (document.signatureRequests && document.signatureRequests.length) { %>
-              <div class="content-title" style="margin-top:18px;">Links e auditoria</div>
-              <div class="record-list" style="margin-top:10px;">
+              <div class="documents-section-title">
+                <div>
+                  <div class="content-title">Links e auditoria</div>
+                  <div class="content-sub">Acompanhe cada envio, acesso e assinatura do contrato.</div>
+                </div>
+              </div>
+              <div class="signature-request-list">
                 <% document.signatureRequests.forEach(function(request) { %>
-                  <div class="record-row" style="align-items:flex-start;">
-                    <div class="record-main">
-                      <div class="record-title"><%= request.signerName || 'Assinante' %> · <%= request.statusLabel || request.status %></div>
-                      <div class="record-sub"><%= request.signerEmail || 'Sem e-mail' %></div>
-                      <div class="section-note" style="margin-top:8px; word-break:break-all;">
-                        Link: <a href="<%= request.publicUrl %>" target="_blank"><%= request.publicUrl %></a>
+                  <%
+                    const statusClass =
+                      request.status === 'SIGNED' ? 'is-green' :
+                      request.status === 'BLOCKED' || request.status === 'CANCELED' ? 'is-red' :
+                      request.status === 'OTP_SENT' || request.status === 'VIEWED' ? 'is-blue' :
+                      'is-yellow';
+                  %>
+                  <article class="signature-request-card">
+                    <div class="signature-request-head">
+                      <div class="signature-request-person">
+                        <div class="record-title"><%= request.signerName || 'Assinante' %></div>
+                        <div class="record-sub"><%= request.signerEmail || 'Sem e-mail cadastrado' %></div>
                       </div>
-                      <div class="grid-2" style="margin-top:10px;">
-                        <% request.timeline.forEach(function(item) { %>
-                          <div class="field-panel">
-                            <strong><%= item.title %></strong>
-                            <div class="content-sub"><%= item.value %></div>
-                          </div>
-                        <% }) %>
-                      </div>
+                      <span class="status-pill <%= statusClass %>"><%= request.statusLabel || request.status %></span>
                     </div>
-                    <div class="record-meta actions" style="flex-direction:column; gap:8px;">
-                      <% if (request.status !== 'CANCELED' && request.status !== 'BLOCKED') { %>
-                        <a class="btn" href="<%= request.whatsappUrl %>" target="_blank">WhatsApp</a>
-                      <% } %>
-                      <% if (request.evidencePdfPath) { %>
-                        <a class="btn btn-primary" href="<%= request.evidencePdfPath %>" target="_blank">PDF assinado</a>
-                      <% } %>
-                      <% if (request.status !== 'SIGNED' && request.status !== 'CANCELED') { %>
-                        <% if (request.status === 'BLOCKED') { %>
-                          <form method="post" action="/documentos/<%= document.id %>/assinatura/<%= request.id %>/desbloquear">
-                            <button type="submit" class="btn">Desbloquear</button>
-                          </form>
-                        <% } else { %>
-                          <form method="post" action="/documentos/<%= document.id %>/assinatura/<%= request.id %>/bloquear">
-                            <button type="submit" class="btn">Bloquear</button>
+
+                    <div class="signature-link-box">
+                      <span>Link público</span>
+                      <a href="<%= request.publicUrl %>" target="_blank" rel="noopener noreferrer"><%= request.publicUrl %></a>
+                    </div>
+
+                    <div class="signature-timeline">
+                      <% request.timeline.forEach(function(item) { %>
+                        <div class="signature-timeline-item">
+                          <span class="signature-timeline-dot"></span>
+                          <div>
+                            <strong><%= item.title %></strong>
+                            <p><%= item.value %></p>
+                          </div>
+                        </div>
+                      <% }) %>
+                    </div>
+
+                    <div class="signature-action-bar">
+                      <div class="signature-action-primary">
+                        <% if (request.status !== 'CANCELED' && request.status !== 'BLOCKED') { %>
+                          <a class="btn" href="<%= request.whatsappUrl %>" target="_blank" rel="noopener noreferrer">Enviar WhatsApp</a>
+                        <% } %>
+                        <% if (request.evidencePdfPath) { %>
+                          <a class="btn btn-primary" href="<%= request.evidencePdfPath %>" target="_blank" rel="noopener noreferrer">PDF assinado</a>
+                        <% } %>
+                      </div>
+
+                      <div class="signature-action-secondary">
+                        <% if (request.status !== 'SIGNED' && request.status !== 'CANCELED') { %>
+                          <% if (request.status === 'BLOCKED') { %>
+                            <form method="post" action="/documentos/<%= document.id %>/assinatura/<%= request.id %>/desbloquear">
+                              <button type="submit" class="btn">Desbloquear</button>
+                            </form>
+                          <% } else { %>
+                            <form method="post" action="/documentos/<%= document.id %>/assinatura/<%= request.id %>/bloquear">
+                              <button type="submit" class="btn">Bloquear</button>
+                            </form>
+                          <% } %>
+                          <form method="post" action="/documentos/<%= document.id %>/assinatura/<%= request.id %>/cancelar" onsubmit="return confirm('Cancelar este contrato? O cliente não poderá mais acessar este link.');">
+                            <button type="submit" class="btn signature-danger-button">Cancelar</button>
                           </form>
                         <% } %>
-                        <form method="post" action="/documentos/<%= document.id %>/assinatura/<%= request.id %>/cancelar" onsubmit="return confirm('Cancelar este contrato? O cliente não poderá mais acessar este link.');">
-                          <button type="submit" class="btn">Cancelar</button>
-                        </form>
-                      <% } %>
+                      </div>
                     </div>
-                  </div>
+                  </article>
                 <% }) %>
               </div>
             <% } %>
