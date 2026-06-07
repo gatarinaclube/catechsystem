@@ -332,12 +332,20 @@ model UserSettings {
   veterinarianName String?
   crmv            String?
   crmvUf          String?
+  veterinarianClinicName String?
+  veterinarianTradeName String?
+  veterinarianCnpj String?
   veterinarianAddress String?
+  veterinarianCity String?
+  veterinarianCep String?
+  veterinarianState String?
   veterinarianPhone String?
+  veterinarianMobile String?
   veterinarianEmail String?
   logoPath        String?
   veterinarianLogoPath String?
   healthCertificateLogoPreference String?
+  healthCertificateDeclarationText String?
   membershipsJson String?
   breedsJson      String?
   examsJson       String?
@@ -926,6 +934,10 @@ model DocumentSignatureRequest {
   signerEmail     String?
   signerDocument  String?
   signerPhone     String?
+  signatureSource String?
+  signaturePage   Int?
+  signatureX      Float?
+  signatureY      Float?
   status          String   @default("PENDING")
   otpHash         String?
   otpExpiresAt    DateTime?

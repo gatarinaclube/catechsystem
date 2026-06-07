@@ -236,13 +236,47 @@
             </div>
             <div class="grid-3" style="margin-top:12px;">
               <div class="field">
+                <label class="field-label" for="veterinarianClinicName">Clínica Veterinária</label>
+                <input id="veterinarianClinicName" name="veterinarianClinicName" type="text" value="<%= settings.veterinarianClinicName || '' %>" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="veterinarianTradeName">Nome Fantasia</label>
+                <input id="veterinarianTradeName" name="veterinarianTradeName" type="text" value="<%= settings.veterinarianTradeName || '' %>" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="veterinarianCnpj">CNPJ</label>
+                <input id="veterinarianCnpj" name="veterinarianCnpj" type="text" value="<%= settings.veterinarianCnpj || '' %>" />
+              </div>
+            </div>
+            <div class="grid-3" style="margin-top:12px;">
+              <div class="field">
                 <label class="field-label" for="veterinarianAddress">Endereço</label>
                 <input id="veterinarianAddress" name="veterinarianAddress" type="text" value="<%= settings.veterinarianAddress || '' %>" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="veterinarianCity">Cidade</label>
+                <input id="veterinarianCity" name="veterinarianCity" type="text" value="<%= settings.veterinarianCity || '' %>" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="veterinarianCep">CEP</label>
+                <input id="veterinarianCep" name="veterinarianCep" type="text" value="<%= settings.veterinarianCep || '' %>" />
+              </div>
+            </div>
+            <div class="grid-3" style="margin-top:12px;">
+              <div class="field">
+                <label class="field-label" for="veterinarianState">Estado</label>
+                <input id="veterinarianState" name="veterinarianState" type="text" value="<%= settings.veterinarianState || '' %>" />
               </div>
               <div class="field">
                 <label class="field-label" for="veterinarianPhone">Telefone</label>
                 <input id="veterinarianPhone" name="veterinarianPhone" type="text" value="<%= settings.veterinarianPhone || '' %>" />
               </div>
+              <div class="field">
+                <label class="field-label" for="veterinarianMobile">Celular</label>
+                <input id="veterinarianMobile" name="veterinarianMobile" type="text" value="<%= settings.veterinarianMobile || '' %>" />
+              </div>
+            </div>
+            <div class="grid-3" style="margin-top:12px;">
               <div class="field">
                 <label class="field-label" for="veterinarianEmail">E-mail</label>
                 <input id="veterinarianEmail" name="veterinarianEmail" type="email" value="<%= settings.veterinarianEmail || '' %>" />

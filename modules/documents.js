@@ -4,6 +4,7 @@ const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
 const PDFDocument = require("pdfkit");
+const { PDFDocument: EditablePdfDocument, rgb, StandardFonts } = require("pdf-lib");
 const { buildDisplayName, formatDate, formatDateInput, parseDate } = require("../utils/cattery-admin");
 const { sendStatusEmail } = require("../utils/mailer");
 const { buildUserSmtpConfig, shapeSmtpSettings } = require("../utils/userSmtp");
@@ -27,11 +28,9 @@ As partes declaram estar de acordo com os termos acima.`,
     label: "Atestado de Saúde",
     route: "atestado-saude",
     defaultTitle: "Atestado de Saúde",
-    defaultBody: `ATESTADO DE SAÚDE
+    defaultBody: `Declaro que o animal acima foi identificado e examinado por mim, e está clinicamente sadio e isento de doenças ectoparasitas e infectocontagiosas, estando devidamente vacinado e vermifugado, dentro das necessidades de sua idade.
 
-Atesto, para os devidos fins, que o gato selecionado foi avaliado clinicamente na data informada e encontra-se, no momento do exame, sem sinais clínicos aparentes de doença infectocontagiosa.
-
-Este atestado considera exclusivamente as informações clínicas observadas no momento da avaliação e os dados disponíveis no cadastro do animal.`,
+Declaro ainda que se trata de animal NÃO braquicefálico, e encontra-se em perfeitas condições de saúde, estando apto para transporte/viagem terrestre ou aérea.`,
   },
   CARE_MANUAL: {
     label: "Manual de Cuidados Básicos",
@@ -82,8 +81,26 @@ function parseAttachments(value) {
   }
 }
 
+function externalPdfAttachment(document) {
+  return parseAttachments(document?.attachmentsJson).find((file) =>
+    String(file?.mimeType || "").includes("pdf") || /\.pdf$/i.test(file?.path || file?.originalName || "")
+  ) || null;
+}
+
 function compact(value) {
   return String(value || "").trim();
+}
+
+function parseNullablePositiveInt(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) return null;
+  return Math.floor(number);
+}
+
+function parseCoordinate(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 0) return null;
+  return Math.max(0, Math.min(1, number));
 }
 
 function getClientIp(req) {
@@ -233,6 +250,9 @@ function renderTemplate(text, { document, cat, client, settings }) {
     gatil: settings?.catteryName || "",
     veterinario: settings?.veterinarian || settings?.veterinarianName || "",
     crmv: [settings?.crmv, settings?.crmvUf].filter(Boolean).join("-"),
+    clinicaVeterinaria: settings?.veterinarianClinicName || "",
+    nomeFantasiaVeterinaria: settings?.veterinarianTradeName || "",
+    cnpjVeterinario: settings?.veterinarianCnpj || "",
     dataDocumento: formatDate(document?.documentDate) || formatDate(new Date()),
   };
 
@@ -284,6 +304,144 @@ function drawInfoBox(doc, rows) {
   doc.y = startY + 38 + filtered.length * 17;
 }
 
+function drawHealthField(doc, label, value, x, y, width, height = 38) {
+  doc.roundedRect(x, y, width, height, 5).fillAndStroke("#ffffff", "#d8dee6");
+  doc.font("Helvetica-Bold").fontSize(7.5).fillColor("#64748b").text(label.toUpperCase(), x + 9, y + 7, {
+    width: width - 18,
+  });
+  doc.font("Helvetica").fontSize(10).fillColor("#111827").text(compact(value) || "-", x + 9, y + 20, {
+    width: width - 18,
+    ellipsis: true,
+  });
+}
+
+function drawTableCell(doc, x, y, width, height, label, value, options = {}) {
+  doc.rect(x, y, width, height).strokeColor("#111827").lineWidth(0.65).stroke();
+  doc.font("Helvetica-Bold").fontSize(7.8).fillColor("#111827").text(`${label}:`, x + 5, y + 6, {
+    width: width - 10,
+    continued: Boolean(value),
+  });
+  if (value) {
+    doc.font("Helvetica").fillColor(options.valueColor || "#111827").text(` ${value}`, {
+      width: width - 10,
+      ellipsis: true,
+    });
+  }
+}
+
+function drawSectionTitle(doc, number, title, y) {
+  doc.rect(46, y, 503, 24).fillAndStroke("#d9d9d9", "#111827");
+  doc.font("Helvetica-Bold").fontSize(10).fillColor("#111827").text(`${number}.  ${title}`, 68, y + 7);
+}
+
+function drawHealthCertificatePdf(doc, { document, cat, settings, user }) {
+  const logoPath = document.logoChoice === "CATTERY"
+    ? settings?.logoPath
+    : document.logoChoice === "VET"
+      ? settings?.veterinarianLogoPath
+      : null;
+  const localLogo = localUploadPath(logoPath);
+
+  doc.rect(0, 0, 595.28, 841.89).fill("#ffffff");
+
+  if (localLogo) {
+    try {
+      doc.image(localLogo, 34, 12, { fit: [78, 78] });
+    } catch {
+      // O documento continua sem logo se o arquivo não puder ser carregado.
+    }
+  }
+
+  const vetName = settings?.veterinarian || settings?.veterinarianName || "Médico Veterinário";
+  const crmv = [settings?.crmv, settings?.crmvUf].filter(Boolean).join("-");
+  const crmvLabel = settings?.crmvUf ? `CRMV/${settings.crmvUf}` : "CRMV";
+  const clinicName = settings?.veterinarianClinicName || settings?.catteryName || vetName;
+  const tradeName = settings?.veterinarianTradeName || clinicName;
+  const clinicCity = settings?.veterinarianCity || user?.city || "";
+  const clinicCep = settings?.veterinarianCep || user?.cep || "";
+  const clinicState = settings?.veterinarianState || user?.state || "";
+  const clinicAddress = settings?.veterinarianAddress || user?.address || "";
+  const issueDate = formatDate(document.documentDate) || formatDate(new Date());
+
+  doc.font("Helvetica-Bold").fontSize(18).fillColor("#111827").text(clinicName, 125, 22, {
+    width: 415,
+    align: "right",
+  });
+  doc.font("Helvetica").fontSize(8).fillColor("#111827").text(clinicAddress, 125, 51, {
+    width: 415,
+    align: "right",
+  });
+  doc.font("Helvetica-Bold").fontSize(12).text(settings?.veterinarianPhone ? `Telefone: ${settings.veterinarianPhone}` : "", 125, 66, {
+    width: 415,
+    align: "right",
+  });
+
+  doc.rect(46, 102, 503, 26).strokeColor("#111827").lineWidth(0.8).stroke();
+  doc.font("Helvetica-Bold").fontSize(16).fillColor("#111827").text("ATESTADO DE SAÚDE ANIMAL", 46, 109, {
+    width: 503,
+    align: "center",
+  });
+
+  drawSectionTitle(doc, 1, "PROPRIETÁRIO DO ANIMAL", 128);
+  drawTableCell(doc, 46, 152, 300, 22, "Nome Completo", user?.name || settings?.catteryName);
+  drawTableCell(doc, 346, 152, 203, 22, "CPF/RG", user?.cpf);
+  drawTableCell(doc, 46, 174, 503, 22, "Endereço", user?.address);
+  drawTableCell(doc, 46, 196, 176, 22, "Cidade", user?.city);
+  drawTableCell(doc, 222, 196, 154, 22, "CEP", user?.cep);
+  drawTableCell(doc, 376, 196, 173, 22, "Estado", user?.state);
+  drawTableCell(doc, 46, 218, 255, 22, "Telefone", user?.phones);
+  drawTableCell(doc, 301, 218, 248, 22, "E-mail", user?.email);
+
+  drawSectionTitle(doc, 2, "IDENTIFICAÇÃO DO ANIMAL", 255);
+  drawTableCell(doc, 46, 279, 503, 22, "Nome", cat?.displayName, { valueColor: "#ff0000" });
+  drawTableCell(doc, 46, 301, 174, 22, "Espécie", "Felina");
+  drawTableCell(doc, 220, 301, 178, 22, "Raça", cat?.breed);
+  drawTableCell(doc, 398, 301, 151, 22, "Sexo", cat?.gender === "M" ? "Macho" : cat?.gender === "F" ? "Fêmea" : cat?.gender, { valueColor: "#ff0000" });
+  drawTableCell(doc, 46, 323, 252, 22, "Data de Nascimento", cat?.birthDateLabel, { valueColor: "#ff0000" });
+  drawTableCell(doc, 298, 323, 251, 22, "Microchip Nº", cat?.microchip, { valueColor: "#ff0000" });
+
+  drawSectionTitle(doc, 3, "DECLARAÇÃO DO MÉDICO VETERINÁRIO", 360);
+  doc.rect(46, 384, 503, 178).strokeColor("#111827").lineWidth(0.65).stroke();
+  doc.font("Helvetica-Oblique").fontSize(10).fillColor("#111827").text(
+    renderTemplate(document.body, { document, cat, client: null, settings }),
+    58,
+    420,
+    { width: 479, align: "justify", lineGap: 6 }
+  );
+
+  drawTableCell(doc, 46, 562, 342, 22, "Médico Veterinário Emitente", vetName, { valueColor: "#ff0000" });
+  drawTableCell(doc, 388, 562, 161, 22, crmvLabel, crmv, { valueColor: "#ff0000" });
+  drawTableCell(doc, 46, 584, 503, 22, "Clínica Veterinária", clinicName);
+  drawTableCell(doc, 46, 606, 312, 22, "Nome Fantasia", tradeName);
+  drawTableCell(doc, 358, 606, 191, 22, "CNPJ", settings?.veterinarianCnpj);
+  drawTableCell(doc, 46, 628, 503, 22, "Endereço", clinicAddress);
+  drawTableCell(doc, 46, 650, 176, 22, "Cidade", clinicCity);
+  drawTableCell(doc, 222, 650, 154, 22, "CEP", clinicCep);
+  drawTableCell(doc, 376, 650, 173, 22, "Estado", clinicState);
+  drawTableCell(doc, 46, 672, 252, 22, "Telefone", settings?.veterinarianPhone);
+  drawTableCell(doc, 298, 672, 251, 22, "Celular", settings?.veterinarianMobile);
+  doc.rect(46, 694, 503, 48).strokeColor("#111827").lineWidth(0.65).stroke();
+  doc.font("Helvetica-Bold").fontSize(7.8).fillColor("#111827").text("Assinatura e Carimbo:", 52, 699);
+
+  doc.rect(46, 742, 503, 25).strokeColor("#111827").lineWidth(0.65).stroke();
+  doc.font("Helvetica-Bold").fontSize(14).fillColor("#ff0000").text(
+    `${clinicCity || user?.city || "Cidade"}, ${issueDate}`,
+    46,
+    748,
+    { width: 503, align: "center" }
+  );
+  doc.font("Helvetica").fontSize(7).fillColor("#111827").text(
+    [clinicAddress, [clinicCity, clinicState].filter(Boolean).join("/"), settings?.veterinarianPhone].filter(Boolean).join(" · "),
+    46,
+    800,
+    { width: 503, align: "center" }
+  );
+  doc.font("Helvetica-Bold").fontSize(7).text("Página 01/01", 46, 812, {
+    width: 499,
+    align: "right",
+  });
+}
+
 function buildDocumentPdfBuffer({ document, cat, client, settings, user, signatureRequest = null }) {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -294,6 +452,12 @@ function buildDocumentPdfBuffer({ document, cat, client, settings, user, signatu
 
     const config = DOCUMENT_TYPES[document.type] || DOCUMENT_TYPES.SALE_CONTRACT;
     const title = document.title || config.label;
+    if (document.type === "HEALTH_CERTIFICATE") {
+      drawHealthCertificatePdf(doc, { document, cat, settings, user });
+      doc.end();
+      return;
+    }
+
     drawHeader(doc, {
       title,
       settings,
@@ -372,6 +536,100 @@ function buildDocumentPdfBuffer({ document, cat, client, settings, user, signatu
     });
     doc.end();
   });
+}
+
+async function buildSignedExternalPdfBuffer({ document, signatureRequest }) {
+  const attachment = externalPdfAttachment(document);
+  const local = localUploadPath(attachment?.path);
+  if (!local) {
+    throw new Error("Arquivo PDF externo não encontrado.");
+  }
+
+  const pdfDoc = await EditablePdfDocument.load(fs.readFileSync(local));
+  const pages = pdfDoc.getPages();
+  const pageIndex = Math.min(Math.max(Number(signatureRequest.signaturePage || 1) - 1, 0), pages.length - 1);
+  const page = pages[pageIndex];
+  const { width, height } = page.getSize();
+  const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const x = Number.isFinite(Number(signatureRequest.signatureX)) ? Number(signatureRequest.signatureX) : 0.62;
+  const y = Number.isFinite(Number(signatureRequest.signatureY)) ? Number(signatureRequest.signatureY) : 0.82;
+  const signatureX = Math.max(24, Math.min(width - 210, x * width));
+  const signatureY = Math.max(40, Math.min(height - 40, height - y * height));
+
+  page.drawRectangle({
+    x: signatureX,
+    y: signatureY,
+    width: 190,
+    height: 44,
+    borderColor: rgb(0.12, 0.42, 0.22),
+    borderWidth: 1,
+    color: rgb(0.94, 0.99, 0.96),
+    opacity: 0.92,
+  });
+  page.drawText("Assinado eletronicamente por", {
+    x: signatureX + 8,
+    y: signatureY + 27,
+    size: 7,
+    font: regularFont,
+    color: rgb(0.23, 0.28, 0.35),
+  });
+  page.drawText(signatureRequest.signatureText || signatureRequest.signerName || "Assinante", {
+    x: signatureX + 8,
+    y: signatureY + 13,
+    size: 10,
+    font,
+    color: rgb(0.08, 0.26, 0.14),
+  });
+  page.drawText(formatDateTime(signatureRequest.signedAt), {
+    x: signatureX + 8,
+    y: signatureY + 4,
+    size: 6,
+    font: regularFont,
+    color: rgb(0.39, 0.45, 0.55),
+  });
+
+  const evidencePage = pdfDoc.addPage([595.28, 841.89]);
+  evidencePage.drawText("Relatório de Evidências", {
+    x: 48,
+    y: 785,
+    size: 18,
+    font,
+    color: rgb(0.12, 0.16, 0.2),
+  });
+  const rows = [
+    ["Documento", document.title || "Documento"],
+    ["Assinante", signatureRequest.signerName || ""],
+    ["Documento do assinante", signatureRequest.signerDocument || ""],
+    ["E-mail", signatureRequest.signerEmail || ""],
+    ["Data e hora", formatDateTime(signatureRequest.signedAt)],
+    ["IP", signatureRequest.ipAddress || ""],
+    ["Navegador", signatureRequest.browser || signatureRequest.userAgent || ""],
+    ["Geolocalização", signatureRequest.latitude && signatureRequest.longitude ? `${signatureRequest.latitude}, ${signatureRequest.longitude}` : "Não informada"],
+    ["Hash SHA-256", signatureRequest.documentHash || ""],
+  ];
+  let currentY = 742;
+  rows.forEach(([label, value]) => {
+    evidencePage.drawText(`${label}:`, { x: 48, y: currentY, size: 9, font, color: rgb(0.23, 0.28, 0.35) });
+    evidencePage.drawText(String(value || "-"), { x: 170, y: currentY, size: 9, font: regularFont, color: rgb(0.07, 0.09, 0.12) });
+    currentY -= 18;
+  });
+  currentY -= 10;
+  evidencePage.drawText("Log de auditoria", { x: 48, y: currentY, size: 11, font, color: rgb(0.12, 0.16, 0.2) });
+  currentY -= 18;
+  (signatureRequest.events || []).forEach((event) => {
+    if (currentY < 60) return;
+    evidencePage.drawText(`${formatDateTime(event.createdAt)} - ${signatureEventLabel(event.type)}`, {
+      x: 48,
+      y: currentY,
+      size: 8,
+      font: regularFont,
+      color: rgb(0.23, 0.28, 0.35),
+    });
+    currentY -= 13;
+  });
+
+  return Buffer.from(await pdfDoc.save());
 }
 
 module.exports = (prisma, requireAuth, requirePermission) => {
@@ -494,6 +752,62 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     }
   }
 
+  async function shapeSignatureRequestForList(request, req) {
+    const url = `${publicBaseUrl(req)}/assinatura/${request.token}`;
+    return {
+      ...request,
+      statusLabel: signatureStatusLabel(request.status),
+      publicUrl: url,
+      whatsappUrl: `https://wa.me/?text=${encodeURIComponent(`Segue o link para leitura e assinatura do documento: ${url}`)}`,
+      timeline: signatureTimeline(request),
+    };
+  }
+
+  async function documentHashForSignature(document, req) {
+    if (["EXTERNAL_CONTRACT", "SIGNATURE_DOCUMENT"].includes(document.type)) {
+      const pdf = externalPdfAttachment(document);
+      const local = localUploadPath(pdf?.path);
+      if (local) return hashBuffer(fs.readFileSync(local));
+    }
+    const settings = await prisma.userSettings.findUnique({ where: { userId: req.session.userId } });
+    const user = await prisma.user.findUnique({ where: { id: req.session.userId } });
+    const buffer = await buildDocumentPdfBuffer({
+      document,
+      cat: shapeCat(document.cat),
+      client: document.client,
+      settings: settings || {},
+      user,
+    });
+    return hashBuffer(buffer);
+  }
+
+  async function sendSignatureEmail({ req, document, signatureRequest, settings }) {
+    const smtpConfig = buildUserSmtpConfig(settings);
+    if (!signatureRequest.signerEmail || !smtpConfig) return false;
+
+    const signUrl = `${publicBaseUrl(req)}/assinatura/${signatureRequest.token}`;
+    const pixelUrl = `${publicBaseUrl(req)}/assinatura/${signatureRequest.token}/pixel.png`;
+    await sendStatusEmail({
+      to: signatureRequest.signerEmail,
+      subject: `Assinatura eletrônica - ${document.title || "Documento"}`,
+      html: `
+        <p>Olá${signatureRequest.signerName ? `, ${signatureRequest.signerName}` : ""}.</p>
+        <p>Você recebeu um documento para leitura e assinatura eletrônica.</p>
+        <p><a href="${signUrl}" style="display:inline-block;padding:12px 18px;background:#8a3328;color:#fff;text-decoration:none;border-radius:6px;">Abrir documento</a></p>
+        <p>Se o botão não abrir, copie este link: ${signUrl}</p>
+        <img src="${pixelUrl}" width="1" height="1" alt="" />
+      `,
+      smtpConfig,
+      from: smtpConfig.from,
+    });
+    await logSignatureEvent(signatureRequest.id, "EMAIL_SENT", req, "E-mail aceito pelo SMTP.");
+    await prisma.documentSignatureRequest.update({
+      where: { id: signatureRequest.id },
+      data: { status: "SENT" },
+    });
+    return true;
+  }
+
   router.get("/documentos", requireAuth, requirePermission("admin.documents"), async (req, res, next) => {
     try {
       const documents = await prisma.catteryDocument.findMany({
@@ -516,6 +830,122 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     }
   });
 
+  router.get("/documentos/assinaturas", requireAuth, requirePermission("admin.documents"), async (req, res, next) => {
+    try {
+      const [systemContracts, signatureRequests, settings] = await Promise.all([
+        prisma.catteryDocument.findMany({
+          where: {
+            ownerId: req.session.userId,
+            type: "SALE_CONTRACT",
+            signatureRequests: { none: { status: "SIGNED" } },
+          },
+          include: { client: true, cat: true },
+          orderBy: { updatedAt: "desc" },
+        }),
+        prisma.documentSignatureRequest.findMany({
+          where: { ownerId: req.session.userId },
+          include: {
+            document: { include: { client: true, cat: true } },
+            events: { orderBy: { createdAt: "desc" } },
+          },
+          orderBy: { createdAt: "desc" },
+        }),
+        prisma.userSettings.findUnique({ where: { userId: req.session.userId } }),
+      ]);
+
+      res.render("documents/signatures", {
+        user: req.user,
+        currentPath: "/documentos",
+        systemContracts,
+        signatureRequests: await Promise.all(signatureRequests.map((request) => shapeSignatureRequestForList(request, req))),
+        smtpSettings: shapeSmtpSettings(settings),
+        success: req.query.saved === "1",
+        error: req.query.error || null,
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post(
+    "/documentos/assinaturas/criar",
+    requireAuth,
+    requirePermission("admin.documents"),
+    upload.single("signaturePdf"),
+    async (req, res, next) => {
+      try {
+        const documentKind = req.body.documentKind === "OTHER" ? "OTHER" : "CONTRACT";
+        const contractSource = req.body.contractSource === "EXTERNAL" ? "EXTERNAL" : "SYSTEM";
+        const signerName = compact(req.body.signerName);
+        const signerEmail = compact(req.body.signerEmail);
+        const signerDocument = compact(req.body.signerDocument);
+        const signerPhone = compact(req.body.signerPhone);
+        let document = null;
+        let signatureSource = "SYSTEM_CONTRACT";
+
+        if (documentKind === "CONTRACT" && contractSource === "SYSTEM") {
+          document = await loadDocument(req.body.systemDocumentId, req.session.userId);
+          if (!document || document.type !== "SALE_CONTRACT") {
+            return res.redirect("/documentos/assinaturas?error=Selecione um contrato do sistema válido.");
+          }
+          signatureSource = "SYSTEM_CONTRACT";
+        } else {
+          if (!req.file) {
+            return res.redirect("/documentos/assinaturas?error=Selecione um arquivo PDF para assinatura.");
+          }
+          if (!String(req.file.mimetype || "").includes("pdf") && !/\.pdf$/i.test(req.file.originalname || "")) {
+            return res.redirect("/documentos/assinaturas?error=O arquivo para assinatura precisa ser PDF.");
+          }
+          const title = compact(req.body.externalTitle) || (documentKind === "CONTRACT" ? "Contrato externo" : "Documento para assinatura");
+          document = await prisma.catteryDocument.create({
+            data: {
+              ownerId: req.session.userId,
+              type: documentKind === "CONTRACT" ? "EXTERNAL_CONTRACT" : "SIGNATURE_DOCUMENT",
+              title,
+              body: "",
+              attachmentsJson: JSON.stringify([{
+                path: `/uploads/documents/${req.file.filename}`,
+                originalName: req.file.originalname,
+                mimeType: req.file.mimetype,
+                size: req.file.size,
+              }]),
+            },
+            include: { cat: true, client: true },
+          });
+          signatureSource = documentKind === "CONTRACT" ? "EXTERNAL_CONTRACT" : "EXTERNAL_DOCUMENT";
+        }
+
+        const token = crypto.randomBytes(32).toString("hex");
+        const documentHash = await documentHashForSignature(document, req);
+        const signatureRequest = await prisma.documentSignatureRequest.create({
+          data: {
+            ownerId: req.session.userId,
+            documentId: document.id,
+            token,
+            signerName: signerName || document.client?.fullName || null,
+            signerEmail: signerEmail || document.client?.email || null,
+            signerDocument: signerDocument || document.client?.document || null,
+            signerPhone: signerPhone || document.client?.phone || null,
+            signatureSource,
+            signaturePage: parseNullablePositiveInt(req.body.signaturePage) || 1,
+            signatureX: parseCoordinate(req.body.signatureX),
+            signatureY: parseCoordinate(req.body.signatureY),
+            status: "PENDING",
+            documentHash,
+          },
+        });
+        await logSignatureEvent(signatureRequest.id, "LINK_CREATED", req, "Link público criado.");
+
+        const settings = await prisma.userSettings.findUnique({ where: { userId: req.session.userId } });
+        await sendSignatureEmail({ req, document, signatureRequest, settings });
+
+        res.redirect("/documentos/assinaturas?saved=1");
+      } catch (err) {
+        next(err);
+      }
+    }
+  );
+
   router.get("/documentos/novo/:route", requireAuth, requirePermission("admin.documents"), async (req, res, next) => {
     try {
       const type = selectedTypeFromRoute(req.params.route);
@@ -531,7 +961,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           id: null,
           type,
           title: config.defaultTitle,
-          body: config.defaultBody,
+          body: type === "HEALTH_CERTIFICATE"
+            ? options.settings.healthCertificateDeclarationText || config.defaultBody
+            : config.defaultBody,
           catId: "",
           clientId: "",
           documentDate: formatDateInput(new Date()),
@@ -635,8 +1067,15 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       if (type === "HEALTH_CERTIFICATE") {
         await prisma.userSettings.upsert({
           where: { userId: req.session.userId },
-          update: { healthCertificateLogoPreference: logoChoice },
-          create: { userId: req.session.userId, healthCertificateLogoPreference: logoChoice },
+          update: {
+            healthCertificateLogoPreference: logoChoice,
+            healthCertificateDeclarationText: data.body,
+          },
+          create: {
+            userId: req.session.userId,
+            healthCertificateLogoPreference: logoChoice,
+            healthCertificateDeclarationText: data.body,
+          },
         });
       }
 
@@ -761,7 +1200,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         await logSignatureEvent(signatureRequest.id, "CONTRACT_UNBLOCKED", req, "Contrato desbloqueado pelo usuário.");
       }
 
-      res.redirect(`/documentos/${document.id}/editar?saved=1`);
+      const target = req.query.returnTo === "assinaturas"
+        ? "/documentos/assinaturas?saved=1"
+        : `/documentos/${document.id}/editar?saved=1`;
+      res.redirect(target);
     } catch (err) {
       next(err);
     }
@@ -907,6 +1349,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           cat: null,
           client: null,
           settings: signatureRequest.document.owner?.settings || {},
+          externalPdf: null,
           bodyText: "",
           success: null,
           error: signatureRequest.status === "CANCELED"
@@ -928,6 +1371,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         cat: shapeCat(signatureRequest.document.cat),
         client: signatureRequest.document.client,
         settings: signatureRequest.document.owner?.settings || {},
+        externalPdf: externalPdfAttachment(signatureRequest.document),
         bodyText: renderTemplate(signatureRequest.document.body, {
           document: signatureRequest.document,
           cat: shapeCat(signatureRequest.document.cat),
@@ -1041,15 +1485,17 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       });
       await logSignatureEvent(signatureRequest.id, "SIGNED", req, "Contrato assinado eletronicamente.", { latitude, longitude });
       const finalRequest = await loadSignatureRequestByToken(req.params.token);
-      const pdfBuffer = await buildDocumentPdfBuffer({
-        document: finalRequest.document,
-        cat: shapeCat(finalRequest.document.cat),
-        client: finalRequest.document.client,
-        settings: finalRequest.document.owner?.settings || {},
-        user: finalRequest.document.owner,
-        signatureRequest: finalRequest,
-      });
-      const target = evidenceUploadPath(`contrato-assinado-${updated.id}.pdf`);
+      const pdfBuffer = ["EXTERNAL_CONTRACT", "SIGNATURE_DOCUMENT"].includes(finalRequest.document.type)
+        ? await buildSignedExternalPdfBuffer({ document: finalRequest.document, signatureRequest: finalRequest })
+        : await buildDocumentPdfBuffer({
+            document: finalRequest.document,
+            cat: shapeCat(finalRequest.document.cat),
+            client: finalRequest.document.client,
+            settings: finalRequest.document.owner?.settings || {},
+            user: finalRequest.document.owner,
+            signatureRequest: finalRequest,
+          });
+      const target = evidenceUploadPath(`documento-assinado-${updated.id}.pdf`);
       fs.writeFileSync(target.local, pdfBuffer);
       await prisma.documentSignatureRequest.update({
         where: { id: signatureRequest.id },

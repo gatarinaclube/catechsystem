@@ -120,7 +120,7 @@
         <div class="sign-kicker">Assinatura eletrônica</div>
         <h1><%= document.title || 'Contrato' %></h1>
         <p class="muted">
-          Leia o contrato, confirme sua identidade, receba o código OTP por e-mail e assine eletronicamente.
+          Leia o documento, confirme sua identidade, receba o código OTP por e-mail e assine eletronicamente.
         </p>
       </header>
 
@@ -140,8 +140,17 @@
         </section>
       <% } else { %>
         <section class="sign-card">
-          <h2>Contrato</h2>
-          <div class="contract-body"><%= bodyText %></div>
+          <h2><%= externalPdf ? 'Documento' : 'Contrato' %></h2>
+          <% if (externalPdf) { %>
+            <iframe
+              src="<%= externalPdf.path %>#toolbar=1&navpanes=0"
+              title="Documento para assinatura"
+              style="width:100%; height:min(72vh, 760px); border:1px solid #e5ded3; border-radius:8px;"
+            ></iframe>
+            <p class="muted"><a href="<%= externalPdf.path %>" target="_blank" rel="noopener noreferrer">Abrir documento em nova aba</a></p>
+          <% } else { %>
+            <div class="contract-body"><%= bodyText %></div>
+          <% } %>
         </section>
       <% } %>
 
@@ -201,13 +210,13 @@
             </div>
             <label style="margin-top:14px;">
               <input type="checkbox" name="acceptTerms" required style="width:auto; margin-right:8px;" />
-              Li o contrato, confirmo minha identidade e aceito assinar eletronicamente este documento.
+              Li o documento, confirmo minha identidade e aceito assinar eletronicamente.
             </label>
             <p class="muted">
               O sistema registrará IP, data e hora, navegador utilizado, hash do documento e, se autorizado pelo navegador, geolocalização.
             </p>
             <div class="actions">
-              <button class="btn btn-primary" type="submit">Assinar contrato</button>
+              <button class="btn btn-primary" type="submit">Assinar documento</button>
             </div>
           </form>
         </section>

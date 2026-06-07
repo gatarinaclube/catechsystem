@@ -340,6 +340,36 @@
   color: #b91c1c;
 }
 
+.pdf-signature-preview {
+  position: relative;
+  height: min(72vh, 760px);
+  margin-top: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.pdf-signature-preview iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  pointer-events: none;
+}
+
+#signatureMarker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border: 2px solid #16a34a;
+  background: rgba(22, 163, 74, 0.14);
+  color: #166534;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  pointer-events: none;
+}
+
 @media (max-width: 1180px) {
   .signature-timeline {
     grid-template-columns: repeat(2, minmax(0, 1fr));

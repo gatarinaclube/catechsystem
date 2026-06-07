@@ -106,10 +106,14 @@
           <section class="content-card" style="margin-bottom:18px;">
             <div class="content-title">Texto</div>
             <div class="field" style="margin-top:12px;">
-              <label class="field-label" for="body">Conteúdo do documento</label>
+              <label class="field-label" for="body"><%= type === 'HEALTH_CERTIFICATE' ? 'Declaração do Médico Veterinário' : 'Conteúdo do documento' %></label>
               <textarea id="body" name="body" rows="16" required><%= document.body || '' %></textarea>
               <div class="section-note">
-                Você pode usar: {{comprador}}, {{gato}}, {{microchip}}, {{nascimento}}, {{gatil}}, {{veterinario}}, {{crmv}}, {{dataDocumento}}.
+                <% if (type === 'HEALTH_CERTIFICATE') { %>
+                  Esse texto será salvo como padrão para os próximos atestados deste usuário. Você pode usar: {{gato}}, {{microchip}}, {{nascimento}}, {{gatil}}, {{veterinario}}, {{crmv}}, {{clinicaVeterinaria}}, {{nomeFantasiaVeterinaria}}, {{cnpjVeterinario}}, {{dataDocumento}}.
+                <% } else { %>
+                  Você pode usar: {{comprador}}, {{gato}}, {{microchip}}, {{nascimento}}, {{gatil}}, {{veterinario}}, {{crmv}}, {{dataDocumento}}.
+                <% } %>
               </div>
             </div>
           </section>
@@ -141,121 +145,6 @@
             <button type="submit" class="btn btn-primary">Salvar</button>
           </div>
         </form>
-
-        <% if (type === 'SALE_CONTRACT' && document.id) { %>
-          <section class="content-card" style="margin-bottom:18px;">
-            <div class="history-section-head" style="margin-bottom:12px;">
-              <div>
-                <div class="content-title">Assinatura eletrônica</div>
-                <div class="content-sub">Envie o contrato para leitura, OTP por e-mail e assinatura eletrônica.</div>
-              </div>
-              <span class="status-pill <%= smtpSettings.isComplete ? 'is-green' : 'is-yellow' %>">
-                <%= smtpSettings.isComplete ? 'SMTP configurado' : 'SMTP pendente' %>
-              </span>
-            </div>
-            <% if (!smtpSettings.isComplete) { %>
-              <div class="section-note" style="margin-bottom:12px;">
-                Para envio por e-mail e OTP, configure o SMTP próprio em <a href="/settings">Configurações</a>.
-                Ainda assim, você pode gerar o link e encaminhar por WhatsApp.
-              </div>
-            <% } %>
-            <form method="post" action="/documentos/<%= document.id %>/assinatura/criar" class="grid-2" style="align-items:end;">
-              <div class="field">
-                <label class="field-label" for="signerName">Nome do comprador</label>
-                <input id="signerName" name="signerName" type="text" value="<%= document.client?.fullName || '' %>" />
-              </div>
-              <div class="field">
-                <label class="field-label" for="signerDocument">CPF/CNPJ ou documento</label>
-                <input id="signerDocument" name="signerDocument" type="text" value="<%= document.client?.document || '' %>" />
-              </div>
-              <div class="field">
-                <label class="field-label" for="signerEmail">E-mail</label>
-                <input id="signerEmail" name="signerEmail" type="email" value="<%= document.client?.email || '' %>" />
-              </div>
-              <div class="field">
-                <label class="field-label" for="signerPhone">Telefone/WhatsApp</label>
-                <input id="signerPhone" name="signerPhone" type="text" value="<%= document.client?.phone || '' %>" />
-              </div>
-              <div class="form-actions" style="grid-column:1/-1; text-align:right;">
-                <button type="submit" class="btn btn-primary">Gerar link / enviar e-mail</button>
-              </div>
-            </form>
-
-            <% if (document.signatureRequests && document.signatureRequests.length) { %>
-              <div class="documents-section-title">
-                <div>
-                  <div class="content-title">Links e auditoria</div>
-                  <div class="content-sub">Acompanhe cada envio, acesso e assinatura do contrato.</div>
-                </div>
-              </div>
-              <div class="signature-request-list">
-                <% document.signatureRequests.forEach(function(request) { %>
-                  <%
-                    const statusClass =
-                      request.status === 'SIGNED' ? 'is-green' :
-                      request.status === 'BLOCKED' || request.status === 'CANCELED' ? 'is-red' :
-                      request.status === 'OTP_SENT' || request.status === 'VIEWED' ? 'is-blue' :
-                      'is-yellow';
-                  %>
-                  <article class="signature-request-card">
-                    <div class="signature-request-head">
-                      <div class="signature-request-person">
-                        <div class="record-title"><%= request.signerName || 'Assinante' %></div>
-                        <div class="record-sub"><%= request.signerEmail || 'Sem e-mail cadastrado' %></div>
-                      </div>
-                      <span class="status-pill <%= statusClass %>"><%= request.statusLabel || request.status %></span>
-                    </div>
-
-                    <div class="signature-link-box">
-                      <span>Link público</span>
-                      <a href="<%= request.publicUrl %>" target="_blank" rel="noopener noreferrer"><%= request.publicUrl %></a>
-                    </div>
-
-                    <div class="signature-timeline">
-                      <% request.timeline.forEach(function(item) { %>
-                        <div class="signature-timeline-item">
-                          <span class="signature-timeline-dot"></span>
-                          <div>
-                            <strong><%= item.title %></strong>
-                            <p><%= item.value %></p>
-                          </div>
-                        </div>
-                      <% }) %>
-                    </div>
-
-                    <div class="signature-action-bar">
-                      <div class="signature-action-primary">
-                        <% if (request.status !== 'CANCELED' && request.status !== 'BLOCKED') { %>
-                          <a class="btn" href="<%= request.whatsappUrl %>" target="_blank" rel="noopener noreferrer">Enviar WhatsApp</a>
-                        <% } %>
-                        <% if (request.evidencePdfPath) { %>
-                          <a class="btn btn-primary" href="<%= request.evidencePdfPath %>" target="_blank" rel="noopener noreferrer">PDF assinado</a>
-                        <% } %>
-                      </div>
-
-                      <div class="signature-action-secondary">
-                        <% if (request.status !== 'SIGNED' && request.status !== 'CANCELED') { %>
-                          <% if (request.status === 'BLOCKED') { %>
-                            <form method="post" action="/documentos/<%= document.id %>/assinatura/<%= request.id %>/desbloquear">
-                              <button type="submit" class="btn">Desbloquear</button>
-                            </form>
-                          <% } else { %>
-                            <form method="post" action="/documentos/<%= document.id %>/assinatura/<%= request.id %>/bloquear">
-                              <button type="submit" class="btn">Bloquear</button>
-                            </form>
-                          <% } %>
-                          <form method="post" action="/documentos/<%= document.id %>/assinatura/<%= request.id %>/cancelar" onsubmit="return confirm('Cancelar este contrato? O cliente não poderá mais acessar este link.');">
-                            <button type="submit" class="btn signature-danger-button">Cancelar</button>
-                          </form>
-                        <% } %>
-                      </div>
-                    </div>
-                  </article>
-                <% }) %>
-              </div>
-            <% } %>
-          </section>
-        <% } %>
 
         <% if (type === 'CARE_MANUAL' && document.id) { %>
           <section class="content-card" style="margin-bottom:18px;">

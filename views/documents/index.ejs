@@ -40,7 +40,7 @@
               <div class="content-title"><%= config.label %></div>
               <div class="content-sub" style="margin:8px 0 14px;">
                 <% if (type === 'SALE_CONTRACT') { %>
-                  Texto editável, comprador, gato, assinatura e PDF.
+                  Texto editável, comprador, gato e PDF.
                 <% } else if (type === 'HEALTH_CERTIFICATE') { %>
                   Cabeçalho veterinário, data, gato e PDF.
                 <% } else { %>
@@ -50,6 +50,13 @@
               <a class="btn btn-primary" href="/documentos/novo/<%= config.route %>">Criar</a>
             </section>
           <% }) %>
+          <section class="content-card">
+            <div class="content-title">Assinatura Eletrônica</div>
+            <div class="content-sub" style="margin:8px 0 14px;">
+              Envio de contratos do sistema, contratos externos ou outros PDFs para assinatura.
+            </div>
+            <a class="btn btn-primary" href="/documentos/assinaturas">Acessar</a>
+          </section>
         </div>
 
         <% Object.entries(documentTypes).forEach(function(entry) { const type = entry[0]; const config = entry[1]; const docs = grouped[type] || []; %>
