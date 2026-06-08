@@ -452,6 +452,8 @@ model CatteryShowcaseAnalyticsSession {
   city        String?
   region      String?
   country     String?
+  latitude    Float?
+  longitude   Float?
   startedAt   DateTime @default(now())
   lastSeenAt  DateTime @default(now())
   durationSeconds Int @default(0)

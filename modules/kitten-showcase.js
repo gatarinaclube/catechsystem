@@ -138,6 +138,33 @@ function locationFromHeaders(req) {
   };
 }
 
+function parseCoordinate(value, min, max) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < min || number > max) return null;
+  return Number(number.toFixed(5));
+}
+
+function locationUpdateData(body = {}) {
+  const data = {};
+  const latitude = parseCoordinate(body.latitude, -90, 90);
+  const longitude = parseCoordinate(body.longitude, -180, 180);
+  if (latitude !== null) data.latitude = latitude;
+  if (longitude !== null) data.longitude = longitude;
+  if (shortText(body.city, 100)) data.city = shortText(body.city, 100);
+  if (shortText(body.region, 100)) data.region = shortText(body.region, 100);
+  if (shortText(body.country, 100)) data.country = shortText(body.country, 100);
+  return data;
+}
+
+function placeLabel(session) {
+  const place = [session.city, session.region, session.country].filter(Boolean).join(" / ");
+  if (place) return place;
+  if (session.latitude !== null && session.latitude !== undefined && session.longitude !== null && session.longitude !== undefined) {
+    return `Localização aprox. ${Number(session.latitude).toFixed(3)}, ${Number(session.longitude).toFixed(3)}`;
+  }
+  return "Local não informado";
+}
+
 function browserLabel(userAgent) {
   const ua = String(userAgent || "");
   if (/Edg\//i.test(ua)) return "Edge";
@@ -354,6 +381,7 @@ async function createAnalyticsSession(prisma, req, rawSlug) {
   const showcase = await findPublishedShowcaseBySlug(prisma, rawSlug);
   if (!showcase) return null;
   const location = locationFromHeaders(req);
+  const locationData = locationUpdateData(req.body || {});
   const visitorId = shortText(req.body?.visitorId, 80) || crypto.randomBytes(12).toString("hex");
   const userAgent = shortText(req.headers["user-agent"], 500);
   const now = new Date();
@@ -369,9 +397,11 @@ async function createAnalyticsSession(prisma, req, rawSlug) {
       language: shortText(req.body?.language || req.headers["accept-language"], 80),
       timezone: shortText(req.body?.timezone, 80),
       screen: shortText(req.body?.screen, 40),
-      city: shortText(req.body?.city || location.city, 100),
-      region: shortText(req.body?.region || location.region, 100),
-      country: shortText(req.body?.country || location.country, 100),
+      city: locationData.city || shortText(location.city, 100),
+      region: locationData.region || shortText(location.region, 100),
+      country: locationData.country || shortText(location.country, 100),
+      latitude: locationData.latitude,
+      longitude: locationData.longitude,
       startedAt: now,
       lastSeenAt: now,
     },
@@ -393,7 +423,7 @@ async function updateAnalyticsSession(prisma, req, rawSlug, { event = null, clos
   const durationSeconds = Math.max(0, Math.round((now.getTime() - new Date(session.startedAt).getTime()) / 1000));
   await prisma.catteryShowcaseAnalyticsSession.update({
     where: { id: session.id },
-    data: { lastSeenAt: now, durationSeconds },
+    data: { lastSeenAt: now, durationSeconds, ...locationUpdateData(req.body || {}) },
   });
 
   if (event) {
@@ -513,6 +543,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         where: { showcaseId },
         orderBy: { startedAt: "desc" },
         take: 18,
+        include: { events: { orderBy: { createdAt: "desc" }, take: 30 } },
       }),
       prisma.catteryShowcaseAnalyticsEvent.findMany({
         where: { session: { showcaseId } },
@@ -529,7 +560,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const shapeSession = (session) => ({
       id: session.id,
       browserLabel: session.browserLabel || "Navegador",
-      place: [session.city, session.region, session.country].filter(Boolean).join(" / ") || "Local não informado",
+      place: placeLabel(session),
       startedAtLabel: formatDateTime(session.startedAt),
       lastSeenAtLabel: formatDateTime(session.lastSeenAt),
       durationLabel: formatDuration(session.durationSeconds),
@@ -537,6 +568,17 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       language: session.language || "",
       timezone: session.timezone || "",
       screen: session.screen || "",
+      coordinates: session.latitude !== null && session.latitude !== undefined && session.longitude !== null && session.longitude !== undefined
+        ? `${Number(session.latitude).toFixed(5)}, ${Number(session.longitude).toFixed(5)}`
+        : "",
+      events: (session.events || []).map((event) => ({
+        id: event.id,
+        type: event.type,
+        label: event.label || event.type,
+        details: event.details || "",
+        path: event.path || "",
+        createdAtLabel: formatDateTime(event.createdAt),
+      })),
     });
 
     return {
@@ -549,7 +591,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         details: event.details || "",
         path: event.path || "",
         createdAtLabel: formatDateTime(event.createdAt),
-        place: [event.session.city, event.session.region, event.session.country].filter(Boolean).join(" / ") || "Local não informado",
+        place: placeLabel(event.session),
       })),
       totals: {
         active: activeSessions.length,

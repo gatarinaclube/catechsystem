@@ -40,11 +40,17 @@
           <div class="content-card success-card">Vitrine salva com sucesso.</div>
         <% } %>
 
-        <section class="content-card showcase-analytics-panel">
-          <div class="showcase-section-head">
+        <details class="content-card showcase-analytics-panel">
+          <summary class="showcase-analytics-summary">
             <div>
               <div class="content-title">Acessos da página pública</div>
               <div class="content-sub">Sessões ativas, tempo na página, cliques e visualizações registradas na vitrine.</div>
+            </div>
+            <span class="status-pill is-purple"><%= analytics.totals.active %> agora</span>
+          </summary>
+          <div class="showcase-section-head" style="margin-top:14px;">
+            <div class="section-note">
+              A cidade aparece quando o provedor informa localização por IP. Coordenadas aparecem somente se o navegador já tiver permissão de localização.
             </div>
             <button id="refreshShowcaseAnalytics" class="btn" type="button">Atualizar</button>
           </div>
@@ -53,8 +59,7 @@
             <div><span>Hoje</span><strong data-analytics-total="today"><%= analytics.totals.today %></strong></div>
             <div><span>Total</span><strong data-analytics-total="total"><%= analytics.totals.total %></strong></div>
           </div>
-          <div class="showcase-analytics-grid">
-            <div>
+          <div>
               <div class="content-sub">Acessando no momento</div>
               <div id="activeShowcaseVisitors" class="showcase-analytics-list">
                 <% if (!analytics.active.length) { %>
@@ -67,22 +72,24 @@
                   </div>
                 <% }) %>
               </div>
-            </div>
+          </div>
+          <details class="showcase-analytics-recent">
+            <summary>Últimas ações</summary>
             <div>
-              <div class="content-sub">Últimas ações</div>
               <div id="showcaseAnalyticsEvents" class="showcase-analytics-list">
                 <% if (!analytics.events.length) { %>
                   <div class="empty">Nenhuma ação registrada ainda.</div>
                 <% } %>
-                <% analytics.events.forEach(function(event) { %>
+                <% analytics.events.slice(0, 10).forEach(function(event) { %>
                   <div class="showcase-analytics-row">
                     <strong><%= event.label %></strong>
                     <span><%= event.createdAtLabel %> · <%= event.place %><% if (event.details) { %> · <%= event.details %><% } %></span>
                   </div>
                 <% }) %>
               </div>
+              <div class="showcase-analytics-pager" id="showcaseAnalyticsEventsPager"></div>
             </div>
-          </div>
+          </details>
           <details class="showcase-analytics-recent">
             <summary>Últimas visitas</summary>
             <div id="recentShowcaseVisitors" class="showcase-analytics-list">
@@ -90,14 +97,35 @@
                 <div class="empty">Nenhuma visita registrada ainda.</div>
               <% } %>
               <% analytics.recent.forEach(function(session) { %>
-                <div class="showcase-analytics-row">
-                  <strong><%= session.place %></strong>
-                  <span><%= session.startedAtLabel %> · tempo <%= session.durationLabel %> · <%= session.browserLabel %></span>
-                </div>
+                <details class="showcase-analytics-row">
+                  <summary>
+                    <strong><%= session.place %></strong>
+                    <span><%= session.startedAtLabel %> · tempo <%= session.durationLabel %> · <%= session.browserLabel %></span>
+                  </summary>
+                  <div class="showcase-analytics-details">
+                    <p><strong>Última atividade:</strong> <%= session.lastSeenAtLabel %></p>
+                    <% if (session.referrer) { %><p><strong>Origem:</strong> <%= session.referrer %></p><% } %>
+                    <% if (session.language) { %><p><strong>Idioma:</strong> <%= session.language %></p><% } %>
+                    <% if (session.timezone) { %><p><strong>Fuso:</strong> <%= session.timezone %></p><% } %>
+                    <% if (session.screen) { %><p><strong>Tela:</strong> <%= session.screen %></p><% } %>
+                    <% if (session.coordinates) { %><p><strong>Localização:</strong> <%= session.coordinates %></p><% } %>
+                    <div class="showcase-analytics-list">
+                      <% if (!session.events.length) { %>
+                        <div class="empty">Nenhuma ação registrada nesta visita.</div>
+                      <% } %>
+                      <% session.events.forEach(function(event) { %>
+                        <div class="showcase-analytics-event-line">
+                          <strong><%= event.label %></strong>
+                          <span><%= event.createdAtLabel %><% if (event.details) { %> · <%= event.details %><% } %></span>
+                        </div>
+                      <% }) %>
+                    </div>
+                  </div>
+                </details>
               <% }) %>
             </div>
           </details>
-        </section>
+        </details>
 
         <form id="showcaseForm" method="post" action="/admin/vitrine-filhotes" enctype="multipart/form-data">
           <input type="hidden" id="payload" name="payload" />

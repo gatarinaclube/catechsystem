@@ -11,6 +11,7 @@
 
   let sessionId = null;
   const seenSections = new Set();
+  let locationPayload = {};
 
   function endpoint(path) {
     return `/vitrine/${encodeURIComponent(slug)}/analytics/${path}`;
@@ -25,6 +26,7 @@
       language: navigator.language || "",
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
       screen: `${window.screen.width || 0}x${window.screen.height || 0}`,
+      ...locationPayload,
       ...extra,
     };
   }
@@ -61,9 +63,33 @@
   }
 
   async function start() {
+    await loadGrantedLocation();
     const data = await post("session", payload({}));
     if (!data || !data.sessionId) return;
     sessionId = data.sessionId;
+  }
+
+  async function loadGrantedLocation() {
+    if (!navigator.geolocation || !navigator.permissions) return;
+    try {
+      const permission = await navigator.permissions.query({ name: "geolocation" });
+      if (permission.state !== "granted") return;
+      await new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            locationPayload = {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            };
+            resolve();
+          },
+          () => resolve(),
+          { maximumAge: 24 * 60 * 60 * 1000, timeout: 1200, enableHighAccuracy: false }
+        );
+      });
+    } catch {
+      // Localização é opcional e depende da permissão do visitante.
+    }
   }
 
   function heartbeat() {
