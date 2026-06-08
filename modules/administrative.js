@@ -270,14 +270,30 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     }
   }
 
-  async function loadExpenseOptionNames(type) {
+  function uniqueOptionNames(rows) {
+    const names = new Map();
+    rows.forEach((option) => {
+      const name = String(option.name || "").trim();
+      const key = name.toLocaleLowerCase("pt-BR");
+      if (name && !names.has(key)) names.set(key, name);
+    });
+    return Array.from(names.values()).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }
+
+  async function loadExpenseOptionNames(req, type) {
     const options = await prisma.quickLaunchOption.findMany({
-      where: { type, disabledAt: null },
+      where: {
+        type,
+        disabledAt: null,
+        OR: [
+          { ownerId: req.session?.userId || null },
+          { ownerId: null },
+        ],
+      },
       orderBy: { name: "asc" },
       select: { name: true },
     });
-    return Array.from(new Set(options.map((option) => option.name).filter(Boolean)))
-      .sort((a, b) => a.localeCompare(b, "pt-BR"));
+    return uniqueOptionNames(options);
   }
 
   function payableData(req) {
@@ -568,7 +584,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         user: req.user,
         currentPath: "/administrativo",
         suppliers,
-        categories: await loadExpenseOptionNames("CATEGORY"),
+        categories: await loadExpenseOptionNames(req, "CATEGORY"),
         search,
         form: {},
         success: req.query.ok === "1",
@@ -596,7 +612,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           user: req.user,
           currentPath: "/administrativo",
           suppliers: await loadSupplierRows(req),
-          categories: await loadExpenseOptionNames("CATEGORY"),
+          categories: await loadExpenseOptionNames(req, "CATEGORY"),
           search: "",
           form: req.body,
           success: false,
@@ -973,8 +989,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           take: 300,
         }),
         loadSupplierRows(req),
-        loadExpenseOptionNames("CATEGORY"),
-        loadExpenseOptionNames("PAYMENT"),
+        loadExpenseOptionNames(req, "CATEGORY"),
+        loadExpenseOptionNames(req, "PAYMENT"),
       ]);
       res.render("administrative/payables", {
         user: req.user,

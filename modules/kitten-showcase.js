@@ -1,4 +1,5 @@
 const express = require("express");
+const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
@@ -104,6 +105,60 @@ function publicDate(date) {
 function compact(value) {
   const text = String(value || "").trim();
   return text || null;
+}
+
+function shortText(value, max = 240) {
+  const text = String(value || "").trim();
+  return text ? text.slice(0, max) : null;
+}
+
+function getClientIp(req) {
+  const forwarded = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+  return forwarded || req.socket?.remoteAddress || "";
+}
+
+function hashIp(ip) {
+  if (!ip) return null;
+  return crypto.createHash("sha256").update(`${process.env.SESSION_SECRET || "catech"}:${ip}`).digest("hex");
+}
+
+function firstHeader(req, names) {
+  for (const name of names) {
+    const value = req.headers[name.toLowerCase()];
+    if (value) return decodeURIComponent(String(Array.isArray(value) ? value[0] : value));
+  }
+  return null;
+}
+
+function locationFromHeaders(req) {
+  return {
+    city: firstHeader(req, ["cf-ipcity", "x-vercel-ip-city", "x-appengine-city"]),
+    region: firstHeader(req, ["cf-region", "x-vercel-ip-country-region", "x-appengine-region"]),
+    country: firstHeader(req, ["cf-ipcountry", "x-vercel-ip-country", "x-appengine-country"]),
+  };
+}
+
+function browserLabel(userAgent) {
+  const ua = String(userAgent || "");
+  if (/Edg\//i.test(ua)) return "Edge";
+  if (/Chrome\//i.test(ua) && !/Chromium/i.test(ua)) return "Chrome";
+  if (/Safari\//i.test(ua) && !/Chrome/i.test(ua)) return "Safari";
+  if (/Firefox\//i.test(ua)) return "Firefox";
+  if (/Android/i.test(ua)) return "Android";
+  if (/iPhone|iPad/i.test(ua)) return "iOS";
+  return "Navegador";
+}
+
+function formatDuration(seconds) {
+  const total = Math.max(0, Number(seconds || 0));
+  const minutes = Math.floor(total / 60);
+  const rest = total % 60;
+  return minutes ? `${minutes}min ${rest}s` : `${rest}s`;
+}
+
+function formatDateTime(date) {
+  if (!date) return "-";
+  return new Date(date).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
 }
 
 function normalizeUrl(value) {
@@ -286,8 +341,122 @@ async function renderPublicShowcase(prisma, req, res, next, rawSlug) {
   }
 }
 
+async function findPublishedShowcaseBySlug(prisma, rawSlug) {
+  const slug = slugify(rawSlug);
+  if (!slug || RESERVED_SLUGS.has(slug)) return null;
+  return prisma.catteryKittenShowcase.findFirst({
+    where: { slug, published: true },
+    select: { id: true, slug: true },
+  });
+}
+
+async function createAnalyticsSession(prisma, req, rawSlug) {
+  const showcase = await findPublishedShowcaseBySlug(prisma, rawSlug);
+  if (!showcase) return null;
+  const location = locationFromHeaders(req);
+  const visitorId = shortText(req.body?.visitorId, 80) || crypto.randomBytes(12).toString("hex");
+  const userAgent = shortText(req.headers["user-agent"], 500);
+  const now = new Date();
+
+  return prisma.catteryShowcaseAnalyticsSession.create({
+    data: {
+      showcaseId: showcase.id,
+      visitorId,
+      ipHash: hashIp(getClientIp(req)),
+      userAgent,
+      browserLabel: browserLabel(userAgent),
+      referrer: shortText(req.body?.referrer || req.headers.referer, 500),
+      language: shortText(req.body?.language || req.headers["accept-language"], 80),
+      timezone: shortText(req.body?.timezone, 80),
+      screen: shortText(req.body?.screen, 40),
+      city: shortText(req.body?.city || location.city, 100),
+      region: shortText(req.body?.region || location.region, 100),
+      country: shortText(req.body?.country || location.country, 100),
+      startedAt: now,
+      lastSeenAt: now,
+    },
+  });
+}
+
+async function updateAnalyticsSession(prisma, req, rawSlug, { event = null, close = false } = {}) {
+  const showcase = await findPublishedShowcaseBySlug(prisma, rawSlug);
+  const sessionId = Number(req.body?.sessionId);
+  if (!showcase || !Number.isInteger(sessionId)) return null;
+
+  const session = await prisma.catteryShowcaseAnalyticsSession.findFirst({
+    where: { id: sessionId, showcaseId: showcase.id },
+    select: { id: true, startedAt: true },
+  });
+  if (!session) return null;
+
+  const now = new Date();
+  const durationSeconds = Math.max(0, Math.round((now.getTime() - new Date(session.startedAt).getTime()) / 1000));
+  await prisma.catteryShowcaseAnalyticsSession.update({
+    where: { id: session.id },
+    data: { lastSeenAt: now, durationSeconds },
+  });
+
+  if (event) {
+    await prisma.catteryShowcaseAnalyticsEvent.create({
+      data: {
+        sessionId: session.id,
+        type: shortText(event.type, 40) || (close ? "leave" : "event"),
+        label: shortText(event.label, 180),
+        details: shortText(event.details, 500),
+        path: shortText(event.path, 300),
+      },
+    });
+  }
+
+  return { id: session.id, durationSeconds };
+}
+
 function publicRouter(prisma) {
   const router = express.Router();
+
+  router.post("/vitrine/:slug/analytics/session", async (req, res) => {
+    try {
+      const session = await createAnalyticsSession(prisma, req, req.params.slug);
+      if (!session) return res.status(404).json({ ok: false });
+      await prisma.catteryShowcaseAnalyticsEvent.create({
+        data: {
+          sessionId: session.id,
+          type: "page_view",
+          label: "Acessou a vitrine",
+          path: shortText(req.body?.path, 300),
+        },
+      });
+      res.json({ ok: true, sessionId: session.id });
+    } catch (err) {
+      console.error("Erro ao iniciar analytics da vitrine:", err);
+      res.status(204).end();
+    }
+  });
+
+  router.post("/vitrine/:slug/analytics/heartbeat", async (req, res) => {
+    try {
+      await updateAnalyticsSession(prisma, req, req.params.slug);
+      res.json({ ok: true });
+    } catch {
+      res.status(204).end();
+    }
+  });
+
+  router.post("/vitrine/:slug/analytics/event", async (req, res) => {
+    try {
+      await updateAnalyticsSession(prisma, req, req.params.slug, {
+        event: {
+          type: req.body?.type,
+          label: req.body?.label,
+          details: req.body?.details,
+          path: req.body?.path,
+        },
+      });
+      res.json({ ok: true });
+    } catch {
+      res.status(204).end();
+    }
+  });
 
   router.get("/vitrine/:slug", async (req, res, next) => {
     return renderPublicShowcase(prisma, req, res, next, req.params.slug);
@@ -324,6 +493,72 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     });
   }
 
+  async function loadAnalyticsOverview(showcaseId) {
+    if (!showcaseId) {
+      return { active: [], recent: [], events: [], totals: { active: 0, today: 0, total: 0 } };
+    }
+
+    const now = Date.now();
+    const activeSince = new Date(now - 90 * 1000);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const [activeSessions, recentSessions, recentEvents, todayCount, totalCount] = await Promise.all([
+      prisma.catteryShowcaseAnalyticsSession.findMany({
+        where: { showcaseId, lastSeenAt: { gte: activeSince } },
+        orderBy: { lastSeenAt: "desc" },
+        take: 12,
+      }),
+      prisma.catteryShowcaseAnalyticsSession.findMany({
+        where: { showcaseId },
+        orderBy: { startedAt: "desc" },
+        take: 18,
+      }),
+      prisma.catteryShowcaseAnalyticsEvent.findMany({
+        where: { session: { showcaseId } },
+        include: { session: true },
+        orderBy: { createdAt: "desc" },
+        take: 25,
+      }),
+      prisma.catteryShowcaseAnalyticsSession.count({
+        where: { showcaseId, startedAt: { gte: today } },
+      }),
+      prisma.catteryShowcaseAnalyticsSession.count({ where: { showcaseId } }),
+    ]);
+
+    const shapeSession = (session) => ({
+      id: session.id,
+      browserLabel: session.browserLabel || "Navegador",
+      place: [session.city, session.region, session.country].filter(Boolean).join(" / ") || "Local não informado",
+      startedAtLabel: formatDateTime(session.startedAt),
+      lastSeenAtLabel: formatDateTime(session.lastSeenAt),
+      durationLabel: formatDuration(session.durationSeconds),
+      referrer: session.referrer || "",
+      language: session.language || "",
+      timezone: session.timezone || "",
+      screen: session.screen || "",
+    });
+
+    return {
+      active: activeSessions.map(shapeSession),
+      recent: recentSessions.map(shapeSession),
+      events: recentEvents.map((event) => ({
+        id: event.id,
+        type: event.type,
+        label: event.label || event.type,
+        details: event.details || "",
+        path: event.path || "",
+        createdAtLabel: formatDateTime(event.createdAt),
+        place: [event.session.city, event.session.region, event.session.country].filter(Boolean).join(" / ") || "Local não informado",
+      })),
+      totals: {
+        active: activeSessions.length,
+        today: todayCount,
+        total: totalCount,
+      },
+    };
+  }
+
   async function renderAdmin(req, res, options = {}) {
     const settings = await getSettings(req.session.userId);
     const showcase = await getShowcase(req.session.userId);
@@ -352,6 +587,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         uploadLimitLabel: uploadLimit.label,
       },
       publicBaseUrl,
+      analytics: await loadAnalyticsOverview(showcase?.id),
       error: options.error || null,
       success: options.success || false,
     });
@@ -401,6 +637,15 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   router.get("/admin/vitrine-filhotes", requireAuth, requirePermission("showcase.manage"), async (req, res, next) => {
     try {
       return renderAdmin(req, res, { success: req.query.ok === "1" });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get("/admin/vitrine-filhotes/analytics", requireAuth, requirePermission("showcase.manage"), async (req, res, next) => {
+    try {
+      const showcase = await getShowcase(req.session.userId);
+      res.json(await loadAnalyticsOverview(showcase?.id));
     } catch (err) {
       next(err);
     }

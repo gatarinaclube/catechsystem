@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/css/theme.css" />
     <link rel="stylesheet" href="/css/kitten-showcase-public.css" />
   </head>
-  <body style="--showcase-bg:<%= showcase.backgroundColor || '#f5f7f3' %>;--showcase-card:<%= showcase.cardColor || '#ffffff' %>;--showcase-text:<%= showcase.textColor || '#1f2933' %>;--showcase-accent:<%= showcase.accentColor || '#8a5a20' %>;">
+  <body data-showcase-slug="<%= showcase.slug %>" style="--showcase-bg:<%= showcase.backgroundColor || '#f5f7f3' %>;--showcase-card:<%= showcase.cardColor || '#ffffff' %>;--showcase-text:<%= showcase.textColor || '#1f2933' %>;--showcase-accent:<%= showcase.accentColor || '#8a5a20' %>;">
     <% const headerLogo = showcase.logoPath || (settings && settings.logoPath); %>
     <% const totalKittens = litters.reduce(function(total, litter) { return total + litter.kittens.length; }, 0); %>
     <header class="showcase-hero">
@@ -45,19 +45,19 @@
         <% if (showcase.websiteUrl || showcase.instagramUrl || showcase.whatsappUrl) { %>
           <div class="showcase-links">
             <% if (showcase.whatsappUrl) { %>
-              <a class="is-primary" href="<%= showcase.whatsappUrl %>" target="_blank" rel="noopener noreferrer">
+              <a class="is-primary" href="<%= showcase.whatsappUrl %>" target="_blank" rel="noopener noreferrer" data-analytics-click="WhatsApp">
                 <span class="showcase-link-icon whatsapp-icon" aria-hidden="true">☎</span>
                 <span>WhatsApp</span>
               </a>
             <% } %>
             <% if (showcase.instagramUrl) { %>
-              <a href="<%= showcase.instagramUrl %>" target="_blank" rel="noopener noreferrer">
+              <a href="<%= showcase.instagramUrl %>" target="_blank" rel="noopener noreferrer" data-analytics-click="Instagram">
                 <span class="showcase-link-icon instagram-icon" aria-hidden="true">◉</span>
                 <span>Instagram</span>
               </a>
             <% } %>
             <% if (showcase.websiteUrl) { %>
-              <a href="<%= showcase.websiteUrl %>" target="_blank" rel="noopener noreferrer">
+              <a href="<%= showcase.websiteUrl %>" target="_blank" rel="noopener noreferrer" data-analytics-click="Site">
                 <span class="showcase-link-icon" aria-hidden="true">◎</span>
                 <span>Site</span>
               </a>
@@ -73,7 +73,7 @@
       <% } %>
 
       <% litters.forEach(function(litter) { %>
-        <section class="public-litter">
+        <section class="public-litter" data-analytics-view="Ninhada <%= litter.birthDateLabel %>">
           <div class="public-litter-head">
             <div>
               <p class="public-label">Ninhada</p>
@@ -161,7 +161,7 @@
       <% }) %>
 
       <% if (hasPaymentInfo) { %>
-        <section class="public-info-section public-payment">
+        <section class="public-info-section public-payment" data-analytics-view="Formas de pagamento">
           <div>
             <p class="public-label">Atendimento</p>
             <h2>Formas de pagamento</h2>
@@ -189,7 +189,7 @@
       <% } %>
 
       <% if (hasAboutInfo) { %>
-        <section class="public-info-section public-about">
+        <section class="public-info-section public-about" data-analytics-view="Sobre o gatil">
           <div class="public-info-head">
             <p class="public-label">Gatil</p>
             <h2>Sobre o gatil</h2>
@@ -200,14 +200,14 @@
           <% if (showcase.aboutPdfPath) { %>
             <div class="public-pdf-viewer">
               <iframe src="<%= showcase.aboutPdfPath %>#toolbar=1&navpanes=0" data-pdf-src="<%= showcase.aboutPdfPath %>" title="Apresentação do gatil"></iframe>
-              <a href="<%= showcase.aboutPdfPath %>" target="_blank" rel="noopener noreferrer">Abrir apresentação em PDF</a>
+            <a href="<%= showcase.aboutPdfPath %>" target="_blank" rel="noopener noreferrer" data-analytics-click="Apresentação em PDF">Abrir apresentação em PDF</a>
             </div>
           <% } %>
         </section>
       <% } %>
 
       <% if (hasEvolutionInfo) { %>
-        <section class="public-info-section public-evolution">
+        <section class="public-info-section public-evolution" data-analytics-view="Evolução de Filhotes">
           <div class="public-info-head">
             <p class="public-label">Crescimento</p>
             <h2>Evolução de Filhotes</h2>
@@ -240,7 +240,7 @@
       <% } %>
 
       <% if (isAssociatedShowcase) { %>
-        <section class="public-info-section public-recommendations">
+        <section class="public-info-section public-recommendations" data-analytics-view="Recomendações da Associação">
           <div class="public-info-head">
             <p class="public-label">Orientação oficial</p>
             <h2>Recomendações da Associação Catarinense de Felinos para aquisição de um filhote</h2>
@@ -265,11 +265,12 @@
       <% } %>
     </main>
     <div class="lightbox" id="showcaseLightbox" hidden>
-      <button class="lightbox-close" type="button" aria-label="Fechar">×</button>
-      <button class="lightbox-nav lightbox-prev" type="button" aria-label="Foto anterior">‹</button>
+      <button class="lightbox-close" type="button" aria-label="Fechar" data-analytics-click="Fechou foto ampliada">×</button>
+      <button class="lightbox-nav lightbox-prev" type="button" aria-label="Foto anterior" data-analytics-click="Foto anterior">‹</button>
       <img class="protected-image" id="lightboxImage" alt="" draggable="false" />
-      <button class="lightbox-nav lightbox-next" type="button" aria-label="Próxima foto">›</button>
+      <button class="lightbox-nav lightbox-next" type="button" aria-label="Próxima foto" data-analytics-click="Próxima foto">›</button>
     </div>
     <script src="/js/kitten-showcase-public.js"></script>
+    <script src="/js/kitten-showcase-analytics.js"></script>
   </body>
 </html>

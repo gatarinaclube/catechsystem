@@ -746,6 +746,18 @@ async function buildCreditCardInvoiceRows(prisma, req, cardName, dates) {
   };
 }
 
+function pdfTextHeight(doc, text, width, fontSize = 8, fontName = "Helvetica") {
+  doc.font(fontName).fontSize(fontSize);
+  return doc.heightOfString(String(text || "-"), { width });
+}
+
+function pdfMaxColumnHeight(doc, columns, row, fontSize = 8) {
+  return columns.reduce((max, column) => {
+    const value = typeof column.value === "function" ? column.value(row) : row[column.value];
+    return Math.max(max, pdfTextHeight(doc, value || "-", column.width, fontSize));
+  }, 0);
+}
+
 function renderExpensesPdf(res, rows, filters, totalLabel) {
   const doc = new PDFDocument({ margin: 40, size: "A4" });
   const fileName = `relatorio-despesas-${filters.startDateInput}-${filters.endDateInput}.pdf`;
@@ -785,10 +797,16 @@ function renderExpensesPdf(res, rows, filters, totalLabel) {
 
   rows.forEach((row, index) => {
     const note = String(row.note || "").trim();
-    const noteHeight = note
-      ? doc.heightOfString(`Obs.: ${note}`, { width: 430 }) + 6
-      : 0;
-    const rowHeight = 22 + noteHeight;
+    const textHeight = Math.max(11, pdfMaxColumnHeight(doc, [
+      { ...columns[0], value: "dateLabel" },
+      { ...columns[1], value: "category" },
+      { ...columns[2], value: "supplier" },
+      { ...columns[3], value: "paymentMethod" },
+      { ...columns[4], value: "amountLabel" },
+    ], row, 8));
+    const noteHeight = note ? pdfTextHeight(doc, `Obs.: ${note}`, 430, 7) + 4 : 0;
+    const noteY = y + textHeight + 4;
+    const rowHeight = Math.max(22, textHeight + noteHeight + (note ? 8 : 4));
 
     if (y + rowHeight > 735) {
       doc.addPage();
@@ -819,7 +837,7 @@ function renderExpensesPdf(res, rows, filters, totalLabel) {
         .font("Helvetica")
         .fontSize(7)
         .fillColor("#6b7280")
-        .text(`Obs.: ${note}`, columns[1].x, y + 11, { width: 430 });
+        .text(`Obs.: ${note}`, columns[1].x, noteY, { width: 430 });
     }
 
     y += rowHeight;
@@ -871,10 +889,18 @@ function renderRevenuesPdf(res, rows, filters, totalLabel) {
 
   rows.forEach((row, index) => {
     const note = String(row.note || "").trim();
-    const noteHeight = note
-      ? doc.heightOfString(`Obs.: ${note}`, { width: 419 }) + 6
-      : 0;
-    const rowHeight = 22 + noteHeight;
+    const textHeight = Math.max(11, pdfMaxColumnHeight(doc, [
+      { ...columns[0], value: "dateLabel" },
+      { ...columns[1], value: (item) => kittenNameOnly(item.kittenLabel) },
+      { ...columns[2], value: "invoiceNumber" },
+      { ...columns[3], value: "parcelLabel" },
+      { ...columns[4], value: "clientLabel" },
+      { ...columns[5], value: "paymentAccount" },
+      { ...columns[6], value: "amountLabel" },
+    ], row, 8));
+    const noteHeight = note ? pdfTextHeight(doc, `Obs.: ${note}`, 419, 7) + 4 : 0;
+    const noteY = y + textHeight + 4;
+    const rowHeight = Math.max(22, textHeight + noteHeight + (note ? 8 : 4));
 
     if (y + rowHeight > 735) {
       doc.addPage();
@@ -904,7 +930,7 @@ function renderRevenuesPdf(res, rows, filters, totalLabel) {
         .font("Helvetica")
         .fontSize(7)
         .fillColor("#6b7280")
-        .text(`Obs.: ${note}`, columns[1].x, y + 11, { width: 419 });
+        .text(`Obs.: ${note}`, columns[1].x, noteY, { width: 419 });
     }
 
     y += rowHeight;
@@ -951,8 +977,16 @@ function renderCashFlowPdf(res, rows, filters, totals) {
 
   rows.forEach((row, index) => {
     const note = String(row.note || "").trim();
-    const noteHeight = note ? doc.heightOfString(`Obs.: ${note}`, { width: 390 }) + 6 : 0;
-    const rowHeight = 22 + noteHeight;
+    const textHeight = Math.max(11, pdfMaxColumnHeight(doc, [
+      { ...columns[0], value: "dateLabel" },
+      { ...columns[1], value: "typeLabel" },
+      { ...columns[2], value: "account" },
+      { ...columns[3], value: "description" },
+      { ...columns[4], value: "amountLabel" },
+    ], row, 8));
+    const noteHeight = note ? pdfTextHeight(doc, `Obs.: ${note}`, 390, 7) + 4 : 0;
+    const noteY = y + textHeight + 4;
+    const rowHeight = Math.max(22, textHeight + noteHeight + (note ? 8 : 4));
 
     if (y + rowHeight > 735) {
       doc.addPage();
@@ -975,7 +1009,7 @@ function renderCashFlowPdf(res, rows, filters, totals) {
 
     if (note) {
       doc.font("Helvetica").fontSize(7).fillColor("#6b7280")
-        .text(`Obs.: ${note}`, columns[3].x, y + 11, { width: 390 });
+        .text(`Obs.: ${note}`, columns[3].x, noteY, { width: 390 });
     }
 
     y += rowHeight;
@@ -1031,8 +1065,9 @@ function renderCreditCardPdf(res, data) {
 
     rows.forEach((row, index) => {
       const note = String(row.note || "").trim();
-      const noteHeight = note ? doc.heightOfString(`Obs.: ${note}`, { width: 380 }) + 6 : 0;
-      const rowHeight = 22 + noteHeight;
+      const textHeight = Math.max(11, pdfMaxColumnHeight(doc, columns, row, 8));
+      const noteHeight = note ? pdfTextHeight(doc, `Obs.: ${note}`, 380, 7) + 4 : 0;
+      const rowHeight = Math.max(22, textHeight + noteHeight + (note ? 8 : 4));
       y = ensureSpace(y, rowHeight + 18);
 
       if (y === 40) {
@@ -1055,7 +1090,7 @@ function renderCreditCardPdf(res, data) {
 
       if (note) {
         doc.font("Helvetica").fontSize(7).fillColor("#6b7280")
-          .text(`Obs.: ${note}`, 108, y + 11, { width: 380 });
+          .text(`Obs.: ${note}`, 108, y + textHeight + 4, { width: 380 });
       }
 
       y += rowHeight;
@@ -1152,7 +1187,9 @@ function renderAccountingPdf(res, data, filters) {
 
     rows.forEach((row, index) => {
       const note = String(row.note || "").trim();
-      const rowHeight = 21 + (note ? doc.heightOfString(`Obs.: ${note}`, { width: 390 }) + 5 : 0);
+      const textHeight = Math.max(10, pdfMaxColumnHeight(doc, columns, row, 7.5));
+      const noteHeight = note ? pdfTextHeight(doc, `Obs.: ${note}`, 390, 7) + 4 : 0;
+      const rowHeight = Math.max(21, textHeight + noteHeight + (note ? 8 : 4));
       if (y + rowHeight > 750) {
         doc.addPage();
         y = 40;
@@ -1173,7 +1210,7 @@ function renderAccountingPdf(res, data, filters) {
 
       if (note) {
         doc.font("Helvetica").fontSize(7).fillColor("#6b7280")
-          .text(`Obs.: ${note}`, 108, y + 10, { width: 390 });
+          .text(`Obs.: ${note}`, 108, y + textHeight + 4, { width: 390 });
       }
 
       y += rowHeight;

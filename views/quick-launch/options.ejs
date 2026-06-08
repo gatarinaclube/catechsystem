@@ -13,7 +13,7 @@
         <h1 class="quick-title">Opções Financeiras</h1>
       </header>
 
-      <form class="quick-card" method="post" action="/despesas/opcoes">
+      <form class="quick-card" method="post" action="<%= basePath || '/administrativo/opcoes-financeiras' %>">
         <% if (success) { %><div class="message message-success">Opção salva.</div><% } %>
         <% if (error) { %><div class="message message-error"><%= error %></div><% } %>
 
@@ -45,7 +45,7 @@
         <% } else { %>
           <% options.forEach(function(option) { %>
             <div class="quick-option-row">
-              <form method="post" action="/despesas/opcoes/<%= option.id %>/update">
+              <form method="post" action="<%= basePath || '/administrativo/opcoes-financeiras' %>/<%= option.id %>/update">
                 <input name="name" value="<%= option.name %>" required />
                 <div class="quick-option-usage">
                   <% if (option.usageCount === null || option.usageCount === undefined) { %>
@@ -60,7 +60,7 @@
                   title="Salvar"
                 >✓</button>
               </form>
-              <form method="post" action="/despesas/opcoes/<%= option.id %>/delete" onsubmit="return confirm('Excluir esta opção?');">
+              <form method="post" action="<%= basePath || '/administrativo/opcoes-financeiras' %>/<%= option.id %>/delete" onsubmit="return confirm('Excluir esta opção?');">
                 <button
                   type="submit"
                   class="btn small-button danger-button"
@@ -73,11 +73,11 @@
         <% } %>
       </div>
 
-      <a class="back-link" href="/despesas">Voltar</a>
+      <a class="back-link" href="<%= backPath || '/administrativo' %>">Voltar</a>
     </main>
     <script>
       document.getElementById("type")?.addEventListener("change", function () {
-        window.location.href = `/despesas/opcoes?type=${encodeURIComponent(this.value)}`;
+        window.location.href = `<%= basePath || '/administrativo/opcoes-financeiras' %>?type=${encodeURIComponent(this.value)}`;
       });
     </script>
   </body>

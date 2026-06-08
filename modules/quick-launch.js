@@ -199,6 +199,9 @@ module.exports = (prisma) => {
   router.use((req, res, next) => {
     if (req.path.startsWith("/despesas/u/")) return next();
     if (!req.session?.userId) return res.redirect("/login");
+    if (req.path.startsWith("/administrativo/opcoes-financeiras") && userCan(req.session.userRole, "admin.administrative")) {
+      return next();
+    }
     if (!userCan(req.session.userRole, "admin.quickLaunch")) {
       return res.status(403).send("Seu perfil não possui acesso a este módulo.");
     }
@@ -215,7 +218,7 @@ module.exports = (prisma) => {
   }
 
   function optionOwnerId(req) {
-    return req.publicExpenseUser?.id || null;
+    return currentOwnerId(req);
   }
 
   async function hasColumn(tableName, columnName) {
@@ -240,9 +243,13 @@ module.exports = (prisma) => {
   }
 
   function optionNames(rows) {
-    return Array.from(
-      new Set(rows.map((row) => row.name).filter(Boolean))
-    ).sort((a, b) => a.localeCompare(b, "pt-BR"));
+    const names = new Map();
+    rows.forEach((row) => {
+      const name = String(row.name || "").trim();
+      const key = name.toLocaleLowerCase("pt-BR");
+      if (name && !names.has(key)) names.set(key, name);
+    });
+    return Array.from(names.values()).sort((a, b) => a.localeCompare(b, "pt-BR"));
   }
 
   function optionFieldForType(type) {
@@ -407,9 +414,20 @@ module.exports = (prisma) => {
 
   async function loadManagedOptions(req, selectedType) {
     const options = await rawListOptions(req, selectedType);
-    const optionsWithUsage = [];
+    const uniqueOptions = new Map();
+    const currentOwner = currentOwnerId(req);
 
     for (const option of options) {
+      const key = String(option.name || "").trim().toLocaleLowerCase("pt-BR");
+      const previous = uniqueOptions.get(key);
+      if (!key || (previous && previous.ownerId === currentOwner)) continue;
+      if (!previous || option.ownerId === currentOwner) {
+        uniqueOptions.set(key, option);
+      }
+    }
+
+    const optionsWithUsage = [];
+    for (const option of uniqueOptions.values()) {
       optionsWithUsage.push({
         ...option,
         typeLabel: OPTION_LABELS[option.type] || option.type,
@@ -423,6 +441,8 @@ module.exports = (prisma) => {
   async function renderOptionsPage(req, res, extra = {}) {
     const selectedType = normalizeOptionType(req.query.type || req.body?.type);
     const options = await loadManagedOptions(req, selectedType);
+    const isAdministrativePath = req.path.startsWith("/administrativo/");
+    const basePath = isAdministrativePath ? "/administrativo/opcoes-financeiras" : "/despesas/opcoes";
 
     const data = {
       success: extra.success ?? req.query.ok === "1",
@@ -434,7 +454,9 @@ module.exports = (prisma) => {
         value,
         label: OPTION_LABELS[value],
       })),
-      currentPath: "/despesas",
+      basePath,
+      backPath: isAdministrativePath ? "/administrativo" : "/despesas",
+      currentPath: isAdministrativePath ? "/administrativo" : "/despesas",
     };
 
     return new Promise((resolve, reject) => {
@@ -751,6 +773,10 @@ module.exports = (prisma) => {
   });
 
   router.get("/despesas/opcoes", async (req, res) => {
+    res.redirect(`/administrativo/opcoes-financeiras${req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : ""}`);
+  });
+
+  router.get("/administrativo/opcoes-financeiras", async (req, res) => {
     try {
       await renderOptionsPage(req, res);
     } catch (err) {
@@ -760,6 +786,10 @@ module.exports = (prisma) => {
   });
 
   router.post("/despesas/opcoes", async (req, res) => {
+    res.redirect(307, "/administrativo/opcoes-financeiras");
+  });
+
+  router.post("/administrativo/opcoes-financeiras", async (req, res) => {
     const optionType = normalizeOptionType(req.body.type);
     const name = String(req.body.name || "").trim();
 
@@ -792,10 +822,14 @@ module.exports = (prisma) => {
       `;
     }
 
-    res.redirect(`/despesas/opcoes?type=${optionType}&ok=1`);
+    res.redirect(`/administrativo/opcoes-financeiras?type=${optionType}&ok=1`);
   });
 
   router.post("/despesas/opcoes/:id/update", async (req, res) => {
+    res.redirect(307, `/administrativo/opcoes-financeiras/${req.params.id}/update`);
+  });
+
+  router.post("/administrativo/opcoes-financeiras/:id/update", async (req, res) => {
     const id = Number(req.params.id);
     const option = await rawFindOptionById(req, id);
     const name = String(req.body.name || "").trim();
@@ -824,10 +858,14 @@ module.exports = (prisma) => {
       });
     }
 
-    res.redirect(`/despesas/opcoes?type=${option.type}&ok=1`);
+    res.redirect(`/administrativo/opcoes-financeiras?type=${option.type}&ok=1`);
   });
 
   router.post("/despesas/opcoes/:id/delete", async (req, res) => {
+    res.redirect(307, `/administrativo/opcoes-financeiras/${req.params.id}/delete`);
+  });
+
+  router.post("/administrativo/opcoes-financeiras/:id/delete", async (req, res) => {
     const id = Number(req.params.id);
     const option = await rawFindOptionById(req, id);
 
@@ -847,7 +885,7 @@ module.exports = (prisma) => {
       DELETE FROM "QuickLaunchOption"
       WHERE "id" = ${id}
     `;
-    res.redirect(`/despesas/opcoes?type=${option.type}&ok=1`);
+    res.redirect(`/administrativo/opcoes-financeiras?type=${option.type}&ok=1`);
   });
 
   router.get("/despesas/:id", async (req, res, next) => {

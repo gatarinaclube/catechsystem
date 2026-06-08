@@ -38,7 +38,7 @@
           </div>
 
           <form method="post" action="/administrativo/fornecedores" class="supplier-form">
-            <%- include('./suppliers-form-fields', { supplier: form || {}, prefix: 'new' }) %>
+            <%- include('./suppliers-form-fields', { supplier: form || {}, categories, prefix: 'new' }) %>
             <div class="form-actions">
               <button class="btn btn-primary" type="submit">Salvar fornecedor</button>
             </div>
@@ -89,7 +89,7 @@
                   </summary>
                   <div class="supplier-edit">
                     <form method="post" action="/administrativo/fornecedores/<%= supplier.id %>/update" class="supplier-form">
-                      <%- include('./suppliers-form-fields', { supplier, prefix: 'supplier-' + supplier.id }) %>
+                      <%- include('./suppliers-form-fields', { supplier, categories, prefix: 'supplier-' + supplier.id }) %>
                       <div class="form-actions">
                         <button class="btn btn-primary" type="submit">Salvar alterações</button>
                       </div>

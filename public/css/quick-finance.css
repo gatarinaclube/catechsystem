@@ -91,6 +91,19 @@ label {
   background: #f9fafb;
 }
 
+.quick-inline-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.quick-inline-field .quick-field-icon {
+  width: 38px;
+  height: auto;
+  min-height: 44px;
+}
+
 input,
 select,
 textarea {

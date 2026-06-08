@@ -40,6 +40,65 @@
           <div class="content-card success-card">Vitrine salva com sucesso.</div>
         <% } %>
 
+        <section class="content-card showcase-analytics-panel">
+          <div class="showcase-section-head">
+            <div>
+              <div class="content-title">Acessos da página pública</div>
+              <div class="content-sub">Sessões ativas, tempo na página, cliques e visualizações registradas na vitrine.</div>
+            </div>
+            <button id="refreshShowcaseAnalytics" class="btn" type="button">Atualizar</button>
+          </div>
+          <div class="showcase-analytics-metrics">
+            <div><span>Agora</span><strong data-analytics-total="active"><%= analytics.totals.active %></strong></div>
+            <div><span>Hoje</span><strong data-analytics-total="today"><%= analytics.totals.today %></strong></div>
+            <div><span>Total</span><strong data-analytics-total="total"><%= analytics.totals.total %></strong></div>
+          </div>
+          <div class="showcase-analytics-grid">
+            <div>
+              <div class="content-sub">Acessando no momento</div>
+              <div id="activeShowcaseVisitors" class="showcase-analytics-list">
+                <% if (!analytics.active.length) { %>
+                  <div class="empty">Nenhum visitante ativo agora.</div>
+                <% } %>
+                <% analytics.active.forEach(function(session) { %>
+                  <div class="showcase-analytics-row">
+                    <strong><%= session.browserLabel %> · <%= session.place %></strong>
+                    <span>Tempo: <%= session.durationLabel %> · visto às <%= session.lastSeenAtLabel %></span>
+                  </div>
+                <% }) %>
+              </div>
+            </div>
+            <div>
+              <div class="content-sub">Últimas ações</div>
+              <div id="showcaseAnalyticsEvents" class="showcase-analytics-list">
+                <% if (!analytics.events.length) { %>
+                  <div class="empty">Nenhuma ação registrada ainda.</div>
+                <% } %>
+                <% analytics.events.forEach(function(event) { %>
+                  <div class="showcase-analytics-row">
+                    <strong><%= event.label %></strong>
+                    <span><%= event.createdAtLabel %> · <%= event.place %><% if (event.details) { %> · <%= event.details %><% } %></span>
+                  </div>
+                <% }) %>
+              </div>
+            </div>
+          </div>
+          <details class="showcase-analytics-recent">
+            <summary>Últimas visitas</summary>
+            <div id="recentShowcaseVisitors" class="showcase-analytics-list">
+              <% if (!analytics.recent.length) { %>
+                <div class="empty">Nenhuma visita registrada ainda.</div>
+              <% } %>
+              <% analytics.recent.forEach(function(session) { %>
+                <div class="showcase-analytics-row">
+                  <strong><%= session.place %></strong>
+                  <span><%= session.startedAtLabel %> · tempo <%= session.durationLabel %> · <%= session.browserLabel %></span>
+                </div>
+              <% }) %>
+            </div>
+          </details>
+        </section>
+
         <form id="showcaseForm" method="post" action="/admin/vitrine-filhotes" enctype="multipart/form-data">
           <input type="hidden" id="payload" name="payload" />
 
@@ -383,5 +442,6 @@
       window.__SHOWCASE_LIMITS__ = <%- JSON.stringify(showcaseLimits) %>;
     </script>
     <script src="/js/kitten-showcase-admin.js"></script>
+    <script src="/js/kitten-showcase-analytics-admin.js"></script>
   </body>
 </html>

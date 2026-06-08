@@ -434,6 +434,48 @@ model CatteryKittenShowcase {
 
   litters CatteryShowcaseLitter[]
   evolutionComparisons CatteryShowcaseEvolutionComparison[]
+  analyticsSessions CatteryShowcaseAnalyticsSession[]
+}
+
+model CatteryShowcaseAnalyticsSession {
+  id          Int      @id @default(autoincrement())
+  showcase    CatteryKittenShowcase @relation(fields: [showcaseId], references: [id], onDelete: Cascade)
+  showcaseId  Int
+  visitorId   String
+  ipHash      String?
+  userAgent   String?
+  browserLabel String?
+  referrer    String?
+  language    String?
+  timezone    String?
+  screen      String?
+  city        String?
+  region      String?
+  country     String?
+  startedAt   DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+  durationSeconds Int @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  events CatteryShowcaseAnalyticsEvent[]
+
+  @@index([showcaseId, lastSeenAt])
+  @@index([showcaseId, startedAt])
+}
+
+model CatteryShowcaseAnalyticsEvent {
+  id          Int      @id @default(autoincrement())
+  session     CatteryShowcaseAnalyticsSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId   Int
+  type        String
+  label       String?
+  details     String?
+  path        String?
+  createdAt   DateTime @default(now())
+
+  @@index([sessionId, createdAt])
+  @@index([type, createdAt])
 }
 
 model CatteryShowcaseEvolutionComparison {
