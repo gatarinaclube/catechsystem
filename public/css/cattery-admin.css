@@ -1618,12 +1618,16 @@ textarea:focus {
   display: flex;
   gap: 10px;
   align-items: stretch;
+  grid-column: span 2;
+  justify-content: flex-end;
+  min-width: 0;
 }
 
 .report-filter-actions .btn {
-  flex: 1;
-  min-width: 110px;
+  flex: 0 0 auto;
+  min-width: 112px;
   text-align: center;
+  white-space: nowrap;
 }
 
 .report-summary {
@@ -2070,6 +2074,10 @@ textarea:focus {
     grid-template-columns: 1fr 1fr;
   }
 
+  .report-filter-actions {
+    grid-column: 1 / -1;
+  }
+
   .report-summary-grid {
     grid-template-columns: 1fr;
   }
@@ -2103,6 +2111,10 @@ textarea:focus {
 
   .report-filter-actions {
     flex-direction: column;
+  }
+
+  .report-filter-actions .btn {
+    width: 100%;
   }
 
   .account-metrics,
