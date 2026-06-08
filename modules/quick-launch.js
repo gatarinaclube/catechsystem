@@ -679,17 +679,17 @@ module.exports = (prisma) => {
       start_url: `/despesas/u/${req.params.token}`,
       scope: `/despesas/u/${req.params.token}`,
       display: "standalone",
-      background_color: "#f3f4f6",
-      theme_color: "#111827",
+      background_color: "#fafafa",
+      theme_color: "#f39c12",
       icons: [
         {
-          src: "/logos/logo1.png",
+          src: "/logos/catech-system.png",
           sizes: "192x192",
           type: "image/png",
           purpose: "any maskable",
         },
         {
-          src: "/logos/logo1.png",
+          src: "/logos/catech-system.png",
           sizes: "512x512",
           type: "image/png",
           purpose: "any maskable",

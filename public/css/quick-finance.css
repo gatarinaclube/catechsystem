@@ -5,9 +5,11 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: #f3f4f6;
-  color: #1f2937;
-  font-family: Arial, sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(255, 230, 199, 0.52), transparent 30%),
+    var(--bg-page);
+  color: var(--text-main);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .quick-shell {
@@ -22,23 +24,25 @@ body {
 
 .quick-title {
   margin: 0;
-  font-size: 24px;
+  color: var(--text-main);
+  font-size: 25px;
+  font-weight: 700;
   line-height: 1.15;
 }
 
 .quick-subtitle,
 small,
 .back-link {
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 13px;
 }
 
 .quick-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  background: #fffdf8;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
   padding: 16px;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
 }
 
 .quick-filter-card {
@@ -52,7 +56,7 @@ small,
 label {
   display: block;
   margin-bottom: 5px;
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -77,9 +81,9 @@ label {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
-  color: #374151;
+  color: var(--accent-hover);
   background: #ffffff;
   font-size: 18px;
   font-weight: 800;
@@ -87,8 +91,8 @@ label {
 }
 
 .quick-field-icon:hover {
-  border-color: #9ca3af;
-  background: #f9fafb;
+  border-color: var(--accent);
+  background: var(--accent-soft);
 }
 
 .quick-inline-field {
@@ -109,12 +113,20 @@ select,
 textarea {
   width: 100%;
   min-height: 44px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
   padding: 10px 12px;
   font: inherit;
-  color: #111827;
+  color: var(--text-main);
   background: #ffffff;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.18);
 }
 
 textarea {
@@ -136,11 +148,19 @@ input[type="file"] {
   width: 100%;
   min-height: 48px;
   border: 0;
-  border-radius: 8px;
-  background: #111827;
+  border-radius: 999px;
+  background: var(--accent);
   color: #ffffff;
   font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 7px 16px rgba(0, 0, 0, 0.1);
 }
 
 .message {
@@ -165,7 +185,7 @@ input[type="file"] {
 .quick-hint {
   min-height: 18px;
   margin: -6px 0 12px;
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 12px;
 }
 
@@ -181,23 +201,27 @@ input[type="file"] {
   gap: 5px;
   margin-top: 12px;
   padding: 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #6b7280;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: #fffdf8;
+  color: var(--text-muted);
   font-size: 12px;
   line-height: 1.45;
 }
 
 .quick-install-card strong {
-  color: #111827;
+  color: var(--text-main);
   font-size: 13px;
 }
 
 .quick-options-link {
-  color: #9ca3af;
+  color: var(--accent-hover);
   font-size: 22px;
   text-decoration: none;
+}
+
+.quick-options-link:hover {
+  color: var(--accent);
 }
 
 .quick-icon-button {
@@ -223,7 +247,7 @@ input[type="file"] {
 }
 
 .quick-list li {
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .quick-list li:last-child {
@@ -236,7 +260,7 @@ input[type="file"] {
   align-items: center;
   gap: 12px;
   padding: 12px 0;
-  color: #1f2937;
+  color: var(--text-main);
   text-decoration: none;
 }
 
@@ -246,7 +270,7 @@ input[type="file"] {
   justify-content: center;
   gap: 10px;
   margin-top: 12px;
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 13px;
 }
 
@@ -269,7 +293,7 @@ input[type="file"] {
 
 .quick-expense-supplier {
   min-width: 0;
-  color: #4b5563;
+  color: var(--text-muted);
   text-align: right;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -282,7 +306,7 @@ input[type="file"] {
   gap: 8px;
   align-items: center;
   padding: 10px 0;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .quick-option-row:last-child {
@@ -294,7 +318,7 @@ input[type="file"] {
 }
 
 .quick-option-type {
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -303,7 +327,7 @@ input[type="file"] {
 
 .quick-option-heading {
   margin-bottom: 8px;
-  color: #374151;
+  color: var(--text-main);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -311,7 +335,7 @@ input[type="file"] {
 }
 
 .quick-option-usage {
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 12px;
   text-align: right;
 }
@@ -321,12 +345,12 @@ input[type="file"] {
 }
 
 .danger-button {
-  background: #9f1239;
+  background: var(--danger);
 }
 
 .danger-button:disabled {
   background: #d1d5db;
-  color: #6b7280;
+  color: var(--text-muted);
   cursor: not-allowed;
 }
 
@@ -354,9 +378,9 @@ input[type="file"] {
 }
 
 .revenue-summary {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
-  background: #f8fafc;
+  background: rgba(255, 230, 199, 0.26);
   padding: 12px;
   margin-bottom: 14px;
 }
@@ -370,13 +394,13 @@ input[type="file"] {
 }
 
 .revenue-summary-title {
-  color: #111827;
+  color: var(--text-main);
   font-size: 15px;
   font-weight: 800;
 }
 
 .summary-chip {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
   background: #ffffff;
   padding: 10px;
@@ -384,7 +408,7 @@ input[type="file"] {
 
 .summary-chip span {
   display: block;
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -394,7 +418,7 @@ input[type="file"] {
 .summary-chip strong {
   display: block;
   margin-top: 4px;
-  color: #111827;
+  color: var(--text-main);
   font-size: 16px;
 }
 
@@ -452,7 +476,7 @@ input[type="file"] {
 }
 
 .parcel-card {
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border-soft);
   padding-top: 14px;
   margin-top: 14px;
 }
@@ -504,7 +528,7 @@ input[type="file"] {
 .paid-toggle span {
   width: 44px;
   height: 20px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-soft);
   border-radius: 999px;
   background: #e5e7eb;
   transition: background 0.16s ease, border-color 0.16s ease;

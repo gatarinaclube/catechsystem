@@ -200,6 +200,24 @@
 
         <form method="post" action="/settings" enctype="multipart/form-data">
           <div class="content-card" style="margin-bottom:18px;">
+            <div class="content-title">Link rápido de despesas</div>
+            <div class="content-sub">Use este endereço para salvar o lançamento rápido na tela inicial do celular.</div>
+            <div class="field" style="margin-top:12px;">
+              <label class="field-label" for="expensePublicLink">Link para salvar no celular</label>
+              <input
+                id="expensePublicLink"
+                type="text"
+                value="<%= expensePublicLink || '' %>"
+                readonly
+                onclick="this.select()"
+              />
+              <div class="section-note">
+                Abra este link no celular e use “Adicionar à tela inicial” no Android ou “Adicionar à Tela de Início” no iPhone.
+              </div>
+            </div>
+          </div>
+
+          <div class="content-card" style="margin-bottom:18px;">
             <div class="content-title">Dados do Gatil</div>
             <div class="grid-2" style="margin-top:12px;">
               <div class="field">

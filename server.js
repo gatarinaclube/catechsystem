@@ -1690,14 +1690,12 @@ app.get("/meus-dados", requireAuth, async (req, res) => {
     }
 
     const user = req.user;
-    const expensePublicToken = await ensureExpensePublicToken(user);
     await loadPlanLimitOverrides(prisma);
 
     res.render("users/my-profile", {
       user,
       currentPath: "/meus-dados",
       profilePlanCards: buildProfilePlanCards(user.role),
-      expensePublicLink: buildAbsoluteUrl(req, `/despesas/u/${expensePublicToken}`),
     });
   } catch (err) {
     console.error("Erro ao carregar Meus Dados:", err);

@@ -1,4 +1,5 @@
 const express = require("express");
+const crypto = require("crypto");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -75,6 +76,32 @@ function parseUploadLimitKb(value) {
   const number = Number(normalized);
   if (!Number.isFinite(number) || number <= 0) return null;
   return Math.round(number * 1024);
+}
+
+function buildAbsoluteUrl(req, path) {
+  const host = req.get("host");
+  const protocol = req.get("x-forwarded-proto") || req.protocol || "https";
+  return `${protocol}://${host}${path}`;
+}
+
+async function ensureExpensePublicToken(prisma, user) {
+  if (user.expensePublicToken) return user.expensePublicToken;
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const token = crypto.randomBytes(24).toString("hex");
+
+    try {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { expensePublicToken: token },
+      });
+      return token;
+    } catch (err) {
+      if (err.code !== "P2002") throw err;
+    }
+  }
+
+  throw new Error("Não foi possível gerar o link público de despesas.");
 }
 
 function buildPlanLimitRows(body) {
@@ -196,11 +223,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   router.get("/settings", requireAuth, requirePermission("admin.settings"), async (req, res) => {
     try {
       const settings = await getSettings(req.session.userId);
+      const expensePublicToken = await ensureExpensePublicToken(prisma, req.user);
 
       res.render("settings/index", {
         user: req.user,
         currentPath: req.path,
         settings,
+        expensePublicLink: buildAbsoluteUrl(req, `/despesas/u/${expensePublicToken}`),
         membershipOptions: MEMBERSHIP_OPTIONS,
         breedOptions: BREED_OPTIONS,
         examOptions: EXAM_OPTIONS,
@@ -453,10 +482,18 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       res.redirect("/settings?saved=1");
     } catch (err) {
       console.error("Erro ao salvar configurações:", err);
+      let expensePublicLink = "";
+      try {
+        const expensePublicToken = await ensureExpensePublicToken(prisma, req.user);
+        expensePublicLink = buildAbsoluteUrl(req, `/despesas/u/${expensePublicToken}`);
+      } catch (tokenErr) {
+        console.error("Erro ao preparar link rápido de despesas:", tokenErr);
+      }
       res.status(500).render("settings/index", {
         user: req.user,
         currentPath: "/settings",
         settings,
+        expensePublicLink,
         membershipOptions: MEMBERSHIP_OPTIONS,
         breedOptions: BREED_OPTIONS,
         examOptions: EXAM_OPTIONS,
