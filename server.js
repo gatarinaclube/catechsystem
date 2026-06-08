@@ -226,6 +226,9 @@ app.use(express.json());
 
 // arquivos estáticos (CSS, JS, imagens, uploads etc.)
 app.use(express.static(path.join(__dirname, "public")));
+app.get("/favicon.ico", (req, res) => {
+  res.type("image/png").sendFile(path.join(__dirname, "public", "logos", "catech-icon.png"));
+});
 
 // -------------------------------
 // UPLOADS (Render Disk / local)

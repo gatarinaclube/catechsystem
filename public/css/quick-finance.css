@@ -214,6 +214,15 @@ input[type="file"] {
   font-size: 13px;
 }
 
+.quick-install-card[hidden] {
+  display: none;
+}
+
+.quick-install-button {
+  margin-top: 6px;
+  min-height: 44px;
+}
+
 .quick-options-link {
   color: var(--accent-hover);
   font-size: 22px;

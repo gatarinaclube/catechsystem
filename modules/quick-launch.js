@@ -683,13 +683,13 @@ module.exports = (prisma) => {
       theme_color: "#f39c12",
       icons: [
         {
-          src: "/logos/catech-system.png",
+          src: "/logos/catech-icon.png",
           sizes: "192x192",
           type: "image/png",
           purpose: "any maskable",
         },
         {
-          src: "/logos/catech-system.png",
+          src: "/logos/catech-icon.png",
           sizes: "512x512",
           type: "image/png",
           purpose: "any maskable",

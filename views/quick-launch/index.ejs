@@ -10,7 +10,7 @@
       <meta name="apple-mobile-web-app-capable" content="yes" />
       <meta name="apple-mobile-web-app-title" content="Despesas" />
       <link rel="manifest" href="/despesas/u/<%= publicExpenseToken %>/manifest.webmanifest" />
-      <link rel="apple-touch-icon" href="/logos/catech-system.png" />
+      <link rel="apple-touch-icon" href="/logos/catech-icon.png" />
     <% } %>
     <link rel="stylesheet" href="/css/theme.css" />
     <link rel="stylesheet" href="/css/quick-finance.css" />
@@ -131,10 +131,10 @@
       </form>
 
       <% if (isPublicExpenseLink) { %>
-        <div class="quick-install-card">
-          <strong>Atalho no celular</strong>
-          <span>Android: abra o menu do navegador e toque em Adicionar à tela inicial.</span>
-          <span>iPhone: toque em Compartilhar e depois em Adicionar à Tela de Início.</span>
+        <div class="quick-install-card" id="quickInstallCard" hidden>
+          <strong>Instalar no celular</strong>
+          <span id="quickInstallText">Salve este lançamento rápido na tela inicial para abrir como aplicativo.</span>
+          <button type="button" class="btn quick-install-button" id="quickInstallButton" hidden>Instalar agora</button>
         </div>
       <% } else { %>
         <footer class="quick-footer">
@@ -269,6 +269,53 @@
       amount.addEventListener("blur", renderParcels);
       formatMoneyInput(amount);
       refreshCreditFields();
+
+      <% if (isPublicExpenseLink) { %>
+        const quickInstallCard = document.getElementById("quickInstallCard");
+        const quickInstallButton = document.getElementById("quickInstallButton");
+        const quickInstallText = document.getElementById("quickInstallText");
+        let deferredInstallPrompt = null;
+
+        function isStandaloneApp() {
+          return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+        }
+
+        function isIosDevice() {
+          return /iphone|ipad|ipod/i.test(window.navigator.userAgent || "");
+        }
+
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.register("/service-worker.js").catch(() => {});
+        }
+
+        window.addEventListener("beforeinstallprompt", (event) => {
+          if (isStandaloneApp()) return;
+          event.preventDefault();
+          deferredInstallPrompt = event;
+          quickInstallCard.hidden = false;
+          quickInstallButton.hidden = false;
+          quickInstallText.textContent = "Toque em instalar para criar o ícone deste lançamento rápido na tela inicial.";
+        });
+
+        quickInstallButton.addEventListener("click", async () => {
+          if (!deferredInstallPrompt) return;
+          deferredInstallPrompt.prompt();
+          await deferredInstallPrompt.userChoice.catch(() => null);
+          deferredInstallPrompt = null;
+          quickInstallCard.hidden = true;
+        });
+
+        window.addEventListener("appinstalled", () => {
+          deferredInstallPrompt = null;
+          quickInstallCard.hidden = true;
+        });
+
+        if (!isStandaloneApp() && isIosDevice()) {
+          quickInstallCard.hidden = false;
+          quickInstallButton.hidden = true;
+          quickInstallText.textContent = "No iPhone, toque em Compartilhar e depois em Adicionar à Tela de Início.";
+        }
+      <% } %>
     </script>
   </body>
 </html>
