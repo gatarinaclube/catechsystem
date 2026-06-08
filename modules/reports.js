@@ -209,6 +209,19 @@ function buildQueryString(filters, forcePdf = false) {
   return params.toString();
 }
 
+function buildCreditCardQueryString(filters, forcePdf = false) {
+  const params = new URLSearchParams({
+    card: filters.card || "",
+    month: filters.month || currentMonthInput(),
+  });
+
+  if (forcePdf) {
+    params.set("download", "pdf");
+  }
+
+  return params.toString();
+}
+
 function ownerScope(req) {
   if (canViewAllData(req.session?.userRole)) return {};
   return { ownerId: req.session?.userId || null };
@@ -972,6 +985,114 @@ function renderCashFlowPdf(res, rows, filters, totals) {
   doc.end();
 }
 
+function renderCreditCardPdf(res, data) {
+  const doc = new PDFDocument({ margin: 40, size: "A4" });
+  const safeCardName = String(data.cardName || "cartao").replace(/[^\wÀ-ÿ-]+/g, "-");
+  const fileName = `relatorio-cartao-${safeCardName}-${data.month}.pdf`;
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+  doc.pipe(res);
+
+  function ensureSpace(y, height = 70) {
+    if (y + height > 750) {
+      doc.addPage();
+      return 40;
+    }
+    return y;
+  }
+
+  function drawRows(title, rows, columns, emptyText, totalLabel, startY) {
+    let y = ensureSpace(startY, 76);
+    doc.font("Helvetica-Bold").fontSize(13).fillColor("#111827").text(title, 40, y, {
+      width: 360,
+    });
+    doc.font("Helvetica").fontSize(9).fillColor("#6b7280").text(`Total: ${totalLabel}`, 400, y + 2, {
+      width: 115,
+      align: "right",
+    });
+    y += 24;
+
+    if (!rows.length) {
+      doc.font("Helvetica").fontSize(9).fillColor("#6b7280").text(emptyText, 40, y, {
+        width: 515,
+      });
+      return y + 28;
+    }
+
+    function drawHeader(headerY) {
+      doc.font("Helvetica-Bold").fontSize(8).fillColor("#374151");
+      columns.forEach((column) => doc.text(column.label, column.x, headerY, { width: column.width }));
+      doc.moveTo(40, headerY + 13).lineTo(555, headerY + 13).strokeColor("#d1d5db").stroke();
+    }
+
+    drawHeader(y);
+    y += 20;
+
+    rows.forEach((row, index) => {
+      const note = String(row.note || "").trim();
+      const noteHeight = note ? doc.heightOfString(`Obs.: ${note}`, { width: 380 }) + 6 : 0;
+      const rowHeight = 22 + noteHeight;
+      y = ensureSpace(y, rowHeight + 18);
+
+      if (y === 40) {
+        drawHeader(y);
+        y += 20;
+      }
+
+      if (index % 2 === 0) doc.rect(40, y - 4, 515, rowHeight).fill("#f9fafb");
+      doc.strokeColor("#e5e7eb").lineWidth(0.4);
+      doc.moveTo(40, y + rowHeight - 5).lineTo(555, y + rowHeight - 5).stroke();
+
+      doc.font("Helvetica").fontSize(8).fillColor("#111827");
+      columns.forEach((column) => {
+        const value = typeof column.value === "function" ? column.value(row) : row[column.value];
+        doc.text(value || "-", column.x, y, {
+          width: column.width,
+          align: column.align || "left",
+        });
+      });
+
+      if (note) {
+        doc.font("Helvetica").fontSize(7).fillColor("#6b7280")
+          .text(`Obs.: ${note}`, 108, y + 11, { width: 380 });
+      }
+
+      y += rowHeight;
+    });
+
+    return y + 16;
+  }
+
+  doc.font("Helvetica-Bold").fontSize(18).fillColor("#111827").text("Relatório de Cartão de Crédito");
+  doc.moveDown(0.4);
+  doc.font("Helvetica").fontSize(10).fillColor("#111827").text(`Cartão: ${data.cardName || "-"}`);
+  doc.text(`Fatura: ${data.monthLabel || data.month}`);
+  doc.text(`Período: ${data.startLabel} a ${data.closingLabel}`);
+  doc.text(`Vencimento: ${data.dueLabel}`);
+  doc.text(`Compras: ${data.purchaseTotalLabel} | Pagamentos: ${data.paymentTotalLabel} | Saldo: ${data.balanceLabel}`);
+  doc.moveDown(1);
+
+  const purchaseColumns = [
+    { label: "Data", x: 40, width: 58, value: "dateLabel" },
+    { label: "Parcela", x: 102, width: 48, value: "parcelLabel" },
+    { label: "Categoria", x: 154, width: 96, value: "category" },
+    { label: "Fornecedor", x: 254, width: 138, value: "supplier" },
+    { label: "Valor", x: 397, width: 118, value: "amountLabel", align: "right" },
+  ];
+  const paymentColumns = [
+    { label: "Data", x: 40, width: 62, value: "dateLabel" },
+    { label: "Origem", x: 108, width: 150, value: "fromAccount" },
+    { label: "Cartão", x: 264, width: 150, value: "toAccount" },
+    { label: "Valor", x: 420, width: 95, value: "amountLabel", align: "right" },
+  ];
+
+  let y = doc.y;
+  y = drawRows("Compras", data.purchases, purchaseColumns, "Nenhuma compra encontrada para esta fatura.", data.purchaseTotalLabel, y);
+  drawRows("Pagamentos da Fatura", data.payments, paymentColumns, "Nenhum pagamento encontrado para esta fatura.", data.paymentTotalLabel, y);
+  doc.end();
+}
+
 function renderAccountingPdf(res, data, filters) {
   const doc = new PDFDocument({ margin: 40, size: "A4" });
   const fileName = `relatorio-contabil-${filters.startDateInput}-${filters.endDateInput}.pdf`;
@@ -1428,6 +1549,42 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         startLabel: formatDateOnlyLabel(dates.startDate),
         closingLabel: formatDateOnlyLabel(dates.closingDate),
         dueLabel: formatDateOnlyLabel(dates.dueDate),
+        purchaseTotalLabel: formatCurrency(purchaseTotalCents),
+        paymentTotalLabel: formatCurrency(paymentTotalCents),
+        balanceLabel: formatCurrency(balanceCents),
+        pdfQuery: buildCreditCardQueryString({ ...filters, card: cardName }, true),
+      });
+    }
+  );
+
+  router.get(
+    "/reports/credit-cards/pdf",
+    requireAuth,
+    requirePermission("admin.reports"),
+    async (req, res) => {
+      const filters = buildCreditCardFilters(req.query);
+      const cardOptions = await loadCreditCardAccounts(prisma, req);
+      const selectedCard = cardOptions.find((option) => option.value === filters.card)
+        || cardOptions[0]
+        || null;
+      const cardName = selectedCard?.value || "";
+      const dueDay = clampDay(selectedCard?.dueDay, 1);
+      const dates = await buildCreditCardInvoiceDates(prisma, req, selectedCard, filters.month);
+      const rows = await buildCreditCardInvoiceRows(prisma, req, cardName, dates);
+      const purchaseTotalCents = rows.purchases.reduce((sum, row) => sum + Number(row.amountCents || 0), 0);
+      const paymentTotalCents = rows.payments.reduce((sum, row) => sum + Number(row.amountCents || 0), 0);
+      const balanceCents = purchaseTotalCents - paymentTotalCents;
+
+      renderCreditCardPdf(res, {
+        cardName,
+        dueDay,
+        month: filters.month,
+        monthLabel: filters.month,
+        startLabel: formatDateOnlyLabel(dates.startDate),
+        closingLabel: formatDateOnlyLabel(dates.closingDate),
+        dueLabel: formatDateOnlyLabel(dates.dueDate),
+        purchases: rows.purchases,
+        payments: rows.payments,
         purchaseTotalLabel: formatCurrency(purchaseTotalCents),
         paymentTotalLabel: formatCurrency(paymentTotalCents),
         balanceLabel: formatCurrency(balanceCents),
