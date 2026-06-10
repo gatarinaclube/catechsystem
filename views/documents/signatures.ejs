@@ -134,8 +134,7 @@
 
             <div id="uploadDocumentFields" style="margin-top:12px;">
               <div class="pdf-signature-preview" id="pdfSignaturePreview" hidden>
-                <iframe id="pdfPreviewFrame" title="Pré-visualização do PDF"></iframe>
-                <div id="signatureMarkersLayer"></div>
+                <div id="pdfPages" class="pdf-signature-pages" aria-label="Pré-visualização do PDF"></div>
               </div>
             </div>
 
@@ -238,17 +237,22 @@
       </main>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
       const emailSuggestions = <%- JSON.stringify(emailSuggestions || []).replace(/</g, '\\u003c') %>;
       const recipientRows = document.getElementById("recipientRows");
       const addRecipientButton = document.getElementById("addRecipientButton");
       const signaturePdf = document.getElementById("signaturePdf");
       const pdfSignaturePreview = document.getElementById("pdfSignaturePreview");
-      const pdfPreviewFrame = document.getElementById("pdfPreviewFrame");
-      const signatureMarkersLayer = document.getElementById("signatureMarkersLayer");
+      const pdfPages = document.getElementById("pdfPages");
       const signaturePositionLabel = document.getElementById("signaturePositionLabel");
       let activeTarget = "sender";
       let recipientIndex = 1;
+      let renderedPdfUrl = null;
+
+      if (window.pdfjsLib) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      }
 
       function findSuggestion(email) {
         const normalized = String(email || "").trim().toLowerCase();
@@ -268,6 +272,9 @@
         row.querySelector('input[name="recipientName"]').value = contact?.name || "";
         row.querySelector('input[name="recipientDocument"]').value = contact?.document || "";
         row.querySelector('input[name="recipientPhone"]').value = contact?.phone || "";
+        const target = `recipient:${row.dataset.recipientIndex}`;
+        const marker = pdfPages.querySelector(`[data-target="${target}"]`);
+        if (marker) marker.textContent = markerLabel(target);
       }
 
       function wireRecipientRow(row) {
@@ -304,36 +311,110 @@
         `;
         row.querySelector(".signature-remove-recipient").addEventListener("click", () => {
           row.remove();
-          signatureMarkersLayer.querySelector(`[data-target="recipient:${index}"]`)?.remove();
+          pdfPages.querySelector(`[data-target="recipient:${index}"]`)?.remove();
         });
         recipientRows.appendChild(row);
         wireRecipientRow(row);
       }
 
-      function setTargetCoordinates(target, x, y) {
+      function fieldsForTarget(target) {
         if (target === "sender") {
-          document.getElementById("senderSignatureX").value = x.toFixed(4);
-          document.getElementById("senderSignatureY").value = y.toFixed(4);
-        } else {
-          const index = target.split(":")[1];
-          const row = recipientRows.querySelector(`[data-recipient-index="${index}"]`);
-          if (!row) return;
-          row.querySelector('input[name="recipientSignatureX"]').value = x.toFixed(4);
-          row.querySelector('input[name="recipientSignatureY"]').value = y.toFixed(4);
+          return {
+            page: document.getElementById("senderSignaturePage"),
+            x: document.getElementById("senderSignatureX"),
+            y: document.getElementById("senderSignatureY"),
+          };
         }
+        const index = target.split(":")[1];
+        const row = recipientRows.querySelector(`[data-recipient-index="${index}"]`);
+        if (!row) return null;
+        return {
+          page: row.querySelector('input[name="recipientSignaturePage"]'),
+          x: row.querySelector('input[name="recipientSignatureX"]'),
+          y: row.querySelector('input[name="recipientSignatureY"]'),
+        };
+      }
 
-        let marker = signatureMarkersLayer.querySelector(`[data-target="${target}"]`);
+      function removeTargetMarker(target) {
+        const fields = fieldsForTarget(target);
+        if (fields) {
+          fields.x.value = "";
+          fields.y.value = "";
+        }
+        pdfPages.querySelector(`[data-target="${target}"]`)?.remove();
+        signaturePositionLabel.textContent = `Marcação removida para ${markerLabel(target)}.`;
+      }
+
+      function setTargetCoordinates(target, pageNumber, x, y) {
+        const fields = fieldsForTarget(target);
+        if (!fields) return;
+        fields.page.value = String(pageNumber);
+        fields.x.value = x.toFixed(4);
+        fields.y.value = y.toFixed(4);
+
+        let marker = pdfPages.querySelector(`[data-target="${target}"]`);
         if (!marker) {
           marker = document.createElement("button");
           marker.type = "button";
           marker.className = target === "sender" ? "signature-marker is-sender" : "signature-marker";
           marker.dataset.target = target;
-          signatureMarkersLayer.appendChild(marker);
+          marker.title = "Clique para remover esta marcação";
+          marker.addEventListener("click", (event) => {
+            event.stopPropagation();
+            removeTargetMarker(target);
+          });
+        } else {
+          marker.remove();
         }
         marker.textContent = markerLabel(target);
         marker.style.left = `${x * 100}%`;
         marker.style.top = `${y * 100}%`;
-        signaturePositionLabel.textContent = `Assinatura marcada para ${markerLabel(target)}.`;
+        const page = pdfPages.querySelector(`[data-page-number="${pageNumber}"] .pdf-signature-marker-layer`);
+        page?.appendChild(marker);
+        signaturePositionLabel.textContent = `Assinatura marcada para ${markerLabel(target)} na página ${pageNumber}. Clique na marcação para excluir.`;
+      }
+
+      async function renderPdfPreview(file) {
+        pdfSignaturePreview.hidden = false;
+        if (!window.pdfjsLib) {
+          pdfPages.innerHTML = '<div class="section-note">Não foi possível carregar o visualizador de PDF. Verifique a conexão e tente novamente.</div>';
+          return;
+        }
+        const buffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+        pdfPages.innerHTML = "";
+        for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+          const page = await pdf.getPage(pageNumber);
+          const containerWidth = Math.min(920, Math.max(320, pdfSignaturePreview.clientWidth - 36));
+          const baseViewport = page.getViewport({ scale: 1 });
+          const scale = containerWidth / baseViewport.width;
+          const viewport = page.getViewport({ scale });
+          const pageNode = document.createElement("div");
+          pageNode.className = "pdf-signature-page";
+          pageNode.dataset.pageNumber = String(pageNumber);
+          pageNode.style.width = `${viewport.width}px`;
+          pageNode.style.height = `${viewport.height}px`;
+
+          const pageLabel = document.createElement("div");
+          pageLabel.className = "pdf-signature-page-label";
+          pageLabel.textContent = `Página ${pageNumber}`;
+
+          const canvas = document.createElement("canvas");
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          canvas.style.width = `${viewport.width}px`;
+          canvas.style.height = `${viewport.height}px`;
+
+          const markerLayer = document.createElement("div");
+          markerLayer.className = "pdf-signature-marker-layer";
+
+          pageNode.appendChild(canvas);
+          pageNode.appendChild(markerLayer);
+          pageNode.appendChild(pageLabel);
+          pdfPages.appendChild(pageNode);
+          await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+        }
+        signaturePositionLabel.textContent = "Selecione o destinatário ou usuário, role até a página desejada e clique no local da assinatura.";
       }
 
       document.querySelectorAll(".signature-select-target").forEach((button) => {
@@ -348,18 +429,23 @@
       signaturePdf.addEventListener("change", () => {
         const file = signaturePdf.files && signaturePdf.files[0];
         if (!file) return;
-        pdfPreviewFrame.src = URL.createObjectURL(file);
-        pdfSignaturePreview.hidden = false;
-        signatureMarkersLayer.innerHTML = "";
-        signaturePositionLabel.textContent = "Clique em um botão de marcar assinatura e depois clique no local desejado do PDF.";
+        if (renderedPdfUrl) URL.revokeObjectURL(renderedPdfUrl);
+        renderedPdfUrl = URL.createObjectURL(file);
+        pdfPages.innerHTML = "";
+        renderPdfPreview(file).catch(() => {
+          pdfSignaturePreview.hidden = false;
+          pdfPages.innerHTML = '<div class="section-note">Não foi possível abrir a pré-visualização deste PDF.</div>';
+        });
       });
 
       pdfSignaturePreview.addEventListener("click", (event) => {
         if (event.target.closest(".signature-marker")) return;
-        const rect = pdfSignaturePreview.getBoundingClientRect();
+        const pageNode = event.target.closest(".pdf-signature-page");
+        if (!pageNode) return;
+        const rect = pageNode.getBoundingClientRect();
         const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
         const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
-        setTargetCoordinates(activeTarget, x, y);
+        setTargetCoordinates(activeTarget, Number(pageNode.dataset.pageNumber || 1), x, y);
       });
     </script>
   </body>

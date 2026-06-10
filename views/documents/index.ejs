@@ -86,7 +86,7 @@
                 <input type="file" name="pdfFile" accept="application/pdf,.pdf" required <%= compressionStats.canUse ? '' : 'disabled' %> />
               </label>
               <label>
-                Tamanho desejado em KB
+                Tamanho final desejado em KB
                 <input type="number" name="targetKb" min="10" step="1" placeholder="Ex.: 500" required <%= compressionStats.canUse ? '' : 'disabled' %> />
               </label>
               <div class="actions" style="grid-column:1 / -1;">
@@ -102,7 +102,7 @@
                 Seu perfil não possui limite mensal para esta ferramenta.
               <% } %>
               <br /><br />
-              A redução é feita sem armazenar o arquivo. Em PDFs com imagens já muito compactadas, o tamanho final pode ficar acima do KB desejado.
+              A redução força o PDF a ficar no tamanho solicitado quando o servidor possui Ghostscript instalado, mesmo que isso reduza bastante a qualidade do documento.
             </div>
           </div>
         </section>

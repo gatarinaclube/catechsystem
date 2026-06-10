@@ -437,14 +437,46 @@
   margin-top: 12px;
   border: 1px solid var(--border-soft);
   border-radius: 12px;
-  overflow: hidden;
+  overflow: auto;
   background: #f8fafc;
+  padding: 18px;
 }
 
-.pdf-signature-preview iframe {
-  width: 100%;
-  height: 100%;
-  border: 0;
+.pdf-signature-pages {
+  display: grid;
+  gap: 18px;
+  justify-items: center;
+}
+
+.pdf-signature-page {
+  position: relative;
+  max-width: 100%;
+  background: #fff;
+  border: 1px solid #d8dee6;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+}
+
+.pdf-signature-page canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.pdf-signature-marker-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.pdf-signature-page-label {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  border-radius: 999px;
+  background: rgba(17, 24, 39, 0.72);
+  color: #fff;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 800;
   pointer-events: none;
 }
 
@@ -459,7 +491,8 @@
   padding: 8px 12px;
   font-size: 12px;
   font-weight: 800;
-  pointer-events: none;
+  cursor: pointer;
+  pointer-events: auto;
 }
 
 .signature-marker.is-sender {

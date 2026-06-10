@@ -3,12 +3,17 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
+const os = require("os");
+const { execFile } = require("child_process");
+const { promisify } = require("util");
 const PDFDocument = require("pdfkit");
 const { PDFDocument: EditablePdfDocument, rgb, StandardFonts } = require("pdf-lib");
 const { buildDisplayName, formatDate, formatDateInput, parseDate } = require("../utils/cattery-admin");
 const { sendStatusEmail } = require("../utils/mailer");
 const { buildUserSmtpConfig, shapeSmtpSettings } = require("../utils/userSmtp");
 const { ROLES, normalizeRole } = require("../utils/access");
+
+const execFileAsync = promisify(execFile);
 
 const DOCUMENT_TYPES = {
   SALE_CONTRACT: {
@@ -119,7 +124,7 @@ async function buildPdfCompressionStats(prisma, userId, role) {
   };
 }
 
-async function compressPdfBuffer(inputBuffer) {
+async function compactPdfWithPdfLib(inputBuffer) {
   const loaded = await EditablePdfDocument.load(inputBuffer, { ignoreEncryption: true });
   const candidates = [];
 
@@ -139,6 +144,104 @@ async function compressPdfBuffer(inputBuffer) {
   candidates.push(Buffer.from(rebuiltBytes));
 
   return candidates.reduce((smallest, current) => (current.length < smallest.length ? current : smallest), inputBuffer);
+}
+
+function padPdfToTarget(buffer, targetBytes) {
+  if (buffer.length >= targetBytes) return buffer;
+  const paddingSize = targetBytes - buffer.length;
+  const prefix = Buffer.from("\n% CaTechSystem PDF size padding\n");
+  if (paddingSize <= prefix.length) {
+    return Buffer.concat([buffer, prefix.subarray(0, paddingSize)]);
+  }
+  return Buffer.concat([buffer, prefix, Buffer.alloc(paddingSize - prefix.length, 0x20)]);
+}
+
+async function findGhostscriptBinary() {
+  const candidates = [process.env.GHOSTSCRIPT_BIN, "gs", "gswin64c", "gswin32c"].filter(Boolean);
+  for (const candidate of candidates) {
+    try {
+      await execFileAsync(candidate, ["--version"], { timeout: 5000 });
+      return candidate;
+    } catch {
+      // Tenta o próximo nome conhecido.
+    }
+  }
+  return null;
+}
+
+async function runGhostscriptCompression(gsBinary, inputPath, outputPath, quality) {
+  const args = [
+    "-sDEVICE=pdfwrite",
+    "-dCompatibilityLevel=1.4",
+    "-dNOPAUSE",
+    "-dQUIET",
+    "-dBATCH",
+    "-dDetectDuplicateImages=true",
+    "-dCompressFonts=true",
+    "-dSubsetFonts=true",
+    "-dAutoRotatePages=/None",
+    "-dDownsampleColorImages=true",
+    "-dDownsampleGrayImages=true",
+    "-dDownsampleMonoImages=true",
+    "-dColorImageDownsampleType=/Bicubic",
+    "-dGrayImageDownsampleType=/Bicubic",
+    "-dMonoImageDownsampleType=/Subsample",
+    `-dColorImageResolution=${quality.resolution}`,
+    `-dGrayImageResolution=${quality.resolution}`,
+    `-dMonoImageResolution=${Math.max(12, quality.resolution)}`,
+    `-dJPEGQ=${quality.jpeg}`,
+    `-sOutputFile=${outputPath}`,
+    inputPath,
+  ];
+  await execFileAsync(gsBinary, args, { timeout: 60000, maxBuffer: 1024 * 1024 });
+}
+
+async function compressPdfToExactTarget(inputBuffer, targetKb) {
+  const targetBytes = Math.max(1, Math.round(Number(targetKb) * 1024));
+  if (targetBytes >= inputBuffer.length) {
+    return { buffer: inputBuffer, exact: false, reason: "TARGET_LARGER_THAN_ORIGINAL" };
+  }
+
+  const gsBinary = await findGhostscriptBinary();
+  if (!gsBinary) {
+    return { buffer: await compactPdfWithPdfLib(inputBuffer), exact: false, reason: "GHOSTSCRIPT_NOT_AVAILABLE" };
+  }
+
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "catech-pdf-"));
+  const inputPath = path.join(tempDir, "input.pdf");
+  fs.writeFileSync(inputPath, inputBuffer);
+
+  const qualities = [
+    { resolution: 180, jpeg: 70 },
+    { resolution: 144, jpeg: 60 },
+    { resolution: 120, jpeg: 52 },
+    { resolution: 96, jpeg: 44 },
+    { resolution: 72, jpeg: 36 },
+    { resolution: 54, jpeg: 28 },
+    { resolution: 36, jpeg: 20 },
+    { resolution: 24, jpeg: 12 },
+  ];
+
+  try {
+    let smallest = null;
+    for (let index = 0; index < qualities.length; index += 1) {
+      const outputPath = path.join(tempDir, `output-${index}.pdf`);
+      await runGhostscriptCompression(gsBinary, inputPath, outputPath, qualities[index]);
+      if (!fs.existsSync(outputPath)) continue;
+      const outputBuffer = fs.readFileSync(outputPath);
+      if (!smallest || outputBuffer.length < smallest.length) smallest = outputBuffer;
+      if (outputBuffer.length <= targetBytes) {
+        return {
+          buffer: padPdfToTarget(outputBuffer, targetBytes),
+          exact: true,
+          reason: "EXACT",
+        };
+      }
+    }
+    return { buffer: smallest || inputBuffer, exact: false, reason: "TARGET_TOO_SMALL" };
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
 }
 
 function parseAttachments(value) {
@@ -1016,9 +1119,15 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           return res.redirect(`/documentos?error=${encodeURIComponent("Informe um tamanho alvo válido em KB.")}`);
         }
 
-        const outputBuffer = await compressPdfBuffer(req.file.buffer);
-        if (outputBuffer.length >= req.file.buffer.length) {
-          return res.redirect(`/documentos?error=${encodeURIComponent("Não foi possível reduzir este PDF sem alterar o conteúdo interno do arquivo.")}`);
+        const compression = await compressPdfToExactTarget(req.file.buffer, targetKb);
+        const outputBuffer = compression.buffer;
+        if (!compression.exact) {
+          const messages = {
+            GHOSTSCRIPT_NOT_AVAILABLE: "Para deixar o PDF exatamente no tamanho solicitado, é necessário instalar Ghostscript no servidor.",
+            TARGET_LARGER_THAN_ORIGINAL: "O tamanho solicitado é maior que o arquivo original. Informe um KB menor que o arquivo enviado.",
+            TARGET_TOO_SMALL: "Mesmo reduzindo bastante a qualidade, este PDF não conseguiu chegar ao tamanho solicitado. Tente um KB um pouco maior.",
+          };
+          return res.redirect(`/documentos?error=${encodeURIComponent(messages[compression.reason] || "Não foi possível atingir exatamente o tamanho solicitado.")}`);
         }
 
         await prisma.pdfCompressionUsage.create({
