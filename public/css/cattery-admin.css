@@ -253,6 +253,84 @@
   min-width: 0;
 }
 
+.signature-recipient-panel .history-section-head {
+  align-items: center;
+}
+
+.signature-recipient-rows {
+  display: grid;
+  gap: 12px;
+}
+
+.signature-recipient-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px;
+  gap: 12px;
+  align-items: end;
+  padding: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.signature-email-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.signature-email-row input {
+  min-width: 0;
+}
+
+.signature-page-field input {
+  text-align: center;
+}
+
+.signature-recipient-status-list {
+  display: grid;
+  gap: 12px;
+}
+
+.signature-recipient-status {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto minmax(220px, auto);
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: #fffefa;
+}
+
+.signature-recipient-status p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.signature-recipient-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.signature-recipient-actions form {
+  margin: 0;
+}
+
+.signature-timeline-details {
+  grid-column: 1 / -1;
+}
+
+.signature-timeline-details summary {
+  cursor: pointer;
+  color: var(--brand-main);
+  font-weight: 800;
+  font-size: 12px;
+}
+
 .signature-link-box {
   display: grid;
   grid-template-columns: 110px minmax(0, 1fr);
@@ -370,6 +448,7 @@
   pointer-events: none;
 }
 
+.signature-marker,
 #signatureMarker {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -381,6 +460,12 @@
   font-size: 12px;
   font-weight: 800;
   pointer-events: none;
+}
+
+.signature-marker.is-sender {
+  border-color: #8a3328;
+  background: rgba(138, 51, 40, 0.14);
+  color: #8a3328;
 }
 
 @media (max-width: 1180px) {
@@ -402,12 +487,25 @@
     grid-template-columns: 1fr;
   }
 
+  .signature-recipient-row,
+  .signature-recipient-status {
+    grid-template-columns: 1fr;
+  }
+
+  .signature-email-row,
+  .signature-recipient-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .signature-action-secondary {
     margin-left: 0;
   }
 
   .signature-action-primary .btn,
   .signature-action-secondary .btn,
+  .signature-recipient-actions .btn,
+  .signature-recipient-actions form,
   .signature-action-secondary form {
     width: 100%;
   }

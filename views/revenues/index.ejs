@@ -54,10 +54,10 @@
           </div>
         <% } %>
 
-        <div class="inline-action-row">
-          <div class="field">
-            <label for="clientSearch">Cliente</label>
-            <% const selectedClient = clients.find(function(client) { return String(revenue.clientId || '') === String(client.id); }); %>
+        <div class="field">
+          <label for="clientSearch">Cliente</label>
+          <% const selectedClient = clients.find(function(client) { return String(revenue.clientId || '') === String(client.id); }); %>
+          <div class="quick-inline-field">
             <input
               id="clientSearch"
               list="clientOptions"
@@ -65,17 +65,17 @@
               placeholder="Digite nome, CPF ou CNPJ"
               autocomplete="off"
             />
-            <input type="hidden" id="clientId" name="clientId" value="<%= revenue.clientId || '' %>" />
-            <datalist id="clientOptions">
-              <% clients.forEach(function(client) { %>
-                <option
-                  value="<%= client.fullName %><%= client.document ? ' - ' + client.document : '' %>"
-                  data-id="<%= client.id %>"
-                ></option>
-              <% }) %>
-            </datalist>
+            <a class="quick-field-icon" href="/receitas/clientes/novo" title="Cadastrar novo cliente" aria-label="Cadastrar novo cliente">＋</a>
           </div>
-          <a class="btn small-button" href="/receitas/clientes/novo">+</a>
+          <input type="hidden" id="clientId" name="clientId" value="<%= revenue.clientId || '' %>" />
+          <datalist id="clientOptions">
+            <% clients.forEach(function(client) { %>
+              <option
+                value="<%= client.fullName %><%= client.document ? ' - ' + client.document : '' %>"
+                data-id="<%= client.id %>"
+              ></option>
+            <% }) %>
+          </datalist>
         </div>
 
         <div class="field">
@@ -161,8 +161,6 @@
 
       <footer class="quick-footer">
         <a class="quick-options-link" href="<%= homePath %>" title="Página inicial">⌂</a>
-        <a class="quick-options-link" href="/administrativo/opcoes-financeiras?type=PAYMENT" title="Contas de pagamento">⚙</a>
-        <a class="quick-options-link" href="/receitas/lista" title="Receitas registradas">☰</a>
       </footer>
     </main>
     <script>

@@ -8,6 +8,7 @@ const { PDFDocument: EditablePdfDocument, rgb, StandardFonts } = require("pdf-li
 const { buildDisplayName, formatDate, formatDateInput, parseDate } = require("../utils/cattery-admin");
 const { sendStatusEmail } = require("../utils/mailer");
 const { buildUserSmtpConfig, shapeSmtpSettings } = require("../utils/userSmtp");
+const { ROLES, normalizeRole } = require("../utils/access");
 
 const DOCUMENT_TYPES = {
   SALE_CONTRACT: {
@@ -72,6 +73,74 @@ function createUploadMiddleware() {
   });
 }
 
+function createPdfCompressionUploadMiddleware() {
+  return multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 30 * 1024 * 1024, files: 1 },
+    fileFilter: (req, file, cb) => {
+      const isPdf = String(file.mimetype || "").includes("pdf") || /\.pdf$/i.test(file.originalname || "");
+      cb(isPdf ? null : new Error("Envie um arquivo PDF."), isPdf);
+    },
+  });
+}
+
+function pdfCompressionMonthlyLimit(role) {
+  const normalizedRole = normalizeRole(role);
+  if ([ROLES.ADMIN, ROLES.PREMIUM, ROLES.ASSOCIADO_PREMIUM].includes(normalizedRole)) return null;
+  if ([ROLES.MASTER, ROLES.ASSOCIADO_A].includes(normalizedRole)) return 10;
+  return 5;
+}
+
+function currentMonthKey() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(new Date());
+  const year = parts.find((part) => part.type === "year")?.value || String(new Date().getFullYear());
+  const month = parts.find((part) => part.type === "month")?.value || String(new Date().getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
+
+async function buildPdfCompressionStats(prisma, userId, role) {
+  const limit = pdfCompressionMonthlyLimit(role);
+  const monthKey = currentMonthKey();
+  const used = await prisma.pdfCompressionUsage.count({
+    where: { userId, monthKey },
+  });
+  return {
+    monthKey,
+    used,
+    limit,
+    isUnlimited: limit === null,
+    remaining: limit === null ? null : Math.max(0, limit - used),
+    canUse: limit === null || used < limit,
+    limitLabel: limit === null ? "Ilimitado" : `${limit} arquivo(s) por mês`,
+  };
+}
+
+async function compressPdfBuffer(inputBuffer) {
+  const loaded = await EditablePdfDocument.load(inputBuffer, { ignoreEncryption: true });
+  const candidates = [];
+
+  const compactBytes = await loaded.save({
+    useObjectStreams: true,
+    addDefaultPage: false,
+  });
+  candidates.push(Buffer.from(compactBytes));
+
+  const rebuilt = await EditablePdfDocument.create();
+  const copiedPages = await rebuilt.copyPages(loaded, loaded.getPageIndices());
+  copiedPages.forEach((page) => rebuilt.addPage(page));
+  const rebuiltBytes = await rebuilt.save({
+    useObjectStreams: true,
+    addDefaultPage: false,
+  });
+  candidates.push(Buffer.from(rebuiltBytes));
+
+  return candidates.reduce((smallest, current) => (current.length < smallest.length ? current : smallest), inputBuffer);
+}
+
 function parseAttachments(value) {
   try {
     const parsed = JSON.parse(value || "[]");
@@ -91,6 +160,15 @@ function compact(value) {
   return String(value || "").trim();
 }
 
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function parseNullablePositiveInt(value) {
   const number = Number(value);
   if (!Number.isFinite(number) || number <= 0) return null;
@@ -101,6 +179,34 @@ function parseCoordinate(value) {
   const number = Number(value);
   if (!Number.isFinite(number) || number < 0) return null;
   return Math.max(0, Math.min(1, number));
+}
+
+function parseArray(value) {
+  if (Array.isArray(value)) return value;
+  if (value === undefined || value === null) return [];
+  return [value];
+}
+
+function uniqueContacts(contacts) {
+  const seen = new Set();
+  return contacts
+    .map((contact) => ({
+      email: compact(contact.email).toLowerCase(),
+      label: compact(contact.label),
+      name: compact(contact.name),
+      document: compact(contact.document),
+      phone: compact(contact.phone),
+      type: compact(contact.type),
+    }))
+    .filter((contact) => {
+      if (!contact.email || seen.has(contact.email)) return false;
+      seen.add(contact.email);
+      return true;
+    });
+}
+
+function signatureName(request) {
+  return compact(request?.signatureText) || compact(request?.signerName) || compact(request?.signerEmail) || "Assinante";
 }
 
 function getClientIp(req) {
@@ -547,46 +653,72 @@ async function buildSignedExternalPdfBuffer({ document, signatureRequest }) {
 
   const pdfDoc = await EditablePdfDocument.load(fs.readFileSync(local));
   const pages = pdfDoc.getPages();
-  const pageIndex = Math.min(Math.max(Number(signatureRequest.signaturePage || 1) - 1, 0), pages.length - 1);
-  const page = pages[pageIndex];
-  const { width, height } = page.getSize();
   const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const x = Number.isFinite(Number(signatureRequest.signatureX)) ? Number(signatureRequest.signatureX) : 0.62;
-  const y = Number.isFinite(Number(signatureRequest.signatureY)) ? Number(signatureRequest.signatureY) : 0.82;
-  const signatureX = Math.max(24, Math.min(width - 210, x * width));
-  const signatureY = Math.max(40, Math.min(height - 40, height - y * height));
 
-  page.drawRectangle({
-    x: signatureX,
-    y: signatureY,
-    width: 190,
-    height: 44,
-    borderColor: rgb(0.12, 0.42, 0.22),
-    borderWidth: 1,
-    color: rgb(0.94, 0.99, 0.96),
-    opacity: 0.92,
+  const signedRequests = (document.signatureRequests || [])
+    .filter((request) => request.status === "SIGNED")
+    .sort((a, b) => new Date(a.signedAt || a.updatedAt).getTime() - new Date(b.signedAt || b.updatedAt).getTime());
+  if (signatureRequest?.status === "SIGNED" && !signedRequests.some((request) => request.id === signatureRequest.id)) {
+    signedRequests.push(signatureRequest);
+  }
+
+  pages.forEach((page) => {
+    const { width } = page.getSize();
+    signedRequests.forEach((request, index) => {
+      const columnWidth = (width - 60) / 3;
+      const x = 30 + (index % 3) * columnWidth;
+      const y = 16 + Math.floor(index / 3) * 11;
+      page.drawText(`Rubrica: ${signatureName(request)}`, {
+        x,
+        y,
+        size: 6.5,
+        font: regularFont,
+        color: rgb(0.39, 0.45, 0.55),
+      });
+    });
   });
-  page.drawText("Assinado eletronicamente por", {
-    x: signatureX + 8,
-    y: signatureY + 27,
-    size: 7,
-    font: regularFont,
-    color: rgb(0.23, 0.28, 0.35),
-  });
-  page.drawText(signatureRequest.signatureText || signatureRequest.signerName || "Assinante", {
-    x: signatureX + 8,
-    y: signatureY + 13,
-    size: 10,
-    font,
-    color: rgb(0.08, 0.26, 0.14),
-  });
-  page.drawText(formatDateTime(signatureRequest.signedAt), {
-    x: signatureX + 8,
-    y: signatureY + 4,
-    size: 6,
-    font: regularFont,
-    color: rgb(0.39, 0.45, 0.55),
+
+  signedRequests.forEach((request) => {
+    const pageIndex = Math.min(Math.max(Number(request.signaturePage || 1) - 1, 0), pages.length - 1);
+    const page = pages[pageIndex];
+    const { width, height } = page.getSize();
+    const x = Number.isFinite(Number(request.signatureX)) ? Number(request.signatureX) : 0.62;
+    const y = Number.isFinite(Number(request.signatureY)) ? Number(request.signatureY) : 0.82;
+    const signatureX = Math.max(24, Math.min(width - 210, x * width));
+    const signatureY = Math.max(40, Math.min(height - 40, height - y * height));
+
+    page.drawRectangle({
+      x: signatureX,
+      y: signatureY,
+      width: 190,
+      height: 44,
+      borderColor: request.signatureSource === "SENDER" ? rgb(0.54, 0.2, 0.16) : rgb(0.12, 0.42, 0.22),
+      borderWidth: 1,
+      color: request.signatureSource === "SENDER" ? rgb(1, 0.97, 0.94) : rgb(0.94, 0.99, 0.96),
+      opacity: 0.92,
+    });
+    page.drawText(request.signatureSource === "SENDER" ? "Assinado eletronicamente pelo remetente" : "Assinado eletronicamente por", {
+      x: signatureX + 8,
+      y: signatureY + 27,
+      size: 7,
+      font: regularFont,
+      color: rgb(0.23, 0.28, 0.35),
+    });
+    page.drawText(signatureName(request), {
+      x: signatureX + 8,
+      y: signatureY + 13,
+      size: 10,
+      font,
+      color: request.signatureSource === "SENDER" ? rgb(0.54, 0.2, 0.16) : rgb(0.08, 0.26, 0.14),
+    });
+    page.drawText(formatDateTime(request.signedAt), {
+      x: signatureX + 8,
+      y: signatureY + 4,
+      size: 6,
+      font: regularFont,
+      color: rgb(0.39, 0.45, 0.55),
+    });
   });
 
   const evidencePage = pdfDoc.addPage([595.28, 841.89]);
@@ -635,6 +767,7 @@ async function buildSignedExternalPdfBuffer({ document, signatureRequest }) {
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
   const upload = createUploadMiddleware();
+  const pdfCompressionUpload = createPdfCompressionUploadMiddleware();
 
   async function loadOptions(userId) {
     const [cats, clients, settings, user] = await Promise.all([
@@ -763,6 +896,33 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     };
   }
 
+  function groupSignatureRequests(requests) {
+    const groups = new Map();
+    requests.forEach((request) => {
+      const id = request.documentId;
+      if (!groups.has(id)) {
+        groups.set(id, {
+          document: request.document,
+          requests: [],
+          senderRequest: null,
+          recipientRequests: [],
+        });
+      }
+      const group = groups.get(id);
+      group.requests.push(request);
+      if (request.signatureSource === "SENDER") {
+        group.senderRequest = request;
+      } else {
+        group.recipientRequests.push(request);
+      }
+    });
+    return Array.from(groups.values()).map((group) => ({
+      ...group,
+      requests: group.requests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+      recipientRequests: group.recipientRequests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    }));
+  }
+
   async function documentHashForSignature(document, req) {
     if (["EXTERNAL_CONTRACT", "SIGNATURE_DOCUMENT"].includes(document.type)) {
       const pdf = externalPdfAttachment(document);
@@ -793,6 +953,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       html: `
         <p>Olá${signatureRequest.signerName ? `, ${signatureRequest.signerName}` : ""}.</p>
         <p>Você recebeu um documento para leitura e assinatura eletrônica.</p>
+        ${compact(document.body) ? `<p><strong>Observações sobre o contrato:</strong><br>${escapeHtml(document.body).replace(/\n/g, "<br>")}</p>` : ""}
         <p><a href="${signUrl}" style="display:inline-block;padding:12px 18px;background:#8a3328;color:#fff;text-decoration:none;border-radius:6px;">Abrir documento</a></p>
         <p>Se o botão não abrir, copie este link: ${signUrl}</p>
         <img src="${pixelUrl}" width="1" height="1" alt="" />
@@ -810,11 +971,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
   router.get("/documentos", requireAuth, requirePermission("admin.documents"), async (req, res, next) => {
     try {
-      const documents = await prisma.catteryDocument.findMany({
-        where: { ownerId: req.session.userId },
-        include: { cat: true, client: true },
-        orderBy: { updatedAt: "desc" },
-      });
+      const [documents, compressionStats] = await Promise.all([
+        prisma.catteryDocument.findMany({
+          where: { ownerId: req.session.userId },
+          include: { cat: true, client: true },
+          orderBy: { updatedAt: "desc" },
+        }),
+        buildPdfCompressionStats(prisma, req.session.userId, req.user?.role),
+      ]);
       const grouped = Object.fromEntries(Object.keys(DOCUMENT_TYPES).map((type) => [type, []]));
       documents.forEach((document) => grouped[document.type]?.push(document));
       res.render("documents/index", {
@@ -822,6 +986,84 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         currentPath: "/documentos",
         documentTypes: DOCUMENT_TYPES,
         grouped,
+        compressionStats,
+        success: req.query.saved === "1" || req.query.sent === "1",
+        error: req.query.error || null,
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/documentos/pdf/reduzir", requireAuth, requirePermission("admin.documents"), (req, res, next) => {
+    pdfCompressionUpload.single("pdfFile")(req, res, async (uploadErr) => {
+      if (uploadErr) {
+        return res.redirect(`/documentos?error=${encodeURIComponent(uploadErr.message || "Não foi possível receber o PDF.")}`);
+      }
+
+      try {
+        const stats = await buildPdfCompressionStats(prisma, req.session.userId, req.user?.role);
+        if (!stats.canUse) {
+          return res.redirect(`/documentos?error=${encodeURIComponent("Limite mensal de redução de PDFs atingido para o seu perfil.")}`);
+        }
+
+        if (!req.file?.buffer?.length) {
+          return res.redirect(`/documentos?error=${encodeURIComponent("Selecione um arquivo PDF para reduzir.")}`);
+        }
+
+        const targetKb = Number(req.body.targetKb);
+        if (!Number.isFinite(targetKb) || targetKb < 10) {
+          return res.redirect(`/documentos?error=${encodeURIComponent("Informe um tamanho alvo válido em KB.")}`);
+        }
+
+        const outputBuffer = await compressPdfBuffer(req.file.buffer);
+        if (outputBuffer.length >= req.file.buffer.length) {
+          return res.redirect(`/documentos?error=${encodeURIComponent("Não foi possível reduzir este PDF sem alterar o conteúdo interno do arquivo.")}`);
+        }
+
+        await prisma.pdfCompressionUsage.create({
+          data: {
+            userId: req.session.userId,
+            monthKey: stats.monthKey,
+            originalBytes: req.file.buffer.length,
+            outputBytes: outputBuffer.length,
+            targetKb: Math.round(targetKb),
+          },
+        });
+
+        const baseName = path.basename(req.file.originalname || "documento.pdf", path.extname(req.file.originalname || ""));
+        const safeName = baseName.replace(/[^\w\s.-]+/g, "").trim().replace(/\s+/g, "-") || "documento";
+        const sizeLabel = Math.max(1, Math.round(outputBuffer.length / 1024));
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Length", String(outputBuffer.length));
+        res.setHeader("Content-Disposition", `attachment; filename="${safeName}-reduzido-${sizeLabel}kb.pdf"`);
+        return res.send(outputBuffer);
+      } catch (err) {
+        if (/encrypted/i.test(err.message || "")) {
+          return res.redirect(`/documentos?error=${encodeURIComponent("Não foi possível reduzir PDF protegido por senha ou criptografado.")}`);
+        }
+        next(err);
+      }
+    });
+  });
+
+  router.get("/documentos/tipo/:route", requireAuth, requirePermission("admin.documents"), async (req, res, next) => {
+    try {
+      const type = selectedTypeFromRoute(req.params.route);
+      const config = DOCUMENT_TYPES[type];
+      const documents = await prisma.catteryDocument.findMany({
+        where: { ownerId: req.session.userId, type },
+        include: { cat: true, client: true },
+        orderBy: { updatedAt: "desc" },
+      });
+
+      res.render("documents/type", {
+        user: req.user,
+        currentPath: "/documentos",
+        documentTypes: DOCUMENT_TYPES,
+        type,
+        config,
+        documents,
         success: req.query.saved === "1" || req.query.sent === "1",
         error: req.query.error || null,
       });
@@ -832,16 +1074,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
   router.get("/documentos/assinaturas", requireAuth, requirePermission("admin.documents"), async (req, res, next) => {
     try {
-      const [systemContracts, signatureRequests, settings] = await Promise.all([
-        prisma.catteryDocument.findMany({
-          where: {
-            ownerId: req.session.userId,
-            type: "SALE_CONTRACT",
-            signatureRequests: { none: { status: "SIGNED" } },
-          },
-          include: { client: true, cat: true },
-          orderBy: { updatedAt: "desc" },
-        }),
+      const [signatureRequests, settings, clients, suppliers] = await Promise.all([
         prisma.documentSignatureRequest.findMany({
           where: { ownerId: req.session.userId },
           include: {
@@ -851,13 +1084,41 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           orderBy: { createdAt: "desc" },
         }),
         prisma.userSettings.findUnique({ where: { userId: req.session.userId } }),
+        prisma.revenueClient.findMany({
+          where: { ownerId: req.session.userId, deletedAt: null, email: { not: null } },
+          orderBy: { fullName: "asc" },
+        }),
+        prisma.expenseSupplier.findMany({
+          where: { ownerId: req.session.userId, email: { not: null } },
+          orderBy: { commercialName: "asc" },
+        }),
+      ]);
+      const shapedRequests = await Promise.all(signatureRequests.map((request) => shapeSignatureRequestForList(request, req)));
+      const emailSuggestions = uniqueContacts([
+        ...clients.map((client) => ({
+          email: client.email,
+          label: `Cliente: ${client.fullName}`,
+          name: client.fullName,
+          document: client.document,
+          phone: client.phone,
+          type: "Cliente",
+        })),
+        ...suppliers.map((supplier) => ({
+          email: supplier.email,
+          label: `Fornecedor: ${supplier.commercialName}`,
+          name: supplier.contactName || supplier.commercialName,
+          document: supplier.cnpj,
+          phone: supplier.contactPhone || supplier.phone,
+          type: "Fornecedor",
+        })),
       ]);
 
       res.render("documents/signatures", {
         user: req.user,
         currentPath: "/documentos",
-        systemContracts,
-        signatureRequests: await Promise.all(signatureRequests.map((request) => shapeSignatureRequestForList(request, req))),
+        signatureGroups: groupSignatureRequests(shapedRequests),
+        signatureRequests: shapedRequests,
+        emailSuggestions,
         smtpSettings: shapeSmtpSettings(settings),
         success: req.query.saved === "1",
         error: req.query.error || null,
@@ -874,70 +1135,101 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     upload.single("signaturePdf"),
     async (req, res, next) => {
       try {
-        const documentKind = req.body.documentKind === "OTHER" ? "OTHER" : "CONTRACT";
-        const contractSource = req.body.contractSource === "EXTERNAL" ? "EXTERNAL" : "SYSTEM";
-        const signerName = compact(req.body.signerName);
-        const signerEmail = compact(req.body.signerEmail);
-        const signerDocument = compact(req.body.signerDocument);
-        const signerPhone = compact(req.body.signerPhone);
-        let document = null;
-        let signatureSource = "SYSTEM_CONTRACT";
-
-        if (documentKind === "CONTRACT" && contractSource === "SYSTEM") {
-          document = await loadDocument(req.body.systemDocumentId, req.session.userId);
-          if (!document || document.type !== "SALE_CONTRACT") {
-            return res.redirect("/documentos/assinaturas?error=Selecione um contrato do sistema válido.");
-          }
-          signatureSource = "SYSTEM_CONTRACT";
-        } else {
-          if (!req.file) {
-            return res.redirect("/documentos/assinaturas?error=Selecione um arquivo PDF para assinatura.");
-          }
-          if (!String(req.file.mimetype || "").includes("pdf") && !/\.pdf$/i.test(req.file.originalname || "")) {
-            return res.redirect("/documentos/assinaturas?error=O arquivo para assinatura precisa ser PDF.");
-          }
-          const title = compact(req.body.externalTitle) || (documentKind === "CONTRACT" ? "Contrato externo" : "Documento para assinatura");
-          document = await prisma.catteryDocument.create({
-            data: {
-              ownerId: req.session.userId,
-              type: documentKind === "CONTRACT" ? "EXTERNAL_CONTRACT" : "SIGNATURE_DOCUMENT",
-              title,
-              body: "",
-              attachmentsJson: JSON.stringify([{
-                path: `/uploads/documents/${req.file.filename}`,
-                originalName: req.file.originalname,
-                mimeType: req.file.mimetype,
-                size: req.file.size,
-              }]),
-            },
-            include: { cat: true, client: true },
-          });
-          signatureSource = documentKind === "CONTRACT" ? "EXTERNAL_CONTRACT" : "EXTERNAL_DOCUMENT";
+        if (!req.file) {
+          return res.redirect("/documentos/assinaturas?error=Selecione um arquivo PDF de contrato.");
+        }
+        if (!String(req.file.mimetype || "").includes("pdf") && !/\.pdf$/i.test(req.file.originalname || "")) {
+          return res.redirect("/documentos/assinaturas?error=O arquivo de contrato precisa ser PDF.");
         }
 
-        const token = crypto.randomBytes(32).toString("hex");
+        const recipientEmails = parseArray(req.body.recipientEmail).map(compact).filter(Boolean);
+        const recipientNames = parseArray(req.body.recipientName).map(compact);
+        const recipientDocuments = parseArray(req.body.recipientDocument).map(compact);
+        const recipientPhones = parseArray(req.body.recipientPhone).map(compact);
+        const recipientPages = parseArray(req.body.recipientSignaturePage);
+        const recipientXs = parseArray(req.body.recipientSignatureX);
+        const recipientYs = parseArray(req.body.recipientSignatureY);
+        const uniqueEmails = [];
+        const seenEmails = new Set();
+        recipientEmails.forEach((email, index) => {
+          const normalized = email.toLowerCase();
+          if (!normalized || seenEmails.has(normalized)) return;
+          seenEmails.add(normalized);
+          uniqueEmails.push({
+            email,
+            name: recipientNames[index] || "",
+            document: recipientDocuments[index] || "",
+            phone: recipientPhones[index] || "",
+            page: recipientPages[index],
+            x: recipientXs[index],
+            y: recipientYs[index],
+          });
+        });
+        if (!uniqueEmails.length) {
+          return res.redirect("/documentos/assinaturas?error=Inclua pelo menos um e-mail de destinatário.");
+        }
+
+        const title = compact(req.body.externalTitle) || "Contrato para assinatura";
+        const contractNote = compact(req.body.contractNote);
+        const document = await prisma.catteryDocument.create({
+          data: {
+            ownerId: req.session.userId,
+            type: "EXTERNAL_CONTRACT",
+            title,
+            body: contractNote,
+            attachmentsJson: JSON.stringify([{
+              path: `/uploads/documents/${req.file.filename}`,
+              originalName: req.file.originalname,
+              mimeType: req.file.mimetype,
+              size: req.file.size,
+            }]),
+          },
+          include: { cat: true, client: true },
+        });
         const documentHash = await documentHashForSignature(document, req);
-        const signatureRequest = await prisma.documentSignatureRequest.create({
+        const settings = await prisma.userSettings.findUnique({ where: { userId: req.session.userId } });
+        const owner = await prisma.user.findUnique({ where: { id: req.session.userId } });
+
+        const senderRequest = await prisma.documentSignatureRequest.create({
           data: {
             ownerId: req.session.userId,
             documentId: document.id,
-            token,
-            signerName: signerName || document.client?.fullName || null,
-            signerEmail: signerEmail || document.client?.email || null,
-            signerDocument: signerDocument || document.client?.document || null,
-            signerPhone: signerPhone || document.client?.phone || null,
-            signatureSource,
-            signaturePage: parseNullablePositiveInt(req.body.signaturePage) || 1,
-            signatureX: parseCoordinate(req.body.signatureX),
-            signatureY: parseCoordinate(req.body.signatureY),
+            token: crypto.randomBytes(32).toString("hex"),
+            signerName: owner?.name || "Remetente",
+            signerEmail: owner?.email || null,
+            signerDocument: owner?.cpf || null,
+            signerPhone: owner?.phones || null,
+            signatureSource: "SENDER",
+            signaturePage: parseNullablePositiveInt(req.body.senderSignaturePage) || 1,
+            signatureX: parseCoordinate(req.body.senderSignatureX),
+            signatureY: parseCoordinate(req.body.senderSignatureY),
             status: "PENDING",
             documentHash,
           },
         });
-        await logSignatureEvent(signatureRequest.id, "LINK_CREATED", req, "Link público criado.");
+        await logSignatureEvent(senderRequest.id, "LINK_CREATED", req, "Link de assinatura do remetente criado.");
 
-        const settings = await prisma.userSettings.findUnique({ where: { userId: req.session.userId } });
-        await sendSignatureEmail({ req, document, signatureRequest, settings });
+        for (const recipient of uniqueEmails) {
+          const signatureRequest = await prisma.documentSignatureRequest.create({
+            data: {
+              ownerId: req.session.userId,
+              documentId: document.id,
+              token: crypto.randomBytes(32).toString("hex"),
+              signerName: recipient.name || null,
+              signerEmail: recipient.email,
+              signerDocument: recipient.document || null,
+              signerPhone: recipient.phone || null,
+              signatureSource: "EXTERNAL_CONTRACT",
+              signaturePage: parseNullablePositiveInt(recipient.page) || 1,
+              signatureX: parseCoordinate(recipient.x),
+              signatureY: parseCoordinate(recipient.y),
+              status: "PENDING",
+              documentHash,
+            },
+          });
+          await logSignatureEvent(signatureRequest.id, "LINK_CREATED", req, "Link público criado.");
+          await sendSignatureEmail({ req, document, signatureRequest, settings });
+        }
 
         res.redirect("/documentos/assinaturas?saved=1");
       } catch (err) {
@@ -1316,6 +1608,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               },
             },
             client: true,
+            signatureRequests: {
+              where: { status: "SIGNED" },
+              include: { events: { orderBy: { createdAt: "asc" } } },
+              orderBy: { signedAt: "asc" },
+            },
           },
         },
         events: { orderBy: { createdAt: "asc" } },

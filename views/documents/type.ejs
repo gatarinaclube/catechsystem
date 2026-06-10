@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><%= config.label %> - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title"><%= config.label %></h2>
+            <div class="welcome-sub">Crie, visualize, edite e baixe os PDFs deste documento.</div>
+          </div>
+          <div class="actions">
+            <a href="/documentos" class="btn">Voltar</a>
+            <a href="/documentos/novo/<%= config.route %>" class="btn btn-primary">Novo</a>
+          </div>
+        </div>
+
+        <% if (success) { %>
+          <div class="content-card" style="border-left:4px solid #16a34a; margin-bottom:18px;">
+            <div class="content-sub">Operação realizada com sucesso.</div>
+          </div>
+        <% } %>
+        <% if (error) { %>
+          <div class="content-card" style="border-left:4px solid #b91c1c; margin-bottom:18px;">
+            <div class="content-sub"><%= error %></div>
+          </div>
+        <% } %>
+
+        <section class="content-card module-list-card">
+          <div class="history-section-head" style="margin-bottom:12px;">
+            <div>
+              <div class="content-title"><%= config.label %> salvos</div>
+              <div class="content-sub"><%= documents.length %> documento(s)</div>
+            </div>
+            <a class="btn" href="/documentos/novo/<%= config.route %>">Criar novo</a>
+          </div>
+
+          <% if (!documents.length) { %>
+            <div class="empty">Nenhum documento salvo ainda.</div>
+          <% } else { %>
+            <div class="record-list">
+              <% documents.forEach(function(document) { %>
+                <div class="record-row">
+                  <div class="record-main">
+                    <div class="record-title"><%= document.title %></div>
+                    <div class="record-sub">
+                      <%= document.client ? document.client.fullName : 'Sem comprador vinculado' %>
+                      <% if (document.cat) { %> · <%= document.cat.name %><% } %>
+                    </div>
+                  </div>
+                  <div class="record-meta actions">
+                    <a class="btn" href="/documentos/<%= document.id %>/editar">Acessar</a>
+                    <a class="btn btn-primary" href="/documentos/<%= document.id %>/pdf" target="_blank">Download PDF</a>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

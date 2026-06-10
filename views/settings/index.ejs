@@ -72,6 +72,52 @@
       .settings-collapsible {
         margin-top: 14px;
       }
+      .settings-panel {
+        margin-bottom: 18px;
+      }
+      .settings-panel > summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        cursor: pointer;
+        list-style: none;
+      }
+      .settings-panel > summary::-webkit-details-marker {
+        display: none;
+      }
+      .settings-panel > summary::after {
+        content: "+";
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--border-soft);
+        border-radius: 50%;
+        background: #ffffff;
+        color: var(--accent-hover);
+        font-weight: 900;
+      }
+      .settings-panel[open] > summary::after {
+        content: "-";
+      }
+      .settings-panel-body {
+        margin-top: 14px;
+      }
+      .settings-switch-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .settings-switch-list .settings-switch {
+        justify-content: flex-start;
+        border: 1px solid var(--border-soft);
+        border-radius: 10px;
+        background: #ffffff;
+        padding: 10px 12px;
+      }
       .breed-picker {
         display: grid;
         grid-template-columns: minmax(220px, 360px) auto;
@@ -199,10 +245,15 @@
         <% } %>
 
         <form method="post" action="/settings" enctype="multipart/form-data">
-          <div class="content-card" style="margin-bottom:18px;">
-            <div class="content-title">Link rápido de despesas</div>
-            <div class="content-sub">Use este endereço para salvar o lançamento rápido na tela inicial do celular.</div>
-            <div class="field" style="margin-top:12px;">
+          <details class="content-card settings-panel">
+            <summary>
+              <div>
+                <div class="content-title">Link rápido de despesas</div>
+                <div class="content-sub">Endereço para salvar o lançamento rápido na tela inicial do celular.</div>
+              </div>
+            </summary>
+            <div class="settings-panel-body">
+              <div class="field">
               <label class="field-label" for="expensePublicLink">Link para salvar no celular</label>
               <input
                 id="expensePublicLink"
@@ -214,12 +265,19 @@
               <div class="section-note">
                 Abra este link no celular e use “Adicionar à tela inicial” no Android ou “Adicionar à Tela de Início” no iPhone.
               </div>
+              </div>
             </div>
-          </div>
+          </details>
 
-          <div class="content-card" style="margin-bottom:18px;">
-            <div class="content-title">Dados do Gatil</div>
-            <div class="grid-2" style="margin-top:12px;">
+          <details class="content-card settings-panel">
+            <summary>
+              <div>
+                <div class="content-title">Dados do Gatil</div>
+                <div class="content-sub">Nome, e-mail e logo usados nas páginas e documentos.</div>
+              </div>
+            </summary>
+            <div class="settings-panel-body">
+            <div class="grid-2">
               <div class="field">
                 <label class="field-label" for="catteryName">Nome do Gatil</label>
                 <input id="catteryName" name="catteryName" type="text" value="<%= settings.catteryName || '' %>" />
@@ -229,10 +287,45 @@
                 <input id="catteryEmail" name="catteryEmail" type="email" value="<%= settings.catteryEmail || '' %>" />
               </div>
             </div>
-          </div>
+            <div class="logo-panel" style="margin-top:14px;">
+              <div class="logo-preview">
+                <% if (settings.logoPath) { %>
+                  <img src="<%= settings.logoPath %>" alt="Logo do gatil" />
+                <% } else { %>
+                  Nenhum logo enviado
+                <% } %>
+              </div>
+              <div class="field">
+                <label class="field-label" for="logo">Enviar logo</label>
+                <input id="logo" name="logo" type="file" accept="image/png,image/jpeg,image/webp" />
+                <div class="section-note">
+                  Formatos aceitos: PNG, JPG ou WEBP. Tamanho máximo: 2 MB.
+                  Para impressão, prefira PNG com fundo transparente e proporção horizontal,
+                  perto de 1200 x 600 px.
+                </div>
+              </div>
+            </div>
+            </div>
+          </details>
 
-          <div class="content-card" style="margin-bottom:18px;">
-            <div class="content-title">Dados do Veterinário</div>
+          <details class="content-card settings-panel">
+            <summary>
+              <div>
+                <div class="content-title">Dados do Veterinário</div>
+                <div class="content-sub">Informações usadas em atestados e documentos quando houver veterinário fixo.</div>
+              </div>
+            </summary>
+            <div class="settings-panel-body">
+            <div class="grid-3">
+              <div class="field">
+                <label class="field-label" for="veterinarianFixed">Veterinário Fixo</label>
+                <select id="veterinarianFixed" name="veterinarianFixed">
+                  <option value="NO" <%= !settings.veterinarianFixed ? "selected" : "" %>>Não</option>
+                  <option value="YES" <%= settings.veterinarianFixed ? "selected" : "" %>>Sim</option>
+                </select>
+              </div>
+            </div>
+            <div id="veterinarianFields">
             <div class="grid-3" style="margin-top:12px;">
               <div class="field">
                 <label class="field-label" for="veterinarian">Veterinário</label>
@@ -320,32 +413,12 @@
                 </div>
               </div>
             </div>
-          </div>
-
-          <div class="content-card" style="margin-bottom:18px;">
-            <div class="content-title">Logo do Gatil</div>
-            <div class="logo-panel">
-              <div class="logo-preview">
-                <% if (settings.logoPath) { %>
-                  <img src="<%= settings.logoPath %>" alt="Logo do gatil" />
-                <% } else { %>
-                  Nenhum logo enviado
-                <% } %>
-              </div>
-              <div class="field">
-                <label class="field-label" for="logo">Enviar logo</label>
-                <input id="logo" name="logo" type="file" accept="image/png,image/jpeg,image/webp" />
-                <div class="section-note">
-                  Formatos aceitos: PNG, JPG ou WEBP. Tamanho máximo: 2 MB.
-                  Para impressão, prefira PNG com fundo transparente e proporção horizontal,
-                  perto de 1200 x 600 px.
-                </div>
-              </div>
             </div>
-          </div>
+            </div>
+          </details>
 
-          <div class="content-card" style="margin-bottom:18px;">
-            <div class="history-section-head" style="margin-bottom:12px;">
+          <details class="content-card settings-panel">
+            <summary>
               <div>
                 <div class="content-title">E-mail do Usuário</div>
                 <div class="content-sub">SMTP próprio usado em e-mail marketing e envio de documentos.</div>
@@ -353,7 +426,8 @@
               <span class="status-pill <%= settings.smtpSettings && settings.smtpSettings.isComplete ? 'is-green' : 'is-yellow' %>">
                 <%= settings.smtpSettings && settings.smtpSettings.isComplete ? 'SMTP configurado' : 'SMTP não configurado' %>
               </span>
-            </div>
+            </summary>
+            <div class="settings-panel-body">
             <div class="grid-2">
               <div class="field">
                 <label class="field-label" for="fromName">Nome do remetente</label>
@@ -400,22 +474,37 @@
             <div class="section-note">
               Para enviar manuais e campanhas, configure um SMTP próprio do usuário. As notificações gerais do sistema continuam usando a configuração global.
             </div>
-          </div>
+            </div>
+          </details>
 
-          <div class="content-card" style="margin-bottom:18px;">
-            <div class="content-title">Membro</div>
-            <div class="settings-options">
+          <details class="content-card settings-panel">
+            <summary>
+              <div>
+                <div class="content-title">Membro</div>
+                <div class="content-sub">Clubes e associações vinculados ao gatil.</div>
+              </div>
+            </summary>
+            <div class="settings-panel-body">
+            <div class="settings-switch-list">
               <% membershipOptions.forEach(function(option) { %>
-                <label class="settings-check">
+                <label class="settings-switch">
                   <input type="checkbox" name="memberships" value="<%= option %>" <%= settings.memberships.includes(option) ? "checked" : "" %> />
+                  <span class="settings-switch-track"></span>
                   <span><%= option %></span>
                 </label>
               <% }) %>
             </div>
-          </div>
+            </div>
+          </details>
 
-          <div class="content-card" style="margin-bottom:18px;">
-            <div class="content-title">Raças</div>
+          <details class="content-card settings-panel">
+            <summary>
+              <div>
+                <div class="content-title">Raças</div>
+                <div class="content-sub">Raças usadas nos campos de seleção do sistema.</div>
+              </div>
+            </summary>
+            <div class="settings-panel-body">
             <div class="breed-picker">
               <div class="field">
                 <label class="field-label" for="breedSelect">Selecionar raça</label>
@@ -429,22 +518,37 @@
               <button type="button" class="btn btn-primary" id="addBreed">+</button>
             </div>
             <div class="breed-list" id="breedList"></div>
-          </div>
+            </div>
+          </details>
 
-          <div class="content-card" style="margin-bottom:18px;">
-            <div class="content-title">Exames</div>
-            <div class="settings-options">
+          <details class="content-card settings-panel">
+            <summary>
+              <div>
+                <div class="content-title">Exames</div>
+                <div class="content-sub">Exames que devem aparecer no módulo Exames.</div>
+              </div>
+            </summary>
+            <div class="settings-panel-body">
+            <div class="settings-switch-list">
               <% examOptions.forEach(function(option) { %>
-                <label class="settings-check">
+                <label class="settings-switch">
                   <input type="checkbox" name="exams" value="<%= option %>" <%= settings.exams.includes(option) ? "checked" : "" %> />
+                  <span class="settings-switch-track"></span>
                   <span><%= option %></span>
                 </label>
               <% }) %>
             </div>
-          </div>
+            </div>
+          </details>
 
-          <div class="content-card" style="margin-bottom:18px;">
-            <div class="content-title">Aviso automático de vacinas</div>
+          <details class="content-card settings-panel">
+            <summary>
+              <div>
+                <div class="content-title">Aviso automático de vacinas</div>
+                <div class="content-sub">E-mails de alerta e regras de vencimento de vacinas.</div>
+              </div>
+            </summary>
+            <div class="settings-panel-body">
             <div class="section-note">
               Quando ativado, o sistema envia e-mail avisando sobre vacinas próximas do vencimento,
               conforme a antecedência e os grupos de gatos selecionados.
@@ -588,11 +692,18 @@
                 </div>
               </div>
             </div>
-          </div>
+            </div>
+          </details>
 
           <% if (canManagePlanLimits) { %>
-            <div class="content-card" style="margin-bottom:18px;">
-              <div class="content-title">Limites dos perfis</div>
+            <details class="content-card settings-panel">
+              <summary>
+                <div>
+                  <div class="content-title">Limites dos perfis</div>
+                  <div class="content-sub">Configuração de limites por plano de usuário.</div>
+                </div>
+              </summary>
+              <div class="settings-panel-body">
               <div class="section-note">
                 As alterações abaixo valem automaticamente para todos os usuários do respectivo perfil.
                 Deixe os campos de quantidade em branco para permitir uso ilimitado.
@@ -641,7 +752,8 @@
                   <% }) %>
                 </tbody>
               </table>
-            </div>
+              </div>
+            </details>
           <% } %>
 
           <div class="form-actions" style="text-align:right;">
@@ -707,6 +819,8 @@
 
         const vaccineToggle = document.getElementById("vaccineReminderEnabled");
         const vaccineFields = document.getElementById("vaccineReminderFields");
+        const veterinarianFixed = document.getElementById("veterinarianFixed");
+        const veterinarianFields = document.getElementById("veterinarianFields");
         const antirabicAnnualBooster = document.getElementById("antirabicAnnualBooster");
         const antirabicIntervalField = document.getElementById("antirabicIntervalField");
         const felineAnnualBooster = document.getElementById("felineAnnualBooster");
@@ -714,6 +828,10 @@
         function refreshVaccineFields() {
           if (!vaccineToggle || !vaccineFields) return;
           vaccineFields.style.display = vaccineToggle.checked ? "block" : "none";
+        }
+        function refreshVeterinarianFields() {
+          if (!veterinarianFixed || !veterinarianFields) return;
+          veterinarianFields.style.display = veterinarianFixed.value === "YES" ? "block" : "none";
         }
         function refreshVaccineIntervals() {
           if (antirabicAnnualBooster && antirabicIntervalField) {
@@ -724,9 +842,11 @@
           }
         }
         vaccineToggle?.addEventListener("change", refreshVaccineFields);
+        veterinarianFixed?.addEventListener("change", refreshVeterinarianFields);
         antirabicAnnualBooster?.addEventListener("change", refreshVaccineIntervals);
         felineAnnualBooster?.addEventListener("change", refreshVaccineIntervals);
         refreshVaccineFields();
+        refreshVeterinarianFields();
         refreshVaccineIntervals();
       })();
     </script>

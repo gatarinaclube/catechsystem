@@ -59,7 +59,11 @@
               autocomplete="off"
             />
             <% if (canManageSuppliers) { %>
-              <a class="quick-field-icon" href="/administrativo/fornecedores" title="Cadastrar novo fornecedor" aria-label="Cadastrar novo fornecedor">＋</a>
+              <% if (isPublicExpenseLink) { %>
+                <button class="quick-field-icon" type="button" id="togglePublicSupplierForm" title="Cadastrar novo fornecedor" aria-label="Cadastrar novo fornecedor">＋</button>
+              <% } else { %>
+                <a class="quick-field-icon" href="/administrativo/fornecedores" title="Cadastrar novo fornecedor" aria-label="Cadastrar novo fornecedor">＋</a>
+              <% } %>
             <% } %>
           </div>
           <datalist id="supplierOptions">
@@ -71,7 +75,37 @@
               ></option>
             <% }) %>
           </datalist>
+          <div id="supplierLookupStatus" class="quick-hint" aria-live="polite"></div>
         </div>
+
+        <% if (isPublicExpenseLink) { %>
+          <div class="quick-inline-panel" id="publicSupplierPanel" hidden>
+            <div class="quick-panel-title">Novo fornecedor</div>
+            <div class="quick-grid">
+              <div class="field">
+                <label for="newSupplierName">Nome Comercial</label>
+                <input id="newSupplierName" form="publicSupplierForm" name="commercialName" autocomplete="off" />
+              </div>
+              <div class="field">
+                <label for="newSupplierCategory">Categoria Padrão</label>
+                <select id="newSupplierCategory" form="publicSupplierForm" name="defaultCategory">
+                  <option value="">Selecione...</option>
+                  <% categories.forEach(function(item) { %>
+                    <option value="<%= item %>"><%= item %></option>
+                  <% }) %>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="newSupplierCnpj">CNPJ</label>
+              <input id="newSupplierCnpj" form="publicSupplierForm" name="cnpj" inputmode="numeric" placeholder="Opcional" />
+            </div>
+            <div class="quick-panel-actions">
+              <button class="btn" type="submit" form="publicSupplierForm">Salvar fornecedor</button>
+              <button class="btn quick-secondary-button" type="button" id="cancelPublicSupplierForm">Cancelar</button>
+            </div>
+          </div>
+        <% } %>
 
         <div class="field">
           <label for="category">Categoria</label>
@@ -131,6 +165,10 @@
       </form>
 
       <% if (isPublicExpenseLink) { %>
+        <form id="publicSupplierForm" method="post" action="/despesas/u/<%= publicExpenseToken %>/fornecedores"></form>
+      <% } %>
+
+      <% if (isPublicExpenseLink) { %>
         <div class="quick-install-card" id="quickInstallCard" hidden>
           <strong>Instalar no celular</strong>
           <span id="quickInstallText">Salve este lançamento rápido na tela inicial para abrir como aplicativo.</span>
@@ -151,6 +189,7 @@
     <script>
       const amount = document.getElementById("amount");
       const supplier = document.getElementById("supplier");
+      const supplierLookupStatus = document.getElementById("supplierLookupStatus");
       const category = document.getElementById("category");
       const paymentMethod = document.getElementById("paymentMethod");
       const paymentMode = document.getElementById("paymentMode");
@@ -159,6 +198,47 @@
       const installments = document.getElementById("installments");
       const parcelFields = document.getElementById("parcelFields");
       const savedParcels = <%- JSON.stringify(expense.parcels || []) %>;
+      const publicSupplierPanel = document.getElementById("publicSupplierPanel");
+      const togglePublicSupplierForm = document.getElementById("togglePublicSupplierForm");
+      const cancelPublicSupplierForm = document.getElementById("cancelPublicSupplierForm");
+
+      function digits(value) {
+        return String(value || "").replace(/\D/g, "");
+      }
+
+      function formatCnpj(value) {
+        const cnpj = digits(value);
+        if (cnpj.length !== 14) return value;
+        return `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5, 8)}/${cnpj.slice(8, 12)}-${cnpj.slice(12)}`;
+      }
+
+      function setSupplierLookupStatus(message, type) {
+        if (!supplierLookupStatus) return;
+        supplierLookupStatus.textContent = message || "";
+        supplierLookupStatus.classList.toggle("is-error", type === "error");
+        supplierLookupStatus.classList.toggle("is-success", type === "success");
+      }
+
+      async function lookupSupplierByCnpj() {
+        const typedSupplier = String(supplier.value || "").trim();
+        const cnpj = digits(supplier.value);
+        const selected = Array.from(document.querySelectorAll("#supplierOptions option"))
+          .some((option) => option.value === supplier.value);
+        if (selected || cnpj.length !== 14 || /[A-Za-zÀ-ÿ]/.test(typedSupplier)) return;
+
+        setSupplierLookupStatus("Buscando dados do CNPJ...", "");
+        try {
+          const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+          if (!response.ok) throw new Error("Consulta indisponível");
+          const data = await response.json();
+          const name = data.razao_social || data.nome_fantasia || "";
+          supplier.value = name ? `${name} - CNPJ ${formatCnpj(cnpj)}` : `CNPJ ${formatCnpj(cnpj)}`;
+          setSupplierLookupStatus("Fornecedor identificado pelo CNPJ sem criar cadastro fixo.", "success");
+        } catch {
+          supplier.value = `CNPJ ${formatCnpj(cnpj)}`;
+          setSupplierLookupStatus("Não foi possível buscar a empresa. A despesa será salva apenas com o CNPJ.", "error");
+        }
+      }
 
       function formatMoneyInput(input) {
         const digits = String(input.value || "").replace(/\D/g, "");
@@ -262,12 +342,27 @@
       amount.addEventListener("blur", () => formatMoneyInput(amount));
       supplier.addEventListener("change", refreshCategoryFromSupplier);
       supplier.addEventListener("input", refreshCategoryFromSupplier);
+      supplier.addEventListener("blur", lookupSupplierByCnpj);
+      if (togglePublicSupplierForm && publicSupplierPanel) {
+        togglePublicSupplierForm.addEventListener("click", () => {
+          publicSupplierPanel.hidden = !publicSupplierPanel.hidden;
+          if (!publicSupplierPanel.hidden) {
+            document.getElementById("newSupplierName")?.focus();
+          }
+        });
+      }
+      if (cancelPublicSupplierForm && publicSupplierPanel) {
+        cancelPublicSupplierForm.addEventListener("click", () => {
+          publicSupplierPanel.hidden = true;
+        });
+      }
       paymentMethod.addEventListener("change", refreshCreditFields);
       paymentMode.addEventListener("change", refreshCreditFields);
       installments.addEventListener("change", renderParcels);
       document.getElementById("competenceDate").addEventListener("change", renderParcels);
       amount.addEventListener("blur", renderParcels);
       formatMoneyInput(amount);
+      refreshCategoryFromSupplier();
       refreshCreditFields();
 
       <% if (isPublicExpenseLink) { %>

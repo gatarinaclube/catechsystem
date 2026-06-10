@@ -125,6 +125,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       SELECT
         "catteryName",
         "catteryEmail",
+        "veterinarianFixed",
         "veterinarian",
         "veterinarianName",
         "crmv",
@@ -174,6 +175,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     return {
       catteryName: settings?.catteryName || "",
       catteryEmail: settings?.catteryEmail || "",
+      veterinarianFixed: Boolean(settings?.veterinarianFixed),
       veterinarian: settings?.veterinarian || settings?.veterinarianName || "",
       veterinarianName: settings?.veterinarianName || "",
       crmv: settings?.crmv || "",
@@ -264,6 +266,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const settings = {
       catteryName: (req.body.catteryName || "").trim(),
       catteryEmail: (req.body.catteryEmail || "").trim(),
+      veterinarianFixed: req.body.veterinarianFixed === "YES",
       veterinarian: (req.body.veterinarian || "").trim(),
       veterinarianName: null,
       crmv: (req.body.crmv || "").trim(),
@@ -330,6 +333,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           "userId",
           "catteryName",
           "catteryEmail",
+          "veterinarianFixed",
           "veterinarian",
           "veterinarianName",
           "crmv",
@@ -375,6 +379,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           ${req.session.userId},
           ${settings.catteryName || null},
           ${settings.catteryEmail || null},
+          ${settings.veterinarianFixed},
           ${settings.veterinarian || null},
           ${settings.veterinarianName},
           ${settings.crmv || null},
@@ -419,6 +424,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         ON CONFLICT ("userId") DO UPDATE SET
           "catteryName" = EXCLUDED."catteryName",
           "catteryEmail" = EXCLUDED."catteryEmail",
+          "veterinarianFixed" = EXCLUDED."veterinarianFixed",
           "veterinarian" = EXCLUDED."veterinarian",
           "veterinarianName" = EXCLUDED."veterinarianName",
           "crmv" = EXCLUDED."crmv",

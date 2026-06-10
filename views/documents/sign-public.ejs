@@ -141,6 +141,9 @@
       <% } else { %>
         <section class="sign-card">
           <h2><%= externalPdf ? 'Documento' : 'Contrato' %></h2>
+          <% if (document.body) { %>
+            <div class="notice" style="white-space:pre-wrap;"><%= document.body %></div>
+          <% } %>
           <% if (externalPdf) { %>
             <iframe
               src="<%= externalPdf.path %>#toolbar=1&navpanes=0"

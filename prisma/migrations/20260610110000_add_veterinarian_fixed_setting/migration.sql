@@ -1,0 +1,2 @@
+ALTER TABLE "UserSettings"
+ADD COLUMN IF NOT EXISTS "veterinarianFixed" BOOLEAN NOT NULL DEFAULT false;

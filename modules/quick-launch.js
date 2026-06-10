@@ -86,6 +86,29 @@ function safeJsonParse(value) {
   }
 }
 
+function cleanText(value) {
+  return String(value || "").trim();
+}
+
+function onlyDigits(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function formatCnpj(value) {
+  const digits = onlyDigits(value);
+  if (digits.length !== 14) return String(value || "").trim();
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+}
+
+function normalizeSupplierForExpense(value) {
+  const text = String(value || "").trim();
+  const digits = onlyDigits(text);
+  if (digits.length === 14 && !/[A-Za-zÀ-ÿ]/.test(text)) {
+    return `CNPJ ${formatCnpj(digits)}`;
+  }
+  return text;
+}
+
 function splitAmountCents(totalCents, installments) {
   const count = Math.max(1, Number.parseInt(installments || "1", 10) || 1);
   const base = Math.floor(Number(totalCents || 0) / count);
@@ -156,7 +179,7 @@ function buildExpenseFormData(body, file, existingReceipt = null, creditCardName
   const amountCents = parseAmountToCents(body.amount);
   const category = String(body.category || "").trim();
   const paymentMethod = String(body.paymentMethod || "").trim();
-  const supplier = String(body.supplier || "").trim();
+  const supplier = normalizeSupplierForExpense(body.supplier);
   const isCreditCard = creditCardNames.has(paymentMethod);
   const paymentMode = isCreditCard
     ? String(body.paymentMode || "").trim()
@@ -602,7 +625,7 @@ module.exports = (prisma) => {
       success: extra.success || false,
       error: extra.error || null,
       homePath: req.session?.userId ? "/dashboard" : "/login",
-      canManageSuppliers: req.session?.userId && userCan(req.session.userRole, "admin.administrative"),
+      canManageSuppliers: Boolean(req.publicExpenseUser) || (req.session?.userId && userCan(req.session.userRole, "admin.administrative")),
       isPublicExpenseLink: Boolean(req.publicExpenseUser),
       publicExpenseToken: req.params?.token || "",
       currentPath: "/despesas",
@@ -657,6 +680,40 @@ module.exports = (prisma) => {
     });
   }
 
+  async function createPublicSupplier(ownerId, body) {
+    const commercialName = cleanText(body.commercialName);
+    const defaultCategory = cleanText(body.defaultCategory);
+    const cnpj = onlyDigits(body.cnpj);
+
+    if (!commercialName) throw new Error("Informe o Nome Comercial do fornecedor.");
+    if (!defaultCategory) throw new Error("Informe a Categoria Padrão do fornecedor.");
+
+    const duplicateName = await prisma.expenseSupplier.findFirst({
+      where: { ownerId, commercialName },
+      select: { id: true },
+    });
+    if (duplicateName) throw new Error("Este fornecedor já está cadastrado.");
+
+    if (cnpj) {
+      const duplicateCnpj = await prisma.expenseSupplier.findFirst({
+        where: { ownerId, cnpj },
+        select: { id: true },
+      });
+      if (duplicateCnpj) throw new Error("Já existe um fornecedor cadastrado com este CNPJ.");
+    }
+
+    await prisma.expenseSupplier.create({
+      data: {
+        ownerId,
+        commercialName,
+        defaultCategory,
+        cnpj: cnpj || null,
+      },
+    });
+
+    return commercialName;
+  }
+
   async function renderPublicExpenseForm(req, res, user, extra = {}) {
     req.publicExpenseUser = user;
     await renderExpenseForm(res, req, {
@@ -702,7 +759,23 @@ module.exports = (prisma) => {
     const user = await findPublicExpenseUser(req.params.token);
     if (!user) return res.status(404).send("Link de lançamento não encontrado.");
 
-    await renderPublicExpenseForm(req, res, user, { success: req.query.ok === "1" });
+    await renderPublicExpenseForm(req, res, user, {
+      success: req.query.ok === "1",
+      error: req.query.error || null,
+      expense: req.query.supplier ? { supplier: String(req.query.supplier || "") } : null,
+    });
+  });
+
+  router.post("/despesas/u/:token/fornecedores", async (req, res) => {
+    const user = await findPublicExpenseUser(req.params.token);
+    if (!user) return res.status(404).send("Link de lançamento não encontrado.");
+
+    try {
+      const supplierName = await createPublicSupplier(user.id, req.body);
+      res.redirect(`/despesas/u/${req.params.token}?supplier=${encodeURIComponent(supplierName)}`);
+    } catch (err) {
+      res.redirect(`/despesas/u/${req.params.token}?error=${encodeURIComponent(err.message || "Erro ao cadastrar fornecedor.")}`);
+    }
   });
 
   router.post("/despesas/u/:token", upload.single("receipt"), async (req, res) => {

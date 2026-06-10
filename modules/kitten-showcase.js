@@ -117,9 +117,63 @@ function getClientIp(req) {
   return forwarded || req.socket?.remoteAddress || "";
 }
 
+const geoIpCache = new Map();
+
 function hashIp(ip) {
   if (!ip) return null;
   return crypto.createHash("sha256").update(`${process.env.SESSION_SECRET || "catech"}:${ip}`).digest("hex");
+}
+
+function normalizeIp(ip) {
+  const value = String(ip || "").trim();
+  if (!value) return "";
+  if (value.startsWith("::ffff:")) return value.slice(7);
+  return value;
+}
+
+function isPrivateIp(ip) {
+  const value = normalizeIp(ip);
+  if (!value || value === "::1" || value === "127.0.0.1" || value === "localhost") return true;
+  if (/^(10|127)\./.test(value)) return true;
+  if (/^192\.168\./.test(value)) return true;
+  if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(value)) return true;
+  if (/^(fc|fd)/i.test(value)) return true;
+  return false;
+}
+
+async function lookupGeoLocationByIp(ip) {
+  const cleanIp = normalizeIp(ip);
+  if (isPrivateIp(cleanIp)) return {};
+
+  const cached = geoIpCache.get(cleanIp);
+  const now = Date.now();
+  if (cached && cached.expiresAt > now) return cached.location;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 1400);
+
+  try {
+    const response = await fetch(`https://ipwho.is/${encodeURIComponent(cleanIp)}?fields=success,city,region,country_code,country`, {
+      signal: controller.signal,
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) return {};
+
+    const data = await response.json();
+    if (!data || data.success === false) return {};
+
+    const location = {
+      city: shortText(data.city, 100),
+      region: shortText(data.region, 100),
+      country: shortText(data.country_code || data.country, 100),
+    };
+    geoIpCache.set(cleanIp, { location, expiresAt: now + 12 * 60 * 60 * 1000 });
+    return location;
+  } catch {
+    return {};
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function firstHeader(req, names) {
@@ -380,8 +434,10 @@ async function findPublishedShowcaseBySlug(prisma, rawSlug) {
 async function createAnalyticsSession(prisma, req, rawSlug) {
   const showcase = await findPublishedShowcaseBySlug(prisma, rawSlug);
   if (!showcase) return null;
+  const clientIp = getClientIp(req);
   const location = locationFromHeaders(req);
   const locationData = locationUpdateData(req.body || {});
+  const geoIpLocation = await lookupGeoLocationByIp(clientIp);
   const visitorId = shortText(req.body?.visitorId, 80) || crypto.randomBytes(12).toString("hex");
   const userAgent = shortText(req.headers["user-agent"], 500);
   const now = new Date();
@@ -390,16 +446,16 @@ async function createAnalyticsSession(prisma, req, rawSlug) {
     data: {
       showcaseId: showcase.id,
       visitorId,
-      ipHash: hashIp(getClientIp(req)),
+      ipHash: hashIp(clientIp),
       userAgent,
       browserLabel: browserLabel(userAgent),
       referrer: shortText(req.body?.referrer || req.headers.referer, 500),
       language: shortText(req.body?.language || req.headers["accept-language"], 80),
       timezone: shortText(req.body?.timezone, 80),
       screen: shortText(req.body?.screen, 40),
-      city: locationData.city || shortText(location.city, 100),
-      region: locationData.region || shortText(location.region, 100),
-      country: locationData.country || shortText(location.country, 100),
+      city: locationData.city || shortText(location.city, 100) || geoIpLocation.city,
+      region: locationData.region || shortText(location.region, 100) || geoIpLocation.region,
+      country: locationData.country || shortText(location.country, 100) || geoIpLocation.country,
       latitude: locationData.latitude,
       longitude: locationData.longitude,
       startedAt: now,

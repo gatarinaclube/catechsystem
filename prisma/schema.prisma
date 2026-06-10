@@ -103,6 +103,7 @@ model User {
   documents CatteryDocument[]
   documentEmailLogs DocumentEmailLog[]
   documentSignatureRequests DocumentSignatureRequest[]
+  pdfCompressionUsages PdfCompressionUsage[]
 
   @@index([asaasCustomerId])
   @@index([asaasSubscriptionId])
@@ -328,6 +329,7 @@ model UserSettings {
   userId          Int      @unique
   catteryName     String?
   catteryEmail    String?
+  veterinarianFixed Boolean @default(false)
   veterinarian    String?
   veterinarianName String?
   crmv            String?
@@ -965,6 +967,19 @@ model CatteryDocument {
   @@index([ownerId, type])
   @@index([catId])
   @@index([clientId])
+}
+
+model PdfCompressionUsage {
+  id            Int      @id @default(autoincrement())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        Int
+  monthKey      String
+  originalBytes Int
+  outputBytes   Int
+  targetKb      Int
+  createdAt     DateTime @default(now())
+
+  @@index([userId, monthKey])
 }
 
 model DocumentSignatureRequest {
