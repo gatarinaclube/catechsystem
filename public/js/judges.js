@@ -97,6 +97,7 @@ window.JUDGES = [
   "Kvėt osl ava Mahelková DVM",
   "Lena Björkander",
   "Lena Nordström",
+  "Lena Venclíková",
   "Lene Hodal Glem Fjeldsted",
   "Leslie Otto van Grebst",
   "Linnea Höglund",
