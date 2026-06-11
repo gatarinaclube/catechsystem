@@ -1,0 +1,129 @@
+<%
+  const phones = animal ? parseJsonArray(animal.phonesJson) : [{ type: "WhatsApp", number: "" }];
+  const photos = animal ? parseJsonArray(animal.photosJson) : [];
+  const selectedSpecies = animal ? animal.species : "Felino";
+  const selectedBreed = animal ? (animal.breed || "") : "";
+%>
+
+<h3>Informações do animal</h3>
+<div class="microchip-form-grid">
+  <label>Nome do animal
+    <input type="text" name="animalName" value="<%= animal ? animal.animalName : '' %>" required />
+  </label>
+  <label>Sexo
+    <select name="sex">
+      <option value="">Selecione</option>
+      <option value="Macho" <%= animal && animal.sex === 'Macho' ? 'selected' : '' %>>Macho</option>
+      <option value="Fêmea" <%= animal && animal.sex === 'Fêmea' ? 'selected' : '' %>>Fêmea</option>
+    </select>
+  </label>
+  <label>Espécie
+    <select name="species" class="microchip-species">
+      <% ["Felino", "Canino", "Outro"].forEach((species) => { %>
+        <option value="<%= species %>" <%= selectedSpecies === species ? 'selected' : '' %>><%= species %></option>
+      <% }) %>
+    </select>
+  </label>
+  <label class="microchip-breed-select-wrap">Raça
+    <select name="breed" class="microchip-breed-select" data-selected="<%= selectedBreed %>">
+      <% (selectedSpecies === "Canino" ? dogBreeds : catBreeds).forEach((breed) => { %>
+        <option value="<%= breed %>" <%= selectedBreed === breed ? 'selected' : '' %>><%= breed %></option>
+      <% }) %>
+    </select>
+  </label>
+  <label class="microchip-custom-breed-wrap">Raça descrita
+    <input type="text" name="customBreed" value="<%= animal ? (animal.customBreed || '') : '' %>" />
+  </label>
+  <label>Data de nascimento
+    <input type="date" name="birthDate" value="<%= animal ? dateInputValue(animal.birthDate) : '' %>" />
+  </label>
+  <label>Cor
+    <input type="text" name="color" value="<%= animal ? (animal.color || '') : '' %>" />
+  </label>
+  <label>Tamanho
+    <select name="size">
+      <option value="">Selecione</option>
+      <% ["Pequeno", "Médio", "Grande"].forEach((size) => { %>
+        <option value="<%= size %>" <%= animal && animal.size === size ? 'selected' : '' %>><%= size %></option>
+      <% }) %>
+    </select>
+  </label>
+  <label>Número de microchip
+    <input type="text" name="microchip" inputmode="numeric" maxlength="19" value="<%= animal ? animal.microchip.replace(/(\d{3})(?=\d)/g, '$1.') : '' %>" required />
+  </label>
+  <label class="full">Fotos do animal
+    <input type="file" name="photos" accept="image/*" multiple />
+    <span class="microchip-help">Até 5 fotos. Em edição, novas fotos serão adicionadas ao cadastro.</span>
+  </label>
+  <% if (animal && photos.length) { %>
+    <label class="full microchip-inline-check">
+      <input type="checkbox" name="replacePhotos" value="YES" />
+      Substituir fotos atuais pelas novas fotos enviadas
+    </label>
+  <% } %>
+</div>
+
+<% if (photos.length) { %>
+  <div class="microchip-photo-strip">
+    <% photos.forEach((photo) => { %>
+      <img src="<%= photo %>" alt="Foto do animal" />
+    <% }) %>
+  </div>
+<% } %>
+
+<h3>Informações do proprietário</h3>
+<div class="microchip-form-grid">
+  <label>Nome completo
+    <input type="text" name="ownerName" value="<%= animal ? animal.ownerName : '' %>" required />
+  </label>
+  <label>CPF
+    <input type="text" name="ownerCpf" value="<%= animal ? (animal.ownerCpf || '') : '' %>" />
+  </label>
+  <label>Data de nascimento
+    <input type="date" name="ownerBirthDate" value="<%= animal ? dateInputValue(animal.ownerBirthDate) : '' %>" />
+  </label>
+  <label>Rua
+    <input type="text" name="ownerStreet" value="<%= animal ? (animal.ownerStreet || '') : '' %>" />
+  </label>
+  <label>Número
+    <input type="text" name="ownerNumber" value="<%= animal ? (animal.ownerNumber || '') : '' %>" />
+  </label>
+  <label>Bairro
+    <input type="text" name="ownerNeighborhood" value="<%= animal ? (animal.ownerNeighborhood || '') : '' %>" />
+  </label>
+  <label>Cidade
+    <input type="text" name="ownerCity" value="<%= animal ? (animal.ownerCity || '') : '' %>" />
+  </label>
+  <label>Estado
+    <input type="text" name="ownerState" maxlength="2" value="<%= animal ? (animal.ownerState || '') : '' %>" />
+  </label>
+  <label>CEP
+    <input type="text" name="ownerCep" value="<%= animal ? (animal.ownerCep || '') : '' %>" />
+  </label>
+  <label>E-mail principal
+    <input type="email" name="ownerEmail" value="<%= animal ? animal.ownerEmail : '' %>" required />
+  </label>
+  <label>E-mail opcional
+    <input type="email" name="ownerEmailOptional" value="<%= animal ? (animal.ownerEmailOptional || '') : '' %>" />
+  </label>
+</div>
+
+<div class="microchip-phone-block">
+  <div class="microchip-phone-title">
+    <h3>Telefones</h3>
+    <button type="button" class="microchip-add-phone">＋ Adicionar telefone</button>
+  </div>
+  <div class="microchip-phone-list">
+    <% phones.forEach((phone) => { %>
+      <div class="microchip-phone-row">
+        <select name="phoneType">
+          <% ["Fixo", "Celular", "WhatsApp"].forEach((type) => { %>
+            <option value="<%= type %>" <%= phone.type === type ? 'selected' : '' %>><%= type %></option>
+          <% }) %>
+        </select>
+        <input type="tel" name="phoneNumber" value="<%= phone.number || '' %>" placeholder="Telefone com DDD" />
+        <button type="button" class="microchip-remove-phone">Remover</button>
+      </div>
+    <% }) %>
+  </div>
+</div>

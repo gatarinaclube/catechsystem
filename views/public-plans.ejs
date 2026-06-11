@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Planos CaTech System - Gestão Completa para Gatil</title>
+    <meta
+      name="description"
+      content="Compare os planos Básico, Master e Premium do CaTech System e comece com 7 dias grátis no Premium."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/public-home.css" />
+  </head>
+  <body class="public-site-body">
+    <header class="public-site-header">
+      <a class="public-site-brand" href="/">
+        <img src="/logos/catech-system-wide.png" alt="CaTech System" />
+      </a>
+      <nav class="public-site-nav" aria-label="Menu principal">
+        <a href="/">Inicial</a>
+        <a href="/planos">Planos</a>
+        <a href="/microchip"><span aria-hidden="true">⌕</span> Microchip</a>
+        <a href="/login">Login</a>
+        <a href="/#contato">Contato</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="public-plans-section public-plans-page">
+        <div class="public-section-heading">
+          <span class="public-eyebrow">Planos para não associados</span>
+          <h1>Comece com 7 dias grátis no Premium</h1>
+          <p>
+            Compare os recursos, escolha o plano ideal para o seu gatil e inicie o teste gratuito
+            com acesso completo ao Premium.
+          </p>
+        </div>
+
+        <%
+          const planColumns = [
+            { key: "basic", title: "Básico", href: "/planos/basic/cadastro" },
+            { key: "master", title: "Master", href: "/planos/master/cadastro" },
+            { key: "premium", title: "Premium", href: "/planos/premium/cadastro", featured: true }
+          ];
+          const planComparisonRows = [
+            { label: "Recomendação", type: "text", values: { basic: ["Gatil iniciante", "Gatil pequeno", "Tutor de gatos"], master: ["Gatil médio"], premium: ["Gatil grande"] } },
+            { label: "Pagamento mensal", type: "price", values: { basic: ["R$ 14,90", "mês"], master: ["R$ 24,90", "mês"], premium: ["R$ 34,90", "mês"] } },
+            { label: "Pagamento 12X cartão", type: "price", values: { basic: ["12X Cartão", "R$ 149,90", "R$ 12,50/mês"], master: ["12X Cartão", "R$ 249,90", "R$ 20,83/mês"], premium: ["12X Cartão", "R$ 349,90", "R$ 29,16/mês"] } },
+            { label: "Pagamento anual", type: "price", values: { basic: ["PIX", "R$ 120,00", "R$ 10,00/mês"], master: ["PIX", "R$ 200,00", "R$ 16,67/mês"], premium: ["PIX", "R$ 300,00", "R$ 25,00/mês"] } },
+            { label: "Cadastro de filhotes", type: "text", values: { basic: ["Até 10 filhotes/ano"], master: ["Até 40 filhotes/ano"], premium: ["Ilimitado"] } },
+            { label: "Ninhadas", type: "text", values: { basic: ["Até 4 ninhadas/ano"], master: ["Até 15 ninhadas/ano"], premium: ["Ilimitado"] } },
+            { label: "Upload", type: "text", values: { basic: ["500 KB por arquivo"], master: ["1 MB por arquivo"], premium: ["2 MB por arquivo"] } },
+            { label: "Diminuição de arquivo", type: "text", values: { basic: ["5 documentos/mês"], master: ["10 documentos/mês"], premium: ["Ilimitado"] } },
+            { label: "Assinatura eletrônica", type: "text", values: { basic: ["5 documentos/mês"], master: ["10 documentos/mês"], premium: ["Ilimitado"] } },
+            { label: "Reprodutores", type: "check", values: { basic: true, master: true, premium: true } },
+            { label: "Acasalamentos", type: "check", values: { basic: true, master: true, premium: true } },
+            { label: "Ninhadas", type: "check", values: { basic: true, master: true, premium: true } },
+            { label: "Filhotes", type: "check", values: { basic: true, master: true, premium: true } },
+            { label: "Histórico do gato", type: "check", values: { basic: true, master: true, premium: true } },
+            { label: "Vacinação", type: "check", values: { basic: true, master: true, premium: true } },
+            { label: "Notificações", type: "check", values: { basic: true, master: true, premium: true } },
+            { label: "Vermifugação", type: "check", values: { basic: true, master: true, premium: true } },
+            { label: "Pesagem", type: "check", values: { basic: true, master: true, premium: true } },
+            { label: "Tratamentos", type: "check", values: { basic: true, master: true, premium: true } },
+            { label: "Exames", type: "check", values: { basic: true, master: true, premium: true } },
+            { label: "Pesquisa de Microchip Pública", type: "check", values: { basic: true, master: true, premium: true } },
+            { label: "Documentos", type: "check", values: { basic: false, master: true, premium: true } },
+            { label: "CRM de clientes", type: "check", values: { basic: false, master: true, premium: true } },
+            { label: "Vitrine de filhotes", type: "check", values: { basic: false, master: true, premium: true } },
+            { label: "Relatórios básicos", type: "check", values: { basic: false, master: true, premium: true } },
+            { label: "Relatórios avançados", type: "check", values: { basic: false, master: false, premium: true } },
+            { label: "Administrativo financeiro", type: "check", values: { basic: false, master: false, premium: true } },
+            { label: "Contas a pagar/receber", type: "check", values: { basic: false, master: false, premium: true } },
+            { label: "Fluxo de caixa", type: "check", values: { basic: false, master: false, premium: true } }
+          ];
+        %>
+
+        <div class="public-plan-table-card">
+          <div class="public-plan-table-scroll">
+            <table class="public-plan-comparison">
+              <thead>
+                <tr>
+                  <th scope="col">Plano</th>
+                  <% planColumns.forEach(function(plan) { %>
+                    <th scope="col" class="<%= plan.featured ? 'is-featured' : '' %>">
+                      <span><%= plan.title %></span>
+                    </th>
+                  <% }) %>
+                </tr>
+              </thead>
+              <tbody>
+                <% planComparisonRows.forEach(function(row) { %>
+                  <tr class="public-plan-row-<%= row.type %>">
+                    <th scope="row"><%= row.label %></th>
+                    <% planColumns.forEach(function(plan) { const value = row.values[plan.key]; %>
+                      <td class="<%= plan.featured ? 'is-featured' : '' %>">
+                        <% if (row.type === 'check') { %>
+                          <span class="public-plan-status <%= value ? 'is-included' : 'is-not-included' %>">
+                            <%= value ? '✓' : '×' %>
+                          </span>
+                        <% } else { %>
+                          <span class="public-plan-cell-lines">
+                            <% value.forEach(function(line, index) { %>
+                              <span class="<%= row.type === 'price' && index === 1 ? 'is-price-main' : '' %>"><%= line %></span>
+                            <% }) %>
+                          </span>
+                        <% } %>
+                      </td>
+                    <% }) %>
+                  </tr>
+                <% }) %>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th scope="row">Escolha seu plano</th>
+                  <% planColumns.forEach(function(plan) { %>
+                    <td class="<%= plan.featured ? 'is-featured' : '' %>">
+                      <a class="public-plan-table-button" href="<%= plan.href %>">
+                        <%= plan.key === 'premium' ? 'Testar Premium' : `Escolher ${plan.title}` %>
+                      </a>
+                    </td>
+                  <% }) %>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <div class="public-plan-footnote">
+            <strong>Premium:</strong> teste gratuito por 7 dias para conhecer todos os recursos antes da contratação.
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="public-site-footer">
+      <div>© 2026 Developed by PetGus & Partners</div>
+      <div class="public-footer-help">
+        <span>Sistema oficial da Associação Catarinense de Felinos - Gatarina</span>
+        <a href="/#contato">Contato</a>
+      </div>
+    </footer>
+  </body>
+</html>

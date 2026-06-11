@@ -76,6 +76,7 @@ const academyRouterFactory = require("./modules/academy");
 const kittenShowcaseRouterFactory = require("./modules/kitten-showcase");
 const documentsRouterFactory = require("./modules/documents");
 const gatarinaShowPhotosRouterFactory = require("./modules/gatarina-show-photos");
+const publicMicrochipRouterFactory = require("./modules/public-microchip");
 const { startVaccineReminderScheduler } = require("./utils/vaccineReminderJob");
 const {generateTitleHomologationPDF,} = require("./modules/pdf/titleHomologationPdf");
 const {generatePedigreeHomologationPDF,} = require("./modules/pdf/pedigreeHomologationPdf");
@@ -572,6 +573,13 @@ app.get("/", (req, res) => {
   });
 });
 
+app.get("/planos", (req, res) => {
+  res.render("public-plans", {
+    user: req.user,
+    plans: commercialPlanList(),
+  });
+});
+
 function escapePublicContactValue(value) {
   return String(value || "")
     .replace(/&/g, "&amp;")
@@ -616,6 +624,7 @@ app.post("/contato", async (req, res) => {
 });
 
 app.use(kittenShowcaseRouterFactory.publicRouter(prisma));
+app.use(publicMicrochipRouterFactory(prisma, requireAuth, requirePermission));
 
 // ---------- LOGIN ----------
 app.get("/login", (req, res) => {

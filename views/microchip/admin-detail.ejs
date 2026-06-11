@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Microchip <%= formatMicrochip(registration.microchip) %> - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+    <link rel="stylesheet" href="/css/microchip.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+      <main class="main-content">
+        <section class="card">
+          <div class="section-header">
+            <div>
+              <h1 class="welcome-title"><%= registration.animalName %></h1>
+              <div class="content-sub">Microchip <%= formatMicrochip(registration.microchip) %> · <%= statusLabels[registration.status] || registration.status %></div>
+            </div>
+            <a class="btn btn-light" href="/admin/microchips">Voltar</a>
+          </div>
+        </section>
+
+        <section class="grid-2">
+          <div class="card">
+            <h2>Animal</h2>
+            <p><strong>Nome:</strong> <%= registration.animalName %></p>
+            <p><strong>Sexo:</strong> <%= registration.sex || '-' %></p>
+            <p><strong>Espécie:</strong> <%= registration.species %></p>
+            <p><strong>Raça:</strong> <%= registration.breed || registration.customBreed || '-' %></p>
+            <p><strong>Nascimento:</strong> <%= dateInputValue(registration.birthDate) || '-' %></p>
+            <p><strong>Cor:</strong> <%= registration.color || '-' %></p>
+            <p><strong>Tamanho:</strong> <%= registration.size || '-' %></p>
+            <% if (photos.length) { %>
+              <div class="photo-grid">
+                <% photos.forEach((photo) => { %>
+                  <a href="<%= photo %>" target="_blank"><img src="<%= photo %>" alt="Foto do animal" /></a>
+                <% }) %>
+              </div>
+            <% } %>
+          </div>
+
+          <div class="card">
+            <h2>Proprietário</h2>
+            <p><strong>Nome:</strong> <%= registration.ownerName %></p>
+            <p><strong>CPF:</strong> <%= registration.ownerCpf || '-' %></p>
+            <p><strong>Nascimento:</strong> <%= dateInputValue(registration.ownerBirthDate) || '-' %></p>
+            <p><strong>E-mail principal:</strong> <%= registration.ownerEmail %></p>
+            <p><strong>E-mail opcional:</strong> <%= registration.ownerEmailOptional || '-' %></p>
+            <p><strong>Endereço:</strong> <%= [registration.ownerStreet, registration.ownerNumber, registration.ownerNeighborhood, registration.ownerCity, registration.ownerState, registration.ownerCep].filter(Boolean).join(', ') || '-' %></p>
+            <h3>Telefones</h3>
+            <% if (!phones.length) { %><p>-</p><% } %>
+            <% phones.forEach((phone) => { %>
+              <p><strong><%= phone.type %>:</strong> <%= phone.number %></p>
+            <% }) %>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Contatos recebidos sobre este microchip</h2>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Nome</th>
+                  <th>Telefone</th>
+                  <th>E-mail</th>
+                  <th>Assunto</th>
+                  <th>Mensagem</th>
+                </tr>
+              </thead>
+              <tbody>
+            <% if (!contacts.length) { %>
+                  <tr><td colspan="6">Nenhum contato recebido.</td></tr>
+                <% } %>
+                <% contacts.forEach((contact) => { %>
+                  <tr>
+                    <td><%= new Date(contact.createdAt).toLocaleString('pt-BR') %></td>
+                    <td><%= contact.name %></td>
+                    <td><%= contact.phone %></td>
+                    <td><%= contact.email %></td>
+                    <td><%= contact.subject %></td>
+                    <td><%= contact.message || '-' %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

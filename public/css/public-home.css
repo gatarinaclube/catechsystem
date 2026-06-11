@@ -262,6 +262,7 @@
   max-width: 780px;
 }
 
+.public-section-heading h1,
 .public-section-heading h2,
 .public-contact-card h2 {
   margin: 10px 0;
@@ -285,6 +286,7 @@
   max-width: none;
 }
 
+.public-plans-section .public-section-heading h1,
 .public-plans-section .public-section-heading h2 {
   white-space: nowrap;
   font-size: clamp(34px, 3.8vw, 54px);
@@ -789,7 +791,8 @@
   align-items: center;
 }
 
-.public-footer-help button {
+.public-footer-help button,
+.public-footer-help a {
   border: 0;
   background: transparent;
   color: #fff;
@@ -871,6 +874,7 @@
     text-align: center;
   }
 
+  .public-plans-section .public-section-heading h1,
   .public-plans-section .public-section-heading h2 {
     white-space: normal;
     font-size: clamp(30px, 10vw, 42px);

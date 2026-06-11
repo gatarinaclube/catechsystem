@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Microchip <%= formatMicrochip(cat.microchip) %> - Cadastro Interno</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+    <link rel="stylesheet" href="/css/microchip.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+      <main class="main-content">
+        <section class="card">
+          <div class="section-header">
+            <div>
+              <h1 class="welcome-title"><%= cat.name %></h1>
+              <div class="content-sub">
+                Cadastro interno · Microchip <%= formatMicrochip(cat.microchip) %>
+              </div>
+            </div>
+            <div class="form-actions">
+              <a class="btn btn-light" href="/admin/microchips">Voltar</a>
+              <a class="btn btn-primary" href="/cats/<%= cat.id %>">Abrir cadastro do gato</a>
+            </div>
+          </div>
+        </section>
+
+        <section class="grid-2">
+          <div class="card">
+            <h2>Animal</h2>
+            <p><strong>Nome:</strong> <%= cat.name %></p>
+            <p><strong>Sexo:</strong> <%= cat.gender === 'M' ? 'Macho' : cat.gender === 'F' ? 'Fêmea' : '-' %></p>
+            <p><strong>Raça:</strong> <%= cat.breed || '-' %></p>
+            <p><strong>Nascimento:</strong> <%= dateInputValue(cat.birthDate) || '-' %></p>
+            <p><strong>Cor / EMS:</strong> <%= cat.emsCode || '-' %></p>
+            <p><strong>Status:</strong> <%= cat.deceased ? 'Óbito' : 'Ativo' %></p>
+            <p><strong>Número do filhote:</strong> <%= cat.kittenNumber || '-' %></p>
+            <p><strong>Situação do filhote:</strong> <%= cat.kittenAvailabilityStatus || '-' %></p>
+            <% if (cat.photo) { %>
+              <div class="photo-grid">
+                <a href="<%= cat.photo %>" target="_blank"><img src="<%= cat.photo %>" alt="Foto do gato" /></a>
+              </div>
+            <% } %>
+          </div>
+
+          <div class="card">
+            <h2>Usuário / proprietário</h2>
+            <p><strong>Usuário do sistema:</strong> <%= cat.owner?.name || '-' %></p>
+            <p><strong>E-mail do usuário:</strong> <%= cat.owner?.email || '-' %></p>
+            <p><strong>Proprietário atual:</strong> <%= cat.currentOwnerClient?.fullName || cat.owner?.name || '-' %></p>
+            <p><strong>E-mail do proprietário atual:</strong> <%= cat.currentOwnerClient?.email || cat.owner?.email || '-' %></p>
+            <p><strong>Telefone do proprietário atual:</strong> <%= cat.currentOwnerClient?.phone || '-' %></p>
+            <% if (cat.litterKitten && cat.litterKitten.litter) { %>
+              <h3>Ninhada vinculada</h3>
+              <p><strong>Mãe:</strong> <%= cat.litterKitten.litter.femaleName || '-' %></p>
+              <p><strong>Pai:</strong> <%= cat.litterKitten.litter.maleName || '-' %></p>
+              <p><strong>Nascimento:</strong> <%= dateInputValue(cat.litterKitten.litter.litterBirthDate) || '-' %></p>
+            <% } %>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Contatos recebidos sobre este microchip</h2>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Nome</th>
+                  <th>Telefone</th>
+                  <th>E-mail</th>
+                  <th>Assunto</th>
+                  <th>Mensagem</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (!contacts.length) { %>
+                  <tr><td colspan="6">Nenhum contato recebido.</td></tr>
+                <% } %>
+                <% contacts.forEach((contact) => { %>
+                  <tr>
+                    <td><%= new Date(contact.createdAt).toLocaleString('pt-BR') %></td>
+                    <td><%= contact.name %></td>
+                    <td><%= contact.phone %></td>
+                    <td><%= contact.email %></td>
+                    <td><%= contact.subject %></td>
+                    <td><%= contact.message || '-' %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

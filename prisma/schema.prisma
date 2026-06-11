@@ -34,76 +34,76 @@ enum UserRole {
 }
 
 model User {
-  id       Int     @id @default(autoincrement())
-  name     String
-  address  String?
-  city     String?
-  cep      String?
-  state    String?
-  country  String?
-  phones   String?
-  email    String  @unique
-  expensePublicToken String? @unique
-  dashboardPublicToken String? @unique
-  cpf      String?
-  password String
-  role     UserRole @default(BASIC)
-  clubs    String?
+  id                   Int      @id @default(autoincrement())
+  name                 String
+  address              String?
+  city                 String?
+  cep                  String?
+  state                String?
+  country              String?
+  phones               String?
+  email                String   @unique
+  expensePublicToken   String?  @unique
+  dashboardPublicToken String?  @unique
+  cpf                  String?
+  password             String
+  role                 UserRole @default(BASIC)
+  clubs                String?
 
   // 🔹 GATIL FIFe
-  hasFifeCattery  String?   // "YES" | "NO"
+  hasFifeCattery  String? // "YES" | "NO"
   fifeCatteryName String?
 
   // Status de aprovação
-  approvalStatus ApprovalStatus @default(INDEFERIDO)
-  adminNotes     String?
-  accountOrigin  String?
-  selectedPlan   String?
-  subscriptionStatus String?
-  trialEndsAt    DateTime?
-  planActivatedAt DateTime?
-  asaasCustomerId String?
+  approvalStatus      ApprovalStatus @default(INDEFERIDO)
+  adminNotes          String?
+  accountOrigin       String?
+  selectedPlan        String?
+  subscriptionStatus  String?
+  trialEndsAt         DateTime?
+  planActivatedAt     DateTime?
+  asaasCustomerId     String?
   asaasSubscriptionId String?
-  asaasPaymentId String?
-  asaasPaymentUrl String?
-  asaasLastEvent String?
+  asaasPaymentId      String?
+  asaasPaymentUrl     String?
+  asaasLastEvent      String?
 
   createdAt DateTime @default(now())
 
-  cats            Cat[]
-  currentOwnedCats Cat[] @relation("CurrentKittenOwner")
-  litters         Litter[]
-  matings         MatingPlan[]
-  serviceRequests ServiceRequest[]
-  settings        UserSettings?
-  quickLaunchEntries QuickLaunchEntry[]
-  quickLaunchOptions QuickLaunchOption[]
-  revenueClients RevenueClient[]
-  revenueEntries RevenueEntry[]
-  revenueProductServices RevenueProductService[]
-  crmEmailContacts CrmEmailContact[]
-  crmEmailCampaigns CrmEmailCampaign[]
-  crmEmailDrafts CrmEmailDraft[]
-  financialAccountSettings FinancialAccountSetting[]
+  cats                      Cat[]
+  currentOwnedCats          Cat[]                      @relation("CurrentKittenOwner")
+  litters                   Litter[]
+  matings                   MatingPlan[]
+  serviceRequests           ServiceRequest[]
+  settings                  UserSettings?
+  quickLaunchEntries        QuickLaunchEntry[]
+  quickLaunchOptions        QuickLaunchOption[]
+  revenueClients            RevenueClient[]
+  revenueEntries            RevenueEntry[]
+  revenueProductServices    RevenueProductService[]
+  crmEmailContacts          CrmEmailContact[]
+  crmEmailCampaigns         CrmEmailCampaign[]
+  crmEmailDrafts            CrmEmailDraft[]
+  financialAccountSettings  FinancialAccountSetting[]
   creditCardInvoiceSettings CreditCardInvoiceSetting[]
-  financialTransfers FinancialTransfer[]
-  treatmentMedications TreatmentMedication[]
-  catTreatments CatTreatment[]
-  expenseSuppliers ExpenseSupplier[]
-  accountPayables AccountPayable[]
-  passwordResetTokens PasswordResetToken[]
-  academyEnrollments AcademyEnrollment[]
-  academyProgress AcademyProgress[]
-  academyFavorites AcademyFavorite[]
-  academyAuthorship AcademyAuthor?
-  academyMedia AcademyMedia[]
-  academySubscriptions AcademySubscription[]
-  academyCertificates AcademyCertificate[]
-  kittenShowcase CatteryKittenShowcase?
-  documents CatteryDocument[]
-  documentEmailLogs DocumentEmailLog[]
+  financialTransfers        FinancialTransfer[]
+  treatmentMedications      TreatmentMedication[]
+  catTreatments             CatTreatment[]
+  expenseSuppliers          ExpenseSupplier[]
+  accountPayables           AccountPayable[]
+  passwordResetTokens       PasswordResetToken[]
+  academyEnrollments        AcademyEnrollment[]
+  academyProgress           AcademyProgress[]
+  academyFavorites          AcademyFavorite[]
+  academyAuthorship         AcademyAuthor?
+  academyMedia              AcademyMedia[]
+  academySubscriptions      AcademySubscription[]
+  academyCertificates       AcademyCertificate[]
+  kittenShowcase            CatteryKittenShowcase?
+  documents                 CatteryDocument[]
+  documentEmailLogs         DocumentEmailLog[]
   documentSignatureRequests DocumentSignatureRequest[]
-  pdfCompressionUsages PdfCompressionUsage[]
+  pdfCompressionUsages      PdfCompressionUsage[]
 
   @@index([asaasCustomerId])
   @@index([asaasSubscriptionId])
@@ -111,34 +111,34 @@ model User {
 }
 
 model AcademyEnrollment {
-  id        Int      @id @default(autoincrement())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        Int          @id @default(autoincrement())
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    Int
-  level     String   @default("STUDENT")
-  status    String   @default("ACTIVE")
+  level     String       @default("STUDENT")
+  status    String       @default("ACTIVE")
   plan      AcademyPlan? @relation(fields: [planId], references: [id])
   planId    Int?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
   @@unique([userId])
   @@map("academy_enrollments")
 }
 
 model AcademyAuthor {
-  id          Int      @id @default(autoincrement())
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  userId      Int?     @unique
-  name        String
-  slug        String   @unique
-  bio         String?
-  photoUrl    String?
-  specialty   String?
-  breedFocus  String?
+  id              Int      @id @default(autoincrement())
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId          Int?     @unique
+  name            String
+  slug            String   @unique
+  bio             String?
+  photoUrl        String?
+  specialty       String?
+  breedFocus      String?
   socialLinksJson String?
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   lessons AcademyLesson[]
   media   AcademyMedia[]
@@ -147,22 +147,22 @@ model AcademyAuthor {
 }
 
 model AcademyPlan {
-  id              Int      @id @default(autoincrement())
-  name            String
-  slug            String   @unique
-  description     String?
-  priceCents      Int      @default(0)
-  billingCycle    String   @default("MONTHLY")
-  accessLevel      String   @default("STUDENT")
-  featured        Boolean  @default(false)
-  active          Boolean  @default(true)
-  checkoutProvider String?
+  id                   Int      @id @default(autoincrement())
+  name                 String
+  slug                 String   @unique
+  description          String?
+  priceCents           Int      @default(0)
+  billingCycle         String   @default("MONTHLY")
+  accessLevel          String   @default("STUDENT")
+  featured             Boolean  @default(false)
+  active               Boolean  @default(true)
+  checkoutProvider     String?
   checkoutMetadataJson String?
-  featuresJson     String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  featuresJson         String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
-  enrollments AcademyEnrollment[]
+  enrollments   AcademyEnrollment[]
   subscriptions AcademySubscription[]
 
   @@map("academy_plans")
@@ -184,17 +184,17 @@ model AcademyCategory {
 }
 
 model AcademyModule {
-  id          Int      @id @default(autoincrement())
-  category   AcademyCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  categoryId Int
+  id          Int             @id @default(autoincrement())
+  category    AcademyCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId  Int
   title       String
-  slug        String   @unique
+  slug        String          @unique
   description String?
-  level       String   @default("STUDENT")
-  sortOrder   Int      @default(0)
-  published   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  level       String          @default("STUDENT")
+  sortOrder   Int             @default(0)
+  published   Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
   lessons AcademyLesson[]
 
@@ -202,184 +202,184 @@ model AcademyModule {
 }
 
 model AcademyLesson {
-  id          Int      @id @default(autoincrement())
-  module      AcademyModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  moduleId    Int
-  author      AcademyAuthor? @relation(fields: [authorId], references: [id], onDelete: SetNull)
-  authorId    Int?
-  title       String
-  slug        String   @unique
-  summary     String?
-  richText    String?
-  contentJson String?
-  imageUrl    String?
-  videoEmbed  String?
-  filesJson   String?
-  durationMinutes Int?
+  id                      Int            @id @default(autoincrement())
+  module                  AcademyModule  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  moduleId                Int
+  author                  AcademyAuthor? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  authorId                Int?
+  title                   String
+  slug                    String         @unique
+  summary                 String?
+  richText                String?
+  contentJson             String?
+  imageUrl                String?
+  videoEmbed              String?
+  filesJson               String?
+  durationMinutes         Int?
   estimatedReadingMinutes Int?
-  level       String   @default("STUDENT")
-  status      String   @default("DRAFT")
-  sortOrder   Int      @default(0)
-  published   Boolean  @default(false)
-  metaTitle   String?
-  metaDescription String?
-  ogImageUrl  String?
-  relatedLessonIdsJson String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  level                   String         @default("STUDENT")
+  status                  String         @default("DRAFT")
+  sortOrder               Int            @default(0)
+  published               Boolean        @default(false)
+  metaTitle               String?
+  metaDescription         String?
+  ogImageUrl              String?
+  relatedLessonIdsJson    String?
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
 
-  progress AcademyProgress[]
-  favorites AcademyFavorite[]
-  media AcademyMedia[]
+  progress     AcademyProgress[]
+  favorites    AcademyFavorite[]
+  media        AcademyMedia[]
   certificates AcademyCertificate[]
 
   @@map("academy_lessons")
 }
 
 model AcademyProgress {
-  id        Int      @id @default(autoincrement())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    Int
-  lesson    AcademyLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  lessonId  Int
-  completed Boolean  @default(false)
+  id          Int           @id @default(autoincrement())
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      Int
+  lesson      AcademyLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId    Int
+  completed   Boolean       @default(false)
   completedAt DateTime?
-  lastSeenAt DateTime @default(now())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  lastSeenAt  DateTime      @default(now())
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   @@unique([userId, lessonId])
   @@map("academy_progress")
 }
 
 model AcademyFavorite {
-  id        Int      @id @default(autoincrement())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        Int           @id @default(autoincrement())
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    Int
   lesson    AcademyLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   lessonId  Int
-  createdAt DateTime @default(now())
+  createdAt DateTime      @default(now())
 
   @@unique([userId, lessonId])
   @@map("academy_favorites")
 }
 
 model AcademyMedia {
-  id        Int      @id @default(autoincrement())
-  owner     User?    @relation(fields: [ownerId], references: [id], onDelete: SetNull)
-  ownerId   Int?
-  author    AcademyAuthor? @relation(fields: [authorId], references: [id], onDelete: SetNull)
-  authorId  Int?
-  lesson    AcademyLesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
-  lessonId  Int?
-  type      String
-  title     String?
-  url       String
-  mimeType  String?
-  sizeBytes Int?
-  altText   String?
+  id           Int            @id @default(autoincrement())
+  owner        User?          @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  ownerId      Int?
+  author       AcademyAuthor? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  authorId     Int?
+  lesson       AcademyLesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  lessonId     Int?
+  type         String
+  title        String?
+  url          String
+  mimeType     String?
+  sizeBytes    Int?
+  altText      String?
   metadataJson String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 
   @@map("academy_media")
 }
 
 model AcademySubscription {
-  id        Int      @id @default(autoincrement())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    Int
-  plan      AcademyPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
-  planId    Int?
-  status    String   @default("PENDING")
-  provider  String?
-  providerSubscriptionId String? @unique
-  startedAt DateTime?
-  currentPeriodStart DateTime?
-  currentPeriodEnd DateTime?
-  canceledAt DateTime?
-  metadataJson String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                     Int          @id @default(autoincrement())
+  user                   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                 Int
+  plan                   AcademyPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+  planId                 Int?
+  status                 String       @default("PENDING")
+  provider               String?
+  providerSubscriptionId String?      @unique
+  startedAt              DateTime?
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  canceledAt             DateTime?
+  metadataJson           String?
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
 
   @@map("academy_subscriptions")
 }
 
 model AcademyCertificate {
-  id        Int      @id @default(autoincrement())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    Int
-  lesson    AcademyLesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
-  lessonId  Int?
-  title     String
-  certificateNumber String @unique
-  issuedAt  DateTime @default(now())
-  expiresAt DateTime?
-  pdfUrl    String?
-  metadataJson String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                Int            @id @default(autoincrement())
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            Int
+  lesson            AcademyLesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  lessonId          Int?
+  title             String
+  certificateNumber String         @unique
+  issuedAt          DateTime       @default(now())
+  expiresAt         DateTime?
+  pdfUrl            String?
+  metadataJson      String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
   @@map("academy_certificates")
 }
 
 model UserSettings {
-  id              Int      @id @default(autoincrement())
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId          Int      @unique
-  catteryName     String?
-  catteryEmail    String?
-  veterinarianFixed Boolean @default(false)
-  veterinarian    String?
-  veterinarianName String?
-  crmv            String?
-  crmvUf          String?
-  veterinarianClinicName String?
-  veterinarianTradeName String?
-  veterinarianCnpj String?
-  veterinarianAddress String?
-  veterinarianCity String?
-  veterinarianCep String?
-  veterinarianState String?
-  veterinarianPhone String?
-  veterinarianMobile String?
-  veterinarianEmail String?
-  logoPath        String?
-  veterinarianLogoPath String?
-  healthCertificateLogoPreference String?
+  id                               Int      @id @default(autoincrement())
+  user                             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                           Int      @unique
+  catteryName                      String?
+  catteryEmail                     String?
+  veterinarianFixed                Boolean  @default(false)
+  veterinarian                     String?
+  veterinarianName                 String?
+  crmv                             String?
+  crmvUf                           String?
+  veterinarianClinicName           String?
+  veterinarianTradeName            String?
+  veterinarianCnpj                 String?
+  veterinarianAddress              String?
+  veterinarianCity                 String?
+  veterinarianCep                  String?
+  veterinarianState                String?
+  veterinarianPhone                String?
+  veterinarianMobile               String?
+  veterinarianEmail                String?
+  logoPath                         String?
+  veterinarianLogoPath             String?
+  healthCertificateLogoPreference  String?
   healthCertificateDeclarationText String?
-  membershipsJson String?
-  breedsJson      String?
-  examsJson       String?
-  vaccineReminderEnabled Boolean @default(false)
-  vaccineReminderDaysBefore Int?
-  vaccineReminderGroupsJson String?
-  antirabicFirstDoseMonths Int?
-  antirabicAnnualBooster Boolean @default(true)
-  antirabicBoosterIntervalYears Int?
-  felineFirstDoseMonths Int?
-  felineSecondDoseDays Int?
-  felineThirdDoseDays Int?
-  felineAnnualBooster Boolean @default(true)
-  felineBoosterIntervalYears Int?
-  marketingFromName String?
-  marketingFromEmail String?
-  marketingSmtpHost String?
-  marketingSmtpPort Int?
-  marketingSmtpSecure Boolean @default(false)
-  marketingSmtpUser String?
-  marketingSmtpPassEncrypted String?
-  marketingFontFamily String?
-  marketingBackgroundColor String?
-  marketingCardColor String?
-  marketingTextColor String?
-  marketingAccentColor String?
-  marketingWebsiteUrl String?
-  marketingInstagramUrl String?
-  marketingWhatsappUrl String?
-  marketingFooterText String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  membershipsJson                  String?
+  breedsJson                       String?
+  examsJson                        String?
+  vaccineReminderEnabled           Boolean  @default(false)
+  vaccineReminderDaysBefore        Int?
+  vaccineReminderGroupsJson        String?
+  antirabicFirstDoseMonths         Int?
+  antirabicAnnualBooster           Boolean  @default(true)
+  antirabicBoosterIntervalYears    Int?
+  felineFirstDoseMonths            Int?
+  felineSecondDoseDays             Int?
+  felineThirdDoseDays              Int?
+  felineAnnualBooster              Boolean  @default(true)
+  felineBoosterIntervalYears       Int?
+  marketingFromName                String?
+  marketingFromEmail               String?
+  marketingSmtpHost                String?
+  marketingSmtpPort                Int?
+  marketingSmtpSecure              Boolean  @default(false)
+  marketingSmtpUser                String?
+  marketingSmtpPassEncrypted       String?
+  marketingFontFamily              String?
+  marketingBackgroundColor         String?
+  marketingCardColor               String?
+  marketingTextColor               String?
+  marketingAccentColor             String?
+  marketingWebsiteUrl              String?
+  marketingInstagramUrl            String?
+  marketingWhatsappUrl             String?
+  marketingFooterText              String?
+  createdAt                        DateTime @default(now())
+  updatedAt                        DateTime @updatedAt
 }
 
 model VaccineReminderEmailLog {
@@ -395,72 +395,72 @@ model VaccineReminderEmailLog {
 }
 
 model RolePlanLimit {
-  id              Int      @id @default(autoincrement())
-  role            String   @unique
-  uploadLimitKb   Int?
-  breeders        Int?
-  showcaseLitters Int?
+  id                           Int      @id @default(autoincrement())
+  role                         String   @unique
+  uploadLimitKb                Int?
+  breeders                     Int?
+  showcaseLitters              Int?
   showcaseEvolutionComparisons Int?
-  littersPerYear  Int?
-  kittensPerYear  Int?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  littersPerYear               Int?
+  kittensPerYear               Int?
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
 }
 
 model CatteryKittenShowcase {
-  id          Int      @id @default(autoincrement())
-  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerId     Int      @unique
-  slug        String   @unique
-  title       String?
-  intro       String?
-  logoPath    String?
-  backgroundColor String?
-  cardColor   String?
-  textColor   String?
-  accentColor String?
-  websiteUrl  String?
-  instagramUrl String?
-  whatsappUrl String?
-  paymentPix  Boolean  @default(false)
-  paymentCardCash Boolean @default(false)
-  paymentCardInstallments Boolean @default(false)
-  paymentInstallments Int?
-  paymentText String?
-  aboutText   String?
-  aboutPdfPath String?
-  evolutionText String?
-  published   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                      Int      @id @default(autoincrement())
+  owner                   User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId                 Int      @unique
+  slug                    String   @unique
+  title                   String?
+  intro                   String?
+  logoPath                String?
+  backgroundColor         String?
+  cardColor               String?
+  textColor               String?
+  accentColor             String?
+  websiteUrl              String?
+  instagramUrl            String?
+  whatsappUrl             String?
+  paymentPix              Boolean  @default(false)
+  paymentCardCash         Boolean  @default(false)
+  paymentCardInstallments Boolean  @default(false)
+  paymentInstallments     Int?
+  paymentText             String?
+  aboutText               String?
+  aboutPdfPath            String?
+  evolutionText           String?
+  published               Boolean  @default(false)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 
-  litters CatteryShowcaseLitter[]
+  litters              CatteryShowcaseLitter[]
   evolutionComparisons CatteryShowcaseEvolutionComparison[]
-  analyticsSessions CatteryShowcaseAnalyticsSession[]
+  analyticsSessions    CatteryShowcaseAnalyticsSession[]
 }
 
 model CatteryShowcaseAnalyticsSession {
-  id          Int      @id @default(autoincrement())
-  showcase    CatteryKittenShowcase @relation(fields: [showcaseId], references: [id], onDelete: Cascade)
-  showcaseId  Int
-  visitorId   String
-  ipHash      String?
-  userAgent   String?
-  browserLabel String?
-  referrer    String?
-  language    String?
-  timezone    String?
-  screen      String?
-  city        String?
-  region      String?
-  country     String?
-  latitude    Float?
-  longitude   Float?
-  startedAt   DateTime @default(now())
-  lastSeenAt  DateTime @default(now())
-  durationSeconds Int @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              Int                   @id @default(autoincrement())
+  showcase        CatteryKittenShowcase @relation(fields: [showcaseId], references: [id], onDelete: Cascade)
+  showcaseId      Int
+  visitorId       String
+  ipHash          String?
+  userAgent       String?
+  browserLabel    String?
+  referrer        String?
+  language        String?
+  timezone        String?
+  screen          String?
+  city            String?
+  region          String?
+  country         String?
+  latitude        Float?
+  longitude       Float?
+  startedAt       DateTime              @default(now())
+  lastSeenAt      DateTime              @default(now())
+  durationSeconds Int                   @default(0)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
 
   events CatteryShowcaseAnalyticsEvent[]
 
@@ -469,101 +469,101 @@ model CatteryShowcaseAnalyticsSession {
 }
 
 model CatteryShowcaseAnalyticsEvent {
-  id          Int      @id @default(autoincrement())
-  session     CatteryShowcaseAnalyticsSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  sessionId   Int
-  type        String
-  label       String?
-  details     String?
-  path        String?
-  createdAt   DateTime @default(now())
+  id        Int                             @id @default(autoincrement())
+  session   CatteryShowcaseAnalyticsSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId Int
+  type      String
+  label     String?
+  details   String?
+  path      String?
+  createdAt DateTime                        @default(now())
 
   @@index([sessionId, createdAt])
   @@index([type, createdAt])
 }
 
 model CatteryShowcaseEvolutionComparison {
-  id          Int      @id @default(autoincrement())
-  showcase    CatteryKittenShowcase @relation(fields: [showcaseId], references: [id], onDelete: Cascade)
-  showcaseId  Int
-  caption     String?
-  reservePhoto String
+  id            Int                   @id @default(autoincrement())
+  showcase      CatteryKittenShowcase @relation(fields: [showcaseId], references: [id], onDelete: Cascade)
+  showcaseId    Int
+  caption       String?
+  reservePhoto  String
   deliveryPhoto String
-  oneYearPhoto String
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  oneYearPhoto  String
+  sortOrder     Int                   @default(0)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
 }
 
 model CatteryShowcaseLitter {
-  id          Int      @id @default(autoincrement())
-  showcase    CatteryKittenShowcase @relation(fields: [showcaseId], references: [id], onDelete: Cascade)
-  showcaseId  Int
-  birthDate   DateTime
+  id               Int                   @id @default(autoincrement())
+  showcase         CatteryKittenShowcase @relation(fields: [showcaseId], references: [id], onDelete: Cascade)
+  showcaseId       Int
+  birthDate        DateTime
   deliveryForecast DateTime
-  published   Boolean @default(true)
-  note        String?
+  published        Boolean               @default(true)
+  note             String?
 
-  fatherName  String
-  fatherPhoto String?
+  fatherName   String
+  fatherPhoto  String?
   fatherPhoto2 String?
-  fatherColor String?
-  fatherNote  String?
-  fatherPkdef String?
-  fatherPra   String?
-  fatherHcm   String?
+  fatherColor  String?
+  fatherNote   String?
+  fatherPkdef  String?
+  fatherPra    String?
+  fatherHcm    String?
 
-  motherName  String
-  motherPhoto String?
+  motherName   String
+  motherPhoto  String?
   motherPhoto2 String?
-  motherColor String?
-  motherNote  String?
-  motherPkdef String?
-  motherPra   String?
-  motherHcm   String?
+  motherColor  String?
+  motherNote   String?
+  motherPkdef  String?
+  motherPra    String?
+  motherHcm    String?
 
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   kittens CatteryShowcaseKitten[]
 }
 
 model CatteryShowcaseKitten {
-  id          Int      @id @default(autoincrement())
-  litter      CatteryShowcaseLitter @relation(fields: [litterId], references: [id], onDelete: Cascade)
-  litterId    Int
-  name        String?
-  color       String?
-  note        String?
-  sex         String
-  available   Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        Int                   @id @default(autoincrement())
+  litter    CatteryShowcaseLitter @relation(fields: [litterId], references: [id], onDelete: Cascade)
+  litterId  Int
+  name      String?
+  color     String?
+  note      String?
+  sex       String
+  available Boolean               @default(true)
+  sortOrder Int                   @default(0)
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
 
   photos CatteryShowcasePhoto[]
 }
 
 model CatteryShowcasePhoto {
-  id          Int      @id @default(autoincrement())
-  kitten      CatteryShowcaseKitten @relation(fields: [kittenId], references: [id], onDelete: Cascade)
-  kittenId    Int
-  path        String
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
+  id        Int                   @id @default(autoincrement())
+  kitten    CatteryShowcaseKitten @relation(fields: [kittenId], references: [id], onDelete: Cascade)
+  kittenId  Int
+  path      String
+  sortOrder Int                   @default(0)
+  createdAt DateTime              @default(now())
 }
 
 model GatarinaPhotoGalleryConfig {
-  id           Int      @id @default(autoincrement())
-  eventKey     String   @unique
-  title        String   @default("Gatarina Show 2026")
-  priceCents   Int      @default(3000)
-  published    Boolean  @default(true)
-  contactEmail String?
+  id                Int      @id @default(autoincrement())
+  eventKey          String   @unique
+  title             String   @default("Gatarina Show 2026")
+  priceCents        Int      @default(3000)
+  published         Boolean  @default(true)
+  contactEmail      String?
   watermarkLogoPath String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 model GatarinaPhoto {
@@ -601,41 +601,41 @@ model GatarinaPhotoRequest {
 }
 
 model PasswordResetToken {
-  id        Int      @id @default(autoincrement())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        Int       @id @default(autoincrement())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    Int
-  tokenHash String   @unique
+  tokenHash String    @unique
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 }
 
 model QuickLaunchEntry {
-  id            Int      @id @default(autoincrement())
-  owner         User?    @relation(fields: [ownerId], references: [id])
-  ownerId       Int?
-  amountCents   Int
-  category      String
-  paymentMethod String
-  paymentMode   String?
-  installments  Int?
+  id             Int      @id @default(autoincrement())
+  owner          User?    @relation(fields: [ownerId], references: [id])
+  ownerId        Int?
+  amountCents    Int
+  category       String
+  paymentMethod  String
+  paymentMode    String?
+  installments   Int?
   parcelDataJson String?
-  supplier      String
-  receiptPath   String?
-  note          String?
+  supplier       String
+  receiptPath    String?
+  note           String?
   competenceDate DateTime
-  createdAt     DateTime @default(now())
+  createdAt      DateTime @default(now())
 }
 
 model QuickLaunchOption {
-  id        Int      @id @default(autoincrement())
-  owner     User?    @relation(fields: [ownerId], references: [id])
-  ownerId   Int?
-  type      String
+  id         Int       @id @default(autoincrement())
+  owner      User?     @relation(fields: [ownerId], references: [id])
+  ownerId    Int?
+  type       String
   defaultKey String?
-  name      String
+  name       String
   disabledAt DateTime?
-  createdAt DateTime @default(now())
+  createdAt  DateTime  @default(now())
 
   @@unique([type, ownerId, name])
 }
@@ -673,49 +673,49 @@ model CreditCardInvoiceSetting {
 }
 
 model FinancialTransfer {
-  id              Int      @id @default(autoincrement())
-  owner           User?    @relation(fields: [ownerId], references: [id])
-  ownerId         Int?
-  fromAccount     String
-  toAccount       String
-  amountCents     Int
-  transferDate    DateTime
-  note            String?
-  historyJson     String?
-  deletedAt       DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id           Int       @id @default(autoincrement())
+  owner        User?     @relation(fields: [ownerId], references: [id])
+  ownerId      Int?
+  fromAccount  String
+  toAccount    String
+  amountCents  Int
+  transferDate DateTime
+  note         String?
+  historyJson  String?
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 model ExpenseSupplier {
-  id             Int      @id @default(autoincrement())
-  owner          User?    @relation(fields: [ownerId], references: [id])
-  ownerId        Int?
-  commercialName String
+  id              Int      @id @default(autoincrement())
+  owner           User?    @relation(fields: [ownerId], references: [id])
+  ownerId         Int?
+  commercialName  String
   defaultCategory String?
-  tradeName      String?
-  cnpj           String?
-  cep            String?
-  street         String?
-  number         String?
-  complement     String?
-  neighborhood   String?
-  city           String?
-  state          String?
-  email          String?
-  phone          String?
-  contactName    String?
-  contactPhone   String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  tradeName       String?
+  cnpj            String?
+  cep             String?
+  street          String?
+  number          String?
+  complement      String?
+  neighborhood    String?
+  city            String?
+  state           String?
+  email           String?
+  phone           String?
+  contactName     String?
+  contactPhone    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@unique([ownerId, commercialName])
   @@index([ownerId, cnpj])
 }
 
 model AccountPayable {
-  id               Int      @id @default(autoincrement())
-  owner            User?    @relation(fields: [ownerId], references: [id])
+  id               Int       @id @default(autoincrement())
+  owner            User?     @relation(fields: [ownerId], references: [id])
   ownerId          Int?
   supplier         String
   category         String
@@ -724,21 +724,21 @@ model AccountPayable {
   dueDate          DateTime
   paymentMethod    String?
   note             String?
-  isFixed          Boolean  @default(false)
+  isFixed          Boolean   @default(false)
   recurringGroupId String?
-  status           String   @default("PENDING")
+  status           String    @default("PENDING")
   paidAt           DateTime?
   expenseEntryId   Int?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@index([ownerId, status, dueDate])
   @@index([ownerId, recurringGroupId])
 }
 
 model RevenueClient {
-  id           Int      @id @default(autoincrement())
-  owner        User?    @relation(fields: [ownerId], references: [id])
+  id           Int               @id @default(autoincrement())
+  owner        User?             @relation(fields: [ownerId], references: [id])
   ownerId      Int?
   fullName     String
   document     String?
@@ -752,22 +752,22 @@ model RevenueClient {
   country      String?
   email        String?
   phone        String?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime          @default(now())
   deletedAt    DateTime?
   revenues     RevenueEntry[]
-  ownedKittens  Cat[]    @relation("CurrentKittenOwnerClient")
-  documents     CatteryDocument[]
+  ownedKittens Cat[]             @relation("CurrentKittenOwnerClient")
+  documents    CatteryDocument[]
 }
 
 model CrmEmailContact {
-  id        Int      @id @default(autoincrement())
-  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerId   Int
-  email     String
-  name      String?
-  source    String?
-  unsubscribeToken String? @unique
-  createdAt DateTime @default(now())
+  id               Int      @id @default(autoincrement())
+  owner            User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId          Int
+  email            String
+  name             String?
+  source           String?
+  unsubscribeToken String?  @unique
+  createdAt        DateTime @default(now())
 
   @@unique([ownerId, email])
 }
@@ -786,58 +786,58 @@ model CrmEmailDraft {
 }
 
 model CrmEmailCampaign {
-  id             Int      @id @default(autoincrement())
-  owner          User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerId        Int
-  subject        String
-  bodyText       String
-  imagePath      String?
+  id                  Int      @id @default(autoincrement())
+  owner               User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId             Int
+  subject             String
+  bodyText            String
+  imagePath           String?
   attachmentPathsJson String?
-  ctaJson        String?
-  styleJson      String?
-  recipients     Int      @default(0)
-  deliveredCount Int      @default(0)
-  failedCount    Int      @default(0)
-  openedCount    Int      @default(0)
-  sentAt         DateTime @default(now())
+  ctaJson             String?
+  styleJson           String?
+  recipients          Int      @default(0)
+  deliveredCount      Int      @default(0)
+  failedCount         Int      @default(0)
+  openedCount         Int      @default(0)
+  sentAt              DateTime @default(now())
 
   recipientEvents CrmEmailCampaignRecipient[]
 }
 
 model CrmEmailCampaignRecipient {
-  id          Int      @id @default(autoincrement())
+  id         Int              @id @default(autoincrement())
   campaign   CrmEmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   campaignId Int
-  email       String
-  status      String   @default("PENDING")
-  error       String?
-  openedAt    DateTime?
-  token       String   @unique
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  email      String
+  status     String           @default("PENDING")
+  error      String?
+  openedAt   DateTime?
+  token      String           @unique
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
 }
 
 model RevenueEntry {
-  id                 Int      @id @default(autoincrement())
-  owner              User?    @relation(fields: [ownerId], references: [id])
-  ownerId            Int?
-  client             RevenueClient? @relation(fields: [clientId], references: [id])
-  clientId           Int?
-  kitten             Cat?     @relation("RevenueKitten", fields: [kittenId], references: [id])
-  kittenId           Int?
-  productService     RevenueProductService? @relation(fields: [productServiceId], references: [id], onDelete: SetNull)
-  productServiceId   Int?
-  kittenLabel        String?
-  invoiceNumber      String?
-  invoiceDate        DateTime?
-  catAmountCents     Int      @default(0)
-  transportAmountCents Int    @default(0)
-  totalAmountCents   Int      @default(0)
-  installments       Int      @default(1)
-  paymentAccount     String
-  note               String?
-  parcelDataJson     String?
-  createdAt          DateTime @default(now())
+  id                   Int                    @id @default(autoincrement())
+  owner                User?                  @relation(fields: [ownerId], references: [id])
+  ownerId              Int?
+  client               RevenueClient?         @relation(fields: [clientId], references: [id])
+  clientId             Int?
+  kitten               Cat?                   @relation("RevenueKitten", fields: [kittenId], references: [id])
+  kittenId             Int?
+  productService       RevenueProductService? @relation(fields: [productServiceId], references: [id], onDelete: SetNull)
+  productServiceId     Int?
+  kittenLabel          String?
+  invoiceNumber        String?
+  invoiceDate          DateTime?
+  catAmountCents       Int                    @default(0)
+  transportAmountCents Int                    @default(0)
+  totalAmountCents     Int                    @default(0)
+  installments         Int                    @default(1)
+  paymentAccount       String
+  note                 String?
+  parcelDataJson       String?
+  createdAt            DateTime               @default(now())
 }
 
 model RevenueProductService {
@@ -865,16 +865,16 @@ model Cat {
   ownerId Int?
 
   // Informações básicas
-  country   String? // BR, AR, DE...
-  name      String
-  microchip String?   @unique // só dígitos; formata na view
-  birthDate DateTime?
-  gender    String? // "M" ou "F"
-  neutered  Boolean? // castrado
-  breed     String?
-  emsCode   String? // Cor / Código EMS
-  titleBeforeName String?  // Títulos antes do nome
-  titleAfterName  String?  // Títulos depois do nome
+  country         String? // BR, AR, DE...
+  name            String
+  microchip       String?   @unique // só dígitos; formata na view
+  birthDate       DateTime?
+  gender          String? // "M" ou "F"
+  neutered        Boolean? // castrado
+  breed           String?
+  emsCode         String? // Cor / Código EMS
+  titleBeforeName String? // Títulos antes do nome
+  titleAfterName  String? // Títulos depois do nome
 
   // Registro
   fifeStatus      String? // Fife Brasil / Fife Não Brasil / Não Fife
@@ -905,63 +905,63 @@ model Cat {
   motherBreed   String?
 
   // Documentos
-  photo            String?
-  pedigreeFile     String?
-  reproductionFile String?
-  otherDocsFile    String?
-  examDocsJson     String?
-  deceased         Boolean?          @default(false)
-  deathCause       String?
-  deathCauseDescription String?
-  kittenNumber     String?
-  sold             Boolean?          @default(false)
-  breedingProspect Boolean?          @default(false)
-  delivered        Boolean?          @default(false)
+  photo                    String?
+  pedigreeFile             String?
+  reproductionFile         String?
+  otherDocsFile            String?
+  examDocsJson             String?
+  deceased                 Boolean?          @default(false)
+  deathCause               String?
+  deathCauseDescription    String?
+  kittenNumber             String?
+  sold                     Boolean?          @default(false)
+  breedingProspect         Boolean?          @default(false)
+  delivered                Boolean?          @default(false)
   kittenAvailabilityStatus String?
-  currentOwnerId   Int?
-  currentOwner     User?             @relation("CurrentKittenOwner", fields: [currentOwnerId], references: [id])
-  currentOwnerClientId Int?
-  currentOwnerClient   RevenueClient? @relation("CurrentKittenOwnerClient", fields: [currentOwnerClientId], references: [id])
-  ownershipSource      String?
-  newOwnerInfoJson String?
-  historyNotes     String?
-  matingPlansAsFemale MatingPlan[]   @relation("MatingFemale")
-  matingPlansAsMale   MatingPlan[]   @relation("MatingMale")
-  revenueEntries      RevenueEntry[]  @relation("RevenueKitten")
-  documents           CatteryDocument[]
+  currentOwnerId           Int?
+  currentOwner             User?             @relation("CurrentKittenOwner", fields: [currentOwnerId], references: [id])
+  currentOwnerClientId     Int?
+  currentOwnerClient       RevenueClient?    @relation("CurrentKittenOwnerClient", fields: [currentOwnerClientId], references: [id])
+  ownershipSource          String?
+  newOwnerInfoJson         String?
+  historyNotes             String?
+  matingPlansAsFemale      MatingPlan[]      @relation("MatingFemale")
+  matingPlansAsMale        MatingPlan[]      @relation("MatingMale")
+  revenueEntries           RevenueEntry[]    @relation("RevenueKitten")
+  documents                CatteryDocument[]
 
-  createdAt        DateTime          @default(now())
-  transferRequests TransferRequest[]
+  createdAt          DateTime            @default(now())
+  transferRequests   TransferRequest[]
   secondCopyRequests SecondCopyRequest[]
-  litterKitten     LitterKitten?     @relation("KittenCat")
-  vaccinationPlan  VaccinationPlan?
-  dewormingPlan    DewormingPlan?
-  weighingPlan     WeighingPlan?
-  examPlan         ExamPlan?
-  historyEntries   CatHistoryEntry[]
-  treatments       CatTreatment[]
+  litterKitten       LitterKitten?       @relation("KittenCat")
+  vaccinationPlan    VaccinationPlan?
+  dewormingPlan      DewormingPlan?
+  weighingPlan       WeighingPlan?
+  examPlan           ExamPlan?
+  historyEntries     CatHistoryEntry[]
+  treatments         CatTreatment[]
 
-  status    CatStatus @default(APROVADO)
+  status CatStatus @default(APROVADO)
 }
 
 model CatteryDocument {
-  id              Int      @id @default(autoincrement())
-  owner           User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  id              Int            @id @default(autoincrement())
+  owner           User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   ownerId         Int
   type            String
   title           String
   body            String?
-  cat             Cat?     @relation(fields: [catId], references: [id], onDelete: SetNull)
+  cat             Cat?           @relation(fields: [catId], references: [id], onDelete: SetNull)
   catId           Int?
   client          RevenueClient? @relation(fields: [clientId], references: [id], onDelete: SetNull)
   clientId        Int?
   documentDate    DateTime?
   logoChoice      String?
   attachmentsJson String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
-  emailLogs DocumentEmailLog[]
+  emailLogs         DocumentEmailLog[]
   signatureRequests DocumentSignatureRequest[]
 
   @@index([ownerId, type])
@@ -982,13 +982,65 @@ model PdfCompressionUsage {
   @@index([userId, monthKey])
 }
 
+model PublicMicrochipRegistration {
+  id                 Int       @id @default(autoincrement())
+  microchip          String    @unique
+  animalName         String
+  sex                String?
+  species            String
+  breed              String?
+  customBreed        String?
+  birthDate          DateTime?
+  color              String?
+  size               String?
+  status             String    @default("ACTIVE")
+  ownerName          String
+  ownerCpf           String?
+  ownerBirthDate     DateTime?
+  ownerStreet        String?
+  ownerNumber        String?
+  ownerNeighborhood  String?
+  ownerCity          String?
+  ownerState         String?
+  ownerCep           String?
+  ownerEmail         String
+  ownerEmailOptional String?
+  passwordHash       String
+  phonesJson         String?
+  photosJson         String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  contacts PublicMicrochipContact[]
+
+  @@index([ownerEmail])
+  @@index([ownerName])
+  @@index([status])
+}
+
+model PublicMicrochipContact {
+  id             Int                          @id @default(autoincrement())
+  registration   PublicMicrochipRegistration? @relation(fields: [registrationId], references: [id], onDelete: SetNull)
+  registrationId Int?
+  microchip      String
+  name           String
+  phone          String
+  email          String
+  subject        String
+  message        String?
+  createdAt      DateTime                     @default(now())
+
+  @@index([microchip])
+  @@index([registrationId])
+}
+
 model DocumentSignatureRequest {
-  id              Int      @id @default(autoincrement())
-  owner           User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  id              Int             @id @default(autoincrement())
+  owner           User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   ownerId         Int
   document        CatteryDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
   documentId      Int
-  token           String   @unique
+  token           String          @unique
   signerName      String?
   signerEmail     String?
   signerDocument  String?
@@ -997,7 +1049,7 @@ model DocumentSignatureRequest {
   signaturePage   Int?
   signatureX      Float?
   signatureY      Float?
-  status          String   @default("PENDING")
+  status          String          @default("PENDING")
   otpHash         String?
   otpExpiresAt    DateTime?
   otpVerifiedAt   DateTime?
@@ -1010,8 +1062,8 @@ model DocumentSignatureRequest {
   longitude       Float?
   documentHash    String?
   evidencePdfPath String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   events DocumentSignatureEvent[]
 
@@ -1020,23 +1072,23 @@ model DocumentSignatureRequest {
 }
 
 model DocumentSignatureEvent {
-  id          Int      @id @default(autoincrement())
-  request    DocumentSignatureRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  requestId  Int
-  type        String
-  message     String?
-  ipAddress   String?
-  userAgent   String?
-  latitude    Float?
-  longitude   Float?
-  createdAt   DateTime @default(now())
+  id        Int                      @id @default(autoincrement())
+  request   DocumentSignatureRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  requestId Int
+  type      String
+  message   String?
+  ipAddress String?
+  userAgent String?
+  latitude  Float?
+  longitude Float?
+  createdAt DateTime                 @default(now())
 
   @@index([requestId, createdAt])
 }
 
 model DocumentEmailLog {
-  id             Int      @id @default(autoincrement())
-  owner          User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  id             Int             @id @default(autoincrement())
+  owner          User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   ownerId        Int
   document       CatteryDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
   documentId     Int
@@ -1044,7 +1096,7 @@ model DocumentEmailLog {
   recipientName  String?
   status         String
   message        String?
-  sentAt         DateTime @default(now())
+  sentAt         DateTime        @default(now())
 
   @@index([ownerId, sentAt])
   @@index([documentId])
@@ -1066,23 +1118,23 @@ model TreatmentMedication {
 }
 
 model CatTreatment {
-  id        Int      @id @default(autoincrement())
-  owner     User?    @relation(fields: [ownerId], references: [id])
-  ownerId   Int?
-  cat       Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
-  catId     Int
-  medication TreatmentMedication? @relation(fields: [medicationId], references: [id], onDelete: SetNull)
-  medicationId Int?
-  medicationName String
-  dosage     String?
-  duration   String?
-  administrationTime String?
+  id                  Int                  @id @default(autoincrement())
+  owner               User?                @relation(fields: [ownerId], references: [id])
+  ownerId             Int?
+  cat                 Cat                  @relation(fields: [catId], references: [id], onDelete: Cascade)
+  catId               Int
+  medication          TreatmentMedication? @relation(fields: [medicationId], references: [id], onDelete: SetNull)
+  medicationId        Int?
+  medicationName      String
+  dosage              String?
+  duration            String?
+  administrationTime  String?
   administrationRoute String?
-  startDate  DateTime
-  endDate    DateTime?
-  notes      String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  startDate           DateTime
+  endDate             DateTime?
+  notes               String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 }
 
 model Litter {
@@ -1101,11 +1153,11 @@ model Litter {
 
   maleOwnership String? // OWNER | NOT_OWNER
 
-  externalOwnerName          String?
-  externalOwnerEmail         String?
-  externalOwnerCpf           String?
-  externalOwnerPhone         String?
-  externalOwnerCattery       String?
+  externalOwnerName    String?
+  externalOwnerEmail   String?
+  externalOwnerCpf     String?
+  externalOwnerPhone   String?
+  externalOwnerCattery String?
 
   externalOwnerAuthorization String?
 
@@ -1116,26 +1168,25 @@ model Litter {
   femaleEms       String?
   femaleMicrochip String?
 
-
   // Dados da ninhada
-  catteryName String?
-  catteryCountry  String?
-  litterBreed     String?
-  litterNumber    String?   @unique
-  litterCount     Int?
-  litterBirthDate DateTime?
-  femaleCount     Int?
-  maleCount       Int?
-  deadCount       Int?
-  deadAtBirthCount Int?
-  deadAtBirthMaleCount Int?
-  deadAtBirthFemaleCount Int?
-  deadAtBirthCausesJson String?
-  deadAfterBirthCount Int?
-  deadAfterBirthMaleCount Int?
+  catteryName               String?
+  catteryCountry            String?
+  litterBreed               String?
+  litterNumber              String?   @unique
+  litterCount               Int?
+  litterBirthDate           DateTime?
+  femaleCount               Int?
+  maleCount                 Int?
+  deadCount                 Int?
+  deadAtBirthCount          Int?
+  deadAtBirthMaleCount      Int?
+  deadAtBirthFemaleCount    Int?
+  deadAtBirthCausesJson     String?
+  deadAfterBirthCount       Int?
+  deadAfterBirthMaleCount   Int?
   deadAfterBirthFemaleCount Int?
-  deadAfterBirthCausesJson String?
-  historyNotes    String?
+  deadAfterBirthCausesJson  String?
+  historyNotes              String?
 
   // Recebimento / assinaturas (não usados no form, mas mantidos)
   receivedDate  DateTime?
@@ -1154,22 +1205,22 @@ model Litter {
 model LitterKitten {
   id Int @id @default(autoincrement())
 
-  litter   Litter @relation(fields: [litterId], references: [id])
-  litterId Int
-  kittenCatId Int? @unique
-  kittenCat Cat? @relation("KittenCat", fields: [kittenCatId], references: [id])
+  litter      Litter @relation(fields: [litterId], references: [id])
+  litterId    Int
+  kittenCatId Int?   @unique
+  kittenCat   Cat?   @relation("KittenCat", fields: [kittenCatId], references: [id])
 
-  index     Int // 1 a 9 (número da linha)
+  index        Int // 1 a 9 (número da linha)
   kittenNumber String?
-  name      String?
-  breed     String?
-  emsEyes   String?
-  sex       String? // M / F
-  microchip String?
-  breeding  String? // BREEDING / NOT_FOR_BREEDING
+  name         String?
+  breed        String?
+  emsEyes      String?
+  sex          String? // M / F
+  microchip    String?
+  breeding     String? // BREEDING / NOT_FOR_BREEDING
   breedingRole String? // NEW_DAM / NEW_SIRE
-  obs       String?
-  deceased  Boolean? @default(false)
+  obs          String?
+  deceased     Boolean? @default(false)
 
   createdAt DateTime @default(now())
 }
@@ -1186,11 +1237,11 @@ model MatingPlan {
   maleCatId Int?
   maleCat   Cat? @relation("MatingMale", fields: [maleCatId], references: [id])
 
-  status String @default("PARA_ACASALAR")
+  status            String    @default("PARA_ACASALAR")
   consanguinityJson String?
   litterHistoryJson String?
-  matingStartDate DateTime?
-  matingEndDate DateTime?
+  matingStartDate   DateTime?
+  matingEndDate     DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1227,10 +1278,10 @@ model WeighingPlan {
   catId Int @unique
   cat   Cat @relation(fields: [catId], references: [id])
 
-  historyJson String?
-  shouldWeigh Boolean @default(false)
+  historyJson       String?
+  shouldWeigh       Boolean @default(false)
   weighingFrequency String?
-  weighingPeriod String?
+  weighingPeriod    String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1242,10 +1293,10 @@ model ExamPlan {
   catId Int @unique
   cat   Cat @relation(fields: [catId], references: [id])
 
-  pkdefSource String?
-  pkdefResult String?
-  prabfSource String?
-  prabfResult String?
+  pkdefSource    String?
+  pkdefResult    String?
+  prabfSource    String?
+  prabfResult    String?
   ecoHistoryJson String?
 
   createdAt DateTime @default(now())
@@ -1258,8 +1309,8 @@ model CatHistoryEntry {
   catId Int
   cat   Cat @relation(fields: [catId], references: [id])
 
-  section   String
-  sortOrder Int      @default(0)
+  section     String
+  sortOrder   Int     @default(0)
   payloadJson String?
 
   createdAt DateTime @default(now())
@@ -1279,16 +1330,14 @@ model ServiceRequest {
   description String?
   status      String   @default("PENDENTE")
   createdAt   DateTime @default(now())
-  malote String? @db.VarChar(5)
+  malote      String?  @db.VarChar(5)
 
-
-  statuses        ServiceStatus[]
-  transferRequest TransferRequest?
-  titleHomologation TitleHomologation?
+  statuses             ServiceStatus[]
+  transferRequest      TransferRequest?
+  titleHomologation    TitleHomologation?
   pedigreeHomologation PedigreeHomologation?
-  catteryRegistration CatteryRegistration?
-  secondCopyRequest SecondCopyRequest?
-
+  catteryRegistration  CatteryRegistration?
+  secondCopyRequest    SecondCopyRequest?
 }
 
 model ServiceStatus {
@@ -1296,9 +1345,9 @@ model ServiceStatus {
   serviceId Int
   service   ServiceRequest @relation(fields: [serviceId], references: [id])
 
-  status    ServiceStatusType
-  pendingNote String? 
-  createdAt DateTime          @default(now())
+  status      ServiceStatusType
+  pendingNote String?
+  createdAt   DateTime          @default(now())
 }
 
 model TransferRequest {
@@ -1311,17 +1360,17 @@ model TransferRequest {
 
   newOwnerName   String
   breedingStatus String
-  
+
   memberType String?
-  
+
   authorizationFile String?
-  address  String?
-  district String?
-  city     String?
-  state    String?
-  cep      String?
-  email    String?
-  phone    String?
+  address           String?
+  district          String?
+  city              String?
+  state             String?
+  cep               String?
+  email             String?
+  phone             String?
 
   serviceRequestId Int            @unique
   serviceRequest   ServiceRequest @relation(fields: [serviceRequestId], references: [id])
@@ -1330,65 +1379,63 @@ model TransferRequest {
 }
 
 model TitleHomologation {
-  id               Int      @id @default(autoincrement())
-  serviceRequestId Int      @unique
+  id               Int @id @default(autoincrement())
+  serviceRequestId Int @unique
 
-  catId            Int
-  requestedTitle   String
+  catId          Int
+  requestedTitle String
 
   certificatesJson String
 
-  createdAt        DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  serviceRequest   ServiceRequest @relation(fields: [serviceRequestId], references: [id])
+  serviceRequest ServiceRequest @relation(fields: [serviceRequestId], references: [id])
 }
 
 model PedigreeHomologation {
-  id               Int      @id @default(autoincrement())
-  serviceRequestId Int      @unique
+  id               Int @id @default(autoincrement())
+  serviceRequestId Int @unique
 
   catId            Int
   homologationType String
 
-  createdAt        DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  serviceRequest   ServiceRequest @relation(fields: [serviceRequestId], references: [id])
+  serviceRequest ServiceRequest @relation(fields: [serviceRequestId], references: [id])
 }
 
 model CatteryRegistration {
-  id               Int      @id @default(autoincrement())
-  serviceRequestId Int      @unique
+  id               Int @id @default(autoincrement())
+  serviceRequestId Int @unique
 
-  nameOption1      String
-  nameOption2      String?
-  nameOption3      String?
+  nameOption1 String
+  nameOption2 String?
+  nameOption3 String?
 
-  numberOfCats     Int
-  breedsJson       String   // JSON com as raças escolhidas
+  numberOfCats Int
+  breedsJson   String // JSON com as raças escolhidas
 
-  createdAt        DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  serviceRequest   ServiceRequest @relation(fields: [serviceRequestId], references: [id])
+  serviceRequest ServiceRequest @relation(fields: [serviceRequestId], references: [id])
 }
 
 model SecondCopyRequest {
-  id               Int      @id @default(autoincrement())
-  serviceRequestId Int      @unique
+  id               Int @id @default(autoincrement())
+  serviceRequestId Int @unique
 
-  catId            Int?
-  cat              Cat?     @relation(fields: [catId], references: [id])
+  catId Int?
+  cat   Cat? @relation(fields: [catId], references: [id])
 
-  requestType      String
-  details          String?
-  newValue         String?
-  attachmentsJson  String?
+  requestType     String
+  details         String?
+  newValue        String?
+  attachmentsJson String?
 
-  createdAt        DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  serviceRequest   ServiceRequest @relation(fields: [serviceRequestId], references: [id])
+  serviceRequest ServiceRequest @relation(fields: [serviceRequestId], references: [id])
 }
-
-
 
 enum CatStatus {
   NOVO

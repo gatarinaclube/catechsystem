@@ -1,0 +1,427 @@
+.microchip-public-body {
+  margin: 0;
+  min-width: 320px;
+  background: linear-gradient(180deg, #fff8ef 0%, #f4efe8 54%, #fffaf4 100%);
+  color: #17212f;
+  font-family: Avenir, "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+.microchip-public-body * {
+  box-sizing: border-box;
+}
+
+.microchip-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px max(20px, calc((100vw - 1120px) / 2));
+  border-bottom: 1px solid rgba(242, 106, 27, 0.18);
+  background: rgba(255, 250, 242, 0.94);
+  box-shadow: 0 12px 30px rgba(18, 32, 47, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+.microchip-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #17212f;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.microchip-logo img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+
+.microchip-header nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.microchip-header nav a {
+  border-radius: 999px;
+  color: #566579;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 8px 12px;
+  text-decoration: none;
+}
+
+.microchip-header nav a:hover {
+  background: rgba(242, 106, 27, 0.12);
+  color: #b84018;
+}
+
+.microchip-public-body main {
+  width: min(1120px, calc(100% - 36px));
+  margin: 0 auto;
+  padding: 40px 0 70px;
+}
+
+.microchip-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 32px;
+  align-items: stretch;
+  margin-bottom: 24px;
+  padding: 42px;
+  border: 1px solid rgba(0, 111, 168, 0.16);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 88% 14%, rgba(0, 111, 168, 0.18), transparent 28%),
+    linear-gradient(135deg, #ffffff 0%, #fff3e7 100%);
+  box-shadow: 0 24px 64px rgba(18, 32, 47, 0.12);
+}
+
+.microchip-eyebrow {
+  display: inline-flex;
+  color: #006fa8;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.microchip-hero h1 {
+  max-width: 760px;
+  margin: 14px 0;
+  color: #17212f;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(38px, 6vw, 72px);
+  line-height: 0.95;
+}
+
+.microchip-hero p {
+  max-width: 760px;
+  color: #566579;
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+.microchip-hero aside {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-radius: 14px;
+  padding: 24px;
+  background: #17212f;
+  color: #fff;
+}
+
+.microchip-hero aside strong {
+  font-size: 20px;
+}
+
+.microchip-hero aside span {
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.45;
+}
+
+.microchip-alert,
+.microchip-result {
+  margin: 16px 0;
+  border-radius: 14px;
+  padding: 16px 18px;
+  line-height: 1.5;
+}
+
+.microchip-alert.success,
+.microchip-result.found {
+  border: 1px solid rgba(0, 111, 168, 0.24);
+  background: #eef9ff;
+  color: #004d78;
+}
+
+.microchip-alert.error,
+.microchip-result.not-found {
+  border: 1px solid rgba(184, 64, 24, 0.24);
+  background: #fff2e8;
+  color: #8b2f18;
+}
+
+.microchip-section {
+  margin-top: 24px;
+  border: 1px solid rgba(184, 64, 24, 0.14);
+  border-radius: 18px;
+  padding: 28px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 18px 44px rgba(18, 32, 47, 0.08);
+}
+
+.microchip-section-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.microchip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  border-radius: 14px;
+  background: #f26a1b;
+  color: #fff;
+  font-weight: 900;
+}
+
+.microchip-section h2,
+.microchip-section h3 {
+  margin: 0;
+  color: #17212f;
+}
+
+.microchip-section-title p,
+.microchip-help {
+  margin: 4px 0 0;
+  color: #657386;
+  font-size: 14px;
+}
+
+.microchip-search-form,
+.microchip-login-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.microchip-form {
+  display: block;
+}
+
+.microchip-form h3 {
+  margin: 26px 0 14px;
+}
+
+.microchip-form-grid,
+.microchip-contact-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.microchip-form label,
+.microchip-contact-form label,
+.microchip-login-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.microchip-form .full,
+.microchip-contact-form .full {
+  grid-column: 1 / -1;
+}
+
+.microchip-form .microchip-inline-check {
+  align-items: center;
+  flex-direction: row;
+  justify-content: flex-start;
+}
+
+.microchip-form .microchip-inline-check input {
+  width: 18px;
+  min-height: 18px;
+}
+
+.microchip-form input,
+.microchip-form select,
+.microchip-form textarea,
+.microchip-search-form input,
+.microchip-contact-form input,
+.microchip-contact-form textarea,
+.microchip-login-form input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid rgba(100, 116, 139, 0.26);
+  border-radius: 12px;
+  background: #fff;
+  color: #17212f;
+  font: inherit;
+  padding: 10px 12px;
+}
+
+.microchip-form textarea,
+.microchip-contact-form textarea {
+  resize: vertical;
+}
+
+.microchip-public-body button,
+.microchip-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: #006fa8;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  padding: 10px 16px;
+  text-decoration: none;
+}
+
+.microchip-public-body button:hover,
+.microchip-submit:hover {
+  background: #004d78;
+}
+
+.microchip-submit {
+  margin-top: 18px;
+  background: #f26a1b;
+}
+
+.microchip-submit:hover {
+  background: #b84018;
+}
+
+.microchip-contact-form {
+  margin-top: 14px;
+}
+
+.microchip-phone-block {
+  margin-top: 22px;
+}
+
+.microchip-phone-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.microchip-add-phone,
+.microchip-remove-phone,
+.microchip-logout button {
+  min-height: 36px;
+  background: #fff2e8;
+  color: #b84018;
+}
+
+.microchip-phone-list {
+  display: grid;
+  gap: 10px;
+}
+
+.microchip-phone-row {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.microchip-photo-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.microchip-photo-strip img {
+  width: 92px;
+  height: 92px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid rgba(100, 116, 139, 0.22);
+}
+
+.microchip-owner-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.microchip-owner-list a {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid rgba(0, 111, 168, 0.2);
+  border-radius: 12px;
+  background: #fff;
+  color: #17212f;
+  padding: 14px;
+  text-decoration: none;
+}
+
+.microchip-owner-list a.active {
+  border-color: #f26a1b;
+  box-shadow: 0 0 0 3px rgba(242, 106, 27, 0.12);
+}
+
+.microchip-owner-list span {
+  color: #657386;
+  font-size: 13px;
+}
+
+.microchip-seo {
+  margin-top: 26px;
+  color: #566579;
+  line-height: 1.7;
+}
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.photo-grid img {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+@media (max-width: 820px) {
+  .microchip-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .microchip-public-body main {
+    width: min(100% - 24px, 1120px);
+    padding-top: 24px;
+  }
+
+  .microchip-hero,
+  .microchip-form-grid,
+  .microchip-contact-form,
+  .microchip-search-form,
+  .microchip-login-form {
+    grid-template-columns: 1fr;
+  }
+
+  .microchip-hero,
+  .microchip-section {
+    padding: 22px;
+  }
+
+  .microchip-hero h1 {
+    font-size: 40px;
+  }
+
+  .microchip-phone-row {
+    grid-template-columns: 1fr;
+  }
+}
