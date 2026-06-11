@@ -33,6 +33,19 @@
           </div>
         </div>
 
+<% if (typeof billingReminder !== "undefined" && billingReminder) { %>
+  <div class="content-card" style="border-left:4px solid #f26a1b; margin-bottom:20px; background:linear-gradient(135deg,#fff7ed 0%,#ffffff 80%);">
+    <div class="content-title"><%= billingReminder.title %></div>
+    <div class="content-sub">
+      <%= billingReminder.message %>
+      Vencimento em <strong><%= billingReminder.endDate.toLocaleDateString('pt-BR') %></strong>.
+    </div>
+    <div style="margin-top:10px;">
+      <a href="/billing/pay" class="btn btn-primary">Renovar / pagar plano</a>
+    </div>
+  </div>
+<% } %>
+
 <% if (user && user.accountOrigin === "NON_ASSOCIATE" && user.subscriptionStatus !== "ACTIVE") { %>
   <div class="content-card" style="border-left:4px solid #d97706; margin-bottom:20px;">
     <div class="content-title">Plano em período de teste</div>

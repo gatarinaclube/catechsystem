@@ -457,10 +457,50 @@ function billingAccessEndDate(mode, fromDate = new Date()) {
   return addYears(base, 1);
 }
 
-function isExpiredCommercialTrial(user) {
+function commercialPaymentStatus(user) {
   if (!user || user.accountOrigin !== "NON_ASSOCIATE") return false;
-  if (["ACTIVE", "TRIALING"].includes(String(user.subscriptionStatus || "").toUpperCase()) === false) return false;
-  return user.trialEndsAt && new Date(user.trialEndsAt) < new Date();
+  const status = String(user.subscriptionStatus || "").toUpperCase();
+  if (["PENDING", "EXPIRED", "CANCELED"].includes(status)) return "PAYMENT_REQUIRED";
+  if (["ACTIVE", "TRIALING"].includes(status) && user.trialEndsAt && new Date(user.trialEndsAt) < new Date()) {
+    return "EXPIRED";
+  }
+  return null;
+}
+
+function billingModeFromUser(user) {
+  const text = String(user?.asaasLastEvent || "").toUpperCase();
+  if (text.includes("ANNUAL_CARD")) return "ANNUAL_CARD";
+  if (text.includes("ANNUAL_PIX")) return "ANNUAL_PIX";
+  return "MONTHLY_PIX";
+}
+
+function billingReminderForUser(user) {
+  if (!user || user.accountOrigin !== "NON_ASSOCIATE" || !user.trialEndsAt) return null;
+  const status = String(user.subscriptionStatus || "").toUpperCase();
+  if (!["ACTIVE", "TRIALING"].includes(status)) return null;
+
+  const endDate = new Date(user.trialEndsAt);
+  if (Number.isNaN(endDate.getTime())) return null;
+
+  const billingMode = billingModeFromUser(user);
+  const daysBefore = billingMode === "MONTHLY_PIX" ? 5 : 30;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  endDate.setHours(23, 59, 59, 999);
+  const daysLeft = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+
+  if (daysLeft < 0 || daysLeft > daysBefore) return null;
+
+  return {
+    daysLeft,
+    endDate,
+    billingMode,
+    isExpired: daysLeft < 0,
+    title: daysLeft <= 0 ? "Seu acesso vence hoje" : "Pagamento próximo do vencimento",
+    message: daysLeft <= 0
+      ? "Para manter o acesso ao sistema, realize a renovação do plano."
+      : `Faltam ${daysLeft} dia(s) para o vencimento do seu acesso. Você já pode renovar o plano.`,
+  };
 }
 
 async function configureAsaasBillingForUser(user, plan, billingMode = "MONTHLY_PIX", status = "PENDING") {
@@ -508,15 +548,22 @@ async function handleSystemLogin(req, res, loginKind) {
       return res.render("login", loginViewOptions(loginKind, { error: "Usuário ou senha inválidos" }));
     }
 
-    if (isExpiredCommercialTrial(user)) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { approvalStatus: "RESTRICOES", subscriptionStatus: "EXPIRED" },
-      });
+    const paymentStatus = commercialPaymentStatus(user);
+    if (paymentStatus) {
+      const updatedUser = paymentStatus === "EXPIRED"
+        ? await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              approvalStatus: "DEFERIDO",
+              subscriptionStatus: "EXPIRED",
+              asaasPaymentUrl: null,
+            },
+          })
+        : user;
 
-      return res.render("login", loginViewOptions(loginKind, {
-        error: "Seu acesso venceu. Escolha um plano ou entre em contato para reativar o acesso.",
-      }));
+      req.session.userId = updatedUser.id;
+      req.session.userRole = normalizeRole(updatedUser.role);
+      return res.redirect("/billing/pay");
     }
 
     // Bloqueia login se não estiver DEFERIDO
@@ -1116,7 +1163,6 @@ app.get("/billing/pay", requireAuth, async (req, res) => {
     });
 
     if (!user) return res.redirect("/login");
-    if (user.asaasPaymentUrl) return res.redirect(user.asaasPaymentUrl);
     if (![11, 14].includes(billingDocumentDigits(user.cpf).length)) {
       return res.redirect("/billing/dados");
     }
@@ -1142,7 +1188,6 @@ app.post("/billing/pay", requireAuth, async (req, res) => {
     });
 
     if (!user) return res.redirect("/login");
-    if (user.asaasPaymentUrl) return res.redirect(user.asaasPaymentUrl);
     if (![11, 14].includes(billingDocumentDigits(user.cpf).length)) {
       return res.redirect("/billing/dados");
     }
@@ -1232,7 +1277,7 @@ app.post("/webhooks/asaas", async (req, res) => {
           asaasPaymentId: payment.id || user.asaasPaymentId,
           asaasSubscriptionId: payment.subscription || user.asaasSubscriptionId,
           asaasPaymentUrl: payment.invoiceUrl || payment.bankSlipUrl || user.asaasPaymentUrl,
-          asaasLastEvent: eventName,
+          asaasLastEvent: `${eventName}_${billingMode}`,
         },
       });
     } else if (restrictEvents.has(eventName)) {
@@ -1593,6 +1638,7 @@ const administrativePanel = {
 res.render("dashboard", {
   user,
   userRole: req.session.userRole,
+  billingReminder: billingReminderForUser(user),
 
   catsInReviewCount,
   usersPendingApprovalCount,
