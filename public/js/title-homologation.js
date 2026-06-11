@@ -62,6 +62,7 @@ titleSelect.addEventListener("change", () => {
   if (!cfg) return;
 
   for (let i = 1; i <= cfg.qty; i++) {
+    const index = i - 1;
     const row = document.createElement("div");
     row.className = "grid-3 cert-row";
 
@@ -79,12 +80,12 @@ titleSelect.addEventListener("change", () => {
 
       <div class="field">
         <label>Data</label>
-        <input type="date" class="cert-date" required />
+        <input type="date" class="cert-date" name="certificatesRows[${index}][date]" required />
       </div>
 
       <div class="field">
         <label>Juiz</label>
-        <select class="cert-judge" required>
+        <select class="cert-judge" name="certificatesRows[${index}][judge]" required>
           <option value="">Selecione...</option>
           ${window.JUDGES.map(j => `<option value="${j}">${j}</option>`).join("")}
         </select>

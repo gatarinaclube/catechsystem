@@ -55,6 +55,24 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     return { userId, role, isAdmin };
   }
 
+  function parseCertificateRows(value) {
+    if (Array.isArray(value)) return value;
+    if (value && typeof value === "object") {
+      return Object.keys(value)
+        .sort((a, b) => Number(a) - Number(b))
+        .map((key) => value[key]);
+    }
+    if (typeof value === "string" && value.trim()) {
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  }
+
   // ============================
   // FORMULÁRIO
   // ============================
@@ -110,9 +128,10 @@ if (!cat) {
 }
 
 // 🔹 certificados (dados textuais)
-const parsedCertificates = certificates
-  ? JSON.parse(certificates)
-  : [];
+const certificateRows = parseCertificateRows(req.body.certificatesRows);
+const parsedCertificates = certificateRows.length
+  ? certificateRows
+  : parseCertificateRows(certificates);
 
 // 🔹 arquivos enviados (multer)
 const uploadedFiles = req.files || [];
@@ -125,12 +144,27 @@ console.log("REQ.FILES:", uploadedFiles.map(f => ({
 })));
 
 
-// 🔥 PASSO 4 — VINCULAR ARQUIVO AO CERTIFICADO (AQUI!)
+// 🔥 VINCULAR ARQUIVO AO CERTIFICADO
+uploadedFiles.forEach((file, index) => {
+  if (!parsedCertificates[index]) {
+    parsedCertificates[index] = { date: "", judge: "" };
+  }
+  parsedCertificates[index].file = `/uploads/title-certificates/${file.filename}`;
+});
+
 parsedCertificates.forEach((cert, index) => {
   if (uploadedFiles[index]) {
     cert.file = `/uploads/title-certificates/${uploadedFiles[index].filename}`;
   }
 });
+
+const certificatesToSave = parsedCertificates
+  .map((cert) => ({
+    date: typeof cert?.date === "string" ? cert.date.trim() : "",
+    judge: typeof cert?.judge === "string" ? cert.judge.trim() : "",
+    file: typeof cert?.file === "string" ? cert.file.trim() : "",
+  }))
+  .filter((cert) => cert.date || cert.judge || cert.file);
 
 const service = await prisma.serviceRequest.create({
   data: {
@@ -145,7 +179,7 @@ const service = await prisma.serviceRequest.create({
       create: {
         catId: Number(catId),
         requestedTitle,
-        certificatesJson: JSON.stringify(parsedCertificates),
+        certificatesJson: JSON.stringify(certificatesToSave),
       },
     },
   },

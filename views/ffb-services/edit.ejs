@@ -137,10 +137,14 @@
   } catch (error) {
     certificates = [];
   }
-  if (!certificates.length) {
-    certificates = [{ date: "", judge: "", file: "" }];
-  }
   const titleOptions = ["KCH","JCH","JW","CH","PR","IC","IP","GIC","GIP","SC","SP","DSM","DVM","DM","NW","AW","WW","SW","BW","MW","NSW"];
+  const titleCertificateQty = { KCH: 3, JCH: 3, JW: 3, CH: 3, PR: 3, IC: 3, IP: 3, GIC: 6, GIP: 6, SC: 9, SP: 9, DSM: 10, DVM: 10, DM: 5, NW: 1, AW: 1, WW: 1, SW: 1, BW: 1, MW: 1, NSW: 1 };
+  if (!certificates.length) {
+    certificates = Array.from(
+      { length: titleCertificateQty[titleHomologation.requestedTitle] || 1 },
+      () => ({ date: "", judge: "", file: "" })
+    );
+  }
 %>
             <!-- ===================== HOMOLOGAÇÃO DE TÍTULOS ===================== -->
             <div class="section-card">

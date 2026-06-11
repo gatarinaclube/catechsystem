@@ -257,7 +257,7 @@
               </div>
             <% } %>
 
-            <% if (service.type === "Homologação de Títulos" && service.titleHomologation) { const th = service.titleHomologation; let certificates = []; try { certificates = JSON.parse(th.certificatesJson || '[]'); } catch(e) {} const titleOptions = ['KCH','JCH','JW','CH','PR','IC','IP','GIC','GIP','SC','SP','DSM','DVM','DM','NW','AW','WW','SW','BW','MW','NSW']; %>
+            <% if (service.type === "Homologação de Títulos" && service.titleHomologation) { const th = service.titleHomologation; let certificates = []; try { certificates = JSON.parse(th.certificatesJson || '[]'); } catch(e) {} const titleOptions = ['KCH','JCH','JW','CH','PR','IC','IP','GIC','GIP','SC','SP','DSM','DVM','DM','NW','AW','WW','SW','BW','MW','NSW']; const titleCertificateQty = { KCH: 3, JCH: 3, JW: 3, CH: 3, PR: 3, IC: 3, IP: 3, GIC: 6, GIP: 6, SC: 9, SP: 9, DSM: 10, DVM: 10, DM: 5, NW: 1, AW: 1, WW: 1, SW: 1, BW: 1, MW: 1, NSW: 1 }; %>
               <% renderedSpecificForm = true; %>
               <div class="section">
                 <div class="section-title">Homologação de Títulos</div>
@@ -283,7 +283,7 @@
                 </div>
                 <div class="section" style="margin-top:12px;">
                   <div class="section-title">Certificados</div>
-                  <% if (!certificates.length) { certificates = [{ date: '', judge: '', file: '' }]; } %>
+                  <% if (!certificates.length) { certificates = Array.from({ length: titleCertificateQty[th.requestedTitle] || 1 }, function() { return { date: '', judge: '', file: '' }; }); } %>
                   <% certificates.forEach(function(cert, index) { %>
                     <div class="grid-3" style="margin-bottom:10px;">
                       <div class="field"><label>Data</label><input type="date" name="certificates[<%= index %>][date]" value="<%= cert.date || '' %>" /></div>
