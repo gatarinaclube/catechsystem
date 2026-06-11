@@ -6,6 +6,7 @@ window.JUDGES = [
   "Alessandro Di Chio",
   "Alessandro Ghibaudo",
   "Alessio Schiavon",
+  "Alexey Shchukin",
   "Aliosha Romero",
   "Alfred Wittich Soojarit",
   "Andrea Valete Machado",
