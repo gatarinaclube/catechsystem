@@ -1,9 +1,9 @@
 <form
   method="post"
   action="/users/<%= u.id %>/quick-update"
-  style="display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; align-items:center; max-width:460px;"
+  style="display:flex; flex-wrap:nowrap; gap:8px; justify-content:flex-end; align-items:center; max-width:none;"
 >
-  <select name="approvalStatus" style="min-width:140px;">
+  <select name="approvalStatus" style="width:126px; min-width:126px;">
     <% approvalOptions.forEach(function(option) { %>
       <option
         value="<%= option.value %>"
@@ -14,7 +14,7 @@
     <% }) %>
   </select>
 
-  <select name="role" style="min-width:130px;">
+  <select name="role" style="width:132px; min-width:132px;">
     <% roleOptions.forEach(function(option) { %>
       <option
         value="<%= option.value %>"

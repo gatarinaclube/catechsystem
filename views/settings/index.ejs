@@ -245,6 +245,7 @@
         <% } %>
 
         <form method="post" action="/settings" enctype="multipart/form-data">
+          <% if (typeof showQuickFinanceLinks !== "undefined" && showQuickFinanceLinks) { %>
           <details class="content-card settings-panel">
             <summary>
               <div>
@@ -268,6 +269,7 @@
               </div>
             </div>
           </details>
+          <% } %>
 
           <details class="content-card settings-panel">
             <summary>

@@ -3,7 +3,7 @@ const fs = require("fs");
 const multer = require("multer");
 const path = require("path");
 const { Prisma } = require("@prisma/client");
-const { canViewAllData, userCan } = require("../utils/access");
+const { ROLES, canViewAllData, normalizeRole, userCan } = require("../utils/access");
 const { getFileUploadLimit, validateFilesForRole } = require("../utils/planLimits");
 
 const OPTION_TYPES = ["CATEGORY", "SUPPLIER", "PAYMENT"];
@@ -671,13 +671,18 @@ module.exports = (prisma) => {
     const cleanToken = String(token || "").trim();
     if (!/^[a-f0-9]{48}$/i.test(cleanToken)) return null;
 
-    return prisma.user.findFirst({
+    const user = await prisma.user.findFirst({
       where: {
         expensePublicToken: cleanToken,
         approvalStatus: { not: "RESTRICOES" },
       },
       select: { id: true, role: true },
     });
+
+    if (!user) return null;
+    return [ROLES.ADMIN, ROLES.PREMIUM, ROLES.ASSOCIADO_PREMIUM].includes(normalizeRole(user.role))
+      ? user
+      : null;
   }
 
   async function createPublicSupplier(ownerId, body) {

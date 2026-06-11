@@ -3,7 +3,7 @@ const crypto = require("crypto");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const { isAdminRole } = require("../utils/access");
+const { ROLES, isAdminRole, normalizeRole } = require("../utils/access");
 const { encryptSecret, shapeSmtpSettings } = require("../utils/userSmtp");
 const {
   MANAGED_PLAN_ROLES,
@@ -31,6 +31,10 @@ const VACCINE_REMINDER_GROUP_OPTIONS = [
   { value: "KITTEN_BREEDER", label: "Filhotes Futuros Padreadores/Matrizes" },
   { value: "KITTEN_DELIVERED", label: "Filhotes Entregues/Vendidos" },
 ];
+
+function canUseQuickFinanceLinks(role) {
+  return [ROLES.ADMIN, ROLES.PREMIUM, ROLES.ASSOCIADO_PREMIUM].includes(normalizeRole(role));
+}
 
 function createLogoUploadMiddleware() {
   const diskRoot =
@@ -225,13 +229,17 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   router.get("/settings", requireAuth, requirePermission("admin.settings"), async (req, res) => {
     try {
       const settings = await getSettings(req.session.userId);
-      const expensePublicToken = await ensureExpensePublicToken(prisma, req.user);
+      const showQuickFinanceLinks = canUseQuickFinanceLinks(req.session.userRole);
+      const expensePublicToken = showQuickFinanceLinks
+        ? await ensureExpensePublicToken(prisma, req.user)
+        : null;
 
       res.render("settings/index", {
         user: req.user,
         currentPath: req.path,
         settings,
-        expensePublicLink: buildAbsoluteUrl(req, `/despesas/u/${expensePublicToken}`),
+        showQuickFinanceLinks,
+        expensePublicLink: expensePublicToken ? buildAbsoluteUrl(req, `/despesas/u/${expensePublicToken}`) : "",
         membershipOptions: MEMBERSHIP_OPTIONS,
         breedOptions: BREED_OPTIONS,
         examOptions: EXAM_OPTIONS,
@@ -489,9 +497,12 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     } catch (err) {
       console.error("Erro ao salvar configurações:", err);
       let expensePublicLink = "";
+      const showQuickFinanceLinks = canUseQuickFinanceLinks(req.session.userRole);
       try {
-        const expensePublicToken = await ensureExpensePublicToken(prisma, req.user);
-        expensePublicLink = buildAbsoluteUrl(req, `/despesas/u/${expensePublicToken}`);
+        if (showQuickFinanceLinks) {
+          const expensePublicToken = await ensureExpensePublicToken(prisma, req.user);
+          expensePublicLink = buildAbsoluteUrl(req, `/despesas/u/${expensePublicToken}`);
+        }
       } catch (tokenErr) {
         console.error("Erro ao preparar link rápido de despesas:", tokenErr);
       }
@@ -499,6 +510,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         user: req.user,
         currentPath: "/settings",
         settings,
+        showQuickFinanceLinks,
         expensePublicLink,
         membershipOptions: MEMBERSHIP_OPTIONS,
         breedOptions: BREED_OPTIONS,

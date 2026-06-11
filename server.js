@@ -1049,9 +1049,6 @@ app.post("/planos/:plan/comprar", async (req, res) => {
   const plan = resolveCommercialPlan(req.params.plan);
   const email = String(req.body.existingEmail || "").trim().toLowerCase();
   const password = String(req.body.existingPassword || "");
-  const existingCpf = String(req.body.existingCpf || "").trim();
-  const existingPhones = String(req.body.existingPhones || "").trim();
-  const billingMode = normalizeBillingMode(req.body.billingMode);
 
   try {
     if (!email || !password) {
@@ -1083,33 +1080,20 @@ app.post("/planos/:plan/comprar", async (req, res) => {
       });
     }
 
-    const cpfForBilling = user.cpf || existingCpf;
-    if (![11, 14].includes(billingDocumentDigits(cpfForBilling).length)) {
-      return res.render("commercial-register", {
-        error: "Informe o CPF ou CNPJ para contratar o plano.",
-        plan,
-        plans: commercialPlanList(),
-        billingOptions: billingOptionsForPlan(plan),
-      });
-    }
-
-    const userForBilling = await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
-        cpf: user.cpf || existingCpf,
-        phones: user.phones || existingPhones || undefined,
+        accountOrigin: "NON_ASSOCIATE",
+        selectedPlan: plan.key,
+        subscriptionStatus: "PENDING",
+        approvalStatus: "DEFERIDO",
+        asaasPaymentUrl: null,
       },
     });
 
-    const billing = await configureAsaasPurchaseForExistingUser(userForBilling, plan, billingMode);
-    if (billing?.paymentUrl) return res.redirect(billing.paymentUrl);
-
-    return res.status(400).render("commercial-register", {
-      error: "Não foi possível gerar o link de pagamento. Verifique se o Asaas e o valor do plano estão configurados.",
-      plan,
-      plans: commercialPlanList(),
-      billingOptions: billingOptionsForPlan(plan),
-    });
+    req.session.userId = updatedUser.id;
+    req.session.userRole = normalizeRole(updatedUser.role);
+    return res.redirect("/billing/pay");
   } catch (err) {
     console.error("Erro ao contratar plano para cadastro existente:", err);
     return res.status(500).render("commercial-register", {
@@ -1174,6 +1158,7 @@ app.get("/billing/pay", requireAuth, async (req, res) => {
       plan,
       planChoices: billingPlanChoices(plan.key),
       billingOptions: billingOptionsForPlan(plan),
+      paymentRequired: Boolean(commercialPaymentStatus(user)),
     });
   } catch (err) {
     console.error("Erro ao abrir pagamento:", err);
@@ -1206,6 +1191,7 @@ app.post("/billing/pay", requireAuth, async (req, res) => {
       plan,
       planChoices: billingPlanChoices(plan.key),
       billingOptions: billingOptionsForPlan(plan),
+      paymentRequired: Boolean(commercialPaymentStatus(user)),
     });
   } catch (err) {
     console.error("Erro ao gerar pagamento:", err);
@@ -1217,6 +1203,7 @@ app.post("/billing/pay", requireAuth, async (req, res) => {
       plan,
       planChoices: billingPlanChoices(plan.key),
       billingOptions: billingOptionsForPlan(plan),
+      paymentRequired: Boolean(user && commercialPaymentStatus(user)),
     });
   }
 });
@@ -1315,6 +1302,21 @@ app.get("/dashboard", requireAuth, async (req, res) => {
     const user = req.user;
     if (user?.role === ROLES.CATBREED) {
       return res.redirect(res.locals.access?.canAccessAcademy ? "/academy/app" : "/academy/planos");
+    }
+
+    const paymentStatus = commercialPaymentStatus(user);
+    if (paymentStatus) {
+      if (paymentStatus === "EXPIRED") {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            approvalStatus: "DEFERIDO",
+            subscriptionStatus: "EXPIRED",
+            asaasPaymentUrl: null,
+          },
+        });
+      }
+      return res.redirect("/billing/pay");
     }
 
     const userScope = canViewAllData(req.session.userRole) ? {} : { ownerId: req.session.userId };
