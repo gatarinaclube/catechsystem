@@ -95,6 +95,15 @@ function centsToValue(cents) {
   return Number((Number(cents || 0) / 100).toFixed(2));
 }
 
+function isMissingAsaasCustomerError(err) {
+  const message = String(err?.message || "").toLowerCase();
+  return (
+    err?.status === 404 ||
+    message.includes("customer inválido") ||
+    (message.includes("cliente") && message.includes("não encontrado"))
+  );
+}
+
 function annualTotalCents(planKey) {
   const key = String(planKey || "").toUpperCase();
   const envName = PLAN_ANNUAL_CARD_ENV[key];
@@ -183,10 +192,13 @@ async function ensureCustomerForUser(user) {
           mobilePhone,
         },
       });
+      return user.asaasCustomerId;
     } catch (err) {
       console.warn("Não foi possível atualizar o cliente Asaas antes da cobrança:", err.message);
+      if (!isMissingAsaasCustomerError(err)) {
+        return user.asaasCustomerId;
+      }
     }
-    return user.asaasCustomerId;
   }
 
   const reference = `catech-user-${user.id}`;
