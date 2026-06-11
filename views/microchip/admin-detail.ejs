@@ -4,26 +4,28 @@
     <meta charset="UTF-8" />
     <title>Microchip <%= formatMicrochip(registration.microchip) %> - CaTech</title>
     <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
     <link rel="stylesheet" href="/css/cattery-admin.css" />
     <link rel="stylesheet" href="/css/microchip.css" />
   </head>
   <body>
-    <div class="app-shell">
+    <div class="shell">
       <%- include('../partials/sidebar', { user, currentPath }) %>
-      <main class="main-content">
-        <section class="card">
-          <div class="section-header">
+      <main class="main">
+        <div style="max-width: 1180px; margin: 0 auto;">
+          <div class="main-header">
             <div>
-              <h1 class="welcome-title"><%= registration.animalName %></h1>
-              <div class="content-sub">Microchip <%= formatMicrochip(registration.microchip) %> · <%= statusLabels[registration.status] || registration.status %></div>
+              <h2 class="welcome-title"><%= registration.animalName %></h2>
+              <div class="welcome-sub">Microchip <%= formatMicrochip(registration.microchip) %> · <%= statusLabels[registration.status] || registration.status %></div>
             </div>
-            <a class="btn btn-light" href="/admin/microchips">Voltar</a>
+            <div class="actions">
+              <a class="btn" href="/admin/microchips">Voltar</a>
+            </div>
           </div>
-        </section>
 
-        <section class="grid-2">
-          <div class="card">
-            <h2>Animal</h2>
+          <section class="microchip-admin-grid">
+          <div class="content-card microchip-admin-card">
+            <div class="content-title">Animal</div>
             <p><strong>Nome:</strong> <%= registration.animalName %></p>
             <p><strong>Sexo:</strong> <%= registration.sex || '-' %></p>
             <p><strong>Espécie:</strong> <%= registration.species %></p>
@@ -40,8 +42,8 @@
             <% } %>
           </div>
 
-          <div class="card">
-            <h2>Proprietário</h2>
+          <div class="content-card microchip-admin-card">
+            <div class="content-title">Proprietário</div>
             <p><strong>Nome:</strong> <%= registration.ownerName %></p>
             <p><strong>CPF:</strong> <%= registration.ownerCpf || '-' %></p>
             <p><strong>Nascimento:</strong> <%= dateInputValue(registration.ownerBirthDate) || '-' %></p>
@@ -56,9 +58,9 @@
           </div>
         </section>
 
-        <section class="card">
-          <h2>Contatos recebidos sobre este microchip</h2>
-          <div class="table-responsive">
+        <section class="content-card microchip-admin-card">
+          <div class="content-title">Contatos recebidos sobre este microchip</div>
+          <div class="table-responsive microchip-admin-table-wrap">
             <table class="data-table">
               <thead>
                 <tr>
@@ -88,6 +90,7 @@
             </table>
           </div>
         </section>
+        </div>
       </main>
     </div>
   </body>

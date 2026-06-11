@@ -260,6 +260,71 @@
   display: block;
 }
 
+.microchip-admin-card {
+  margin-bottom: 18px;
+}
+
+.microchip-admin-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.microchip-admin-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.microchip-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.microchip-admin-card p {
+  margin: 8px 0;
+  color: var(--text, #17212f);
+  line-height: 1.45;
+}
+
+.microchip-admin-card h3 {
+  margin: 18px 0 8px;
+  color: var(--text, #17212f);
+  font-size: 16px;
+}
+
+.microchip-admin-table-wrap {
+  margin-top: 14px;
+}
+
+.microchip-admin-table-wrap .data-table {
+  width: 100%;
+}
+
+.microchip-admin-table-wrap .data-table th,
+.microchip-admin-table-wrap .data-table td {
+  vertical-align: top;
+}
+
+.microchip-admin-card .photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.microchip-admin-card .photo-grid img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  border-radius: 8px;
+  background: #fff;
+}
+
 .microchip-form h3 {
   margin: 26px 0 14px;
 }
@@ -481,5 +546,14 @@
 
   .microchip-phone-row {
     grid-template-columns: 1fr;
+  }
+
+  .microchip-admin-search,
+  .microchip-admin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .microchip-admin-actions {
+    justify-content: flex-start;
   }
 }

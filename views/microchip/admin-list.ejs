@@ -4,34 +4,39 @@
     <meta charset="UTF-8" />
     <title>Gestão de Microchip - CaTech</title>
     <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
     <link rel="stylesheet" href="/css/cattery-admin.css" />
+    <link rel="stylesheet" href="/css/microchip.css" />
   </head>
   <body>
-    <div class="app-shell">
+    <div class="shell">
       <%- include('../partials/sidebar', { user, currentPath }) %>
-      <main class="main-content">
-        <section class="card">
-          <div class="section-header">
+      <main class="main">
+        <div style="max-width: 1180px; margin: 0 auto;">
+          <div class="main-header">
             <div>
-              <h1 class="welcome-title">Gestão de Microchip</h1>
-              <div class="content-sub">Cadastros públicos de animais identificados por microchip.</div>
+              <h2 class="welcome-title">Gestão de Microchip</h2>
+              <div class="welcome-sub">Cadastros públicos e internos de animais identificados por microchip.</div>
             </div>
           </div>
 
-          <form class="quick-form-grid" method="get" action="/admin/microchips">
-            <label>
-              Buscar por proprietário, animal ou microchip
-              <input type="search" name="q" value="<%= query %>" placeholder="Digite parte do nome ou chip" />
-            </label>
-            <div class="form-actions">
-              <button class="btn btn-primary" type="submit">Buscar</button>
-              <a class="btn btn-light" href="/admin/microchips">Limpar</a>
-            </div>
-          </form>
-        </section>
+          <section class="content-card microchip-admin-card">
+            <form class="microchip-admin-search" method="get" action="/admin/microchips">
+              <div class="form-row">
+                <label>Buscar por proprietário, animal ou microchip</label>
+                <input type="search" name="q" value="<%= query %>" placeholder="Digite parte do nome ou chip" />
+              </div>
+              <div class="microchip-admin-actions">
+                <button class="btn btn-primary" type="submit">Buscar</button>
+                <a class="btn" href="/admin/microchips">Limpar</a>
+              </div>
+            </form>
+          </section>
 
-        <section class="card">
-          <div class="table-responsive">
+          <section class="content-card microchip-admin-card">
+            <div class="content-title">Cadastros encontrados</div>
+            <div class="content-sub">Clique em abrir para conferir os dados do animal, proprietário e contatos recebidos.</div>
+            <div class="table-responsive microchip-admin-table-wrap">
             <table class="data-table">
               <thead>
                 <tr>
@@ -59,8 +64,9 @@
                 <% }) %>
               </tbody>
             </table>
-          </div>
-        </section>
+            </div>
+          </section>
+        </div>
       </main>
     </div>
   </body>
