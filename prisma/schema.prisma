@@ -1035,35 +1035,36 @@ model PublicMicrochipContact {
 }
 
 model DocumentSignatureRequest {
-  id              Int             @id @default(autoincrement())
-  owner           User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerId         Int
-  document        CatteryDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  documentId      Int
-  token           String          @unique
-  signerName      String?
-  signerEmail     String?
-  signerDocument  String?
-  signerPhone     String?
-  signatureSource String?
-  signaturePage   Int?
-  signatureX      Float?
-  signatureY      Float?
-  status          String          @default("PENDING")
-  otpHash         String?
-  otpExpiresAt    DateTime?
-  otpVerifiedAt   DateTime?
-  signedAt        DateTime?
-  signatureText   String?
-  ipAddress       String?
-  userAgent       String?
-  browser         String?
-  latitude        Float?
-  longitude       Float?
-  documentHash    String?
-  evidencePdfPath String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id                     Int             @id @default(autoincrement())
+  owner                  User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId                Int
+  document               CatteryDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentId             Int
+  token                  String          @unique
+  signerName             String?
+  signerEmail            String?
+  signerDocument         String?
+  signerPhone            String?
+  signatureSource        String?
+  signaturePage          Int?
+  signatureX             Float?
+  signatureY             Float?
+  signaturePositionsJson String?
+  status                 String          @default("PENDING")
+  otpHash                String?
+  otpExpiresAt           DateTime?
+  otpVerifiedAt          DateTime?
+  signedAt               DateTime?
+  signatureText          String?
+  ipAddress              String?
+  userAgent              String?
+  browser                String?
+  latitude               Float?
+  longitude              Float?
+  documentHash           String?
+  evidencePdfPath        String?
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
 
   events DocumentSignatureEvent[]
 

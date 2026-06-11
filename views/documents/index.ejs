@@ -79,8 +79,8 @@
             </div>
           </div>
 
-          <div class="grid-2" style="align-items:start;">
-            <form method="post" action="/documentos/pdf/reduzir" enctype="multipart/form-data" class="form-grid" style="gap:14px;">
+          <div class="document-pdf-reducer-layout">
+            <form method="post" action="/documentos/pdf/reduzir" enctype="multipart/form-data" class="document-pdf-reducer-form" data-pdf-reducer-form>
               <label>
                 Arquivo PDF
                 <input type="file" name="pdfFile" accept="application/pdf,.pdf" required <%= compressionStats.canUse ? '' : 'disabled' %> />
@@ -89,8 +89,11 @@
                 Tamanho final desejado em KB
                 <input type="number" name="targetKb" min="10" step="1" placeholder="Ex.: 500" required <%= compressionStats.canUse ? '' : 'disabled' %> />
               </label>
-              <div class="actions" style="grid-column:1 / -1;">
-                <button class="btn btn-primary" type="submit" <%= compressionStats.canUse ? '' : 'disabled' %>>Baixar PDF reduzido</button>
+              <div class="document-pdf-reducer-actions">
+                <button class="btn btn-primary" type="submit" data-pdf-reducer-button <%= compressionStats.canUse ? '' : 'disabled' %>>Baixar PDF reduzido</button>
+                <div class="document-pdf-processing" data-pdf-reducer-status hidden>
+                  Documento sendo processado. Aguarde o download iniciar.
+                </div>
               </div>
             </form>
 
@@ -109,5 +112,18 @@
 
       </main>
     </div>
+    <script>
+      document.querySelectorAll("[data-pdf-reducer-form]").forEach(function (form) {
+        form.addEventListener("submit", function () {
+          var button = form.querySelector("[data-pdf-reducer-button]");
+          var status = form.querySelector("[data-pdf-reducer-status]");
+          if (button) {
+            button.disabled = true;
+            button.textContent = "Processando PDF...";
+          }
+          if (status) status.hidden = false;
+        });
+      });
+    </script>
   </body>
 </html>

@@ -119,8 +119,22 @@ function drawLitterPdfContent(doc, service, litter, kittens, sire, dam) {
   });
 }
 
-function addUploadToArchive(archive, label, relPath) {
-  if (!relPath) return;
+function uploadSearchRoots() {
+  const configured = process.env.UPLOADS_DIR;
+  const roots = [
+    configured,
+    configured ? path.join(configured, "uploads") : null,
+    "/var/data/uploads",
+    "/var/data",
+    path.join(__dirname, "../../public/uploads"),
+    path.join(__dirname, "../../public"),
+  ].filter(Boolean);
+
+  return [...new Set(roots.map((root) => path.normalize(root)))];
+}
+
+function resolveUploadPath(relPath) {
+  if (!relPath) return null;
   let p = String(relPath).replace(/\\/g, "/").trim();
   const uploadsIndex = p.indexOf("/uploads/");
   if (uploadsIndex >= 0) p = p.slice(uploadsIndex + "/uploads/".length);
@@ -129,24 +143,28 @@ function addUploadToArchive(archive, label, relPath) {
 
   if (p.startsWith("var/data/") || p.startsWith("/var/data/")) {
     const absDirect = p.startsWith("/") ? p : `/${p}`;
-    if (fs.existsSync(absDirect)) {
-      archive.file(absDirect, { name: `${label} - ${path.basename(absDirect)}` });
-    }
-    return;
+    return fs.existsSync(absDirect) ? absDirect : null;
   }
 
-  const roots = [
-    process.env.UPLOADS_DIR || "/var/data/uploads",
-    path.join(__dirname, "../../public/uploads"),
-  ];
-
-  for (const root of roots) {
+  for (const root of uploadSearchRoots()) {
     const abs = path.join(root, p);
-    if (fs.existsSync(abs)) {
-      archive.file(abs, { name: `${label} - ${path.basename(abs)}` });
-      return;
-    }
+    if (fs.existsSync(abs)) return abs;
   }
+
+  return null;
+}
+
+function addUploadToArchive(archive, label, relPath, missingFiles = []) {
+  if (!relPath) return false;
+  const abs = resolveUploadPath(relPath);
+
+  if (abs) {
+    archive.file(abs, { name: `${label} - ${path.basename(abs)}` });
+    return true;
+  }
+
+  missingFiles.push(`${label}: ${relPath}`);
+  return false;
 }
 
 async function generateLitterAdminBundle(service, litter, kittens, sire, dam, res) {
@@ -169,19 +187,33 @@ async function generateLitterAdminBundle(service, litter, kittens, sire, dam, re
       const archive = archiver("zip", { zlib: { level: 9 } });
       archive.pipe(res);
       archive.file(pdfPath, { name: pdfFilename });
+      const missingFiles = [];
 
       if (sire) {
-        addUploadToArchive(archive, "MACHO - Pedigree", sire.pedigreeFile);
-        addUploadToArchive(archive, "MACHO - Atestado Reproducao", sire.reproductionFile);
+        addUploadToArchive(archive, "MACHO - Pedigree", sire.pedigreeFile, missingFiles);
+        addUploadToArchive(archive, "MACHO - Atestado Reproducao", sire.reproductionFile, missingFiles);
       }
 
       if (dam) {
-        addUploadToArchive(archive, "FEMEA - Pedigree", dam.pedigreeFile);
-        addUploadToArchive(archive, "FEMEA - Atestado Reproducao", dam.reproductionFile);
+        addUploadToArchive(archive, "FEMEA - Pedigree", dam.pedigreeFile, missingFiles);
+        addUploadToArchive(archive, "FEMEA - Atestado Reproducao", dam.reproductionFile, missingFiles);
       }
 
       if (litter?.externalOwnerAuthorization) {
-        addUploadToArchive(archive, "AUTORIZACAO_REPRODUCAO_MACHO", litter.externalOwnerAuthorization);
+        addUploadToArchive(archive, "AUTORIZACAO_REPRODUCAO_MACHO", litter.externalOwnerAuthorization, missingFiles);
+      }
+
+      if (missingFiles.length) {
+        archive.append(
+          [
+            "Os anexos abaixo estão cadastrados no sistema, mas não foram encontrados no armazenamento do servidor:",
+            "",
+            ...missingFiles,
+            "",
+            "Verifique se o arquivo existe no disco de uploads ou envie novamente o anexo no cadastro do gato.",
+          ].join("\n"),
+          { name: "ANEXOS_NAO_ENCONTRADOS.txt" }
+        );
       }
 
       archive.finalize();

@@ -96,14 +96,15 @@
         <% } %>
       </section>
 
-      <section id="cadastrar" class="microchip-section">
-        <div class="microchip-section-title">
+      <details id="cadastrar" class="microchip-section microchip-collapsible">
+        <summary class="microchip-section-title">
           <span class="microchip-icon">＋</span>
           <div>
             <h2>Cadastrar microchip e animal</h2>
             <p>Use este formulário para registrar gatos, cães e outros animais com microchip.</p>
           </div>
-        </div>
+          <span class="microchip-summary-indicator">Abrir</span>
+        </summary>
 
         <form class="microchip-form" method="post" action="/microchip/cadastrar" enctype="multipart/form-data">
           <%- include('_form-fields', { animal: null, catBreeds, dogBreeds, parseJsonArray, dateInputValue }) %>
@@ -113,16 +114,17 @@
           </div>
           <button class="microchip-submit" type="submit">Salvar cadastro</button>
         </form>
-      </section>
+      </details>
 
-      <section id="editar" class="microchip-section">
-        <div class="microchip-section-title">
+      <details id="editar" class="microchip-section microchip-collapsible" <%= ownerAnimals.length || editingAnimal ? 'open' : '' %>>
+        <summary class="microchip-section-title">
           <span class="microchip-icon">✎</span>
           <div>
             <h2>Acessar e editar meus animais</h2>
             <p>Entre com o e-mail principal e senha para editar cadastros, marcar desaparecido, óbito ou excluir.</p>
           </div>
-        </div>
+          <span class="microchip-summary-indicator">Abrir</span>
+        </summary>
 
         <% if (!ownerAnimals.length) { %>
           <form class="microchip-login-form" method="post" action="/microchip/login">
@@ -163,7 +165,7 @@
             <button class="microchip-submit" type="submit">Salvar alterações</button>
           </form>
         <% } %>
-      </section>
+      </details>
 
       <section class="microchip-seo">
         <h2>Cadastro de microchip para animais perdidos</h2>

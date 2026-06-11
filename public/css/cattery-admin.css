@@ -228,6 +228,52 @@
   margin: 22px 0 12px;
 }
 
+.document-pdf-reducer-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.document-pdf-reducer-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: end;
+  min-width: 0;
+}
+
+.document-pdf-reducer-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  color: #374151;
+  font-weight: 700;
+}
+
+.document-pdf-reducer-form input {
+  width: 100%;
+  min-width: 0;
+}
+
+.document-pdf-reducer-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.document-pdf-processing {
+  border-radius: 999px;
+  background: #eef6ff;
+  color: #075985;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 9px 12px;
+}
+
 .signature-request-list {
   display: grid;
   gap: 14px;
@@ -264,7 +310,7 @@
 
 .signature-recipient-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 120px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   align-items: end;
   padding: 12px;
@@ -285,6 +331,11 @@
 
 .signature-page-field input {
   text-align: center;
+}
+
+.signature-position-summary {
+  margin-top: 8px;
+  font-size: 12px;
 }
 
 .signature-recipient-status-list {
@@ -2416,6 +2467,11 @@ textarea:focus {
 }
 
 @media (max-width: 900px) {
+  .document-pdf-reducer-layout,
+  .document-pdf-reducer-form {
+    grid-template-columns: 1fr;
+  }
+
   .record-row {
     align-items: flex-start;
     flex-direction: column;

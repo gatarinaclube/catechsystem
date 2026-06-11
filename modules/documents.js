@@ -290,6 +290,35 @@ function parseArray(value) {
   return [value];
 }
 
+function parseSignaturePositions(value) {
+  let parsed = [];
+  try {
+    parsed = JSON.parse(value || "[]");
+  } catch {
+    parsed = [];
+  }
+
+  if (!Array.isArray(parsed)) return [];
+  return parsed
+    .map((position) => ({
+      page: parseNullablePositiveInt(position?.page),
+      x: parseCoordinate(position?.x),
+      y: parseCoordinate(position?.y),
+    }))
+    .filter((position) => position.page && position.x !== null && position.y !== null);
+}
+
+function signaturePositionsForRequest(request) {
+  const positions = parseSignaturePositions(request?.signaturePositionsJson);
+  if (positions.length) return positions;
+
+  const page = parseNullablePositiveInt(request?.signaturePage);
+  const x = parseCoordinate(request?.signatureX);
+  const y = parseCoordinate(request?.signatureY);
+  if (page && x !== null && y !== null) return [{ page, x, y }];
+  return [{ page: 1, x: 0.62, y: 0.82 }];
+}
+
 function uniqueContacts(contacts) {
   const seen = new Set();
   return contacts
@@ -783,44 +812,44 @@ async function buildSignedExternalPdfBuffer({ document, signatureRequest }) {
   });
 
   signedRequests.forEach((request) => {
-    const pageIndex = Math.min(Math.max(Number(request.signaturePage || 1) - 1, 0), pages.length - 1);
-    const page = pages[pageIndex];
-    const { width, height } = page.getSize();
-    const x = Number.isFinite(Number(request.signatureX)) ? Number(request.signatureX) : 0.62;
-    const y = Number.isFinite(Number(request.signatureY)) ? Number(request.signatureY) : 0.82;
-    const signatureX = Math.max(24, Math.min(width - 210, x * width));
-    const signatureY = Math.max(40, Math.min(height - 40, height - y * height));
+    signaturePositionsForRequest(request).forEach((position) => {
+      const pageIndex = Math.min(Math.max(Number(position.page || 1) - 1, 0), pages.length - 1);
+      const page = pages[pageIndex];
+      const { width, height } = page.getSize();
+      const signatureX = Math.max(24, Math.min(width - 210, Number(position.x) * width));
+      const signatureY = Math.max(40, Math.min(height - 40, height - Number(position.y) * height));
 
-    page.drawRectangle({
-      x: signatureX,
-      y: signatureY,
-      width: 190,
-      height: 44,
-      borderColor: request.signatureSource === "SENDER" ? rgb(0.54, 0.2, 0.16) : rgb(0.12, 0.42, 0.22),
-      borderWidth: 1,
-      color: request.signatureSource === "SENDER" ? rgb(1, 0.97, 0.94) : rgb(0.94, 0.99, 0.96),
-      opacity: 0.92,
-    });
-    page.drawText(request.signatureSource === "SENDER" ? "Assinado eletronicamente pelo remetente" : "Assinado eletronicamente por", {
-      x: signatureX + 8,
-      y: signatureY + 27,
-      size: 7,
-      font: regularFont,
-      color: rgb(0.23, 0.28, 0.35),
-    });
-    page.drawText(signatureName(request), {
-      x: signatureX + 8,
-      y: signatureY + 13,
-      size: 10,
-      font,
-      color: request.signatureSource === "SENDER" ? rgb(0.54, 0.2, 0.16) : rgb(0.08, 0.26, 0.14),
-    });
-    page.drawText(formatDateTime(request.signedAt), {
-      x: signatureX + 8,
-      y: signatureY + 4,
-      size: 6,
-      font: regularFont,
-      color: rgb(0.39, 0.45, 0.55),
+      page.drawRectangle({
+        x: signatureX,
+        y: signatureY,
+        width: 190,
+        height: 44,
+        borderColor: request.signatureSource === "SENDER" ? rgb(0.54, 0.2, 0.16) : rgb(0.12, 0.42, 0.22),
+        borderWidth: 1,
+        color: request.signatureSource === "SENDER" ? rgb(1, 0.97, 0.94) : rgb(0.94, 0.99, 0.96),
+        opacity: 0.92,
+      });
+      page.drawText(request.signatureSource === "SENDER" ? "Assinado eletronicamente pelo remetente" : "Assinado eletronicamente por", {
+        x: signatureX + 8,
+        y: signatureY + 27,
+        size: 7,
+        font: regularFont,
+        color: rgb(0.23, 0.28, 0.35),
+      });
+      page.drawText(signatureName(request), {
+        x: signatureX + 8,
+        y: signatureY + 13,
+        size: 10,
+        font,
+        color: request.signatureSource === "SENDER" ? rgb(0.54, 0.2, 0.16) : rgb(0.08, 0.26, 0.14),
+      });
+      page.drawText(formatDateTime(request.signedAt), {
+        x: signatureX + 8,
+        y: signatureY + 4,
+        size: 6,
+        font: regularFont,
+        color: rgb(0.39, 0.45, 0.55),
+      });
     });
   });
 
@@ -1258,11 +1287,21 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         const recipientPages = parseArray(req.body.recipientSignaturePage);
         const recipientXs = parseArray(req.body.recipientSignatureX);
         const recipientYs = parseArray(req.body.recipientSignatureY);
+        const recipientPositions = parseArray(req.body.recipientSignaturePositions);
         const uniqueEmails = [];
         const seenEmails = new Set();
         recipientEmails.forEach((email, index) => {
           const normalized = email.toLowerCase();
           if (!normalized || seenEmails.has(normalized)) return;
+          const positions = parseSignaturePositions(recipientPositions[index]);
+          if (!positions.length) {
+            const fallbackPage = parseNullablePositiveInt(recipientPages[index]);
+            const fallbackX = parseCoordinate(recipientXs[index]);
+            const fallbackY = parseCoordinate(recipientYs[index]);
+            if (fallbackPage && fallbackX !== null && fallbackY !== null) {
+              positions.push({ page: fallbackPage, x: fallbackX, y: fallbackY });
+            }
+          }
           seenEmails.add(normalized);
           uniqueEmails.push({
             email,
@@ -1272,6 +1311,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             page: recipientPages[index],
             x: recipientXs[index],
             y: recipientYs[index],
+            positions,
           });
         });
         if (!uniqueEmails.length) {
@@ -1298,6 +1338,16 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         const documentHash = await documentHashForSignature(document, req);
         const settings = await prisma.userSettings.findUnique({ where: { userId: req.session.userId } });
         const owner = await prisma.user.findUnique({ where: { id: req.session.userId } });
+        const senderPositions = parseSignaturePositions(req.body.senderSignaturePositions);
+        if (!senderPositions.length) {
+          const fallbackPage = parseNullablePositiveInt(req.body.senderSignaturePage);
+          const fallbackX = parseCoordinate(req.body.senderSignatureX);
+          const fallbackY = parseCoordinate(req.body.senderSignatureY);
+          if (fallbackPage && fallbackX !== null && fallbackY !== null) {
+            senderPositions.push({ page: fallbackPage, x: fallbackX, y: fallbackY });
+          }
+        }
+        const firstSenderPosition = senderPositions[0] || {};
 
         const senderRequest = await prisma.documentSignatureRequest.create({
           data: {
@@ -1309,9 +1359,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             signerDocument: owner?.cpf || null,
             signerPhone: owner?.phones || null,
             signatureSource: "SENDER",
-            signaturePage: parseNullablePositiveInt(req.body.senderSignaturePage) || 1,
-            signatureX: parseCoordinate(req.body.senderSignatureX),
-            signatureY: parseCoordinate(req.body.senderSignatureY),
+            signaturePage: firstSenderPosition.page || 1,
+            signatureX: firstSenderPosition.x ?? null,
+            signatureY: firstSenderPosition.y ?? null,
+            signaturePositionsJson: senderPositions.length ? JSON.stringify(senderPositions) : null,
             status: "PENDING",
             documentHash,
           },
@@ -1329,9 +1380,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               signerDocument: recipient.document || null,
               signerPhone: recipient.phone || null,
               signatureSource: "EXTERNAL_CONTRACT",
-              signaturePage: parseNullablePositiveInt(recipient.page) || 1,
-              signatureX: parseCoordinate(recipient.x),
-              signatureY: parseCoordinate(recipient.y),
+              signaturePage: recipient.positions[0]?.page || parseNullablePositiveInt(recipient.page) || 1,
+              signatureX: recipient.positions[0]?.x ?? parseCoordinate(recipient.x),
+              signatureY: recipient.positions[0]?.y ?? parseCoordinate(recipient.y),
+              signaturePositionsJson: recipient.positions.length ? JSON.stringify(recipient.positions) : null,
               status: "PENDING",
               documentHash,
             },

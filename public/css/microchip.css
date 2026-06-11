@@ -136,9 +136,22 @@
 
 .microchip-alert.success,
 .microchip-result.found {
-  border: 1px solid rgba(0, 111, 168, 0.24);
-  background: #eef9ff;
-  color: #004d78;
+  border: 1px solid rgba(22, 163, 74, 0.36);
+  background: linear-gradient(135deg, #ecfdf3 0%, #dcfce7 100%);
+  color: #14532d;
+}
+
+.microchip-result.found {
+  box-shadow: 0 18px 38px rgba(22, 101, 52, 0.16);
+  font-size: 17px;
+}
+
+.microchip-result.found strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #15803d;
+  font-size: clamp(22px, 3vw, 30px);
+  line-height: 1.12;
 }
 
 .microchip-alert.error,
@@ -162,6 +175,51 @@
   align-items: center;
   gap: 14px;
   margin-bottom: 20px;
+}
+
+.microchip-collapsible {
+  overflow: hidden;
+}
+
+.microchip-collapsible > summary {
+  cursor: pointer;
+  list-style: none;
+  margin-bottom: 0;
+}
+
+.microchip-collapsible > summary::-webkit-details-marker {
+  display: none;
+}
+
+.microchip-collapsible[open] > summary {
+  margin-bottom: 20px;
+}
+
+.microchip-summary-indicator {
+  margin-left: auto;
+  border-radius: 999px;
+  background: #fff2e8;
+  color: #b84018;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 8px 12px;
+}
+
+.microchip-collapsible[open] .microchip-summary-indicator {
+  background: #eef9ff;
+  color: #006fa8;
+}
+
+.microchip-collapsible[open] .microchip-summary-indicator::before {
+  content: "Fechar";
+}
+
+.microchip-collapsible[open] .microchip-summary-indicator {
+  font-size: 0;
+}
+
+.microchip-collapsible[open] .microchip-summary-indicator::before {
+  font-size: 12px;
 }
 
 .microchip-icon {

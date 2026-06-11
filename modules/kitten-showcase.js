@@ -113,8 +113,16 @@ function shortText(value, max = 240) {
 }
 
 function getClientIp(req) {
-  const forwarded = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
-  return forwarded || req.socket?.remoteAddress || "";
+  const candidates = [
+    req.headers["cf-connecting-ip"],
+    req.headers["true-client-ip"],
+    req.headers["x-real-ip"],
+    req.headers["x-client-ip"],
+    req.headers["fly-client-ip"],
+    String(req.headers["x-forwarded-for"] || "").split(",")[0].trim(),
+    req.socket?.remoteAddress,
+  ];
+  return candidates.map((value) => String(value || "").trim()).find(Boolean) || "";
 }
 
 const geoIpCache = new Map();
@@ -167,12 +175,37 @@ async function lookupGeoLocationByIp(ip) {
       region: shortText(data.region, 100),
       country: shortText(data.country_code || data.country, 100),
     };
+    if (location.city) {
+      geoIpCache.set(cleanIp, { location, expiresAt: now + 12 * 60 * 60 * 1000 });
+      return location;
+    }
+  } catch {
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  const fallbackController = new AbortController();
+  const fallbackTimeout = setTimeout(() => fallbackController.abort(), 1400);
+
+  try {
+    const response = await fetch(`https://ipapi.co/${encodeURIComponent(cleanIp)}/json/`, {
+      signal: fallbackController.signal,
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) return {};
+
+    const data = await response.json();
+    const location = {
+      city: shortText(data.city, 100),
+      region: shortText(data.region || data.region_code, 100),
+      country: shortText(data.country_code || data.country_name, 100),
+    };
     geoIpCache.set(cleanIp, { location, expiresAt: now + 12 * 60 * 60 * 1000 });
     return location;
   } catch {
     return {};
   } finally {
-    clearTimeout(timeout);
+    clearTimeout(fallbackTimeout);
   }
 }
 
@@ -211,12 +244,12 @@ function locationUpdateData(body = {}) {
 }
 
 function placeLabel(session) {
-  const place = [session.city, session.region, session.country].filter(Boolean).join(" / ");
-  if (place) return place;
+  const city = shortText(session.city, 100);
+  if (city) return [city, session.region, session.country].filter(Boolean).join(" / ");
   if (session.latitude !== null && session.latitude !== undefined && session.longitude !== null && session.longitude !== undefined) {
     return `Localização aprox. ${Number(session.latitude).toFixed(3)}, ${Number(session.longitude).toFixed(3)}`;
   }
-  return "Local não informado";
+  return "Local exato desconhecido";
 }
 
 function browserLabel(userAgent) {

@@ -395,6 +395,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       }
     }
 
+    const deceasedBool = deceased === "YES";
+    const deathCauseData = parseDeathCauseData(req.body, deceasedBool);
+
     let fatherIdValue = null;
     let fatherNameValue = null;
     let fatherBreedValue = null;
@@ -463,7 +466,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       motherBreed: motherBreedValue,
       motherEmsCode: motherEmsCodeValue,
       neutered: breedingStatus === "NOT_FOR_BREEDING",
-      deceased: deceased === "YES",
+      deceased: deceasedBool,
       ...deathCauseData,
       ownershipType: mapOwnershipType(ownershipMode),
       status: existingCat ? existingCat.status : "APROVADO",
