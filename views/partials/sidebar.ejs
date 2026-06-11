@@ -41,6 +41,8 @@
 
     <nav class="menu">
       <%
+        const currentUserRole = access && access.role ? access.role : (user && user.role ? user.role : "");
+        const showPlanUpgrade = ["BASIC", "MASTER"].includes(String(currentUserRole || "").toUpperCase());
         function moduleHelp(item) {
           const helpByLabel = {
             "Página inicial": "Mostra os principais indicadores e atalhos do sistema, reunindo pendências, rotina do gatil e acesso rápido aos módulos.",
@@ -69,6 +71,7 @@
             "Relatórios": "Relatórios financeiros, fluxo de caixa, despesas, receitas e acompanhamento estratégico.",
             "Administrativo": "Área financeira e administrativa com contas, receitas, despesas, clientes, fornecedores e contas a pagar/receber.",
             "CatBreeder Pro": "Área de cursos e conteúdos da plataforma Academy vinculada ao sistema.",
+            "Upgrade de Plano": "Compare as opções e ative um plano com mais recursos, como CRM, relatórios, administrativo financeiro e vitrine completa.",
           };
           return item.help || helpByLabel[item.label] || `Abre o módulo ${item.label}.`;
         }
@@ -107,6 +110,7 @@
         { href: "/users", match: "/users", icon: "👥", label: "Usuários", allowed: access && access.canManageUsers, hideWhenDenied: true },
         { href: "/settings", match: "/settings", icon: "⚙️", label: "Configurações", allowed: access && access.canAccessSettings },
         { href: "/admin/microchips", match: "/admin/microchips", icon: "🔎", label: "Gestão de Microchip", allowed: access && access.canManageMicrochips, hideWhenDenied: true },
+        { href: "/billing/pay", match: "/billing/pay", icon: "⬆️", label: "Upgrade de Plano", allowed: showPlanUpgrade },
       ].forEach(renderMenuItem); %>
 
       <div

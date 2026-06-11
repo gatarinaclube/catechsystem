@@ -82,6 +82,26 @@
   </div>
 <% } %>
 
+<%
+  const dashboardRole = access && access.role ? String(access.role).toUpperCase() : "";
+  const showUpgradeNotice = ["BASIC", "MASTER"].includes(dashboardRole);
+%>
+<% if (showUpgradeNotice) { %>
+  <div class="content-card" style="border-left:4px solid #f26a1b; margin-bottom:20px; background:linear-gradient(135deg,#fff7ed 0%,#ffffff 78%);">
+    <div class="content-title">Upgrade de plano</div>
+    <div class="content-sub">
+      <% if (dashboardRole === "BASIC") { %>
+        Desbloqueie CRM, relatórios, administrativo financeiro e mais recursos para profissionalizar a gestão do gatil.
+      <% } else { %>
+        Libere o Premium para ter acesso completo, relatórios avançados, financeiro completo e maior capacidade de uso.
+      <% } %>
+    </div>
+    <div style="margin-top:10px;">
+      <a href="/billing/pay" class="btn btn-primary">Ver opções de upgrade</a>
+    </div>
+  </div>
+<% } %>
+
 
 <% if (access && access.isAdmin && servicesPendingFFBCount > 0) { %>
   <div class="content-card" style="border-left: 4px solid #2563eb; margin-bottom: 20px;">

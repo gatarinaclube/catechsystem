@@ -8,11 +8,11 @@
     <link rel="stylesheet" href="/css/layout.css" />
   </head>
   <body class="auth-body">
-    <div class="auth-card" style="max-width:720px;">
+    <div class="auth-card" style="max-width:980px;">
       <div class="auth-logo">CaTech System</div>
-      <h1 class="auth-title">Escolha a contratação</h1>
+      <h1 class="auth-title">Escolha seu plano</h1>
       <div class="auth-subtitle">
-        Plano <strong><%= plan.title %></strong>. Selecione como deseja efetuar o pagamento.
+        O Premium é a opção completa para experimentar e manter todos os recursos do sistema.
       </div>
 
       <% if (typeof error !== "undefined" && error) { %>
@@ -20,16 +20,34 @@
       <% } %>
 
       <form method="post" action="/billing/pay" class="auth-form">
-        <div style="display:grid; gap:10px;">
-          <% billingOptions.forEach(function(option, index) { %>
-            <label style="display:grid; grid-template-columns:22px 1fr; gap:10px; align-items:start; border:1px solid var(--border-soft); border-radius:10px; padding:12px; cursor:pointer;">
-              <input type="radio" name="billingMode" value="<%= option.mode %>" <%= index === 0 ? 'checked' : '' %> />
-              <span>
-                <strong style="display:block;"><%= option.title %></strong>
-                <span style="display:block; color:var(--accent-hover); font-weight:700; margin-top:2px;"><%= option.subtitle %></span>
-                <span style="display:block; color:var(--text-muted); font-size:12px; margin-top:4px;"><%= option.detail %></span>
-              </span>
-            </label>
+        <div style="display:grid; gap:14px;">
+          <% (planChoices || []).forEach(function(planChoice) { %>
+            <div style="border:1px solid <%= planChoice.featured ? 'rgba(242,106,27,.55)' : 'var(--border-soft)' %>; border-radius:14px; padding:14px; background:<%= planChoice.featured ? '#fff7ed' : '#fff' %>;">
+              <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; margin-bottom:10px;">
+                <div>
+                  <strong style="display:block; font-size:18px;"><%= planChoice.title %></strong>
+                  <span style="display:block; color:var(--text-muted); font-size:13px; margin-top:3px;"><%= planChoice.summary %></span>
+                </div>
+                <% if (planChoice.featured) { %>
+                  <span style="border-radius:999px; background:#f26a1b; color:#fff; font-size:12px; font-weight:800; padding:6px 10px;">Recomendado</span>
+                <% } %>
+              </div>
+
+              <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:10px;">
+                <% planChoice.billingOptions.forEach(function(option, optionIndex) {
+                  const isChecked = planChoice.key === 'PREMIUM' && option.mode === 'ANNUAL_PIX';
+                %>
+                  <label style="display:grid; grid-template-columns:22px 1fr; gap:10px; align-items:start; border:1px solid var(--border-soft); border-radius:10px; padding:12px; cursor:pointer; background:#fff;">
+                    <input type="radio" name="offer" value="<%= planChoice.key %>:<%= option.mode %>" <%= isChecked ? 'checked' : '' %> />
+                    <span>
+                      <strong style="display:block;"><%= option.title %></strong>
+                      <span style="display:block; color:var(--accent-hover); font-weight:800; margin-top:2px;"><%= option.subtitle %></span>
+                      <span style="display:block; color:var(--text-muted); font-size:12px; margin-top:4px;"><%= option.detail %></span>
+                    </span>
+                  </label>
+                <% }) %>
+              </div>
+            </div>
           <% }) %>
         </div>
 

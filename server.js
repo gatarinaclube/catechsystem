@@ -35,6 +35,7 @@ const { sendStatusEmail } = require("./utils/mailer");
 const { buildVaccineDueItems } = require("./utils/vaccines");
 const {
   createAnnualPlanPayment,
+  createSingleMonthPixPayment,
   createPlanSubscription,
   formatAnnualPlanPrice,
   formatPlanPrice,
@@ -384,29 +385,40 @@ function commercialPlanList() {
 function billingOptionsForPlan(plan) {
   return [
     {
-      mode: "MONTHLY",
-      title: "Mensal",
-      subtitle: `${formatPlanPrice(plan.key)} por mês`,
-      detail: "Cobrança recorrente mensal.",
+      mode: "MONTHLY_PIX",
+      title: "PIX mensal",
+      subtitle: `${formatPlanPrice(plan.key)} - 1 mês de acesso`,
+      detail: "Pagamento único no PIX com liberação do sistema por 1 mês.",
     },
     {
       mode: "ANNUAL_CARD",
       title: "Anual no cartão",
-      subtitle: `${formatAnnualPlanPrice(plan.key, "ANNUAL_CARD")} em até 12x`,
-      detail: "Cobrança anual parcelada no cartão de crédito.",
+      subtitle: `${formatAnnualPlanPrice(plan.key, "ANNUAL_CARD")} em 12x no cartão`,
+      detail: "Pagamento anual parcelado no cartão com liberação por 12 meses.",
     },
     {
       mode: "ANNUAL_PIX",
       title: "Anual no PIX",
       subtitle: `${formatAnnualPlanPrice(plan.key, "ANNUAL_PIX")} à vista`,
-      detail: "Pagamento anual à vista com 10% de desconto.",
+      detail: "Pagamento anual à vista no PIX com liberação por 12 meses.",
     },
   ];
 }
 
+function billingPlanChoices(selectedPlanKey = "PREMIUM") {
+  const selected = String(selectedPlanKey || "PREMIUM").toUpperCase();
+  return [COMMERCIAL_PLANS.premium, COMMERCIAL_PLANS.master, COMMERCIAL_PLANS.basic].map((plan) => ({
+    ...plan,
+    featured: plan.key === "PREMIUM",
+    selected: plan.key === selected,
+    billingOptions: billingOptionsForPlan(plan),
+  }));
+}
+
 function normalizeBillingMode(value) {
   const mode = String(value || "").toUpperCase();
-  return ["MONTHLY", "ANNUAL_CARD", "ANNUAL_PIX"].includes(mode) ? mode : "MONTHLY";
+  if (mode === "MONTHLY") return "MONTHLY_PIX";
+  return ["MONTHLY_PIX", "ANNUAL_CARD", "ANNUAL_PIX"].includes(mode) ? mode : "MONTHLY_PIX";
 }
 
 function resolveCommercialPlan(slug) {
@@ -438,19 +450,25 @@ function loginViewOptions(kind, extra = {}) {
   };
 }
 
+function billingAccessEndDate(mode, fromDate = new Date()) {
+  const normalized = normalizeBillingMode(mode);
+  const base = new Date(fromDate);
+  if (normalized === "MONTHLY_PIX") return addMonths(base, 1);
+  return addYears(base, 1);
+}
+
 function isExpiredCommercialTrial(user) {
   if (!user || user.accountOrigin !== "NON_ASSOCIATE") return false;
   if (["ACTIVE", "TRIALING"].includes(String(user.subscriptionStatus || "").toUpperCase()) === false) return false;
-  if (String(user.subscriptionStatus || "").toUpperCase() === "ACTIVE") return false;
   return user.trialEndsAt && new Date(user.trialEndsAt) < new Date();
 }
 
-async function configureAsaasBillingForUser(user, plan, billingMode = "MONTHLY", status = "PENDING") {
+async function configureAsaasBillingForUser(user, plan, billingMode = "MONTHLY_PIX", status = "PENDING") {
   if (!isAsaasConfigured()) return null;
 
   const mode = normalizeBillingMode(billingMode);
-  const billing = mode === "MONTHLY"
-    ? await createPlanSubscription(user, plan)
+  const billing = mode === "MONTHLY_PIX"
+    ? await createSingleMonthPixPayment(user, plan)
     : await createAnnualPlanPayment(user, plan, mode);
 
   const data = {
@@ -468,7 +486,7 @@ async function configureAsaasBillingForUser(user, plan, billingMode = "MONTHLY",
   return { ...billing, mode };
 }
 
-async function configureAsaasPurchaseForExistingUser(user, plan, billingMode = "MONTHLY") {
+async function configureAsaasPurchaseForExistingUser(user, plan, billingMode = "MONTHLY_PIX") {
   return configureAsaasBillingForUser({ ...user, trialEndsAt: null }, plan, billingMode, "PENDING");
 }
 
@@ -497,7 +515,7 @@ async function handleSystemLogin(req, res, loginKind) {
       });
 
       return res.render("login", loginViewOptions(loginKind, {
-        error: "Seu teste gratuito de 7 dias venceu. Escolha um plano ou entre em contato para reativar o acesso.",
+        error: "Seu acesso venceu. Escolha um plano ou entre em contato para reativar o acesso.",
       }));
     }
 
@@ -1108,6 +1126,7 @@ app.get("/billing/pay", requireAuth, async (req, res) => {
       error: null,
       user,
       plan,
+      planChoices: billingPlanChoices(plan.key),
       billingOptions: billingOptionsForPlan(plan),
     });
   } catch (err) {
@@ -1128,22 +1147,10 @@ app.post("/billing/pay", requireAuth, async (req, res) => {
       return res.redirect("/billing/dados");
     }
 
-    const plan = Object.values(COMMERCIAL_PLANS).find((item) => item.key === user.selectedPlan) || COMMERCIAL_PLANS.premium;
-    const billingMode = normalizeBillingMode(req.body.billingMode);
-
-    if (user.asaasSubscriptionId && billingMode === "MONTHLY" && isAsaasConfigured()) {
-      const existingPayment = await getSubscriptionPaymentUrl(user.asaasSubscriptionId);
-      if (existingPayment?.paymentUrl) {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            asaasPaymentId: existingPayment.firstPayment?.id || user.asaasPaymentId,
-            asaasPaymentUrl: existingPayment.paymentUrl,
-          },
-        });
-        return res.redirect(existingPayment.paymentUrl);
-      }
-    }
+    const offerParts = String(req.body.offer || "").split(":");
+    const requestedPlan = String(offerParts[0] || req.body.planKey || user.selectedPlan || "PREMIUM").trim().toLowerCase();
+    const plan = resolveCommercialPlan(requestedPlan);
+    const billingMode = normalizeBillingMode(offerParts[1] || req.body.billingMode);
 
     const billing = await configureAsaasBillingForUser(user, plan, billingMode, "PENDING");
     if (billing?.paymentUrl) return res.redirect(billing.paymentUrl);
@@ -1152,6 +1159,7 @@ app.post("/billing/pay", requireAuth, async (req, res) => {
       error: "Não foi possível gerar o link de pagamento. Verifique se o Asaas e o valor do plano estão configurados.",
       user,
       plan,
+      planChoices: billingPlanChoices(plan.key),
       billingOptions: billingOptionsForPlan(plan),
     });
   } catch (err) {
@@ -1162,6 +1170,7 @@ app.post("/billing/pay", requireAuth, async (req, res) => {
       error: err.message || "Erro ao gerar pagamento.",
       user,
       plan,
+      planChoices: billingPlanChoices(plan.key),
       billingOptions: billingOptionsForPlan(plan),
     });
   }
@@ -1210,6 +1219,7 @@ app.post("/webhooks/asaas", async (req, res) => {
     const restrictEvents = new Set(["PAYMENT_OVERDUE", "PAYMENT_DELETED", "PAYMENT_REFUNDED", "CHARGEBACK_REQUESTED"]);
 
     if (activateEvents.has(eventName)) {
+      const billingMode = normalizeBillingMode(reference?.billingMode || "MONTHLY_PIX");
       await prisma.user.update({
         where: { id: user.id },
         data: {
@@ -1218,6 +1228,7 @@ app.post("/webhooks/asaas", async (req, res) => {
           selectedPlan: nextRole,
           subscriptionStatus: "ACTIVE",
           planActivatedAt: new Date(),
+          trialEndsAt: billingAccessEndDate(billingMode),
           asaasPaymentId: payment.id || user.asaasPaymentId,
           asaasSubscriptionId: payment.subscription || user.asaasSubscriptionId,
           asaasPaymentUrl: payment.invoiceUrl || payment.bankSlipUrl || user.asaasPaymentUrl,

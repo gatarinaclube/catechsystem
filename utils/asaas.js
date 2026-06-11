@@ -8,9 +8,33 @@ const PLAN_ENV = {
 };
 
 const PLAN_DEFAULT_CENTS = {
-  BASIC: 2990,
-  MASTER: 4990,
-  PREMIUM: 9990,
+  BASIC: 1490,
+  MASTER: 2490,
+  PREMIUM: 3490,
+};
+
+const PLAN_ANNUAL_CARD_ENV = {
+  BASIC: "ASAAS_PLAN_BASIC_ANNUAL_CARD_CENTS",
+  MASTER: "ASAAS_PLAN_MASTER_ANNUAL_CARD_CENTS",
+  PREMIUM: "ASAAS_PLAN_PREMIUM_ANNUAL_CARD_CENTS",
+};
+
+const PLAN_ANNUAL_CARD_DEFAULT_CENTS = {
+  BASIC: 14990,
+  MASTER: 24990,
+  PREMIUM: 34990,
+};
+
+const PLAN_ANNUAL_PIX_ENV = {
+  BASIC: "ASAAS_PLAN_BASIC_ANNUAL_PIX_CENTS",
+  MASTER: "ASAAS_PLAN_MASTER_ANNUAL_PIX_CENTS",
+  PREMIUM: "ASAAS_PLAN_PREMIUM_ANNUAL_PIX_CENTS",
+};
+
+const PLAN_ANNUAL_PIX_DEFAULT_CENTS = {
+  BASIC: 12000,
+  MASTER: 20000,
+  PREMIUM: 30000,
 };
 
 function cleanDigits(value) {
@@ -72,13 +96,21 @@ function centsToValue(cents) {
 }
 
 function annualTotalCents(planKey) {
-  const monthly = planPriceCents(planKey);
-  return monthly ? monthly * 12 : null;
+  const key = String(planKey || "").toUpperCase();
+  const envName = PLAN_ANNUAL_CARD_ENV[key];
+  if (!envName) return null;
+  const value = Number(process.env[envName]);
+  if (!Number.isFinite(value) || value <= 0) return PLAN_ANNUAL_CARD_DEFAULT_CENTS[key] || null;
+  return Math.round(value);
 }
 
 function annualPixCents(planKey) {
-  const annual = annualTotalCents(planKey);
-  return annual ? Math.round(annual * 0.9) : null;
+  const key = String(planKey || "").toUpperCase();
+  const envName = PLAN_ANNUAL_PIX_ENV[key];
+  if (!envName) return null;
+  const value = Number(process.env[envName]);
+  if (!Number.isFinite(value) || value <= 0) return PLAN_ANNUAL_PIX_DEFAULT_CENTS[key] || null;
+  return Math.round(value);
 }
 
 function formatAnnualPlanPrice(planKey, mode, fallback = "Valor a configurar") {
@@ -274,6 +306,33 @@ async function createAnnualPlanPayment(user, plan, mode) {
   };
 }
 
+async function createSingleMonthPixPayment(user, plan) {
+  const planKey = String(plan?.key || "").toUpperCase();
+  const value = planPriceValue(planKey);
+  if (!value) {
+    throw new Error(`Valor do plano ${planKey} não configurado.`);
+  }
+
+  const customerId = await ensureCustomerForUser(user);
+  const payment = await asaasRequest("/payments", {
+    method: "POST",
+    body: {
+      customer: customerId,
+      billingType: "PIX",
+      value,
+      dueDate: formatDateInput(new Date()),
+      description: `Plano mensal CaTech System - ${plan.title}`,
+      externalReference: externalReference(user.id, planKey, "MONTHLY_PIX"),
+    },
+  });
+
+  return {
+    customerId,
+    payment,
+    paymentUrl: paymentUrlFrom(payment),
+  };
+}
+
 async function getSubscriptionPaymentUrl(subscriptionId) {
   if (!subscriptionId) return null;
   const payments = await asaasRequest(`/subscriptions/${subscriptionId}/payments?limit=1`);
@@ -307,6 +366,7 @@ module.exports = {
   formatPlanPrice,
   formatAnnualPlanPrice,
   createAnnualPlanPayment,
+  createSingleMonthPixPayment,
   createPlanSubscription,
   getSubscriptionPaymentUrl,
   planFromExternalReference,
