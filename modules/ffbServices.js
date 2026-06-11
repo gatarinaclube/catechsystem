@@ -135,6 +135,27 @@ const correctionUpload = multer({
   limits: { fileSize: getFileUploadLimit("ADMIN").bytes },
 });
 
+const serviceUploadFields = [
+  { name: "externalOwnerAuthorization", maxCount: 1 },
+  { name: "authorizationFile", maxCount: 1 },
+  { name: "kittenPedigreeFile", maxCount: 1 },
+  { name: "transferAuthorizationFile", maxCount: 1 },
+  { name: "certificatesFiles", maxCount: 12 },
+  { name: "certFile_0", maxCount: 1 },
+  { name: "certFile_1", maxCount: 1 },
+  { name: "certFile_2", maxCount: 1 },
+  { name: "certFile_3", maxCount: 1 },
+  { name: "certFile_4", maxCount: 1 },
+  { name: "certFile_5", maxCount: 1 },
+  { name: "certFile_6", maxCount: 1 },
+  { name: "certFile_7", maxCount: 1 },
+  { name: "certFile_8", maxCount: 1 },
+  { name: "certFile_9", maxCount: 1 },
+  { name: "certFile_10", maxCount: 1 },
+  { name: "certFile_11", maxCount: 1 },
+  { name: "attachments", maxCount: 5 },
+];
+
 function uploadedPath(file, folder) {
   return file ? `/uploads/${folder}/${file.filename}` : null;
 }
@@ -343,26 +364,7 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
   router.post(
     "/my-services/:id/correct",
     requireAuth,
-    correctionUpload.fields([
-      { name: "externalOwnerAuthorization", maxCount: 1 },
-      { name: "authorizationFile", maxCount: 1 },
-      { name: "kittenPedigreeFile", maxCount: 1 },
-      { name: "transferAuthorizationFile", maxCount: 1 },
-      { name: "certificatesFiles", maxCount: 12 },
-      { name: "certFile_0", maxCount: 1 },
-      { name: "certFile_1", maxCount: 1 },
-      { name: "certFile_2", maxCount: 1 },
-      { name: "certFile_3", maxCount: 1 },
-      { name: "certFile_4", maxCount: 1 },
-      { name: "certFile_5", maxCount: 1 },
-      { name: "certFile_6", maxCount: 1 },
-      { name: "certFile_7", maxCount: 1 },
-      { name: "certFile_8", maxCount: 1 },
-      { name: "certFile_9", maxCount: 1 },
-      { name: "certFile_10", maxCount: 1 },
-      { name: "certFile_11", maxCount: 1 },
-      { name: "attachments", maxCount: 5 },
-    ]),
+    correctionUpload.fields(serviceUploadFields),
     async (req, res) => {
       try {
         const serviceId = Number(req.params.id);
@@ -741,6 +743,10 @@ router.get(
   include: {
     user: true,
     transferRequest: true,
+    titleHomologation: true,
+    pedigreeHomologation: true,
+    catteryRegistration: true,
+    secondCopyRequest: true,
     statuses: { orderBy: { createdAt: "desc" } },
   },
 });
@@ -749,6 +755,17 @@ router.get(
       if (!service) {
         return res.status(404).send("Serviço não encontrado.");
       }
+
+      const catsRaw = await prisma.cat.findMany({
+        where: { ownerId: service.userId },
+        include: { litterKitten: true },
+        orderBy: { name: "asc" },
+      });
+      const cats = catsRaw.map((cat) => ({
+        ...cat,
+        transferCategories: transferCategoryForCat(cat),
+        isKittenFromLitter: isKittenFromLitter(cat),
+      }));
       
 
       // ============================================================
@@ -812,6 +829,7 @@ router.get(
       res.render("ffb-services/edit", {
         user: req.session.user,
         service,
+        cats,
         litter,
         kittens,
         sire,
@@ -834,6 +852,7 @@ router.post(
   "/ffb-services/:id/edit",
   requireAuth,
   requireAdmin,
+  correctionUpload.fields(serviceUploadFields),
   async (req, res) => {
     try {
       const id = Number(req.params.id);
@@ -844,7 +863,14 @@ router.post(
 
       const service = await prisma.serviceRequest.findUnique({
         where: { id },
-        include: { transferRequest: true, user: true },
+        include: {
+          transferRequest: true,
+          titleHomologation: true,
+          pedigreeHomologation: true,
+          catteryRegistration: true,
+          secondCopyRequest: true,
+          user: true,
+        },
       });
 
       if (!service) {
@@ -855,6 +881,86 @@ router.post(
 
       if (req.body.status === "COM_PENDENCIA" && !pendingNote) {
         return res.status(400).send("Informe o que está pendente.");
+      }
+
+      const uploadedFiles = Object.values(req.files || {}).flat();
+      validateFilesForRole(uploadedFiles, "ADMIN");
+
+      async function ensureServiceUserCat(catId) {
+        if (!catId) return null;
+        return prisma.cat.findFirst({
+          where: {
+            id: Number(catId),
+            ownerId: service.userId,
+          },
+        });
+      }
+
+      if (service.type === "Homologação de Títulos" && service.titleHomologation) {
+        const selectedCat = req.body.catId
+          ? await ensureServiceUserCat(req.body.catId)
+          : null;
+
+        if (req.body.catId && !selectedCat) {
+          return res.status(400).send("Gato inválido para este usuário.");
+        }
+
+        const submittedCertificates = parseStructuredRows(req.body.certificates)
+          .map((certificate) => ({
+            date: cleanText(certificate?.date) || "",
+            judge: cleanText(certificate?.judge) || "",
+            file: cleanText(certificate?.file) || "",
+          }))
+          .filter((certificate) => certificate.date || certificate.judge || certificate.file);
+        const certificates = submittedCertificates.length
+          ? submittedCertificates
+          : parseJsonArray(service.titleHomologation.certificatesJson);
+        const certFiles = req.files?.certificatesFiles || [];
+
+        certFiles.forEach((file, index) => {
+          if (!certificates[index]) certificates[index] = { date: "", judge: "", file: "" };
+          certificates[index].file = uploadedPath(file, "title-certificates");
+        });
+
+        certificates.forEach((certificate, index) => {
+          const replacement = req.files?.[`certFile_${index}`]?.[0];
+          if (replacement) {
+            certificate.file = uploadedPath(replacement, "title-certificates");
+          }
+        });
+
+        await prisma.serviceRequest.update({
+          where: { id },
+          data: {
+            description: req.body.description,
+            status: req.body.status,
+          },
+        });
+
+        await prisma.titleHomologation.update({
+          where: { serviceRequestId: service.id },
+          data: {
+            ...(selectedCat ? { catId: selectedCat.id } : {}),
+            requestedTitle:
+              cleanText(req.body.requestedTitle) ||
+              service.titleHomologation.requestedTitle,
+            certificatesJson: JSON.stringify(certificates),
+          },
+        });
+
+        if (req.body.status) {
+          await prisma.serviceStatus.create({
+            data: {
+              serviceId: id,
+              status: req.body.status,
+              pendingNote: req.body.status === "COM_PENDENCIA" ? pendingNote : null,
+            },
+          });
+
+          await notifyUserStatusChange(service, req.body.status, pendingNote);
+        }
+
+        return res.redirect("/ffb-services");
       }
 
 // ===============================

@@ -287,16 +287,34 @@
                   <% certificates.forEach(function(cert, index) { %>
                     <div class="grid-3" style="margin-bottom:10px;">
                       <div class="field"><label>Data</label><input type="date" name="certificates[<%= index %>][date]" value="<%= cert.date || '' %>" /></div>
-                      <div class="field"><label>Juiz</label><input name="certificates[<%= index %>][judge]" value="<%= cert.judge || '' %>" /></div>
+                      <div class="field">
+                        <label>Juiz</label>
+                        <input
+                          name="certificates[<%= index %>][judge]"
+                          list="judgesList"
+                          value="<%= cert.judge || '' %>"
+                          placeholder="Digite para buscar o juiz"
+                        />
+                      </div>
                       <div class="field">
                         <label>Certificado</label>
                         <% if (cert.file) { %>
-                          <a href="<%= cert.file %>" target="_blank" style="display:block; margin-bottom:6px;">Arquivo atual</a>
+                          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+                            <a href="<%= cert.file %>" target="_blank" class="btn">Abrir anexo atual</a>
+                            <a href="<%= cert.file %>" download class="btn">Baixar anexo</a>
+                          </div>
                           <input type="hidden" name="certificates[<%= index %>][file]" value="<%= cert.file %>" />
                         <% } %>
                         <input type="file" name="certFile_<%= index %>" accept=".pdf,.jpg,.jpeg,.png" />
                       </div>
                     </div>
+                    <% if (cert.file) { %>
+                      <iframe
+                        src="<%= cert.file %>"
+                        title="Certificado <%= index + 1 %>"
+                        style="width:100%; min-height:300px; border:1px solid #d9e2ec; border-radius:8px; background:#fff; margin-bottom:12px;"
+                      ></iframe>
+                    <% } %>
                   <% }); %>
                 </div>
               </div>
@@ -404,8 +422,17 @@
         </form>
       </main>
     </div>
+  <datalist id="judgesList"></datalist>
+  <script src="/js/judges.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
+      const judgesList = document.getElementById("judgesList");
+      if (judgesList && Array.isArray(window.JUDGES)) {
+        judgesList.innerHTML = window.JUDGES
+          .map((judge) => `<option value="${String(judge).replaceAll('"', '&quot;')}"></option>`)
+          .join("");
+      }
+
       function digits(value) {
         return String(value || "").replace(/\D/g, "").slice(0, 15);
       }

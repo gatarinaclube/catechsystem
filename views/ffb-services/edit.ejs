@@ -36,7 +36,7 @@
         </div>
 
         <div class="content-card">
-          <form method="POST" action="/ffb-services/<%= service.id %>/edit">
+          <form method="POST" action="/ffb-services/<%= service.id %>/edit" enctype="multipart/form-data">
             
             
             
@@ -129,6 +129,110 @@
               </div>
             </div>
 
+<% if (service.type === "Homologação de Títulos" && service.titleHomologation) {
+  const titleHomologation = service.titleHomologation;
+  let certificates = [];
+  try {
+    certificates = JSON.parse(titleHomologation.certificatesJson || "[]");
+  } catch (error) {
+    certificates = [];
+  }
+  if (!certificates.length) {
+    certificates = [{ date: "", judge: "", file: "" }];
+  }
+  const titleOptions = ["KCH","JCH","JW","CH","PR","IC","IP","GIC","GIP","SC","SP","DSM","DVM","DM","NW","AW","WW","SW","BW","MW","NSW"];
+%>
+            <!-- ===================== HOMOLOGAÇÃO DE TÍTULOS ===================== -->
+            <div class="section-card">
+              <div class="section-title">HOMOLOGAÇÃO DE TÍTULOS</div>
+              <div class="section-helper">
+                Edite o gato, o título solicitado, datas, juízes e certificados anexados ao pedido.
+              </div>
+
+              <div class="section-grid">
+                <div class="form-row">
+                  <label>Gato</label>
+                  <select name="catId">
+                    <option value="">Selecione o gato...</option>
+                    <% (cats || []).forEach(function(cat) { %>
+                      <option value="<%= cat.id %>" <%= String(titleHomologation.catId) === String(cat.id) ? "selected" : "" %>>
+                        <%= cat.name || "Sem nome" %><% if (cat.pedigreeNumber) { %> - <%= cat.pedigreeNumber %><% } %>
+                      </option>
+                    <% }); %>
+                  </select>
+                </div>
+
+                <div class="form-row">
+                  <label>Título solicitado</label>
+                  <select name="requestedTitle">
+                    <option value="">Selecione...</option>
+                    <% titleOptions.forEach(function(option) { %>
+                      <option value="<%= option %>" <%= titleHomologation.requestedTitle === option ? "selected" : "" %>>
+                        <%= option %>
+                      </option>
+                    <% }); %>
+                  </select>
+                </div>
+              </div>
+
+              <div class="section-title" style="margin-top: 18px;">CERTIFICADOS ANEXADOS</div>
+              <div class="section-helper">
+                Use os campos abaixo para corrigir datas e juízes. Para substituir um certificado, envie um novo arquivo na mesma linha.
+              </div>
+
+              <% certificates.forEach(function(cert, index) { %>
+                <div class="section-card" style="box-shadow:none; margin-top:12px;">
+                  <div class="section-grid">
+                    <div class="form-row">
+                      <label>Data do certificado <%= index + 1 %></label>
+                      <input
+                        type="date"
+                        name="certificates[<%= index %>][date]"
+                        value="<%= cert.date || '' %>"
+                      />
+                    </div>
+
+                    <div class="form-row">
+                      <label>Juiz</label>
+                      <input
+                        name="certificates[<%= index %>][judge]"
+                        list="judgesList"
+                        value="<%= cert.judge || '' %>"
+                        placeholder="Digite para buscar o juiz"
+                      />
+                    </div>
+
+                    <div class="form-row">
+                      <label>Substituir certificado</label>
+                      <% if (cert.file) { %>
+                        <input type="hidden" name="certificates[<%= index %>][file]" value="<%= cert.file %>" />
+                      <% } %>
+                      <input type="file" name="certFile_<%= index %>" accept=".pdf,.jpg,.jpeg,.png" />
+                    </div>
+                  </div>
+
+                  <% if (cert.file) { %>
+                    <div class="form-row" style="margin-top:12px;">
+                      <label>Documento atual</label>
+                      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+                        <a href="<%= cert.file %>" target="_blank" class="btn">Abrir anexo atual</a>
+                        <a href="<%= cert.file %>" download class="btn">Baixar anexo</a>
+                      </div>
+                      <iframe
+                        src="<%= cert.file %>"
+                        title="Certificado <%= index + 1 %>"
+                        style="width:100%; min-height:320px; border:1px solid #d9e2ec; border-radius:8px; background:#fff;"
+                      ></iframe>
+                    </div>
+                  <% } else { %>
+                    <div class="section-helper" style="margin-top:8px;">
+                      Nenhum arquivo anexado nesta linha.
+                    </div>
+                  <% } %>
+                </div>
+              <% }); %>
+            </div>
+<% } else if (litter) { %>
 <!-- ===================== DADOS DO MACHO ===================== -->
 <div class="section-card">
   <div class="section-title">DADOS DO MACHO</div>
@@ -504,6 +608,7 @@
 </div>
 
             </div>
+<% } %>
 
             <!-- ===================== AÇÕES ===================== -->
             <div
@@ -525,6 +630,17 @@
     </main>
   </div> 
 
+<datalist id="judgesList"></datalist>
+<script src="/js/judges.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const list = document.getElementById("judgesList");
+    if (!list || !Array.isArray(window.JUDGES)) return;
+    list.innerHTML = window.JUDGES
+      .map((judge) => `<option value="${String(judge).replaceAll('"', '&quot;')}"></option>`)
+      .join("");
+  });
+</script>
 <script src="/js/ems-data.js"></script>
 
 <script>
