@@ -35,10 +35,13 @@ const { sendStatusEmail } = require("./utils/mailer");
 const { buildVaccineDueItems } = require("./utils/vaccines");
 const {
   createAnnualPlanPayment,
+  createAssociationPayment,
   createSingleMonthPixPayment,
   createPlanSubscription,
+  formatAssociationPaymentPrice,
   formatAnnualPlanPrice,
   formatPlanPrice,
+  associationCycleEndDate,
   getSubscriptionPaymentUrl,
   isAsaasConfigured,
   planFromExternalReference,
@@ -485,6 +488,41 @@ function commercialPaymentStatus(user) {
   return null;
 }
 
+function associationPaymentStatus(user) {
+  if (!user || user.accountOrigin !== "ASSOCIATE") return false;
+  const status = String(user.subscriptionStatus || "").toUpperCase();
+  if (["PENDING", "PENDING_ASSOCIATION_PAYMENT"].includes(status)) return "PAYMENT_REQUIRED";
+  if (status === "ACTIVE" && user.trialEndsAt && new Date(user.trialEndsAt) < new Date()) {
+    return "PAYMENT_REQUIRED";
+  }
+  return null;
+}
+
+function normalizeAssociationPlan(value) {
+  const plan = String(value || "").toUpperCase();
+  return plan === ROLES.ASSOCIADO_PREMIUM ? ROLES.ASSOCIADO_PREMIUM : ROLES.ASSOCIADO_A;
+}
+
+function associationPlanChoices(selectedPlan = ROLES.ASSOCIADO_A) {
+  const selected = normalizeAssociationPlan(selectedPlan);
+  return [
+    {
+      key: ROLES.ASSOCIADO_A,
+      title: getRoleLabel(ROLES.ASSOCIADO_A),
+      price: formatAssociationPaymentPrice(ROLES.ASSOCIADO_A),
+      selected: selected === ROLES.ASSOCIADO_A,
+      description: "Taxa de associação + anuidade proporcional para acesso Associado Master.",
+    },
+    {
+      key: ROLES.ASSOCIADO_PREMIUM,
+      title: getRoleLabel(ROLES.ASSOCIADO_PREMIUM),
+      price: formatAssociationPaymentPrice(ROLES.ASSOCIADO_PREMIUM),
+      selected: selected === ROLES.ASSOCIADO_PREMIUM,
+      description: "Taxa de associação + anuidade proporcional para acesso Associado Premium.",
+    },
+  ];
+}
+
 function billingModeFromUser(user) {
   const text = String(user?.asaasLastEvent || "").toUpperCase();
   if (text.includes("ANNUAL_CARD")) return "ANNUAL_CARD";
@@ -493,15 +531,18 @@ function billingModeFromUser(user) {
 }
 
 function billingReminderForUser(user) {
-  if (!user || user.accountOrigin !== "NON_ASSOCIATE" || !user.trialEndsAt) return null;
+  if (!user || !user.trialEndsAt) return null;
   const status = String(user.subscriptionStatus || "").toUpperCase();
   if (!["ACTIVE", "TRIALING"].includes(status)) return null;
+  const isAssociate = user.accountOrigin === "ASSOCIATE";
+  const isCommercial = user.accountOrigin === "NON_ASSOCIATE";
+  if (!isAssociate && !isCommercial) return null;
 
   const endDate = new Date(user.trialEndsAt);
   if (Number.isNaN(endDate.getTime())) return null;
 
   const billingMode = billingModeFromUser(user);
-  const daysBefore = billingMode === "MONTHLY_PIX" ? 5 : 30;
+  const daysBefore = isAssociate ? 30 : billingMode === "MONTHLY_PIX" ? 5 : 30;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   endDate.setHours(23, 59, 59, 999);
@@ -518,6 +559,8 @@ function billingReminderForUser(user) {
     message: daysLeft <= 0
       ? "Para manter o acesso ao sistema, realize a renovação do plano."
       : `Faltam ${daysLeft} dia(s) para o vencimento do seu acesso. Você já pode renovar o plano.`,
+    actionUrl: isAssociate ? "/associacao/pagamento" : "/billing/pay",
+    actionLabel: isAssociate ? "Renovar associação" : "Renovar / pagar plano",
   };
 }
 
@@ -564,6 +607,13 @@ async function handleSystemLogin(req, res, loginKind) {
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
       return res.render("login", loginViewOptions(loginKind, { error: "Usuário ou senha inválidos" }));
+    }
+
+    const associationStatus = associationPaymentStatus(user);
+    if (associationStatus) {
+      req.session.userId = user.id;
+      req.session.userRole = normalizeRole(user.role);
+      return res.redirect("/associacao/pagamento");
     }
 
     const paymentStatus = commercialPaymentStatus(user);
@@ -905,10 +955,14 @@ const {
 
 
   try {
-    if (!name || !normalizedEmail || !password || !confirmPassword) {
+    if (!name || !normalizedEmail || !cpf || !password || !confirmPassword) {
       return res.render("register", {
-        error: "Preencha pelo menos Nome, E-mail e Senha.",
+        error: "Preencha pelo menos Nome, CPF, E-mail e Senha.",
       });
+    }
+
+    if (![11, 14].includes(billingDocumentDigits(cpf).length)) {
+      return res.render("register", { error: "Informe um CPF ou CNPJ válido para gerar a cobrança de associação." });
     }
 
     if (password !== confirmPassword) {
@@ -941,8 +995,12 @@ const createdUser = await prisma.user.create({
     email: normalizedEmail,
     cpf,
     password: passwordHash,
-    role: ROLES.BASIC,
+    role: ROLES.ASSOCIADO_A,
     clubs: clubsValue,
+    approvalStatus: "INDEFERIDO",
+    accountOrigin: "ASSOCIATE",
+    selectedPlan: ROLES.ASSOCIADO_A,
+    subscriptionStatus: "PENDING_ASSOCIATION_PAYMENT",
 
     hasFifeCattery: hasFifeCattery || "NO",
     fifeCatteryName:
@@ -953,10 +1011,71 @@ const createdUser = await prisma.user.create({
 await notifyNewUser(prisma, createdUser);
 await notifyUserRegistrationConfirmation(createdUser);
 
-    return res.redirect("/login-gatarina");
+    req.session.userId = createdUser.id;
+    req.session.userRole = normalizeRole(createdUser.role);
+
+    return res.redirect("/associacao/pagamento");
   } catch (err) {
     console.error("Erro no cadastro:", err);
     return res.status(500).send("Erro no cadastro");
+  }
+});
+
+app.get("/associacao/pagamento", requireAuth, async (req, res) => {
+  const user = await prisma.user.findUnique({ where: { id: req.session.userId } });
+  if (!user) return res.redirect("/login-gatarina");
+
+  if (user.accountOrigin !== "ASSOCIATE") {
+    return res.redirect("/dashboard");
+  }
+
+  return res.render("association-billing", {
+    error: null,
+    user,
+    planChoices: associationPlanChoices(user.selectedPlan),
+    cycleEnd: associationCycleEndDate(),
+    paymentRequired: Boolean(associationPaymentStatus(user)),
+  });
+});
+
+app.post("/associacao/pagamento", requireAuth, async (req, res) => {
+  const user = await prisma.user.findUnique({ where: { id: req.session.userId } });
+  if (!user) return res.redirect("/login-gatarina");
+
+  if (user.accountOrigin !== "ASSOCIATE") {
+    return res.redirect("/dashboard");
+  }
+
+  try {
+    if (!isAsaasConfigured()) {
+      throw new Error("Asaas não configurado para gerar cobrança.");
+    }
+
+    const selectedPlan = normalizeAssociationPlan(req.body.associationPlan || user.selectedPlan);
+    const billing = await createAssociationPayment(user, selectedPlan);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        selectedPlan,
+        subscriptionStatus: "PENDING_ASSOCIATION_PAYMENT",
+        asaasCustomerId: billing.customerId,
+        asaasPaymentId: billing.payment?.id || null,
+        asaasPaymentUrl: billing.paymentUrl || null,
+        asaasLastEvent: "ASSOCIATION_INITIAL",
+      },
+    });
+
+    if (billing.paymentUrl) return res.redirect(billing.paymentUrl);
+    throw new Error("Não foi possível obter o link de pagamento da associação.");
+  } catch (err) {
+    console.error("Erro ao gerar pagamento de associação:", err);
+    return res.status(500).render("association-billing", {
+      error: err.message || "Erro ao gerar pagamento de associação.",
+      user,
+      planChoices: associationPlanChoices(user.selectedPlan),
+      cycleEnd: associationCycleEndDate(),
+      paymentRequired: Boolean(associationPaymentStatus(user)),
+    });
   }
 });
 
@@ -1270,6 +1389,26 @@ app.post("/webhooks/asaas", async (req, res) => {
 
     if (activateEvents.has(eventName)) {
       const billingMode = normalizeBillingMode(reference?.billingMode || "MONTHLY_PIX");
+      if (String(reference?.billingMode || "").toUpperCase() === "ASSOCIATION_INITIAL") {
+        const associationRole = normalizeAssociationPlan(reference?.planKey);
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            role: associationRole,
+            approvalStatus: "DEFERIDO",
+            accountOrigin: "ASSOCIATE",
+            selectedPlan: associationRole,
+            subscriptionStatus: "ACTIVE",
+            planActivatedAt: new Date(),
+            trialEndsAt: associationCycleEndDate(),
+            asaasPaymentId: payment.id || user.asaasPaymentId,
+            asaasPaymentUrl: payment.invoiceUrl || payment.bankSlipUrl || user.asaasPaymentUrl,
+            asaasLastEvent: `${eventName}_ASSOCIATION_INITIAL`,
+          },
+        });
+        return res.sendStatus(200);
+      }
+
       await prisma.user.update({
         where: { id: user.id },
         data: {
@@ -1320,6 +1459,10 @@ app.get("/dashboard", requireAuth, async (req, res) => {
     const user = req.user;
     if (user?.role === ROLES.CATBREED) {
       return res.redirect(res.locals.access?.canAccessAcademy ? "/academy/app" : "/academy/planos");
+    }
+
+    if (associationPaymentStatus(user)) {
+      return res.redirect("/associacao/pagamento");
     }
 
     const paymentStatus = commercialPaymentStatus(user);

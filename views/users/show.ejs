@@ -280,7 +280,10 @@
             </section>
 
             <section style="margin-bottom:16px;">
-              <h3 class="section-title">Plano comercial</h3>
+              <h3 class="section-title">Origem, plano e pagamento</h3>
+              <div class="content-sub" style="margin-top:4px;">
+                O campo <strong>Perfil</strong> define os acessos do sistema. A <strong>Origem</strong> separa solicitações de associação dos planos comerciais.
+              </div>
               <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
                 <button class="btn" type="button" id="startTrialButton">
                   Colocar em teste por 7 dias
@@ -293,7 +296,8 @@
                 <div class="field">
                   <label class="field-label" for="accountOrigin">Origem do cadastro</label>
                   <select id="accountOrigin" name="accountOrigin">
-                    <option value="" <%= !userDetail.accountOrigin ? "selected" : "" %>>Associado / interno</option>
+                    <option value="" <%= !userDetail.accountOrigin ? "selected" : "" %>>Interno / manual</option>
+                    <option value="ASSOCIATE" <%= userDetail.accountOrigin === "ASSOCIATE" ? "selected" : "" %>>Solicitação de associação Gatarina</option>
                     <option value="NON_ASSOCIATE" <%= userDetail.accountOrigin === "NON_ASSOCIATE" ? "selected" : "" %>>Plano não associado</option>
                   </select>
                 </div>
@@ -304,6 +308,9 @@
                     <option value="BASIC" <%= userDetail.selectedPlan === "BASIC" ? "selected" : "" %>>Básico</option>
                     <option value="MASTER" <%= userDetail.selectedPlan === "MASTER" ? "selected" : "" %>>Master</option>
                     <option value="PREMIUM" <%= userDetail.selectedPlan === "PREMIUM" ? "selected" : "" %>>Premium</option>
+                    <option value="ASSOCIADO_A" <%= userDetail.selectedPlan === "ASSOCIADO_A" ? "selected" : "" %>>Associado Master</option>
+                    <option value="ASSOCIADO_PREMIUM" <%= userDetail.selectedPlan === "ASSOCIADO_PREMIUM" ? "selected" : "" %>>Associado Premium</option>
+                    <option value="ASSOCIADO_B" <%= userDetail.selectedPlan === "ASSOCIADO_B" ? "selected" : "" %>>Associado Básico</option>
                   </select>
                 </div>
                 <div class="field">
@@ -313,6 +320,7 @@
                     <option value="TRIALING" <%= userDetail.subscriptionStatus === "TRIALING" ? "selected" : "" %>>Teste gratuito</option>
                     <option value="ACTIVE" <%= userDetail.subscriptionStatus === "ACTIVE" ? "selected" : "" %>>Pago / ativo</option>
                     <option value="PENDING" <%= userDetail.subscriptionStatus === "PENDING" ? "selected" : "" %>>Pagamento pendente</option>
+                    <option value="PENDING_ASSOCIATION_PAYMENT" <%= userDetail.subscriptionStatus === "PENDING_ASSOCIATION_PAYMENT" ? "selected" : "" %>>Associação pendente de pagamento</option>
                     <option value="EXPIRED" <%= userDetail.subscriptionStatus === "EXPIRED" ? "selected" : "" %>>Teste vencido</option>
                     <option value="CANCELED" <%= userDetail.subscriptionStatus === "CANCELED" ? "selected" : "" %>>Cancelado</option>
                   </select>
@@ -320,7 +328,7 @@
               </div>
               <div class="grid-3" style="margin-top:10px;">
                 <div class="field">
-                  <label class="field-label" for="trialEndsAt">Fim do teste</label>
+                  <label class="field-label" for="trialEndsAt">Vencimento do acesso</label>
                   <input
                     id="trialEndsAt"
                     name="trialEndsAt"
@@ -357,7 +365,7 @@
                 </div>
               <% } %>
               <small style="font-size:11px; color:var(--text-muted);">
-                Para usuários de planos não associados, o teste começa como Premium por 7 dias. Após pagamento, marque a assinatura como "Pago / ativo", ajuste o perfil e mantenha o cadastro como Deferido.
+                Plano não associado: o pagamento altera automaticamente status e perfil comercial. Solicitação de associação: o pagamento libera como Associado Master/Premium até 31/07, e o administrador pode ajustar o perfil depois.
               </small>
             </section>
 

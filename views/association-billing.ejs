@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Pagamento da Associação - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body>
+    <main class="main" style="margin-left:0; max-width:980px; margin:0 auto; padding:32px 18px;">
+      <div class="main-header">
+        <div>
+          <h2 class="welcome-title">Pagamento da Associação Gatarina</h2>
+          <div class="welcome-sub">
+            Para concluir a solicitação, gere a cobrança da taxa de associação e anuidade proporcional.
+          </div>
+        </div>
+        <div class="actions">
+          <a href="/logout" class="btn">Sair</a>
+        </div>
+      </div>
+
+      <% if (error) { %>
+        <div class="content-card" style="border-left:4px solid #b91c1c; margin-bottom:18px;">
+          <div class="content-sub"><%= error %></div>
+        </div>
+      <% } %>
+
+      <div class="content-card" style="margin-bottom:18px;">
+        <div class="content-title">Solicitação recebida</div>
+        <div class="content-sub" style="margin-top:8px;">
+          Seu cadastro ficará pendente até a confirmação do pagamento. Após a confirmação, o acesso será liberado até
+          <strong><%= cycleEnd.toLocaleDateString("pt-BR") %></strong>. O administrador poderá ajustar o perfil de associado conforme necessário.
+        </div>
+      </div>
+
+      <form method="post" action="/associacao/pagamento">
+        <div class="content-card">
+          <div class="content-title">Escolha o acesso associativo</div>
+          <div class="content-sub" style="margin-top:6px;">
+            O valor inclui R$ 200,00 de taxa de associação e a anuidade proporcional até 31 de julho.
+          </div>
+
+          <div class="grid-2" style="margin-top:16px;">
+            <% planChoices.forEach(function(plan) { %>
+              <label class="content-card" style="display:block; box-shadow:none; cursor:pointer; border-color:<%= plan.selected ? '#d97706' : 'var(--border-soft)' %>;">
+                <input
+                  type="radio"
+                  name="associationPlan"
+                  value="<%= plan.key %>"
+                  <%= plan.selected ? "checked" : "" %>
+                  style="margin-right:8px;"
+                />
+                <strong><%= plan.title %></strong>
+                <div class="content-sub" style="margin-top:6px;"><%= plan.description %></div>
+                <div style="margin-top:12px; font-size:22px; font-weight:800;"><%= plan.price %></div>
+              </label>
+            <% }) %>
+          </div>
+
+          <div class="form-actions" style="margin-top:22px; text-align:right;">
+            <button type="submit" class="btn btn-primary">Gerar pagamento</button>
+          </div>
+        </div>
+      </form>
+    </main>
+  </body>
+</html>

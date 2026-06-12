@@ -41,7 +41,7 @@
       Vencimento em <strong><%= billingReminder.endDate.toLocaleDateString('pt-BR') %></strong>.
     </div>
     <div style="margin-top:10px;">
-      <a href="/billing/pay" class="btn btn-primary">Renovar / pagar plano</a>
+      <a href="<%= billingReminder.actionUrl || '/billing/pay' %>" class="btn btn-primary"><%= billingReminder.actionLabel || 'Renovar / pagar plano' %></a>
     </div>
   </div>
 <% } %>

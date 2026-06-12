@@ -37,6 +37,13 @@ const PLAN_ANNUAL_PIX_DEFAULT_CENTS = {
   PREMIUM: 30000,
 };
 
+const ASSOCIATION_PLAN_DEFAULT_CENTS = {
+  ASSOCIADO_A: 30000,
+  ASSOCIADO_PREMIUM: 35000,
+};
+
+const ASSOCIATION_FEE_DEFAULT_CENTS = 20000;
+
 function cleanDigits(value) {
   return String(value || "").replace(/\D/g, "");
 }
@@ -345,6 +352,75 @@ async function createSingleMonthPixPayment(user, plan) {
   };
 }
 
+function associationCycleEndDate(fromDate = new Date()) {
+  const base = fromDate instanceof Date ? new Date(fromDate) : new Date(fromDate);
+  const year = base.getMonth() <= 6 ? base.getFullYear() : base.getFullYear() + 1;
+  return new Date(year, 6, 31, 23, 59, 59, 999);
+}
+
+function associationMonthsUntilCycleEnd(fromDate = new Date()) {
+  const base = fromDate instanceof Date ? new Date(fromDate) : new Date(fromDate);
+  const end = associationCycleEndDate(base);
+  return Math.max(
+    1,
+    (end.getFullYear() - base.getFullYear()) * 12 + (end.getMonth() - base.getMonth()) + 1
+  );
+}
+
+function associationPlanCents(planKey) {
+  const key = String(planKey || "ASSOCIADO_A").toUpperCase();
+  const envName = key === "ASSOCIADO_PREMIUM"
+    ? "ASAAS_ASSOCIATION_PREMIUM_ANNUAL_CENTS"
+    : "ASAAS_ASSOCIATION_MASTER_ANNUAL_CENTS";
+  const value = Number(process.env[envName]);
+  if (!Number.isFinite(value) || value <= 0) {
+    return ASSOCIATION_PLAN_DEFAULT_CENTS[key] || ASSOCIATION_PLAN_DEFAULT_CENTS.ASSOCIADO_A;
+  }
+  return Math.round(value);
+}
+
+function associationFeeCents() {
+  const value = Number(process.env.ASAAS_ASSOCIATION_JOIN_FEE_CENTS);
+  return Number.isFinite(value) && value > 0 ? Math.round(value) : ASSOCIATION_FEE_DEFAULT_CENTS;
+}
+
+function associationPaymentCents(planKey, fromDate = new Date()) {
+  const months = associationMonthsUntilCycleEnd(fromDate);
+  return associationFeeCents() + Math.round((associationPlanCents(planKey) / 12) * months);
+}
+
+function formatAssociationPaymentPrice(planKey, fromDate = new Date()) {
+  return (associationPaymentCents(planKey, fromDate) / 100).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
+async function createAssociationPayment(user, planKey = "ASSOCIADO_A") {
+  const normalizedPlan = String(planKey || "ASSOCIADO_A").toUpperCase() === "ASSOCIADO_PREMIUM"
+    ? "ASSOCIADO_PREMIUM"
+    : "ASSOCIADO_A";
+  const customerId = await ensureCustomerForUser(user);
+  const payment = await asaasRequest("/payments", {
+    method: "POST",
+    body: {
+      customer: customerId,
+      billingType: "PIX",
+      value: centsToValue(associationPaymentCents(normalizedPlan)),
+      dueDate: formatDateInput(new Date()),
+      description: `Associação Gatarina - taxa de associação e anuidade proporcional (${normalizedPlan === "ASSOCIADO_PREMIUM" ? "Associado Premium" : "Associado Master"})`,
+      externalReference: externalReference(user.id, normalizedPlan, "ASSOCIATION_INITIAL"),
+    },
+  });
+
+  return {
+    customerId,
+    payment,
+    paymentUrl: paymentUrlFrom(payment),
+    cycleEnd: associationCycleEndDate(),
+  };
+}
+
 async function getSubscriptionPaymentUrl(subscriptionId) {
   if (!subscriptionId) return null;
   const payments = await asaasRequest(`/subscriptions/${subscriptionId}/payments?limit=1`);
@@ -379,8 +455,12 @@ module.exports = {
   formatAnnualPlanPrice,
   createAnnualPlanPayment,
   createSingleMonthPixPayment,
+  createAssociationPayment,
   createPlanSubscription,
   getSubscriptionPaymentUrl,
   planFromExternalReference,
+  associationCycleEndDate,
+  associationPaymentCents,
+  formatAssociationPaymentPrice,
   verifyWebhookToken,
 };
