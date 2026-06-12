@@ -197,6 +197,34 @@ input[type="file"] {
   color: #b91c1c;
 }
 
+.quick-ai-button {
+  margin-top: 10px;
+  min-height: 44px;
+  background: linear-gradient(135deg, #006fa8, #f39c12);
+}
+
+.quick-ai-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+  transform: none;
+}
+
+.quick-ai-status {
+  min-height: 18px;
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.quick-ai-status.is-success {
+  color: #047857;
+}
+
+.quick-ai-status.is-error {
+  color: #b91c1c;
+}
+
 .quick-footer {
   display: flex;
   justify-content: center;

@@ -154,6 +154,10 @@
           <% if (expense.receiptPath) { %>
             <small>Comprovante já anexado. Envie outro arquivo apenas se desejar substituir.</small>
           <% } %>
+          <% if (isPublicExpenseLink) { %>
+            <button class="btn quick-ai-button" type="button" id="analyzeReceiptButton">Ler comprovante com IA</button>
+            <div id="receiptAiStatus" class="quick-ai-status" aria-live="polite"></div>
+          <% } %>
         </div>
 
         <div class="field">
@@ -197,6 +201,9 @@
       const installmentsField = document.getElementById("installmentsField");
       const installments = document.getElementById("installments");
       const parcelFields = document.getElementById("parcelFields");
+      const receipt = document.getElementById("receipt");
+      const analyzeReceiptButton = document.getElementById("analyzeReceiptButton");
+      const receiptAiStatus = document.getElementById("receiptAiStatus");
       const savedParcels = <%- JSON.stringify(expense.parcels || []) %>;
       const publicSupplierPanel = document.getElementById("publicSupplierPanel");
       const togglePublicSupplierForm = document.getElementById("togglePublicSupplierForm");
@@ -217,6 +224,13 @@
         supplierLookupStatus.textContent = message || "";
         supplierLookupStatus.classList.toggle("is-error", type === "error");
         supplierLookupStatus.classList.toggle("is-success", type === "success");
+      }
+
+      function setReceiptAiStatus(message, type) {
+        if (!receiptAiStatus) return;
+        receiptAiStatus.textContent = message || "";
+        receiptAiStatus.classList.toggle("is-error", type === "error");
+        receiptAiStatus.classList.toggle("is-success", type === "success");
       }
 
       async function lookupSupplierByCnpj() {
@@ -338,6 +352,73 @@
         if (defaultCategory) category.value = defaultCategory;
       }
 
+      async function analyzeReceiptWithAi() {
+        if (!receipt || !receipt.files || !receipt.files.length) {
+          setReceiptAiStatus("Selecione ou fotografe o comprovante antes de usar a IA.", "error");
+          return;
+        }
+
+        const file = receipt.files[0];
+        if (!String(file.type || "").startsWith("image/")) {
+          setReceiptAiStatus("A leitura por IA está disponível para imagens. Para PDF, preencha os campos manualmente.", "error");
+          return;
+        }
+
+        const data = new FormData();
+        data.append("receipt", file);
+        analyzeReceiptButton.disabled = true;
+        setReceiptAiStatus("Analisando a imagem... confira os campos antes de salvar.", "");
+
+        try {
+          const response = await fetch(`${window.location.pathname.replace(/\/$/, "")}/analisar-comprovante`, {
+            method: "POST",
+            body: data,
+          });
+          const payload = await response.json();
+          if (!response.ok || !payload.ok) throw new Error(payload.error || "Não foi possível analisar o comprovante.");
+
+          const analysis = payload.analysis || {};
+          const registeredSupplier = payload.registeredSupplier || null;
+
+          if (analysis.totalAmount) {
+            amount.value = analysis.totalAmount;
+            formatMoneyInput(amount);
+          }
+          if (analysis.paymentDate) {
+            document.getElementById("competenceDate").value = analysis.paymentDate;
+          }
+          if (registeredSupplier && registeredSupplier.commercialName) {
+            supplier.value = registeredSupplier.commercialName;
+            if (registeredSupplier.defaultCategory) category.value = registeredSupplier.defaultCategory;
+            setSupplierLookupStatus("Fornecedor cadastrado encontrado pelo CNPJ.", "success");
+          } else if (analysis.cnpj && analysis.supplierName) {
+            supplier.value = `${analysis.supplierName} - CNPJ ${formatCnpj(analysis.cnpj)}`;
+            setSupplierLookupStatus("Fornecedor identificado pelo CNPJ sem criar cadastro fixo.", "success");
+          } else if (analysis.cnpj) {
+            supplier.value = analysis.cnpj;
+            await lookupSupplierByCnpj();
+          } else if (analysis.supplierName) {
+            supplier.value = analysis.supplierName;
+          }
+
+          if (analysis.note) {
+            const currentNote = String(document.getElementById("note").value || "").trim();
+            document.getElementById("note").value = currentNote
+              ? `${currentNote}\n${analysis.note}`
+              : analysis.note;
+          }
+
+          refreshCategoryFromSupplier();
+          renderParcels();
+          const confidenceText = analysis.confidence ? ` Confiança estimada: ${analysis.confidence}%.` : "";
+          setReceiptAiStatus(`Campos sugeridos pela IA. Selecione a conta de pagamento e revise tudo antes de salvar.${confidenceText}`, "success");
+        } catch (err) {
+          setReceiptAiStatus(err.message || "Não foi possível analisar o comprovante.", "error");
+        } finally {
+          analyzeReceiptButton.disabled = false;
+        }
+      }
+
       amount.addEventListener("input", () => formatMoneyInput(amount));
       amount.addEventListener("blur", () => formatMoneyInput(amount));
       supplier.addEventListener("change", refreshCategoryFromSupplier);
@@ -361,6 +442,7 @@
       installments.addEventListener("change", renderParcels);
       document.getElementById("competenceDate").addEventListener("change", renderParcels);
       amount.addEventListener("blur", renderParcels);
+      analyzeReceiptButton?.addEventListener("click", analyzeReceiptWithAi);
       formatMoneyInput(amount);
       refreshCategoryFromSupplier();
       refreshCreditFields();

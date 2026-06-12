@@ -161,6 +161,145 @@ function createUpload() {
   });
 }
 
+function createReceiptAnalysisUpload() {
+  return multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: getFileUploadLimit("ADMIN").bytes },
+    fileFilter: (req, file, cb) => {
+      const allowed = [
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "image/heic",
+        "image/heif",
+      ];
+      cb(
+        allowed.includes(file.mimetype)
+          ? null
+          : new Error("A leitura por IA está disponível para fotos/imagens do comprovante."),
+        allowed.includes(file.mimetype)
+      );
+    },
+  });
+}
+
+function extractResponseText(payload) {
+  if (!payload) return "";
+  if (typeof payload.output_text === "string") return payload.output_text;
+
+  const chunks = [];
+  const visit = (value) => {
+    if (!value) return;
+    if (typeof value === "string") return;
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (typeof value !== "object") return;
+    if ((value.type === "output_text" || value.type === "text") && typeof value.text === "string") {
+      chunks.push(value.text);
+    }
+    Object.values(value).forEach(visit);
+  };
+  visit(payload.output);
+  return chunks.join("\n").trim();
+}
+
+function parseJsonObject(text) {
+  const raw = String(text || "").trim();
+  if (!raw) return {};
+  const cleaned = raw
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/```$/i, "")
+    .trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const start = cleaned.indexOf("{");
+    const end = cleaned.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      return JSON.parse(cleaned.slice(start, end + 1));
+    }
+    throw new Error("A IA não retornou dados em formato válido.");
+  }
+}
+
+function normalizeReceiptAnalysis(data = {}) {
+  const cnpj = onlyDigits(data.cnpj || data.supplierCnpj).slice(0, 14);
+  const amountCents = parseAmountToCents(data.totalAmount || data.amount || data.valorTotal);
+  const paymentDate = String(data.paymentDate || data.date || data.dataPagamento || "").slice(0, 10);
+  const supplierName = cleanText(data.supplierName || data.fornecedor || data.nomeFornecedor);
+  const paymentMethod = cleanText(data.paymentMethod || data.formaPagamento);
+  const note = cleanText(data.note || data.observacao || "");
+  const confidence = Math.max(0, Math.min(100, Number(data.confidence || data.confianca || 0)));
+
+  return {
+    supplierName,
+    cnpj: cnpj.length === 14 ? cnpj : "",
+    paymentDate: /^\d{4}-\d{2}-\d{2}$/.test(paymentDate) ? paymentDate : "",
+    totalAmount: amountCents ? formatAmount(amountCents) : "",
+    paymentMethod,
+    note,
+    confidence,
+  };
+}
+
+async function analyzeReceiptImage(file) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("A chave OPENAI_API_KEY não está configurada no servidor.");
+  }
+
+  const model = process.env.OPENAI_RECEIPT_MODEL || "gpt-4.1-mini";
+  const imageUrl = `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      input: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "input_text",
+              text: [
+                "Analise esta imagem de cupom fiscal, nota fiscal ou comprovante de despesa brasileiro.",
+                "Retorne somente JSON válido, sem markdown.",
+                "Campos esperados:",
+                "supplierName: nome/razão social do fornecedor, se visível.",
+                "cnpj: CNPJ do fornecedor com apenas números, se visível.",
+                "paymentDate: data de emissão/pagamento no formato YYYY-MM-DD, se visível.",
+                "totalAmount: valor total pago no formato brasileiro, se visível.",
+                "paymentMethod: deixe vazio. A conta de pagamento será escolhida manualmente pelo usuário.",
+                "note: observação curta com número do documento ou alerta de baixa confiança.",
+                "confidence: número de 0 a 100 sobre a confiança geral.",
+                "Se não tiver certeza, deixe o campo vazio e reduza confidence.",
+              ].join("\n"),
+            },
+            {
+              type: "input_image",
+              image_url: imageUrl,
+            },
+          ],
+        },
+      ],
+    }),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = payload?.error?.message || "Não foi possível analisar a imagem agora.";
+    throw new Error(message);
+  }
+
+  return normalizeReceiptAnalysis(parseJsonObject(extractResponseText(payload)));
+}
+
 function buildExpenseParcels(body, amountCents, installments, competenceDateText) {
   const count = Math.max(1, Number.parseInt(installments || "1", 10) || 1);
   const defaults = splitAmountCents(amountCents, count);
@@ -217,6 +356,7 @@ function buildExpenseFormData(body, file, existingReceipt = null, creditCardName
 module.exports = (prisma) => {
   const router = express.Router();
   const upload = createUpload();
+  const receiptAnalysisUpload = createReceiptAnalysisUpload();
   const columnCache = new Map();
 
   router.use((req, res, next) => {
@@ -781,6 +921,40 @@ module.exports = (prisma) => {
     } catch (err) {
       res.redirect(`/despesas/u/${req.params.token}?error=${encodeURIComponent(err.message || "Erro ao cadastrar fornecedor.")}`);
     }
+  });
+
+  router.post("/despesas/u/:token/analisar-comprovante", (req, res) => {
+    receiptAnalysisUpload.single("receipt")(req, res, async (uploadErr) => {
+      const user = await findPublicExpenseUser(req.params.token);
+      if (!user) return res.status(404).json({ ok: false, error: "Link de lançamento não encontrado." });
+
+      try {
+        if (uploadErr) throw uploadErr;
+        if (!req.file) throw new Error("Envie uma foto do cupom, nota ou comprovante para analisar.");
+        validateFilesForRole([req.file], user.role);
+
+        const analysis = await analyzeReceiptImage(req.file);
+        let registeredSupplier = null;
+
+        if (analysis.cnpj) {
+          registeredSupplier = await prisma.expenseSupplier.findFirst({
+            where: { ownerId: user.id, cnpj: analysis.cnpj },
+            select: { commercialName: true, defaultCategory: true, tradeName: true },
+          });
+        }
+
+        res.json({
+          ok: true,
+          analysis,
+          registeredSupplier,
+        });
+      } catch (err) {
+        res.status(400).json({
+          ok: false,
+          error: err.message || "Não foi possível analisar o comprovante.",
+        });
+      }
+    });
   });
 
   router.post("/despesas/u/:token", upload.single("receipt"), async (req, res) => {
