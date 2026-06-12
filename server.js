@@ -120,14 +120,21 @@ function findUploadedFile(filePath) {
   }
 
   const uploadsRoot = process.env.UPLOADS_DIR || path.join(__dirname, "public", "uploads");
+  const basename = path.basename(relativePath);
 
   const possiblePaths = [
     path.isAbsolute(filePath) ? filePath : null,
     path.join(uploadsRoot, relativePath),
     path.join(uploadsRoot, "uploads", relativePath),
+    path.join(uploadsRoot, "services", basename),
+    path.join(uploadsRoot, "title-certificates", basename),
     path.join("/var/data/uploads", relativePath),
+    path.join("/var/data/uploads/services", basename),
+    path.join("/var/data/uploads/title-certificates", basename),
     path.join("/var/data", relativePath),
     path.join(__dirname, "public", "uploads", relativePath),
+    path.join(__dirname, "public", "uploads", "services", basename),
+    path.join(__dirname, "public", "uploads", "title-certificates", basename),
     path.join(__dirname, "public", relativePath),
   ].filter(Boolean);
 

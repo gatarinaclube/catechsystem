@@ -111,6 +111,7 @@ function ensureUploadDir(folder) {
 
 const correctionStorage = multer.diskStorage({
   destination: (req, file, cb) => {
+    const isTitleCertificateReplacement = /^certFile_\d+$/.test(file.fieldname);
     const folders = {
       externalOwnerAuthorization: "litters",
       authorizationFile: "transfer-authorization",
@@ -119,7 +120,14 @@ const correctionStorage = multer.diskStorage({
       certificatesFiles: "title-certificates",
       attachments: "second-copy",
     };
-    cb(null, ensureUploadDir(folders[file.fieldname] || "services"));
+    cb(
+      null,
+      ensureUploadDir(
+        isTitleCertificateReplacement
+          ? "title-certificates"
+          : folders[file.fieldname] || "services"
+      )
+    );
   },
   filename: (req, file, cb) => {
     const safeName = file.originalname
