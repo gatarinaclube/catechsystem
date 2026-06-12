@@ -138,27 +138,38 @@
                         <div class="kitten-list-item">
                           <div class="kitten-list-main">
                             <a class="item-link" href="/admin/kittens/<%= kitten.id %>"><%= kitten.label %></a>
+                            <% if (kitten.blockedByMissingMicrochip) { %>
+                              <div class="section-note" style="margin-top:6px; color:#b91c1c;">
+                                <%= kitten.missingMicrochipMessage %>
+                              </div>
+                            <% } %>
                           </div>
-                          <form method="post" action="/admin/kittens/<%= kitten.id %>/quick-status" class="kitten-list-actions" data-quick-kitten-status>
-                            <div class="kitten-quick-field">
-                              <span class="field-label">Status:</span>
-                              <select class="kitten-status-select" name="kittenAvailabilityStatus">
-                                <% kittenStatusOptions.forEach(function(option) { %>
-                                  <option value="<%= option.value %>" <%= kitten.kittenAvailabilityStatus === option.value ? "selected" : "" %>><%= option.label %></option>
-                                <% }) %>
-                              </select>
+                          <% if (kitten.blockedByMissingMicrochip) { %>
+                            <div class="kitten-list-actions">
+                              <a href="/admin/kittens/<%= kitten.id %>" class="btn btn-primary">Informar microchip</a>
                             </div>
-                            <div class="kitten-quick-death-fields" data-quick-death-fields style="display:none;">
-                              <select name="deathCause" class="kitten-status-select">
-                                <option value="">Causa...</option>
-                                <option value="Castração" <%= kitten.deathCause === "Castração" ? "selected" : "" %>>Castração</option>
-                                <option value="Trauma" <%= kitten.deathCause === "Trauma" ? "selected" : "" %>>Trauma</option>
-                                <option value="Causa Desconhecida" <%= kitten.deathCause === "Causa Desconhecida" ? "selected" : "" %>>Causa Desconhecida</option>
-                                <option value="Outro" <%= kitten.deathCause === "Outro" ? "selected" : "" %>>Outro</option>
-                              </select>
-                              <input name="deathCauseDescription" class="kitten-status-input" value="<%= kitten.deathCauseDescription || '' %>" placeholder="Descrição" />
-                            </div>
-                          </form>
+                          <% } else { %>
+                            <form method="post" action="/admin/kittens/<%= kitten.id %>/quick-status" class="kitten-list-actions" data-quick-kitten-status>
+                              <div class="kitten-quick-field">
+                                <span class="field-label">Status:</span>
+                                <select class="kitten-status-select" name="kittenAvailabilityStatus">
+                                  <% kittenStatusOptions.forEach(function(option) { %>
+                                    <option value="<%= option.value %>" <%= kitten.kittenAvailabilityStatus === option.value ? "selected" : "" %>><%= option.label %></option>
+                                  <% }) %>
+                                </select>
+                              </div>
+                              <div class="kitten-quick-death-fields" data-quick-death-fields style="display:none;">
+                                <select name="deathCause" class="kitten-status-select">
+                                  <option value="">Causa...</option>
+                                  <option value="Castração" <%= kitten.deathCause === "Castração" ? "selected" : "" %>>Castração</option>
+                                  <option value="Trauma" <%= kitten.deathCause === "Trauma" ? "selected" : "" %>>Trauma</option>
+                                  <option value="Causa Desconhecida" <%= kitten.deathCause === "Causa Desconhecida" ? "selected" : "" %>>Causa Desconhecida</option>
+                                  <option value="Outro" <%= kitten.deathCause === "Outro" ? "selected" : "" %>>Outro</option>
+                                </select>
+                                <input name="deathCauseDescription" class="kitten-status-input" value="<%= kitten.deathCauseDescription || '' %>" placeholder="Descrição" />
+                              </div>
+                            </form>
+                          <% } %>
                         </div>
                       </li>
                     <% }) %>

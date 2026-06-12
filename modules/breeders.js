@@ -17,6 +17,7 @@ const {
   selectedBreedsFromSettings,
   selectedExamsFromSettings,
 } = require("../utils/userPreferences");
+const { ensureMicrochipWhenRequired } = require("../utils/microchipRules");
 
 const COUNTRIES = [
   "BR","AR","AT","BE","BG","BY","CA","CH","CL","CO","CY","CZ",
@@ -90,7 +91,7 @@ function removeUploadedFiles(files = []) {
 }
 
 function statusForError(err) {
-  return ["DUPLICATE_MICROCHIP", "UPLOAD_LIMIT", "PLAN_LIMIT"].includes(err.code) ? 400 : 500;
+  return ["DUPLICATE_MICROCHIP", "MICROCHIP_REQUIRED", "UPLOAD_LIMIT", "PLAN_LIMIT"].includes(err.code) ? 400 : 500;
 }
 
 function normalizeMicrochip(microchip) {
@@ -382,6 +383,16 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
     const microchipDigits = normalizeMicrochip(microchip);
     const currentId = existingCat ? existingCat.id : null;
+    const deceasedBool = deceased === "YES";
+    const parsedBirthDate = birthDate ? new Date(birthDate) : null;
+
+    ensureMicrochipWhenRequired({
+      microchip: microchipDigits,
+      birthDate: parsedBirthDate,
+      deceased: deceasedBool,
+      label: "Este gato",
+      allowUnderFourMonths: true,
+    });
 
     if (microchipDigits) {
       const duplicate = await prisma.cat.findUnique({
@@ -395,7 +406,6 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       }
     }
 
-    const deceasedBool = deceased === "YES";
     const deathCauseData = parseDeathCauseData(req.body, deceasedBool);
 
     let fatherIdValue = null;
@@ -448,7 +458,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       titleAfterName: titleAfterName || null,
       country: country || null,
       name,
-      birthDate: birthDate ? new Date(birthDate) : null,
+      birthDate: parsedBirthDate,
       gender: gender || null,
       microchip: microchipDigits,
       pedigreeType: pedigreeType || null,

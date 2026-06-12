@@ -7,6 +7,11 @@ const {
   parseDeathCauseData,
   syncDeathHistoryEntry,
 } = require("../utils/deathCause");
+const {
+  buildMissingMicrochipMessage,
+  ensureMicrochipWhenRequired,
+  isBlockedByMissingMicrochip,
+} = require("../utils/microchipRules");
 
 const KITTEN_STATUS_OPTIONS = [
   { value: "UNAVAILABLE", label: "Indisponível" },
@@ -166,6 +171,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       breeds: selectedBreeds,
       kittenStatusOptions: KITTEN_STATUS_OPTIONS,
       deathCauseOptions: DEATH_CAUSE_OPTIONS,
+      microchipRequiredNotice: kitten && isBlockedByMissingMicrochip(kitten)
+        ? buildMissingMicrochipMessage("Este filhote")
+        : null,
       kitten,
       error,
     };
@@ -248,6 +256,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
   async function parsePayload(req, existingKitten = null) {
     const microchip = await validateMicrochip(req.body.microchip, existingKitten?.id || null);
+    const birthDate = req.body.birthDate ? new Date(req.body.birthDate) : null;
     const ownerLockedBySale = existingKitten?.ownershipSource === "SALE";
     const selectedOwnerClientId = req.body.currentOwnerClientId ? Number(req.body.currentOwnerClientId) : null;
     const selectedOwnerClient = selectedOwnerClientId && !ownerLockedBySale
@@ -261,13 +270,20 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     }
     const availabilityData = statusFlags(req.body.kittenAvailabilityStatus || existingKitten?.kittenAvailabilityStatus || "UNAVAILABLE");
     const deathCauseData = parseDeathCauseData(req.body, availabilityData.deceased === true);
+    ensureMicrochipWhenRequired({
+      microchip,
+      birthDate,
+      deceased: availabilityData.deceased === true,
+      label: "Este filhote",
+      allowUnderFourMonths: true,
+    });
 
     return {
       kittenNumber: req.body.kittenNumber || null,
       name: req.body.name || "",
       gender: req.body.gender || null,
       microchip,
-      birthDate: req.body.birthDate ? new Date(req.body.birthDate) : null,
+      birthDate,
       motherId: req.body.motherId ? Number(req.body.motherId) : null,
       fatherId: req.body.fatherId ? Number(req.body.fatherId) : null,
       pedigreeType: req.body.pedigreeType || null,
@@ -330,6 +346,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         .map((kitten) => ({
           ...mergeLinkedKittenFields(kitten),
           label: makeListLabel(kitten),
+          blockedByMissingMicrochip: isBlockedByMissingMicrochip(kitten),
+          missingMicrochipMessage: buildMissingMicrochipMessage("Este filhote"),
         }))
         .sort(sortKittensByNumber);
 
@@ -377,7 +395,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     async (req, res) => {
       const existingKitten = await prisma.cat.findUnique({
         where: { id: Number(req.params.id) },
-        select: { id: true },
+        select: { id: true, birthDate: true, microchip: true, deceased: true },
       });
 
       if (!existingKitten) {
@@ -386,6 +404,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       if (!(await ensureCatAccess(req, existingKitten.id))) {
         return res.status(403).send("Você não pode editar este filhote.");
+      }
+
+      if (isBlockedByMissingMicrochip(existingKitten)) {
+        return res.status(400).send(buildMissingMicrochipMessage("Este filhote"));
       }
 
       const data = {

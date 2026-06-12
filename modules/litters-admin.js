@@ -2,6 +2,7 @@ const express = require("express");
 const { canViewAllData } = require("../utils/access");
 const { getCreationLimits, yearlyRange } = require("../utils/planLimits");
 const { selectedBreedsFromSettings } = require("../utils/userPreferences");
+const { ensureMicrochipWhenRequired } = require("../utils/microchipRules");
 
 const DEATH_CAUSES_AT_BIRTH = [
   "Fenda Palatina",
@@ -354,6 +355,18 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     return { femaleCount, maleCount, litterCount, kittens };
   }
 
+  function ensureKittensMicrochipRules(kittens, litterBirthDate) {
+    kittens.forEach((kitten) => {
+      ensureMicrochipWhenRequired({
+        microchip: kitten.microchip,
+        birthDate: litterBirthDate,
+        deceased: kitten.deceased === true,
+        label: `Filhote ${kitten.index}`,
+        allowUnderFourMonths: true,
+      });
+    });
+  }
+
   async function syncKittenCat(tx, litter, kitten, motherCat, fatherCat) {
     const catPayload = {
       ownerId: litter.ownerId,
@@ -572,6 +585,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           deadAfterBirthCount,
           DEATH_CAUSES_AFTER_BIRTH
         );
+        const litterBirthDate = req.body.litterBirthDate ? new Date(req.body.litterBirthDate) : null;
+        ensureKittensMicrochipRules(kittens, litterBirthDate);
 
         const payload = {
           ownerId: req.session.userId,
@@ -579,7 +594,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           litterNumber: req.body.litterNumber?.trim().slice(0, 5).padStart(3, "0") || null,
           femaleCatId: req.body.femaleCatId ? Number(req.body.femaleCatId) : null,
           maleCatId: req.body.maleCatId ? Number(req.body.maleCatId) : null,
-          litterBirthDate: req.body.litterBirthDate ? new Date(req.body.litterBirthDate) : null,
+          litterBirthDate,
           femaleCount,
           maleCount,
           litterCount,
@@ -703,6 +718,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           deadAfterBirthCount,
           DEATH_CAUSES_AFTER_BIRTH
         );
+        const litterBirthDate = req.body.litterBirthDate ? new Date(req.body.litterBirthDate) : null;
+        ensureKittensMicrochipRules(kittens, litterBirthDate);
 
         const payload = {
           ownerId: existingLitter.ownerId || req.session.userId,
@@ -710,7 +727,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           litterNumber: req.body.litterNumber?.trim().slice(0, 5).padStart(3, "0") || null,
           femaleCatId: req.body.femaleCatId ? Number(req.body.femaleCatId) : null,
           maleCatId: req.body.maleCatId ? Number(req.body.maleCatId) : null,
-          litterBirthDate: req.body.litterBirthDate ? new Date(req.body.litterBirthDate) : null,
+          litterBirthDate,
           femaleCount,
           maleCount,
           litterCount,

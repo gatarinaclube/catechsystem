@@ -115,10 +115,18 @@ function findUploadedFile(filePath) {
   }
 
   relativePath = relativePath.replace(/^\/+/, "").replace(/^uploads\/+/, "");
+  if (relativePath.startsWith("var/data/")) {
+    relativePath = relativePath.replace(/^var\/data\/uploads\/?/, "");
+  }
+
+  const uploadsRoot = process.env.UPLOADS_DIR || path.join(__dirname, "public", "uploads");
 
   const possiblePaths = [
     path.isAbsolute(filePath) ? filePath : null,
-    path.join(process.env.UPLOADS_DIR || path.join(__dirname, "public", "uploads"), relativePath),
+    path.join(uploadsRoot, relativePath),
+    path.join(uploadsRoot, "uploads", relativePath),
+    path.join("/var/data/uploads", relativePath),
+    path.join("/var/data", relativePath),
     path.join(__dirname, "public", "uploads", relativePath),
     path.join(__dirname, "public", relativePath),
   ].filter(Boolean);
@@ -126,15 +134,18 @@ function findUploadedFile(filePath) {
   return possiblePaths.find((candidate) => fs.existsSync(candidate)) || null;
 }
 
-function addUploadedFileToArchive(archive, label, filePath) {
+function addUploadedFileToArchive(archive, label, filePath, missingFiles = null) {
   const existingPath = findUploadedFile(filePath);
 
   if (existingPath) {
     archive.file(existingPath, {
       name: `${label}-${path.basename(existingPath)}`,
     });
+    return true;
   } else {
     console.warn("Arquivo não encontrado para ZIP:", { label, filePath });
+    if (missingFiles) missingFiles.push(`${label}: ${filePath || "sem arquivo informado"}`);
+    return false;
   }
 }
 
@@ -2740,10 +2751,11 @@ res.setHeader(
     archive.file(tmpPDF, {
       name: `title-homologation-${serviceWithStatus.id}.pdf`,
     });
+    const missingFiles = [];
 
     // PEDIGREE DO GATO
     if (cat?.pedigreeFile) {
-      addUploadedFileToArchive(archive, "PEDIGREE", cat.pedigreeFile);
+      addUploadedFileToArchive(archive, "PEDIGREE", cat.pedigreeFile, missingFiles);
     }
 
     // 🔥 CERTIFICADOS (AQUI ESTAVA FALTANDO)
@@ -2759,8 +2771,21 @@ res.setHeader(
     certificates.forEach((cert, index) => {
   if (!cert.file) return;
 
-  addUploadedFileToArchive(archive, `CERTIFICADO-${index + 1}`, cert.file);
+  addUploadedFileToArchive(archive, `CERTIFICADO-${index + 1}`, cert.file, missingFiles);
 });
+
+    if (missingFiles.length) {
+      archive.append(
+        [
+          "Os anexos abaixo estão cadastrados no sistema, mas não foram encontrados no armazenamento do servidor:",
+          "",
+          ...missingFiles,
+          "",
+          "Verifique se o arquivo existe no disco de uploads ou envie novamente o anexo pela edição do serviço.",
+        ].join("\n"),
+        { name: "ANEXOS_NAO_ENCONTRADOS.txt" }
+      );
+    }
 
     archive.finalize();
   });
