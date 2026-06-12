@@ -3,7 +3,22 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title><%= showcase.title || settings?.catteryName || 'Filhotes disponíveis' %></title>
+    <title><%= seo?.title || showcase.title || settings?.catteryName || 'Filhotes disponíveis' %></title>
+    <meta name="description" content="<%= seo?.description || 'Vitrine pública de filhotes disponíveis.' %>" />
+    <% if (seo?.keywords) { %><meta name="keywords" content="<%= seo.keywords %>" /><% } %>
+    <link rel="canonical" href="<%= seo?.canonicalUrl || ('https://catechsystem.com.br/vitrine/' + showcase.slug) %>" />
+    <meta property="og:type" content="<%= seo?.type || 'website' %>" />
+    <meta property="og:title" content="<%= seo?.title || showcase.title || settings?.catteryName || 'Filhotes disponíveis' %>" />
+    <meta property="og:description" content="<%= seo?.description || 'Vitrine pública de filhotes disponíveis.' %>" />
+    <meta property="og:url" content="<%= seo?.canonicalUrl || ('https://catechsystem.com.br/vitrine/' + showcase.slug) %>" />
+    <meta property="og:image" content="<%= seo?.imageUrl || 'https://catechsystem.com.br/logos/catech-icon.png' %>" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="<%= seo?.title || showcase.title || settings?.catteryName || 'Filhotes disponíveis' %>" />
+    <meta name="twitter:description" content="<%= seo?.description || 'Vitrine pública de filhotes disponíveis.' %>" />
+    <meta name="twitter:image" content="<%= seo?.imageUrl || 'https://catechsystem.com.br/logos/catech-icon.png' %>" />
+    <% if (typeof structuredData !== 'undefined' && structuredData) { %>
+      <script type="application/ld+json"><%- JSON.stringify(structuredData) %></script>
+    <% } %>
     <link rel="stylesheet" href="/css/theme.css" />
     <link rel="stylesheet" href="/css/kitten-showcase-public.css" />
   </head>
@@ -125,7 +140,7 @@
           <div class="public-section-divider">Filhotes</div>
           <div class="public-kitten-grid">
             <% litter.kittens.forEach(function(kitten) { %>
-              <article class="public-kitten">
+              <article class="public-kitten" data-analytics-view="Filhote: <%= kitten.displayName %>">
                 <% if (kitten.photos.length) { %>
                   <div class="public-kitten-photos">
                     <button class="gallery-trigger public-kitten-main-trigger" type="button" data-gallery='<%- JSON.stringify(kitten.photos.map(function(photo) { return photo.path; })) %>' data-index="0" aria-label="Abrir fotos de <%= kitten.displayName %>">

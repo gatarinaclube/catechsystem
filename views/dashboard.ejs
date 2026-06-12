@@ -115,6 +115,35 @@
   </div>
 <% } %>
 
+<% if (typeof onboarding !== "undefined" && onboarding && !onboarding.complete) { %>
+  <div class="content-card" style="margin-bottom:20px; border-left:4px solid #0ea5e9; background:linear-gradient(135deg,#f0f9ff 0%,#ffffff 76%);">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap;">
+      <div>
+        <div class="content-title">Primeiros passos no CaTech</div>
+        <div class="content-sub">
+          Complete a configuração inicial para transformar o sistema na rotina real do seu gatil.
+        </div>
+      </div>
+      <div class="status-pill is-blue"><%= onboarding.completedCount %>/<%= onboarding.total %> concluídos</div>
+    </div>
+    <div style="height:8px; overflow:hidden; border-radius:999px; background:#dbeafe; margin:14px 0 16px;">
+      <div style="width:<%= onboarding.percent %>%; height:100%; background:linear-gradient(90deg,#0ea5e9,#f26a1b);"></div>
+    </div>
+    <div class="quick-grid">
+      <% onboarding.steps.forEach(function(step) { %>
+        <div class="quick-card" style="<%= step.done ? 'border-color:#bbf7d0; background:#f0fdf4;' : '' %>">
+          <div class="quick-label"><%= step.done ? 'Concluído' : `Passo ${step.number}` %></div>
+          <div class="quick-value"><%= step.title %></div>
+          <div class="content-sub" style="font-size:12px; margin-top:5px;"><%= step.description %></div>
+          <div class="quick-link" style="margin-top:10px;">
+            <a href="<%= step.href %>"><%= step.done ? 'Revisar' : 'Fazer agora' %> →</a>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+<% } %>
+
 
 <% if (access && access.isAdmin && servicesPendingFFBCount > 0) { %>
   <div class="content-card" style="border-left: 4px solid #2563eb; margin-bottom: 20px;">

@@ -4,6 +4,9 @@
   const eventsRoot = document.getElementById("showcaseAnalyticsEvents");
   const eventsPager = document.getElementById("showcaseAnalyticsEventsPager");
   const recentRoot = document.getElementById("recentShowcaseVisitors");
+  const topKittensRoot = document.getElementById("showcaseTopKittens");
+  const topCitiesRoot = document.getElementById("showcaseTopCities");
+  const leadVisitsRoot = document.getElementById("showcaseLeadVisits");
   if (!refreshButton || !activeRoot || !eventsRoot || !eventsPager || !recentRoot) return;
 
   let latestData = { events: [] };
@@ -83,6 +86,40 @@
       : empty("Nenhuma visita registrada ainda.");
   }
 
+  function rankingRow(item, suffix) {
+    return simpleRow(item.label, `${item.count} ${suffix}`);
+  }
+
+  function renderRankings(rankings = {}) {
+    const whatsappTotal = document.querySelector('[data-analytics-ranking="whatsapp"]');
+    const durationTotal = document.querySelector('[data-analytics-ranking="duration"]');
+    const leadsTotal = document.querySelector('[data-analytics-ranking="leads"]');
+    if (whatsappTotal) whatsappTotal.textContent = rankings.whatsappClicks || 0;
+    if (durationTotal) durationTotal.textContent = rankings.averageDurationLabel || "0s";
+    if (leadsTotal) leadsTotal.textContent = rankings.leadVisits?.length || 0;
+
+    if (topKittensRoot) {
+      topKittensRoot.innerHTML = rankings.topKittens?.length
+        ? rankings.topKittens.map((item) => rankingRow(item, "visualização(ões)")).join("")
+        : empty("Ainda não há visualizações de filhotes suficientes.");
+    }
+
+    if (topCitiesRoot) {
+      topCitiesRoot.innerHTML = rankings.topPlaces?.length
+        ? rankings.topPlaces.map((item) => rankingRow(item, "acesso(s)")).join("")
+        : empty("Cidade ainda não identificada.");
+    }
+
+    if (leadVisitsRoot) {
+      leadVisitsRoot.innerHTML = rankings.leadVisits?.length
+        ? rankings.leadVisits.map((visit) => simpleRow(
+          visit.place,
+          `${visit.durationLabel} · ${visit.browserLabel} · ${visit.clicks} clique(s)`
+        )).join("")
+        : empty("Nenhum clique em WhatsApp registrado ainda.");
+    }
+  }
+
   function render(data) {
     latestData = data || { events: [] };
     document.querySelector('[data-analytics-total="active"]').textContent = data.totals?.active || 0;
@@ -98,6 +135,7 @@
 
     renderEvents();
     renderVisits(data.recent || []);
+    renderRankings(data.rankings || {});
   }
 
   async function refresh() {

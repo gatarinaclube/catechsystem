@@ -3,10 +3,25 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>CaTech System - Gestão Completa para Gatil</title>
+    <title><%= seo?.title || 'CaTech System - Gestão Completa para Gatil' %></title>
+    <meta name="description" content="<%= seo?.description || 'Sistema completo para gestão de gatil.' %>" />
+    <% if (seo?.keywords) { %><meta name="keywords" content="<%= seo.keywords %>" /><% } %>
+    <link rel="canonical" href="<%= seo?.canonicalUrl || 'https://catechsystem.com.br/' %>" />
+    <meta property="og:type" content="<%= seo?.type || 'website' %>" />
+    <meta property="og:title" content="<%= seo?.title || 'CaTech System' %>" />
+    <meta property="og:description" content="<%= seo?.description || 'Sistema completo para gestão de gatil.' %>" />
+    <meta property="og:url" content="<%= seo?.canonicalUrl || 'https://catechsystem.com.br/' %>" />
+    <meta property="og:image" content="<%= seo?.imageUrl || 'https://catechsystem.com.br/logos/catech-system-wide.png' %>" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="<%= seo?.title || 'CaTech System' %>" />
+    <meta name="twitter:description" content="<%= seo?.description || 'Sistema completo para gestão de gatil.' %>" />
+    <meta name="twitter:image" content="<%= seo?.imageUrl || 'https://catechsystem.com.br/logos/catech-system-wide.png' %>" />
+    <% if (typeof structuredData !== 'undefined' && structuredData) { %>
+      <script type="application/ld+json"><%- JSON.stringify(structuredData) %></script>
+    <% } %>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/css/theme.css" />
     <link rel="stylesheet" href="/css/public-home.css" />
   </head>

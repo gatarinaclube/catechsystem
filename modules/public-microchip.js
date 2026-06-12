@@ -4,6 +4,7 @@ const fs = require("fs");
 const multer = require("multer");
 const bcrypt = require("bcryptjs");
 const { sendStatusEmail } = require("../utils/mailer");
+const { baseSeo, organizationSchema } = require("../utils/seo");
 
 const CAT_BREEDS = [
   "Abissínio", "Aegean", "American Bobtail", "American Curl", "American Shorthair",
@@ -123,8 +124,35 @@ function readPhones(body) {
 }
 
 function publicViewPayload(req, extra = {}) {
+  const seo = baseSeo({
+    title: "Cadastro e Busca de Microchip para Animais - CaTech System",
+    description: "Consulte microchips cadastrados e registre cães, gatos e outros animais com identificação permanente. Dados do tutor ficam protegidos e o contato é intermediado pelo administrador.",
+    path: "/microchip",
+    image: "/logos/catech-icon.png",
+    keywords: [
+      "cadastro de microchip",
+      "buscar microchip",
+      "microchip animal",
+      "microchip gato",
+      "microchip cachorro",
+      "animal perdido",
+      "identificação animal",
+    ],
+  });
   return {
-    title: "Cadastro e Busca de Microchip - CaTech System",
+    title: seo.title,
+    seo,
+    structuredData: [
+      organizationSchema(),
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        name: "Cadastro Público de Microchip CaTech",
+        url: seo.canonicalUrl,
+        applicationCategory: "PetCareApplication",
+        description: seo.description,
+      },
+    ],
     catBreeds: CAT_BREEDS,
     dogBreeds: DOG_BREEDS,
     statusLabels: STATUS_LABELS,

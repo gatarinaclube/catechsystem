@@ -132,7 +132,7 @@
   max-width: 720px;
   margin: 14px 0 0;
   color: var(--public-ink);
-  font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  font-family: "Playfair Display", Georgia, "Times New Roman", serif;
   font-size: clamp(44px, 5.2vw, 74px);
   font-weight: 700;
   line-height: 0.98;
@@ -219,7 +219,7 @@
 .public-hero-panel h2 {
   margin: 6px 0 0;
   color: var(--public-ink);
-  font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  font-family: "Playfair Display", Georgia, "Times New Roman", serif;
   font-size: 26px;
   font-weight: 700;
   line-height: 1.16;
@@ -267,7 +267,7 @@
 .public-contact-card h2 {
   margin: 10px 0;
   color: var(--public-ink);
-  font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  font-family: "Playfair Display", Georgia, "Times New Roman", serif;
   font-size: clamp(30px, 4vw, 48px);
   font-weight: 700;
   line-height: 1.02;
@@ -442,6 +442,123 @@
   margin-top: auto;
 }
 
+.public-plan-benefit-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 34px;
+}
+
+.public-plan-benefit-card {
+  position: relative;
+  display: flex;
+  min-height: 430px;
+  flex-direction: column;
+  border: 1px solid rgba(0, 111, 168, 0.14);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 250, 242, 0.98)),
+    #fff;
+  padding: 26px;
+  box-shadow: 0 22px 55px rgba(28, 45, 62, 0.09);
+}
+
+.public-plan-benefit-card.is-featured {
+  border-color: rgba(242, 106, 27, 0.44);
+  background:
+    linear-gradient(155deg, rgba(255, 242, 232, 0.96), rgba(238, 247, 251, 0.96)),
+    #fff;
+  box-shadow: 0 28px 68px rgba(242, 106, 27, 0.18);
+}
+
+.public-plan-badge,
+.public-plan-audience {
+  display: inline-flex;
+  align-self: flex-start;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.public-plan-badge {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  background: linear-gradient(135deg, var(--public-orange), var(--public-orange-dark));
+  color: #fff;
+  padding: 7px 10px;
+}
+
+.public-plan-audience {
+  color: var(--public-blue);
+  margin-bottom: 14px;
+}
+
+.public-plan-benefit-card h2 {
+  margin: 0;
+  color: var(--public-ink);
+  font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+  font-size: 36px;
+  line-height: 1;
+}
+
+.public-plan-benefit-price {
+  margin-top: 12px;
+  color: var(--public-orange-dark);
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.public-plan-benefit-card p {
+  color: var(--public-muted);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.public-plan-benefit-card ul {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0 24px;
+  padding: 0;
+  list-style: none;
+}
+
+.public-plan-benefit-card li {
+  color: #2d3a4b;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.public-plan-benefit-card li::before {
+  color: var(--public-orange);
+  content: "✓";
+  font-weight: 900;
+  margin-right: 8px;
+}
+
+.public-plan-benefit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--public-blue), #174a6b);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+  margin-top: auto;
+  padding: 12px 18px;
+  text-decoration: none;
+}
+
+.public-plan-benefit-card.is-featured .public-plan-benefit-button {
+  background: linear-gradient(135deg, var(--public-orange), var(--public-orange-dark));
+  box-shadow: 0 16px 28px rgba(242, 106, 27, 0.22);
+}
+
 .public-plan-table-card {
   margin-top: 30px;
   border: 1px solid rgba(242, 106, 27, 0.22);
@@ -451,6 +568,24 @@
     #fff;
   box-shadow: 0 24px 60px rgba(64, 43, 28, 0.12);
   overflow: hidden;
+}
+
+.public-plan-table-intro {
+  padding: 24px 24px 10px;
+}
+
+.public-plan-table-intro h2 {
+  margin: 8px 0;
+  color: var(--public-ink);
+  font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+  font-size: 34px;
+  line-height: 1;
+}
+
+.public-plan-table-intro p {
+  margin: 0;
+  color: var(--public-muted);
+  line-height: 1.55;
 }
 
 .public-plan-table-scroll {
@@ -657,7 +792,7 @@
 .public-help-card h2 {
   margin: 6px 0 0;
   color: var(--public-ink);
-  font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  font-family: "Playfair Display", Georgia, "Times New Roman", serif;
   font-size: 24px;
   font-weight: 700;
   line-height: 1.15;
@@ -900,8 +1035,14 @@
   }
 
   .public-feature-grid,
-  .public-plan-grid {
+  .public-plan-grid,
+  .public-plan-benefit-grid {
     grid-template-columns: 1fr;
+  }
+
+  .public-plan-benefit-card {
+    min-height: 0;
+    padding: 22px;
   }
 
   .public-plan-table-card {

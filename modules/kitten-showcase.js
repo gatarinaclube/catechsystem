@@ -9,6 +9,7 @@ const {
   validateFilesForRole,
 } = require("../utils/planLimits");
 const { ROLES, normalizeRole } = require("../utils/access");
+const { absoluteUrl, baseSeo, cleanText, organizationSchema } = require("../utils/seo");
 
 const SHOWCASE_UPLOAD_LIMIT = getFileUploadLimit("ADMIN");
 const DEFAULT_SHOWCASE_THEME = {
@@ -110,6 +111,116 @@ function compact(value) {
 function shortText(value, max = 240) {
   const text = String(value || "").trim();
   return text ? text.slice(0, max) : null;
+}
+
+function safeJsonArray(value) {
+  try {
+    const parsed = JSON.parse(value || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function uniqueList(values, max = 8) {
+  const seen = new Set();
+  return values
+    .map((value) => String(value || "").trim())
+    .filter(Boolean)
+    .filter((value) => {
+      const key = value.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, max);
+}
+
+function firstShowcaseImage(showcase, litters) {
+  if (showcase.logoPath) return showcase.logoPath;
+  for (const litter of litters || []) {
+    for (const kitten of litter.kittens || []) {
+      const photo = (kitten.photos || [])[0];
+      if (photo?.path) return photo.path;
+      if (photo?.url) return photo.url;
+    }
+  }
+  return "/logos/catech-icon.png";
+}
+
+function buildShowcaseSeo(showcase, settings, litters) {
+  const catteryName = cleanText(showcase.title || settings?.catteryName || "Gatil", 80);
+  const litterBreeds = uniqueList((litters || []).flatMap((litter) => [
+    litter.breed,
+    litter.fatherBreed,
+    litter.motherBreed,
+    ...(litter.kittens || []).map((kitten) => kitten.breed),
+  ]));
+  const settingsBreeds = uniqueList(safeJsonArray(settings?.breedsJson));
+  const breeds = litterBreeds.length ? litterBreeds : settingsBreeds;
+  const breedText = breeds.length ? ` de ${breeds.slice(0, 3).join(", ")}` : "";
+  const totalKittens = (litters || []).reduce((total, litter) => total + (litter.kittens || []).length, 0);
+  const title = `${catteryName} - Filhotes disponíveis${breedText}`;
+  const description = cleanText(
+    showcase.intro ||
+      `Conheça a vitrine de filhotes${breedText} do ${catteryName}. Veja ninhadas, fotos, informações dos pais, disponibilidade e contato do gatil.`,
+    165
+  );
+
+  const seo = baseSeo({
+    title,
+    description,
+    path: `/vitrine/${showcase.slug}`,
+    image: firstShowcaseImage(showcase, litters),
+    keywords: [
+      "filhotes disponíveis",
+      "vitrine de filhotes",
+      "gatil",
+      "gatos de raça",
+      catteryName,
+      ...breeds.map((breed) => `filhotes ${breed}`),
+      ...breeds.map((breed) => `gatil ${breed}`),
+    ],
+  });
+
+  const structuredData = [
+    organizationSchema(),
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      name: seo.title,
+      url: seo.canonicalUrl,
+      description: seo.description,
+      about: breeds.length ? breeds.map((breed) => ({ "@type": "Thing", name: breed })) : undefined,
+      mainEntity: {
+        "@type": "LocalBusiness",
+        name: catteryName,
+        url: seo.canonicalUrl,
+        image: seo.imageUrl,
+        description: seo.description,
+      },
+    },
+  ];
+
+  if (totalKittens > 0) {
+    structuredData.push({
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      name: `Filhotes disponíveis - ${catteryName}`,
+      numberOfItems: totalKittens,
+      itemListElement: (litters || [])
+        .flatMap((litter) => litter.kittens || [])
+        .slice(0, 20)
+        .map((kitten, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          name: kitten.displayName || kitten.name || `Filhote ${index + 1}`,
+          url: seo.canonicalUrl,
+        })),
+    });
+  }
+
+  return { seo, structuredData, breeds };
 }
 
 function getClientIp(req) {
@@ -432,11 +543,19 @@ async function renderPublicShowcase(prisma, req, res, next, rawSlug) {
         })),
       };
     });
+    const { seo, structuredData, breeds } = buildShowcaseSeo(
+      showcase,
+      showcase.owner?.settings || null,
+      litters
+    );
 
     return res.render("kitten-showcase/public", {
       showcase,
       settings: showcase.owner?.settings || null,
       litters,
+      seo,
+      structuredData,
+      seoBreeds: breeds,
       hasPaymentInfo: Boolean(
         showcase.paymentPix ||
         showcase.paymentCardCash ||
@@ -614,7 +733,20 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
   async function loadAnalyticsOverview(showcaseId) {
     if (!showcaseId) {
-      return { active: [], recent: [], events: [], totals: { active: 0, today: 0, total: 0 } };
+      return {
+        active: [],
+        recent: [],
+        events: [],
+        rankings: {
+          whatsappClicks: 0,
+          averageDurationLabel: "0s",
+          topActions: [],
+          topKittens: [],
+          topPlaces: [],
+          leadVisits: [],
+        },
+        totals: { active: 0, today: 0, total: 0 },
+      };
     }
 
     const now = Date.now();
@@ -622,7 +754,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const [activeSessions, recentSessions, recentEvents, todayCount, totalCount] = await Promise.all([
+    const [activeSessions, recentSessions, recentEvents, rankingEvents, todayCount, totalCount] = await Promise.all([
       prisma.catteryShowcaseAnalyticsSession.findMany({
         where: { showcaseId, lastSeenAt: { gte: activeSince } },
         orderBy: { lastSeenAt: "desc" },
@@ -639,6 +771,12 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         include: { session: true },
         orderBy: { createdAt: "desc" },
         take: 25,
+      }),
+      prisma.catteryShowcaseAnalyticsEvent.findMany({
+        where: { session: { showcaseId } },
+        include: { session: true },
+        orderBy: { createdAt: "desc" },
+        take: 500,
       }),
       prisma.catteryShowcaseAnalyticsSession.count({
         where: { showcaseId, startedAt: { gte: today } },
@@ -670,6 +808,51 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       })),
     });
 
+    const increment = (map, key, meta = {}) => {
+      const label = shortText(key, 180);
+      if (!label) return;
+      const current = map.get(label) || { label, count: 0, ...meta };
+      current.count += 1;
+      map.set(label, current);
+    };
+    const topList = (map, limit = 5) => [...map.values()].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)).slice(0, limit);
+    const actionMap = new Map();
+    const kittenMap = new Map();
+    const placeMap = new Map();
+    let whatsappClicks = 0;
+
+    rankingEvents.forEach((event) => {
+      const label = event.label || event.type || "";
+      const place = placeLabel(event.session);
+      if (event.type === "click") {
+        increment(actionMap, label);
+        if (/whats/i.test(label)) {
+          whatsappClicks += 1;
+        }
+      }
+      if (event.type === "view_section" && /^Filhote:/i.test(label)) {
+        increment(kittenMap, label.replace(/^Filhote:\s*/i, ""));
+      }
+      if (place) increment(placeMap, place);
+    });
+
+    const averageDuration = recentSessions.length
+      ? Math.round(recentSessions.reduce((sum, session) => sum + Number(session.durationSeconds || 0), 0) / recentSessions.length)
+      : 0;
+
+    const leadVisits = recentSessions
+      .filter((session) => (session.events || []).some((event) => /whats/i.test(event.label || "")))
+      .sort((a, b) => Number(b.durationSeconds || 0) - Number(a.durationSeconds || 0))
+      .slice(0, 5)
+      .map((session) => ({
+        id: session.id,
+        place: placeLabel(session),
+        browserLabel: session.browserLabel || "Navegador",
+        durationLabel: formatDuration(session.durationSeconds),
+        startedAtLabel: formatDateTime(session.startedAt),
+        clicks: (session.events || []).filter((event) => /whats/i.test(event.label || "")).length,
+      }));
+
     return {
       active: activeSessions.map(shapeSession),
       recent: recentSessions.map(shapeSession),
@@ -682,6 +865,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         createdAtLabel: formatDateTime(event.createdAt),
         place: placeLabel(event.session),
       })),
+      rankings: {
+        whatsappClicks,
+        averageDurationLabel: formatDuration(averageDuration),
+        topActions: topList(actionMap),
+        topKittens: topList(kittenMap),
+        topPlaces: topList(placeMap),
+        leadVisits,
+      },
       totals: {
         active: activeSessions.length,
         today: todayCount,

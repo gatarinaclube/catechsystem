@@ -82,6 +82,7 @@ const documentsRouterFactory = require("./modules/documents");
 const gatarinaShowPhotosRouterFactory = require("./modules/gatarina-show-photos");
 const publicMicrochipRouterFactory = require("./modules/public-microchip");
 const { startVaccineReminderScheduler } = require("./utils/vaccineReminderJob");
+const { baseSeo, organizationSchema } = require("./utils/seo");
 const {generateTitleHomologationPDF,} = require("./modules/pdf/titleHomologationPdf");
 const {generatePedigreeHomologationPDF,} = require("./modules/pdf/pedigreeHomologationPdf");
 const { generateCatteryRegistrationPDF } = require("./modules/pdf/catteryRegistrationPdf");
@@ -703,6 +704,21 @@ app.get("/", (req, res) => {
     user: req.user,
     plans: commercialPlanList(),
     contactStatus: req.query.contato || null,
+    seo: baseSeo({
+      title: "CaTech System - Gestão Completa para Gatil",
+      description: "Sistema completo para gestão de gatil com cadastro de reprodutores, ninhadas, filhotes, vacinas, tratamentos, exames, vitrine pública, CRM, financeiro, relatórios e documentos.",
+      path: "/",
+      image: "/logos/catech-system-wide.png",
+      keywords: [
+        "sistema para gatil",
+        "gestão de gatil",
+        "software para criadores de gatos",
+        "controle de ninhadas",
+        "vitrine de filhotes",
+        "cadastro de gatos",
+      ],
+    }),
+    structuredData: organizationSchema(),
   });
 });
 
@@ -711,6 +727,63 @@ app.get("/planos", (req, res) => {
     user: req.user,
     plans: commercialPlanList(),
   });
+});
+
+app.get("/robots.txt", (req, res) => {
+  const base = (process.env.APP_URL || "https://catechsystem.com.br").replace(/\/$/, "");
+  res.type("text/plain").send([
+    "User-agent: *",
+    "Allow: /",
+    "Disallow: /dashboard",
+    "Disallow: /users",
+    "Disallow: /settings",
+    "Disallow: /ffb-services",
+    "Disallow: /admin",
+    `Sitemap: ${base}/sitemap.xml`,
+    "",
+  ].join("\n"));
+});
+
+app.get("/sitemap.xml", async (req, res, next) => {
+  try {
+    const base = (process.env.APP_URL || "https://catechsystem.com.br").replace(/\/$/, "");
+    const showcases = await prisma.catteryKittenShowcase.findMany({
+      where: { published: true },
+      select: { slug: true, updatedAt: true },
+      orderBy: { updatedAt: "desc" },
+      take: 1000,
+    });
+    const staticUrls = [
+      { loc: "/", priority: "1.0" },
+      { loc: "/planos", priority: "0.8" },
+      { loc: "/microchip", priority: "0.9" },
+    ];
+    const urls = [
+      ...staticUrls.map((item) => ({ ...item, lastmod: new Date() })),
+      ...showcases.map((showcase) => ({
+        loc: `/vitrine/${showcase.slug}`,
+        priority: "0.7",
+        lastmod: showcase.updatedAt || new Date(),
+      })),
+    ];
+
+    const xml = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+      ...urls.map((item) => [
+        "  <url>",
+        `    <loc>${base}${item.loc}</loc>`,
+        `    <lastmod>${new Date(item.lastmod).toISOString().slice(0, 10)}</lastmod>`,
+        `    <priority>${item.priority}</priority>`,
+        "  </url>",
+      ].join("\n")),
+      "</urlset>",
+    ].join("\n");
+
+    res.type("application/xml").send(xml);
+  } catch (err) {
+    next(err);
+  }
 });
 
 function escapePublicContactValue(value) {
@@ -1731,6 +1804,72 @@ const activeTreatmentCount = await prisma.catTreatment.count({
   },
 });
 
+let onboarding = null;
+if (!isAdminRole(req.session.userRole)) {
+  const [settings, breederCount, litterCount, showcase] = await Promise.all([
+    prisma.userSettings.findUnique({
+      where: { userId: req.session.userId },
+      select: { catteryName: true, logoPath: true, breedsJson: true },
+    }),
+    prisma.cat.count({
+      where: {
+        ownerId: req.session.userId,
+        kittenNumber: null,
+        litterKitten: { is: null },
+      },
+    }),
+    prisma.litter.count({ where: { ownerId: req.session.userId } }),
+    prisma.catteryKittenShowcase.findUnique({
+      where: { ownerId: req.session.userId },
+      select: { published: true, slug: true },
+    }),
+  ]);
+
+  const hasSettings = Boolean(
+    settings?.catteryName ||
+    settings?.logoPath ||
+    parseJsonList(settings?.breedsJson).length
+  );
+  const steps = [
+    {
+      number: 1,
+      title: "Configure seu gatil",
+      description: "Inclua nome, logo, raças, exames e preferências principais.",
+      href: "/settings",
+      done: hasSettings,
+    },
+    {
+      number: 2,
+      title: "Cadastre reprodutores",
+      description: "Registre padreadores, matrizes e fundadores usados no gatil.",
+      href: "/breeders",
+      done: breederCount > 0,
+    },
+    {
+      number: 3,
+      title: "Cadastre uma ninhada",
+      description: "Monte o primeiro mapa para acompanhar filhotes e histórico.",
+      href: "/admin/litters",
+      done: litterCount > 0,
+    },
+    {
+      number: 4,
+      title: "Publique sua vitrine",
+      description: "Mostre filhotes disponíveis em uma página pública profissional.",
+      href: "/admin/vitrine-filhotes",
+      done: Boolean(showcase?.published),
+    },
+  ];
+  const completedCount = steps.filter((step) => step.done).length;
+  onboarding = {
+    steps,
+    completedCount,
+    total: steps.length,
+    percent: Math.round((completedCount / steps.length) * 100),
+    complete: completedCount === steps.length,
+  };
+}
+
 const attentionItems = [
   ...receivableAttention
     .sort((a, b) => a.date - b.date)
@@ -1809,6 +1948,7 @@ res.render("dashboard", {
 
   pendingServices,
 pendingServicesCount: pendingServices.length,
+  onboarding,
   administrativePanel,
   operationalPanel,
 

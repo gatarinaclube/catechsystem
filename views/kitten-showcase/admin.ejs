@@ -59,6 +59,67 @@
             <div><span>Hoje</span><strong data-analytics-total="today"><%= analytics.totals.today %></strong></div>
             <div><span>Total</span><strong data-analytics-total="total"><%= analytics.totals.total %></strong></div>
           </div>
+          <details class="showcase-analytics-recent" open>
+            <summary>Ranking interno de leads</summary>
+            <div class="showcase-analytics-metrics">
+              <div>
+                <span>Cliques no WhatsApp</span>
+                <strong data-analytics-ranking="whatsapp"><%= analytics.rankings ? analytics.rankings.whatsappClicks : 0 %></strong>
+              </div>
+              <div>
+                <span>Tempo médio</span>
+                <strong data-analytics-ranking="duration"><%= analytics.rankings ? analytics.rankings.averageDurationLabel : '0s' %></strong>
+              </div>
+              <div>
+                <span>Leads recentes</span>
+                <strong data-analytics-ranking="leads"><%= analytics.rankings && analytics.rankings.leadVisits ? analytics.rankings.leadVisits.length : 0 %></strong>
+              </div>
+            </div>
+            <div class="showcase-analytics-ranking-grid">
+              <div>
+                <div class="content-sub">Filhotes mais visualizados</div>
+                <div id="showcaseTopKittens" class="showcase-analytics-list">
+                  <% if (!analytics.rankings || !analytics.rankings.topKittens.length) { %>
+                    <div class="empty">Ainda não há visualizações de filhotes suficientes.</div>
+                  <% } %>
+                  <% (analytics.rankings ? analytics.rankings.topKittens : []).forEach(function(item) { %>
+                    <div class="showcase-analytics-row">
+                      <strong><%= item.label %></strong>
+                      <span><%= item.count %> visualização(ões)</span>
+                    </div>
+                  <% }) %>
+                </div>
+              </div>
+              <div>
+                <div class="content-sub">Cidades e locais com mais acessos</div>
+                <div id="showcaseTopCities" class="showcase-analytics-list">
+                  <% if (!analytics.rankings || !analytics.rankings.topPlaces.length) { %>
+                    <div class="empty">Cidade ainda não identificada.</div>
+                  <% } %>
+                  <% (analytics.rankings ? analytics.rankings.topPlaces : []).forEach(function(item) { %>
+                    <div class="showcase-analytics-row">
+                      <strong><%= item.label %></strong>
+                      <span><%= item.count %> acesso(s)</span>
+                    </div>
+                  <% }) %>
+                </div>
+              </div>
+              <div>
+                <div class="content-sub">Visitas com clique em WhatsApp</div>
+                <div id="showcaseLeadVisits" class="showcase-analytics-list">
+                  <% if (!analytics.rankings || !analytics.rankings.leadVisits.length) { %>
+                    <div class="empty">Nenhum clique em WhatsApp registrado ainda.</div>
+                  <% } %>
+                  <% (analytics.rankings ? analytics.rankings.leadVisits : []).forEach(function(visit) { %>
+                    <div class="showcase-analytics-row">
+                      <strong><%= visit.place %></strong>
+                      <span><%= visit.durationLabel %> · <%= visit.browserLabel %> · <%= visit.clicks %> clique(s)</span>
+                    </div>
+                  <% }) %>
+                </div>
+              </div>
+            </div>
+          </details>
           <div>
               <div class="content-sub">Acessando no momento</div>
               <div id="activeShowcaseVisitors" class="showcase-analytics-list">

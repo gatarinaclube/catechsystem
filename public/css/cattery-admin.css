@@ -939,6 +939,13 @@ textarea:focus {
   gap: 14px;
 }
 
+.showcase-analytics-ranking-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
 .showcase-analytics-list {
   display: grid;
   gap: 8px;
@@ -1298,6 +1305,7 @@ textarea:focus {
   .showcase-parent-grid,
   .showcase-comparison-grid,
   .showcase-analytics-grid,
+  .showcase-analytics-ranking-grid,
   .showcase-analytics-metrics {
     grid-template-columns: 1fr;
   }

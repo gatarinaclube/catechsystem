@@ -10,7 +10,7 @@
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/css/theme.css" />
     <link rel="stylesheet" href="/css/public-home.css" />
   </head>
@@ -45,6 +45,36 @@
             { key: "master", title: "Master", href: "/planos/master/cadastro" },
             { key: "premium", title: "Premium", href: "/planos/premium/cadastro", featured: true }
           ];
+          const planPositioning = [
+            {
+              key: "basic",
+              title: "Básico",
+              headline: "Para quem está começando",
+              price: "R$ 14,90/mês",
+              description: "Organize o essencial do gatil com cadastro, rotina sanitária e controle inicial dos filhotes.",
+              benefits: ["Comece sem planilhas soltas", "Acompanhe saúde e histórico", "Tenha base para crescer com ordem"],
+              href: "/planos/basic/cadastro"
+            },
+            {
+              key: "master",
+              title: "Master",
+              headline: "Para gatil em crescimento",
+              price: "R$ 24,90/mês",
+              description: "Amplie a gestão com vitrine, CRM, documentos e relatórios para vender melhor e atender com mais profissionalismo.",
+              benefits: ["Transforme visitas em contatos", "Ganhe presença pública com a vitrine", "Padronize documentos e atendimento"],
+              href: "/planos/master/cadastro"
+            },
+            {
+              key: "premium",
+              title: "Premium",
+              headline: "Para criador profissional",
+              price: "R$ 34,90/mês",
+              description: "Use o CaTech completo para gestão financeira, relatórios avançados, automações e operação sem limite.",
+              benefits: ["Controle financeiro completo", "Relatórios para decisão", "Capacidade ilimitada para o gatil"],
+              href: "/planos/premium/cadastro",
+              featured: true
+            }
+          ];
           const planComparisonRows = [
             { label: "Recomendação", type: "text", values: { basic: ["Gatil iniciante", "Gatil pequeno", "Tutor de gatos"], master: ["Gatil médio"], premium: ["Gatil grande"] } },
             { label: "Pagamento mensal", type: "price", values: { basic: ["R$ 14,90", "mês"], master: ["R$ 24,90", "mês"], premium: ["R$ 34,90", "mês"] } },
@@ -78,7 +108,34 @@
           ];
         %>
 
+        <div class="public-plan-benefit-grid" aria-label="Escolha pelo momento do gatil">
+          <% planPositioning.forEach(function(plan) { %>
+            <article class="public-plan-benefit-card <%= plan.featured ? 'is-featured' : '' %>">
+              <% if (plan.featured) { %>
+                <span class="public-plan-badge">Mais completo</span>
+              <% } %>
+              <span class="public-plan-audience"><%= plan.headline %></span>
+              <h2><%= plan.title %></h2>
+              <div class="public-plan-benefit-price"><%= plan.price %></div>
+              <p><%= plan.description %></p>
+              <ul>
+                <% plan.benefits.forEach(function(benefit) { %>
+                  <li><%= benefit %></li>
+                <% }) %>
+              </ul>
+              <a class="public-plan-benefit-button" href="<%= plan.href %>">
+                <%= plan.featured ? 'Começar pelo Premium' : `Escolher ${plan.title}` %>
+              </a>
+            </article>
+          <% }) %>
+        </div>
+
         <div class="public-plan-table-card">
+          <div class="public-plan-table-intro">
+            <span class="public-eyebrow">Comparativo completo</span>
+            <h2>Veja os recursos de cada plano</h2>
+            <p>A tabela abaixo serve para conferir limites, módulos e formas de pagamento antes de contratar.</p>
+          </div>
           <div class="public-plan-table-scroll">
             <table class="public-plan-comparison">
               <thead>

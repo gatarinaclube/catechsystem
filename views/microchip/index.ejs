@@ -3,12 +3,25 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title><%= title %></title>
+    <title><%= seo?.title || title %></title>
     <meta
       name="description"
-      content="Cadastro público de microchip para cães, gatos e outros animais. Busque um microchip cadastrado, registre um animal com microchip e facilite o contato em caso de perda ou localização."
+      content="<%= seo?.description || 'Cadastro público de microchip para cães, gatos e outros animais. Busque um microchip cadastrado, registre um animal com microchip e facilite o contato em caso de perda ou localização.' %>"
     />
-    <meta name="keywords" content="cadastrar microchip, cadastro de microchip, buscar microchip, microchip gato, microchip cachorro, animal perdido" />
+    <% if (seo?.keywords) { %><meta name="keywords" content="<%= seo.keywords %>" /><% } %>
+    <link rel="canonical" href="<%= seo?.canonicalUrl || 'https://catechsystem.com.br/microchip' %>" />
+    <meta property="og:type" content="<%= seo?.type || 'website' %>" />
+    <meta property="og:title" content="<%= seo?.title || title %>" />
+    <meta property="og:description" content="<%= seo?.description || '' %>" />
+    <meta property="og:url" content="<%= seo?.canonicalUrl || 'https://catechsystem.com.br/microchip' %>" />
+    <meta property="og:image" content="<%= seo?.imageUrl || 'https://catechsystem.com.br/logos/catech-icon.png' %>" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="<%= seo?.title || title %>" />
+    <meta name="twitter:description" content="<%= seo?.description || '' %>" />
+    <meta name="twitter:image" content="<%= seo?.imageUrl || 'https://catechsystem.com.br/logos/catech-icon.png' %>" />
+    <% if (typeof structuredData !== 'undefined' && structuredData) { %>
+      <script type="application/ld+json"><%- JSON.stringify(structuredData) %></script>
+    <% } %>
     <link rel="stylesheet" href="/css/theme.css" />
     <link rel="stylesheet" href="/css/microchip.css" />
   </head>
