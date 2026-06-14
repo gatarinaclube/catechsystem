@@ -59,6 +59,12 @@ function buildNextActions(grouped) {
     .slice(0, 8);
 }
 
+function normalizeCompleteDateInput(value) {
+  const text = String(value || "").trim();
+  if (!/^(\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})$/.test(text)) return "";
+  return formatDateInput(text);
+}
+
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
@@ -160,14 +166,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       const antirabicHistory = []
         .concat(req.body.antirabicDates || [])
-        .map((date) => ({ date: formatDateInput(date) }))
+        .map((date) => ({ date: normalizeCompleteDateInput(date) }))
         .filter((item) => item.date !== "");
 
       const felineDates = [].concat(req.body.felineDates || []);
       const felineTypes = [].concat(req.body.felineTypes || []);
       const felineHistory = felineDates
         .map((date, index) => ({
-          date: formatDateInput(date),
+          date: normalizeCompleteDateInput(date),
           type: felineTypes[index] || "",
         }))
         .filter((item) => item.date !== "" || item.type !== "");

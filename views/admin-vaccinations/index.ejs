@@ -191,6 +191,16 @@
           return `${parts[2]}/${parts[1]}/${parts[0]}`;
         }
 
+        function isCompleteDate(value) {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) return false;
+          const [year, month, day] = value.split("-").map(Number);
+          if (year < 1900 || year > 2200) return false;
+          const parsed = new Date(Date.UTC(year, month - 1, day));
+          return parsed.getUTCFullYear() === year &&
+            parsed.getUTCMonth() === month - 1 &&
+            parsed.getUTCDate() === day;
+        }
+
         function felineTypeOptions() {
           return [
             '<option value="">Tipo</option>',
@@ -272,7 +282,7 @@
           const input = row.querySelector('input[type="date"]');
           if (input) {
             input.addEventListener("change", () => {
-              if (!input.value) return;
+              if (!isCompleteDate(input.value)) return;
               row.innerHTML = `
                 <input type="hidden" name="antirabicDates" value="${input.value}" />
                 <span class="history-date-display">${formatDisplayDate(input.value)}</span>
@@ -292,7 +302,7 @@
           const select = row.querySelector("select");
 
           function maybeFreeze() {
-            if (!input?.value || !select?.value) return;
+            if (!isCompleteDate(input?.value) || !select?.value) return;
             row.innerHTML = `
               <input type="hidden" name="felineDates" value="${input?.value || ""}" />
               <input type="hidden" name="felineTypes" value="${select?.value || ""}" />
