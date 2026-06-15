@@ -200,6 +200,8 @@ function classifyOperationalCat(cat, options = {}) {
 function isRoutineModuleCatVisible(cat) {
   if (!cat) return false;
   if (cat.deceased === true || cat.kittenAvailabilityStatus === "DECEASED") return false;
+  if (cat.ownershipType === "CO-OWNERSHIP" || cat.ownershipType === "OTHER") return false;
+  if (cat.currentOwnerClientId) return false;
   return isOwnerSelf(cat);
 }
 
