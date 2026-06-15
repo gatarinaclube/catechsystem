@@ -546,6 +546,64 @@
           <details class="content-card settings-panel">
             <summary>
               <div>
+                <div class="content-title">Suplementação pré e pós cruzamento</div>
+                <div class="content-sub">Marca automaticamente matrizes em período de suplementação no módulo Acasalamentos.</div>
+              </div>
+            </summary>
+            <div class="settings-panel-body">
+              <div class="section-note">
+                Quando ativado, o sistema usa a data prevista de cruza para iniciar a suplementação antes do acasalamento.
+                Se a cruza atrasar, a matriz continua marcada em suplementação até ser informada a data real da cruza.
+              </div>
+
+              <div class="settings-toggle-row">
+                <label class="settings-switch">
+                  <input
+                    id="matingSupplementEnabled"
+                    name="matingSupplementEnabled"
+                    type="checkbox"
+                    <%= settings.matingSupplementEnabled ? "checked" : "" %>
+                  />
+                  <span class="settings-switch-track"></span>
+                  <span>Usar controle de suplementação</span>
+                </label>
+              </div>
+
+              <div class="settings-collapsible" id="matingSupplementFields">
+                <div class="grid-3">
+                  <div class="field">
+                    <label class="field-label" for="matingSupplementDaysBefore">Dias antes da cruza prevista</label>
+                    <input
+                      id="matingSupplementDaysBefore"
+                      name="matingSupplementDaysBefore"
+                      type="number"
+                      min="0"
+                      step="1"
+                      value="<%= settings.matingSupplementDaysBefore ?? 15 %>"
+                    />
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="matingSupplementDaysAfter">Dias após a cruza confirmada</label>
+                    <input
+                      id="matingSupplementDaysAfter"
+                      name="matingSupplementDaysAfter"
+                      type="number"
+                      min="0"
+                      step="1"
+                      value="<%= settings.matingSupplementDaysAfter ?? 30 %>"
+                    />
+                  </div>
+                </div>
+                <div class="section-note" style="margin-top:12px;">
+                  Exemplo: 15 dias antes e 30 dias depois mantém a matriz sinalizada desde 15 dias antes da data prevista até 30 dias após a data de cruza lançada.
+                </div>
+              </div>
+            </div>
+          </details>
+
+          <details class="content-card settings-panel">
+            <summary>
+              <div>
                 <div class="content-title">Aviso automático de vacinas</div>
                 <div class="content-sub">E-mails de alerta e regras de vencimento de vacinas.</div>
               </div>
@@ -821,6 +879,8 @@
 
         const vaccineToggle = document.getElementById("vaccineReminderEnabled");
         const vaccineFields = document.getElementById("vaccineReminderFields");
+        const matingSupplementToggle = document.getElementById("matingSupplementEnabled");
+        const matingSupplementFields = document.getElementById("matingSupplementFields");
         const veterinarianFixed = document.getElementById("veterinarianFixed");
         const veterinarianFields = document.getElementById("veterinarianFields");
         const antirabicAnnualBooster = document.getElementById("antirabicAnnualBooster");
@@ -830,6 +890,10 @@
         function refreshVaccineFields() {
           if (!vaccineToggle || !vaccineFields) return;
           vaccineFields.style.display = vaccineToggle.checked ? "block" : "none";
+        }
+        function refreshMatingSupplementFields() {
+          if (!matingSupplementToggle || !matingSupplementFields) return;
+          matingSupplementFields.style.display = matingSupplementToggle.checked ? "block" : "none";
         }
         function refreshVeterinarianFields() {
           if (!veterinarianFixed || !veterinarianFields) return;
@@ -844,10 +908,12 @@
           }
         }
         vaccineToggle?.addEventListener("change", refreshVaccineFields);
+        matingSupplementToggle?.addEventListener("change", refreshMatingSupplementFields);
         veterinarianFixed?.addEventListener("change", refreshVeterinarianFields);
         antirabicAnnualBooster?.addEventListener("change", refreshVaccineIntervals);
         felineAnnualBooster?.addEventListener("change", refreshVaccineIntervals);
         refreshVaccineFields();
+        refreshMatingSupplementFields();
         refreshVeterinarianFields();
         refreshVaccineIntervals();
       })();

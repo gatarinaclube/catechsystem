@@ -31,6 +31,32 @@
         border-radius: 14px;
         margin-bottom: 12px;
       }
+      .mating-row.is-supplementing {
+        border-left: 5px solid #16a34a;
+        background: linear-gradient(90deg, rgba(22, 163, 74, 0.08), rgba(255, 255, 255, 0.98) 42%);
+      }
+      .supplement-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 14px;
+      }
+      .supplement-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 12px 14px;
+        border: 1px solid var(--border-soft);
+        border-radius: 12px;
+        background: #f8fafc;
+      }
+      .supplement-item-main {
+        display: grid;
+        gap: 4px;
+      }
+      .supplement-item-sub {
+        color: var(--text-muted);
+        font-size: 12px;
+      }
       .origin-button {
         margin-top: 4px;
         padding: 0;
@@ -342,12 +368,23 @@
                 <div class="empty" style="margin-top:12px;">Nenhum registro nesta divisão.</div>
               <% } else { %>
                 <% items.forEach(function(row) { %>
-                <form method="post" action="/admin/matings/<%= row.female.id %>" class="mating-row">
+                <form method="post" action="/admin/matings/<%= row.female.id %>" class="mating-row <%= row.supplement?.active ? 'is-supplementing' : '' %>">
                   <input type="hidden" name="ownerId" value="<%= selectedOwnerId || '' %>" />
                   <div class="mating-table">
                     <div>
-                      <div class="item-title"><%= row.femaleDisplayName %></div>
+                      <div class="item-title">
+                        <%= row.femaleDisplayName %>
+                        <% if (row.supplement?.active) { %>
+                          <span class="status-pill is-green">Suplementação</span>
+                        <% } %>
+                      </div>
                       <div class="birth-line">Nascimento: <%= row.birthDateLabel %></div>
+                      <% if (row.supplement?.active) { %>
+                        <div class="birth-line">
+                          <%= row.supplement.phase %> · início <%= formatDate(row.supplement.startDate) %> ·
+                          <%= row.supplement.endOpen ? "até lançar a data de cruza" : "fim " + formatDate(row.supplement.endDate) %>
+                        </div>
+                      <% } %>
                       <div class="parent-line">
                         <span>Pai: <%= row.fatherName %></span>
                         <span>Mãe: <%= row.motherName %></span>
@@ -425,6 +462,33 @@
             </div>
           </details>
         <% }) %>
+
+        <% if (supplementRows && supplementRows.length) { %>
+          <section class="content-card module-panel">
+            <div class="history-section-head">
+              <div>
+                <div class="content-title">Gatas em suplementação</div>
+                <div class="content-sub">Matrizes dentro do período configurado em Configurações.</div>
+              </div>
+              <span class="status-pill is-green"><%= supplementRows.length %></span>
+            </div>
+            <div class="supplement-list">
+              <% supplementRows.forEach(function(row) { %>
+                <div class="supplement-item">
+                  <div class="supplement-item-main">
+                    <strong><%= row.femaleDisplayName %></strong>
+                    <span class="supplement-item-sub">
+                      <%= row.supplement.phase %> · início <%= formatDate(row.supplement.startDate) %> ·
+                      <%= row.supplement.endOpen ? "mantém até informar a data de cruza" : "fim " + formatDate(row.supplement.endDate) %>
+                    </span>
+                    <span class="supplement-item-sub"><%= row.supplement.summary %></span>
+                  </div>
+                  <span class="status-pill is-green">Suplementação</span>
+                </div>
+              <% }) %>
+            </div>
+          </section>
+        <% } %>
       </main>
     </div>
 

@@ -90,6 +90,61 @@ function computeGestationDays(startDate, endDate) {
   return Math.max(0, Math.floor((now - reference) / 86400000));
 }
 
+function startOfDay(value) {
+  const date = parseDate(value);
+  if (!date) return null;
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function positiveInteger(value, fallback) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 0) return fallback;
+  return Math.floor(number);
+}
+
+function computeSupplementInfo(settings, plan, nextCrossDate) {
+  if (!settings?.matingSupplementEnabled) return null;
+
+  const daysBefore = positiveInteger(settings.matingSupplementDaysBefore, 15);
+  const daysAfter = positiveInteger(settings.matingSupplementDaysAfter, 30);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const matingDate = startOfDay(plan?.matingStartDate);
+  if (matingDate) {
+    const startDate = addDays(matingDate, -daysBefore);
+    const endDate = addDays(matingDate, daysAfter);
+    const active = today >= startDate && today <= endDate;
+
+    return {
+      active,
+      phase: today < matingDate ? "Pré-cruza" : "Pós-cruza",
+      startDate,
+      endDate,
+      endOpen: false,
+      orderDate: startDate,
+      summary: `${daysBefore} dias antes até ${daysAfter} dias após a cruza`,
+    };
+  }
+
+  const expectedDate = startOfDay(nextCrossDate);
+  if (!expectedDate) return null;
+
+  const startDate = addDays(expectedDate, -daysBefore);
+  const active = today >= startDate;
+
+  return {
+    active,
+    phase: today > expectedDate ? "Pré-cruza atrasada" : "Pré-cruza",
+    startDate,
+    endDate: null,
+    endOpen: true,
+    orderDate: startDate,
+    summary: `${daysBefore} dias antes da previsão; segue até lançar a data de cruza`,
+  };
+}
+
 function buildAncestorInclude(depth) {
   if (depth <= 1) {
     return {
@@ -264,6 +319,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const nextCrossDate = computeNextCrossDate(female.birthDate, litterHistory);
       const dppDate = computeDpp(plan?.matingStartDate, plan?.matingEndDate);
       const gestationDays = computeGestationDays(plan?.matingStartDate, plan?.matingEndDate);
+      const supplement = computeSupplementInfo(female.owner?.settings, plan, nextCrossDate);
       const status = isDevelopingFemale(female)
         ? "EM_DESENVOLVIMENTO"
         : plan?.status || "PARA_ACASALAR";
@@ -281,6 +337,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         nextCrossDate,
         dppDate,
         gestationDays,
+        supplement,
         fatherName,
         motherName,
         status,
@@ -302,7 +359,16 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       });
     });
 
-    return { grouped, males };
+    const supplementRows = Object.values(grouped)
+      .flat()
+      .filter((row) => row.supplement?.active)
+      .sort((a, b) => {
+        const aDate = a.supplement?.orderDate ? new Date(a.supplement.orderDate).getTime() : Number.MAX_SAFE_INTEGER;
+        const bDate = b.supplement?.orderDate ? new Date(b.supplement.orderDate).getTime() : Number.MAX_SAFE_INTEGER;
+        return aDate - bDate;
+      });
+
+    return { grouped, males, supplementRows };
   }
 
   router.get(
@@ -312,7 +378,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     async (req, res) => {
       const selectedOwnerId = req.query.ownerId ? Number(req.query.ownerId) : null;
       const { users } = await loadOwnerFilter(req, selectedOwnerId);
-      const { grouped, males } = await buildRows(req, selectedOwnerId);
+      const { grouped, males, supplementRows } = await buildRows(req, selectedOwnerId);
 
       res.render("admin-matings/index", {
         user: req.user,
@@ -320,6 +386,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         groups: STATUS_GROUPS,
         grouped,
         nextActions: buildNextActions(grouped),
+        supplementRows,
         males,
         users,
         selectedOwnerId,

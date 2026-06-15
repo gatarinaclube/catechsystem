@@ -354,6 +354,9 @@ model UserSettings {
   vaccineReminderEnabled           Boolean  @default(false)
   vaccineReminderDaysBefore        Int?
   vaccineReminderGroupsJson        String?
+  matingSupplementEnabled          Boolean  @default(false)
+  matingSupplementDaysBefore       Int?
+  matingSupplementDaysAfter        Int?
   antirabicFirstDoseMonths         Int?
   antirabicAnnualBooster           Boolean  @default(true)
   antirabicBoosterIntervalYears    Int?
