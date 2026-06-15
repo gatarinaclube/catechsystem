@@ -5,6 +5,7 @@ const {
   classifyOperationalCat,
   formatDate,
   formatDateInput,
+  isRoutineModuleCatVisible,
 } = require("../utils/cattery-admin");
 
 const HISTORY_SECTION_TREATMENT = "TREATMENT";
@@ -230,6 +231,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
     return cats
       .map((cat) => {
+        if (!isRoutineModuleCatVisible(cat)) return null;
         const category = classifyOperationalCat(cat, {
           includeDeliveredKittensInHistory: false,
           excludeCoOwnedAdults: false,

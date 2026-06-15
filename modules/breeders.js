@@ -598,6 +598,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         formAction: "/breeders",
         historyPath: null,
         cancelPath: "/breeders",
+        success: false,
         error: null,
       });
     }
@@ -615,7 +616,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         applyUploadedDocuments(req, data, null);
         const breeder = await prisma.cat.create({ data });
         await syncDeathHistoryEntry(prisma, breeder.id, breeder);
-        res.redirect(`/breeders/${breeder.id}`);
+        res.redirect(`/breeders/${breeder.id}?saved=1`);
       } catch (err) {
         removeUploadedFiles(req.files);
         const cat = { ...req.body };
@@ -628,6 +629,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             formAction: "/breeders",
             historyPath: null,
             cancelPath: "/breeders",
+            success: false,
             error:
               err.code === "DUPLICATE_MICROCHIP" || err.code === "UPLOAD_LIMIT"
                 || err.code === "PLAN_LIMIT"
@@ -663,6 +665,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         formAction: `/breeders/${cat.id}`,
         historyPath: `/admin/history/${cat.id}`,
         cancelPath: "/breeders",
+        success: req.query.saved === "1",
         error: null,
       });
     }
@@ -694,7 +697,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           data,
         });
         await syncDeathHistoryEntry(prisma, existingCat.id, updated);
-        res.redirect(`/breeders/${existingCat.id}`);
+        res.redirect(`/breeders/${existingCat.id}?saved=1`);
       } catch (err) {
         removeUploadedFiles(req.files);
         const cat = { ...existingCat, ...req.body, id: existingCat.id };
@@ -707,6 +710,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             formAction: `/breeders/${existingCat.id}`,
             historyPath: `/admin/history/${existingCat.id}`,
             cancelPath: "/breeders",
+            success: false,
             error:
               err.code === "DUPLICATE_MICROCHIP" || err.code === "UPLOAD_LIMIT"
                 ? err.message

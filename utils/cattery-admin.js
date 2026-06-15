@@ -197,6 +197,12 @@ function classifyOperationalCat(cat, options = {}) {
   return null;
 }
 
+function isRoutineModuleCatVisible(cat) {
+  if (!cat) return false;
+  if (cat.deceased === true || cat.kittenAvailabilityStatus === "DECEASED") return false;
+  return isOwnerSelf(cat);
+}
+
 module.exports = {
   parseDate,
   formatDate,
@@ -207,6 +213,7 @@ module.exports = {
   ageInMonths,
   isOwnerSelf,
   isKittenRecord,
+  isRoutineModuleCatVisible,
   catteryNameForCat,
   prefixWithCatteryName,
   buildKittenRegisteredName,

@@ -33,6 +33,13 @@
           </div>
         <% } %>
 
+        <% if (success) { %>
+          <div class="content-card" style="border-left: 4px solid #16a34a; margin-bottom: 18px; background:#f0fdf4;">
+            <div class="content-title" style="color:#166534;">Cadastro salvo com sucesso.</div>
+            <div class="content-sub">As informações do reprodutor foram atualizadas.</div>
+          </div>
+        <% } %>
+
         <form method="post" action="<%= formAction %>" enctype="multipart/form-data">
           <div class="content-card" style="margin-bottom: 18px;">
             <div class="content-title">Informações do Gato</div>

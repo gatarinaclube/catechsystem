@@ -7,6 +7,7 @@ const {
   formatDateInput,
   buildDisplayName,
   classifyOperationalCat,
+  isRoutineModuleCatVisible,
 } = require("../utils/cattery-admin");
 const {
   computeNextAntirabic,
@@ -101,6 +102,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       );
 
       cats.forEach((cat) => {
+        if (!isRoutineModuleCatVisible(cat)) return;
         const category = classifyOperationalCat(cat);
         if (!category) return;
 
