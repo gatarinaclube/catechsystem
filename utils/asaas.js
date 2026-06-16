@@ -43,28 +43,182 @@ const ASSOCIATION_PLAN_DEFAULT_CENTS = {
 };
 
 const ASSOCIATION_FEE_DEFAULT_CENTS = 20000;
+const ASAAS_SETTING_KEY = "asaas.billingConfig.v1";
+const PLAN_KEYS = ["BASIC", "MASTER", "PREMIUM"];
+
+let runtimeConfig = null;
+
+function envCents(envName, fallback) {
+  const value = Number(process.env[envName]);
+  return Number.isFinite(value) && value > 0 ? Math.round(value) : fallback;
+}
+
+function normalizeApiMode(value) {
+  return String(value || "").toUpperCase() === "SANDBOX" ? "SANDBOX" : "PRODUCTION";
+}
+
+function normalizeBaseUrl(value, fallback) {
+  return String(value || fallback || "").trim().replace(/\/$/, "");
+}
+
+function normalizeCents(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? Math.round(number) : fallback;
+}
+
+function defaultBillingConfigFromEnv() {
+  const apiKey = String(process.env.ASAAS_API_KEY || "").trim();
+  const inferredMode = apiKey.includes("$aact_hmlg_") ? "SANDBOX" : "PRODUCTION";
+  const configuredBaseUrl = process.env.ASAAS_BASE_URL
+    ? normalizeBaseUrl(process.env.ASAAS_BASE_URL)
+    : null;
+
+  return {
+    apiMode: inferredMode,
+    userAgent: String(process.env.ASAAS_USER_AGENT || "CaTechSystem/1.0").trim(),
+    production: {
+      apiKey: inferredMode === "PRODUCTION" ? apiKey : "",
+      baseUrl: inferredMode === "PRODUCTION" && configuredBaseUrl ? configuredBaseUrl : ASAAS_PRODUCTION_URL,
+      webhookToken: inferredMode === "PRODUCTION" ? String(process.env.ASAAS_WEBHOOK_TOKEN || "").trim() : "",
+    },
+    sandbox: {
+      apiKey: inferredMode === "SANDBOX" ? apiKey : "",
+      baseUrl: inferredMode === "SANDBOX" && configuredBaseUrl ? configuredBaseUrl : ASAAS_SANDBOX_URL,
+      webhookToken: inferredMode === "SANDBOX" ? String(process.env.ASAAS_WEBHOOK_TOKEN || "").trim() : "",
+    },
+    commercial: {
+      BASIC: {
+        monthlyCents: envCents(PLAN_ENV.BASIC, PLAN_DEFAULT_CENTS.BASIC),
+        annualCardCents: envCents(PLAN_ANNUAL_CARD_ENV.BASIC, PLAN_ANNUAL_CARD_DEFAULT_CENTS.BASIC),
+        annualPixCents: envCents(PLAN_ANNUAL_PIX_ENV.BASIC, PLAN_ANNUAL_PIX_DEFAULT_CENTS.BASIC),
+      },
+      MASTER: {
+        monthlyCents: envCents(PLAN_ENV.MASTER, PLAN_DEFAULT_CENTS.MASTER),
+        annualCardCents: envCents(PLAN_ANNUAL_CARD_ENV.MASTER, PLAN_ANNUAL_CARD_DEFAULT_CENTS.MASTER),
+        annualPixCents: envCents(PLAN_ANNUAL_PIX_ENV.MASTER, PLAN_ANNUAL_PIX_DEFAULT_CENTS.MASTER),
+      },
+      PREMIUM: {
+        monthlyCents: envCents(PLAN_ENV.PREMIUM, PLAN_DEFAULT_CENTS.PREMIUM),
+        annualCardCents: envCents(PLAN_ANNUAL_CARD_ENV.PREMIUM, PLAN_ANNUAL_CARD_DEFAULT_CENTS.PREMIUM),
+        annualPixCents: envCents(PLAN_ANNUAL_PIX_ENV.PREMIUM, PLAN_ANNUAL_PIX_DEFAULT_CENTS.PREMIUM),
+      },
+    },
+    association: {
+      joinFeeCents: envCents("ASAAS_ASSOCIATION_JOIN_FEE_CENTS", ASSOCIATION_FEE_DEFAULT_CENTS),
+      masterAnnualCents: envCents("ASAAS_ASSOCIATION_MASTER_ANNUAL_CENTS", ASSOCIATION_PLAN_DEFAULT_CENTS.ASSOCIADO_A),
+      premiumAnnualCents: envCents("ASAAS_ASSOCIATION_PREMIUM_ANNUAL_CENTS", ASSOCIATION_PLAN_DEFAULT_CENTS.ASSOCIADO_PREMIUM),
+    },
+  };
+}
+
+function normalizeBillingConfig(input = {}) {
+  const fallback = defaultBillingConfigFromEnv();
+  const commercial = {};
+
+  for (const key of PLAN_KEYS) {
+    commercial[key] = {
+      monthlyCents: normalizeCents(
+        input.commercial?.[key]?.monthlyCents,
+        fallback.commercial[key].monthlyCents
+      ),
+      annualCardCents: normalizeCents(
+        input.commercial?.[key]?.annualCardCents,
+        fallback.commercial[key].annualCardCents
+      ),
+      annualPixCents: normalizeCents(
+        input.commercial?.[key]?.annualPixCents,
+        fallback.commercial[key].annualPixCents
+      ),
+    };
+  }
+
+  return {
+    apiMode: normalizeApiMode(input.apiMode || fallback.apiMode),
+    userAgent: String(input.userAgent || fallback.userAgent || "CaTechSystem/1.0").trim(),
+    production: {
+      apiKey: String(input.production?.apiKey ?? fallback.production.apiKey ?? "").trim(),
+      baseUrl: normalizeBaseUrl(input.production?.baseUrl, fallback.production.baseUrl || ASAAS_PRODUCTION_URL),
+      webhookToken: String(input.production?.webhookToken ?? fallback.production.webhookToken ?? "").trim(),
+    },
+    sandbox: {
+      apiKey: String(input.sandbox?.apiKey ?? fallback.sandbox.apiKey ?? "").trim(),
+      baseUrl: normalizeBaseUrl(input.sandbox?.baseUrl, fallback.sandbox.baseUrl || ASAAS_SANDBOX_URL),
+      webhookToken: String(input.sandbox?.webhookToken ?? fallback.sandbox.webhookToken ?? "").trim(),
+    },
+    commercial,
+    association: {
+      joinFeeCents: normalizeCents(input.association?.joinFeeCents, fallback.association.joinFeeCents),
+      masterAnnualCents: normalizeCents(input.association?.masterAnnualCents, fallback.association.masterAnnualCents),
+      premiumAnnualCents: normalizeCents(input.association?.premiumAnnualCents, fallback.association.premiumAnnualCents),
+    },
+  };
+}
+
+function getAsaasRuntimeConfig() {
+  if (!runtimeConfig) {
+    runtimeConfig = normalizeBillingConfig();
+  }
+  return runtimeConfig;
+}
+
+function setAsaasRuntimeConfig(config) {
+  runtimeConfig = normalizeBillingConfig(config);
+  return runtimeConfig;
+}
+
+async function loadAsaasRuntimeConfig(prisma) {
+  if (!prisma?.systemSetting) {
+    return setAsaasRuntimeConfig(defaultBillingConfigFromEnv());
+  }
+
+  try {
+    const row = await prisma.systemSetting.findUnique({
+      where: { key: ASAAS_SETTING_KEY },
+    });
+
+    if (row?.value) {
+      return setAsaasRuntimeConfig(JSON.parse(row.value));
+    }
+  } catch (err) {
+    console.warn("Não foi possível carregar configuração Asaas do banco:", err.message);
+  }
+
+  return setAsaasRuntimeConfig(defaultBillingConfigFromEnv());
+}
+
+function activeApiConfig() {
+  const config = getAsaasRuntimeConfig();
+  return config.apiMode === "SANDBOX" ? config.sandbox : config.production;
+}
+
+function maskSecret(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  if (text.length <= 8) return "••••";
+  return `••••${text.slice(-4)}`;
+}
 
 function cleanDigits(value) {
   return String(value || "").replace(/\D/g, "");
 }
 
 function isAsaasConfigured() {
-  return Boolean(String(process.env.ASAAS_API_KEY || "").trim());
+  return Boolean(activeApiConfig().apiKey);
 }
 
 function asaasBaseUrl() {
-  if (process.env.ASAAS_BASE_URL) return process.env.ASAAS_BASE_URL.replace(/\/$/, "");
-  const key = String(process.env.ASAAS_API_KEY || "");
-  return key.includes("$aact_hmlg_") ? ASAAS_SANDBOX_URL : ASAAS_PRODUCTION_URL;
+  const config = getAsaasRuntimeConfig();
+  const api = activeApiConfig();
+  return normalizeBaseUrl(
+    api.baseUrl,
+    config.apiMode === "SANDBOX" ? ASAAS_SANDBOX_URL : ASAAS_PRODUCTION_URL
+  );
 }
 
 function planPriceCents(planKey) {
   const key = String(planKey || "").toUpperCase();
-  const envName = PLAN_ENV[key];
-  if (!envName) return null;
-  const value = Number(process.env[envName]);
-  if (!Number.isFinite(value) || value <= 0) return PLAN_DEFAULT_CENTS[key] || null;
-  return Math.round(value);
+  if (!PLAN_KEYS.includes(key)) return null;
+  return getAsaasRuntimeConfig().commercial[key]?.monthlyCents || PLAN_DEFAULT_CENTS[key] || null;
 }
 
 function planPriceValue(planKey) {
@@ -113,20 +267,14 @@ function isMissingAsaasCustomerError(err) {
 
 function annualTotalCents(planKey) {
   const key = String(planKey || "").toUpperCase();
-  const envName = PLAN_ANNUAL_CARD_ENV[key];
-  if (!envName) return null;
-  const value = Number(process.env[envName]);
-  if (!Number.isFinite(value) || value <= 0) return PLAN_ANNUAL_CARD_DEFAULT_CENTS[key] || null;
-  return Math.round(value);
+  if (!PLAN_KEYS.includes(key)) return null;
+  return getAsaasRuntimeConfig().commercial[key]?.annualCardCents || PLAN_ANNUAL_CARD_DEFAULT_CENTS[key] || null;
 }
 
 function annualPixCents(planKey) {
   const key = String(planKey || "").toUpperCase();
-  const envName = PLAN_ANNUAL_PIX_ENV[key];
-  if (!envName) return null;
-  const value = Number(process.env[envName]);
-  if (!Number.isFinite(value) || value <= 0) return PLAN_ANNUAL_PIX_DEFAULT_CENTS[key] || null;
-  return Math.round(value);
+  if (!PLAN_KEYS.includes(key)) return null;
+  return getAsaasRuntimeConfig().commercial[key]?.annualPixCents || PLAN_ANNUAL_PIX_DEFAULT_CENTS[key] || null;
 }
 
 function formatAnnualPlanPrice(planKey, mode, fallback = "Valor a configurar") {
@@ -139,16 +287,18 @@ function formatAnnualPlanPrice(planKey, mode, fallback = "Valor a configurar") {
 }
 
 async function asaasRequest(path, options = {}) {
-  const apiKey = String(process.env.ASAAS_API_KEY || "").trim();
+  const config = getAsaasRuntimeConfig();
+  const api = activeApiConfig();
+  const apiKey = String(api.apiKey || "").trim();
   if (!apiKey) {
-    throw new Error("ASAAS_API_KEY não configurada.");
+    throw new Error("Chave de API do Asaas não configurada.");
   }
 
   const response = await fetch(`${asaasBaseUrl()}${path}`, {
     method: options.method || "GET",
     headers: {
       "Content-Type": "application/json",
-      "User-Agent": process.env.ASAAS_USER_AGENT || "CaTechSystem/1.0",
+      "User-Agent": config.userAgent || "CaTechSystem/1.0",
       access_token: apiKey,
       ...(options.headers || {}),
     },
@@ -369,19 +519,15 @@ function associationMonthsUntilCycleEnd(fromDate = new Date()) {
 
 function associationPlanCents(planKey) {
   const key = String(planKey || "ASSOCIADO_A").toUpperCase();
-  const envName = key === "ASSOCIADO_PREMIUM"
-    ? "ASAAS_ASSOCIATION_PREMIUM_ANNUAL_CENTS"
-    : "ASAAS_ASSOCIATION_MASTER_ANNUAL_CENTS";
-  const value = Number(process.env[envName]);
-  if (!Number.isFinite(value) || value <= 0) {
-    return ASSOCIATION_PLAN_DEFAULT_CENTS[key] || ASSOCIATION_PLAN_DEFAULT_CENTS.ASSOCIADO_A;
+  const association = getAsaasRuntimeConfig().association;
+  if (key === "ASSOCIADO_PREMIUM") {
+    return association.premiumAnnualCents || ASSOCIATION_PLAN_DEFAULT_CENTS.ASSOCIADO_PREMIUM;
   }
-  return Math.round(value);
+  return association.masterAnnualCents || ASSOCIATION_PLAN_DEFAULT_CENTS.ASSOCIADO_A;
 }
 
 function associationFeeCents() {
-  const value = Number(process.env.ASAAS_ASSOCIATION_JOIN_FEE_CENTS);
-  return Number.isFinite(value) && value > 0 ? Math.round(value) : ASSOCIATION_FEE_DEFAULT_CENTS;
+  return getAsaasRuntimeConfig().association.joinFeeCents || ASSOCIATION_FEE_DEFAULT_CENTS;
 }
 
 function associationPaymentCents(planKey, fromDate = new Date()) {
@@ -442,13 +588,19 @@ function planFromExternalReference(reference) {
 }
 
 function verifyWebhookToken(req) {
-  const expected = String(process.env.ASAAS_WEBHOOK_TOKEN || "").trim();
+  const expected = String(activeApiConfig().webhookToken || "").trim();
   if (!expected) return true;
   const received = String(req.get("asaas-access-token") || "").trim();
   return received === expected;
 }
 
 module.exports = {
+  ASAAS_SETTING_KEY,
+  getAsaasRuntimeConfig,
+  setAsaasRuntimeConfig,
+  loadAsaasRuntimeConfig,
+  normalizeBillingConfig,
+  maskSecret,
   isAsaasConfigured,
   planPriceCents,
   formatPlanPrice,

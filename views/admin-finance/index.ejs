@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Financeiro - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+    <style>
+      .finance-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+      .finance-api-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 14px 0;
+      }
+      .finance-tab-button {
+        border: 1px solid var(--border-soft);
+        border-radius: 999px;
+        background: #ffffff;
+        color: var(--text-main);
+        cursor: pointer;
+        font-weight: 800;
+        padding: 9px 14px;
+      }
+      .finance-tab-button.active {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #ffffff;
+      }
+      .finance-tab-panel {
+        display: none;
+      }
+      .finance-tab-panel.active {
+        display: block;
+      }
+      .finance-radio-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .finance-radio-card {
+        flex: 1 1 220px;
+        border: 1px solid var(--border-soft);
+        border-radius: 12px;
+        background: #ffffff;
+        cursor: pointer;
+        padding: 12px;
+      }
+      .finance-radio-card input {
+        margin-right: 8px;
+      }
+      .finance-radio-title {
+        color: var(--text-main);
+        font-weight: 900;
+      }
+      .finance-radio-note {
+        color: var(--text-muted);
+        font-size: 12px;
+        margin-top: 4px;
+      }
+      .finance-table-wrap {
+        overflow-x: auto;
+      }
+      .finance-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 720px;
+      }
+      .finance-table th,
+      .finance-table td {
+        border-bottom: 1px solid var(--border-soft);
+        padding: 10px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+      .finance-table th {
+        color: var(--text-muted);
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .finance-table input {
+        min-width: 120px;
+      }
+      .finance-secret-note {
+        color: var(--text-muted);
+        font-size: 12px;
+        margin-top: 6px;
+      }
+      .finance-mode-pill {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        background: rgba(245, 158, 11, 0.12);
+        color: var(--accent-hover);
+        font-size: 12px;
+        font-weight: 900;
+        padding: 6px 10px;
+      }
+      @media (max-width: 800px) {
+        .finance-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath, access }) %>
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Financeiro</h2>
+            <div class="welcome-sub">
+              Configuração técnica de cobranças, planos comerciais, associação e ambiente Asaas.
+            </div>
+          </div>
+          <div class="actions">
+            <span class="finance-mode-pill">
+              API ativa: <%= config.apiMode === "SANDBOX" ? "Teste/Sandbox" : "Cobrança/Produção" %>
+            </span>
+          </div>
+        </div>
+
+        <% if (success) { %>
+          <div class="content-card" style="border-left:4px solid #16a34a; margin-bottom:18px;">
+            <div class="content-sub">Configurações financeiras salvas com sucesso.</div>
+          </div>
+        <% } %>
+
+        <% if (error) { %>
+          <div class="content-card" style="border-left:4px solid #b91c1c; margin-bottom:18px;">
+            <div class="content-sub"><%= error %></div>
+          </div>
+        <% } %>
+
+        <form method="post" action="/admin/financeiro">
+          <section class="content-card module-panel">
+            <div class="content-title">Ambiente de cobrança</div>
+            <div class="content-sub">
+              Escolha qual API será usada imediatamente nas próximas cobranças do site.
+            </div>
+            <div class="finance-radio-row">
+              <label class="finance-radio-card">
+                <input type="radio" name="apiMode" value="PRODUCTION" <%= config.apiMode === "PRODUCTION" ? "checked" : "" %> />
+                <span class="finance-radio-title">Cobrança real</span>
+                <div class="finance-radio-note">Usa a chave de produção e cria cobranças reais no Asaas.</div>
+              </label>
+              <label class="finance-radio-card">
+                <input type="radio" name="apiMode" value="SANDBOX" <%= config.apiMode === "SANDBOX" ? "checked" : "" %> />
+                <span class="finance-radio-title">Teste/Sandbox</span>
+                <div class="finance-radio-note">Usa a chave de teste para simular os fluxos antes de publicar.</div>
+              </label>
+            </div>
+          </section>
+
+          <section class="content-card module-panel">
+            <div class="content-title">APIs Asaas</div>
+            <div class="content-sub">
+              Campos vazios de chave ou token preservam a configuração atual.
+            </div>
+
+            <div class="finance-api-tabs" role="tablist">
+              <button class="finance-tab-button active" type="button" data-finance-tab="production">API de cobrança</button>
+              <button class="finance-tab-button" type="button" data-finance-tab="sandbox">API de teste</button>
+            </div>
+
+            <div class="finance-tab-panel active" data-finance-panel="production">
+              <div class="grid-2">
+                <div class="field">
+                  <label class="field-label" for="productionBaseUrl">URL base produção</label>
+                  <input id="productionBaseUrl" name="productionBaseUrl" value="<%= config.production.baseUrl || '' %>" />
+                </div>
+                <div class="field">
+                  <label class="field-label" for="productionApiKey">Chave API produção</label>
+                  <input
+                    id="productionApiKey"
+                    name="productionApiKey"
+                    type="password"
+                    autocomplete="new-password"
+                    placeholder="<%= config.production.apiKeyMask ? `Configurada: ${config.production.apiKeyMask}` : 'Não configurada' %>"
+                  />
+                  <div class="finance-secret-note">Deixe em branco para manter a chave atual.</div>
+                </div>
+                <div class="field">
+                  <label class="field-label" for="productionWebhookToken">Token webhook produção</label>
+                  <input
+                    id="productionWebhookToken"
+                    name="productionWebhookToken"
+                    type="password"
+                    autocomplete="new-password"
+                    placeholder="<%= config.production.webhookTokenMask ? `Configurado: ${config.production.webhookTokenMask}` : 'Opcional' %>"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="finance-tab-panel" data-finance-panel="sandbox">
+              <div class="grid-2">
+                <div class="field">
+                  <label class="field-label" for="sandboxBaseUrl">URL base sandbox</label>
+                  <input id="sandboxBaseUrl" name="sandboxBaseUrl" value="<%= config.sandbox.baseUrl || '' %>" />
+                </div>
+                <div class="field">
+                  <label class="field-label" for="sandboxApiKey">Chave API sandbox</label>
+                  <input
+                    id="sandboxApiKey"
+                    name="sandboxApiKey"
+                    type="password"
+                    autocomplete="new-password"
+                    placeholder="<%= config.sandbox.apiKeyMask ? `Configurada: ${config.sandbox.apiKeyMask}` : 'Não configurada' %>"
+                  />
+                  <div class="finance-secret-note">Deixe em branco para manter a chave atual.</div>
+                </div>
+                <div class="field">
+                  <label class="field-label" for="sandboxWebhookToken">Token webhook sandbox</label>
+                  <input
+                    id="sandboxWebhookToken"
+                    name="sandboxWebhookToken"
+                    type="password"
+                    autocomplete="new-password"
+                    placeholder="<%= config.sandbox.webhookTokenMask ? `Configurado: ${config.sandbox.webhookTokenMask}` : 'Opcional' %>"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="field" style="margin-top:14px;">
+              <label class="field-label" for="userAgent">User-Agent Asaas</label>
+              <input id="userAgent" name="userAgent" value="<%= config.userAgent || 'CaTechSystem/1.0' %>" />
+            </div>
+          </section>
+
+          <section class="content-card module-panel">
+            <div class="content-title">Planos comerciais</div>
+            <div class="content-sub">
+              Valores usados no site público, no upgrade e no direcionamento de pagamento.
+            </div>
+            <div class="finance-table-wrap">
+              <table class="finance-table">
+                <thead>
+                  <tr>
+                    <th>Plano</th>
+                    <th>PIX mensal</th>
+                    <th>Anual cartão 12x</th>
+                    <th>Anual PIX</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% plans.forEach((plan) => { %>
+                    <tr>
+                      <td><strong><%= plan.label %></strong></td>
+                      <td>
+                        <input name="<%= plan.key %>_monthly" value="<%= config.commercialInputs[plan.key].monthly %>" inputmode="decimal" />
+                      </td>
+                      <td>
+                        <input name="<%= plan.key %>_annualCard" value="<%= config.commercialInputs[plan.key].annualCard %>" inputmode="decimal" />
+                      </td>
+                      <td>
+                        <input name="<%= plan.key %>_annualPix" value="<%= config.commercialInputs[plan.key].annualPix %>" inputmode="decimal" />
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="content-card module-panel">
+            <div class="content-title">Associação</div>
+            <div class="content-sub">
+              Valores usados na cobrança de solicitação de associação e anuidade proporcional.
+            </div>
+            <div class="finance-grid">
+              <div class="field">
+                <label class="field-label" for="associationJoinFee">Taxa de associação</label>
+                <input id="associationJoinFee" name="associationJoinFee" value="<%= config.associationInputs.joinFee %>" inputmode="decimal" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="associationMasterAnnual">Anuidade Associado Master</label>
+                <input id="associationMasterAnnual" name="associationMasterAnnual" value="<%= config.associationInputs.masterAnnual %>" inputmode="decimal" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="associationPremiumAnnual">Anuidade Associado Premium</label>
+                <input id="associationPremiumAnnual" name="associationPremiumAnnual" value="<%= config.associationInputs.premiumAnnual %>" inputmode="decimal" />
+              </div>
+            </div>
+          </section>
+
+          <div class="actions" style="justify-content:flex-end;">
+            <button class="btn" type="submit">Salvar configurações financeiras</button>
+          </div>
+        </form>
+      </main>
+    </div>
+
+    <script>
+      document.querySelectorAll("[data-finance-tab]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const tab = button.dataset.financeTab;
+          document.querySelectorAll("[data-finance-tab]").forEach((item) => {
+            item.classList.toggle("active", item === button);
+          });
+          document.querySelectorAll("[data-finance-panel]").forEach((panel) => {
+            panel.classList.toggle("active", panel.dataset.financePanel === tab);
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

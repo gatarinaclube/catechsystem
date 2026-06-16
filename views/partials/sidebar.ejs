@@ -54,6 +54,7 @@
             "Usuários": "Gerenciamento dos usuários, perfis, dados cadastrais, aprovações e links individuais do sistema.",
             "Configurações": "Configura dados do gatil, veterinário, logo, raças, exames e limites disponíveis por perfil.",
             "Gestão de Microchip": "Área administrativa para localizar cadastros públicos de microchip, conferir dados do tutor e registrar contatos sobre animais encontrados.",
+            "Financeiro": "Configuração administrativa dos valores comerciais, associação e APIs Asaas de produção e teste.",
             "Reprodutores": "Cadastro e gestão de padreadores, matrizes e gatos reprodutores do gatil.",
             "Ninhadas": "Registro operacional das ninhadas, estatísticas de parto, filhotes e acompanhamento da reprodução.",
             "Filhotes": "Gestão dos filhotes cadastrados via Registro de Ninhada ou Ninhadas. Novos filhotes entram por esses fluxos; filhotes externos para reprodução devem ser cadastrados como reprodutor/matriz.",
@@ -109,6 +110,7 @@
         { href: "/admin/fotos-gatarina-2026", match: "/admin/fotos-gatarina-2026", icon: "📸", label: "Fotos Gatarina 2026", allowed: access && access.canManageGatarinaPhotos, hideWhenDenied: true },
         { href: "/users", match: "/users", icon: "👥", label: "Usuários", allowed: access && access.canManageUsers, hideWhenDenied: true },
         { href: "/settings", match: "/settings", icon: "⚙️", label: "Configurações", allowed: access && access.canAccessSettings },
+        { href: "/admin/financeiro", match: "/admin/financeiro", icon: "💳", label: "Financeiro", allowed: access && access.canManageFinanceSettings, hideWhenDenied: true },
         { href: "/admin/microchips", match: "/admin/microchips", icon: "🔎", label: "Gestão de Microchip", allowed: access && access.canManageMicrochips, hideWhenDenied: true },
         { href: "/billing/pay", match: "/billing/pay", icon: "⬆️", label: "Upgrade de Plano", allowed: showPlanUpgrade },
       ].forEach(renderMenuItem); %>

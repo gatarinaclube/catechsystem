@@ -1441,6 +1441,13 @@ model SecondCopyRequest {
   serviceRequest ServiceRequest @relation(fields: [serviceRequestId], references: [id])
 }
 
+model SystemSetting {
+  key       String   @id
+  value     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 enum CatStatus {
   NOVO
   APROVADO

@@ -44,6 +44,7 @@ const {
   associationCycleEndDate,
   getSubscriptionPaymentUrl,
   isAsaasConfigured,
+  loadAsaasRuntimeConfig,
   planFromExternalReference,
   verifyWebhookToken,
 } = require("./utils/asaas");
@@ -79,6 +80,7 @@ const administrativeRouterFactory = require("./modules/administrative");
 const academyRouterFactory = require("./modules/academy");
 const kittenShowcaseRouterFactory = require("./modules/kitten-showcase");
 const documentsRouterFactory = require("./modules/documents");
+const billingFinanceRouterFactory = require("./modules/billing-finance");
 const gatarinaShowPhotosRouterFactory = require("./modules/gatarina-show-photos");
 const publicMicrochipRouterFactory = require("./modules/public-microchip");
 const { startVaccineReminderScheduler } = require("./utils/vaccineReminderJob");
@@ -98,6 +100,10 @@ console.log(">>> Iniciando CaTech COMPLETO (modularizado)");
 
 const app = express();
 const prisma = new PrismaClient();
+
+loadAsaasRuntimeConfig(prisma).catch((err) => {
+  console.error("Erro ao carregar configurações Asaas:", err);
+});
 
 
 
@@ -2422,6 +2428,13 @@ const settingsRouter = settingsRouterFactory(
   requirePermission
 );
 app.use(settingsRouter);
+
+const billingFinanceRouter = billingFinanceRouterFactory(
+  prisma,
+  requireAuth,
+  requirePermission
+);
+app.use(billingFinanceRouter);
 
 const breedersRouter = breedersRouterFactory(
   prisma,
