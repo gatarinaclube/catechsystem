@@ -200,8 +200,15 @@ function classifyOperationalCat(cat, options = {}) {
 function isRoutineModuleCatVisible(cat) {
   if (!cat) return false;
   if (cat.deceased === true || cat.kittenAvailabilityStatus === "DECEASED") return false;
-  if (cat.ownershipType === "CO-OWNERSHIP" || cat.ownershipType === "OTHER") return false;
-  if (cat.currentOwnerClientId) return false;
+  const delivered = cat.delivered === true || cat.kittenAvailabilityStatus === "DELIVERED";
+  const hasOtherOwner =
+    cat.ownershipType === "CO-OWNERSHIP" ||
+    cat.ownershipType === "OTHER" ||
+    Boolean(cat.currentOwnerClientId) ||
+    (Boolean(cat.currentOwnerId) && cat.currentOwnerId !== cat.ownerId);
+
+  if (hasOtherOwner && delivered) return false;
+  if (hasOtherOwner) return true;
   return isOwnerSelf(cat);
 }
 
