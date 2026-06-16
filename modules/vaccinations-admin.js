@@ -37,6 +37,36 @@ function getVaccinationState(nextAntirabic, nextFeline) {
   return "vaccinated";
 }
 
+function buildVaccinationSummary(nextAntirabic, nextFeline, vaccinationState) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const upcomingLimit = addDays(today, 15);
+
+  if (vaccinationState === "overdue") {
+    const overdue = [
+      nextAntirabic && nextAntirabic < today ? "Antirrábica" : null,
+      nextFeline && nextFeline < today ? "Feline" : null,
+    ].filter(Boolean);
+
+    return overdue.length > 1
+      ? `Vencidas: ${overdue.join(" e ")}`
+      : `Vencida: ${overdue[0] || "vacinação"}`;
+  }
+
+  if (vaccinationState === "upcoming") {
+    const upcoming = [
+      nextAntirabic && nextAntirabic <= upcomingLimit ? "Antirrábica" : null,
+      nextFeline && nextFeline <= upcomingLimit ? "Feline" : null,
+    ].filter(Boolean);
+
+    return upcoming.length > 1
+      ? `Próximas: ${upcoming.join(" e ")}`
+      : `Próxima: ${upcoming[0] || "vacinação"}`;
+  }
+
+  return "Em dia";
+}
+
 function buildNextActions(grouped) {
   return Object.values(grouped)
     .flat()
@@ -118,6 +148,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         const nextAntirabic = computeNextAntirabic(cat.birthDate, antirabicHistory, cat.owner?.settings);
         const nextFeline = computeNextFeline(cat.birthDate, felineHistory, cat.owner?.settings);
         const vaccinationState = getVaccinationState(nextAntirabic, nextFeline);
+        const vaccinationSummary = buildVaccinationSummary(nextAntirabic, nextFeline, vaccinationState);
 
         grouped[category].push({
           cat,
@@ -129,6 +160,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           nextAntirabic,
           nextFeline,
           vaccinationState,
+          vaccinationSummary,
         });
       });
 
