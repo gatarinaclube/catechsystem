@@ -1,6 +1,6 @@
 const express = require("express");
 const { canViewAllData } = require("../utils/access");
-const { buildKittenRegisteredName, kittenFallbackDisplayName } = require("../utils/cattery-admin");
+const { ageInMonths, buildKittenRegisteredName, kittenFallbackDisplayName } = require("../utils/cattery-admin");
 const { selectedBreedsFromSettings } = require("../utils/userPreferences");
 const {
   DEATH_CAUSE_OPTIONS,
@@ -215,6 +215,16 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       cat.kittenNumber ||
       cat.litterKitten?.kittenNumber ||
       (cat.litterKitten?.index ? String(cat.litterKitten.index).padStart(4, "0") : "----");
+    const isNamedYoungLitterKitten = Boolean(cat.name && (cat.kittenNumber || cat.litterKitten) && ageInMonths(cat.birthDate) <= 4);
+    if (isNamedYoungLitterKitten) {
+      return [
+        linkedKittenNumber,
+        cat.name,
+        cat.mother?.name || cat.motherName || cat.litterKitten?.litter?.femaleName || "-",
+        formatMicrochip(cat.microchip),
+      ].join(" - ");
+    }
+
     const displayName = buildKittenRegisteredName(cat) || kittenFallbackDisplayName(cat) || `${linkedKittenNumber} - ${cat.name || "Sem nome"}`;
 
     return `${displayName} - ${formatMicrochip(cat.microchip)}`;

@@ -1,6 +1,7 @@
 const express = require("express");
 const { canViewAllData } = require("../utils/access");
 const {
+  ageInMonths,
   buildDisplayName,
   classifyOperationalCat,
   formatDate,
@@ -184,6 +185,30 @@ function categoryLabel(key) {
   }[key] || "Gato";
 }
 
+function sexLabel(value) {
+  if (value === "M") return "Macho";
+  if (value === "F") return "Fêmea";
+  return "-";
+}
+
+function treatmentCatDisplayName(cat, category) {
+  const isLitterKitten = Boolean(cat?.kittenNumber || cat?.litterKitten);
+  const hasName = Boolean(cleanText(cat?.name));
+  const isYoungKitten = category === "kittens" && ageInMonths(cat?.birthDate) <= 4;
+
+  if (isLitterKitten && hasName && isYoungKitten) {
+    return [
+      cat.kittenNumber || cat.litterKitten?.kittenNumber || "-",
+      sexLabel(cat.gender || cat.litterKitten?.sex),
+      cleanText(cat.name),
+      cat.mother?.name || cat.motherName || cat.litterKitten?.litter?.femaleName || "-",
+      formatDate(cat.birthDate) || formatDate(cat.litterKitten?.litter?.litterBirthDate) || "-",
+    ].join(" - ");
+  }
+
+  return buildDisplayName(cat);
+}
+
 function treatmentFormData(body, medication) {
   const startDate = parseDateInput(body.startDate, todayForInput());
   if (!startDate) throw new Error("Informe a data de início.");
@@ -239,7 +264,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         if (!category) return null;
         return {
           id: cat.id,
-          name: buildDisplayName(cat),
+          name: treatmentCatDisplayName(cat, category),
           category,
           categoryLabel: categoryLabel(category),
           microchip: cat.microchip || "",
