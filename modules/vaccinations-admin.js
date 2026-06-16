@@ -77,10 +77,15 @@ function buildNextActions(grouped) {
         row.nextFeline ? { label: "Feline", date: row.nextFeline } : null,
       ].filter(Boolean).sort((a, b) => a.date - b.date);
       const next = dates[0];
+      const dateSummary = dates.map((item) => `${item.label}: ${formatDate(item.date)}`).join(" · ");
 
       return {
         title: row.displayName,
-        sub: next ? `${next.label}: ${formatDate(next.date)}` : "Vacinação pendente",
+        sub: row.vaccinationSummary
+          ? `${row.vaccinationSummary}${dateSummary ? ` · ${dateSummary}` : ""}`
+          : next
+            ? `${next.label}: ${formatDate(next.date)}`
+            : "Vacinação pendente",
         badge: row.vaccinationState === "overdue" ? "Vencida" : "Próxima",
         color: row.vaccinationState === "overdue" ? "is-red" : "is-yellow",
         orderDate: next?.date || new Date(8640000000000000),

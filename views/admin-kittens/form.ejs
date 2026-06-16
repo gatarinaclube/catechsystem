@@ -81,6 +81,13 @@
           </div>
         <% } %>
 
+        <% if (success) { %>
+          <div class="content-card" style="border-left:4px solid #16a34a; margin-bottom:18px; background:#f0fdf4;">
+            <div class="content-title" style="color:#166534;">Cadastro salvo com sucesso.</div>
+            <div class="content-sub">As informações do filhote foram atualizadas.</div>
+          </div>
+        <% } %>
+
         <% if (microchipRequiredNotice) { %>
           <div class="content-card" style="border-left:4px solid #f59e0b; margin-bottom:18px;">
             <div class="content-title">Microchip obrigatório</div>

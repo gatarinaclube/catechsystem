@@ -176,6 +176,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         : null,
       kitten,
       error,
+      success: false,
     };
   }
 
@@ -473,6 +474,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         formAction: `/admin/kittens/${kitten.id}`,
         cancelPath: "/admin/kittens",
         historyPath: `/admin/history/${kitten.id}`,
+        success: req.query.saved === "1",
       });
     }
   );
@@ -509,7 +511,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           await syncLitterKitten(tx, existingKitten.id, data);
           await syncDeathHistoryEntry(tx, existingKitten.id, updated);
         });
-        res.redirect(`/admin/kittens/${existingKitten.id}`);
+        res.redirect(`/admin/kittens/${existingKitten.id}?saved=1`);
       } catch (err) {
         res.status(400).render("admin-kittens/form", {
           ...(await buildContext(

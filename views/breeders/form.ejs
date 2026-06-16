@@ -117,7 +117,7 @@
                 <select id="breed" name="breed">
                   <option value="">Selecione a raça...</option>
                   <% breeds.forEach(function(breed) { %>
-                    <option value="<%= breed %>" <%= cat?.breed === breed ? "selected" : "" %>><%= breed %></option>
+                    <option value="<%= breed %>" <%= cat?.breed === breed || (!cat?.breed && breeds.length === 1) ? "selected" : "" %>><%= breed %></option>
                   <% }) %>
                 </select>
               </div>
@@ -174,7 +174,7 @@
                   <select id="fatherBreed" name="fatherBreed" style="margin-top:10px;">
                     <option value="">Selecione a raça...</option>
                     <% breeds.forEach(function(breed) { %>
-                      <option value="<%= breed %>" <%= cat?.fatherBreed === breed ? "selected" : "" %>><%= breed %></option>
+                      <option value="<%= breed %>" <%= cat?.fatherBreed === breed || (!cat?.fatherBreed && breeds.length === 1) ? "selected" : "" %>><%= breed %></option>
                     <% }) %>
                   </select>
                   <select id="fatherEmsCode" name="fatherEmsCode" style="margin-top:10px;">
@@ -203,7 +203,7 @@
                   <select id="motherBreed" name="motherBreed" style="margin-top:10px;">
                     <option value="">Selecione a raça...</option>
                     <% breeds.forEach(function(breed) { %>
-                      <option value="<%= breed %>" <%= cat?.motherBreed === breed ? "selected" : "" %>><%= breed %></option>
+                      <option value="<%= breed %>" <%= cat?.motherBreed === breed || (!cat?.motherBreed && breeds.length === 1) ? "selected" : "" %>><%= breed %></option>
                     <% }) %>
                   </select>
                   <select id="motherEmsCode" name="motherEmsCode" style="margin-top:10px;">
@@ -344,6 +344,8 @@
 
     <script src="/js/ems-data.js"></script>
     <script>
+      const availableBreeds = <%- JSON.stringify(breeds) %>;
+      const lastEmsStorageKey = "catech:lastEmsCode";
       const birthInput = document.getElementById("birthDate");
       const ageDisplay = document.getElementById("ageDisplay");
       const microchipInput = document.getElementById("microchip");
@@ -362,6 +364,29 @@
       const deathCauseSelect = document.getElementById("deathCause");
       const deathCauseDescriptionBlock = document.getElementById("deathCauseDescriptionBlock");
       const deathCauseDescription = document.getElementById("deathCauseDescription");
+
+      function getLastEmsCode() {
+        try {
+          return localStorage.getItem(lastEmsStorageKey) || "";
+        } catch {
+          return "";
+        }
+      }
+
+      function setLastEmsCode(value) {
+        if (!value) return;
+        try {
+          localStorage.setItem(lastEmsStorageKey, value);
+        } catch {
+          // Se o navegador bloquear armazenamento local, apenas não reaproveita o EMS.
+        }
+      }
+
+      function applySingleBreedDefault(select) {
+        if (availableBreeds.length === 1 && select && !select.value) {
+          select.value = availableBreeds[0];
+        }
+      }
 
       function updateAge() {
         if (!birthInput || !birthInput.value) {
@@ -436,9 +461,10 @@
         const emsSelect = document.getElementById(emsSelectId);
 
         function renderOptions() {
+          applySingleBreedDefault(breedSelect);
           const breedCode = breedSelect.value;
           const emsList = window.EMS_BY_BREED[breedCode] || [];
-          const currentValue = initialValue || emsSelect.value;
+          const currentValue = initialValue || emsSelect.value || getLastEmsCode();
           emsSelect.innerHTML = "";
 
           if (!emsList.length) {
@@ -463,6 +489,7 @@
         }
 
         breedSelect.addEventListener("change", renderOptions);
+        emsSelect.addEventListener("change", () => setLastEmsCode(emsSelect.value));
         renderOptions();
       }
 

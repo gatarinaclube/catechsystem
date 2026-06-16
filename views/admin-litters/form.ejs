@@ -131,6 +131,13 @@
           </div>
         <% } %>
 
+        <% if (success) { %>
+          <div class="content-card" style="border-left:4px solid #16a34a; margin-bottom:18px; background:#f0fdf4;">
+            <div class="content-title" style="color:#166534;">Cadastro salvo com sucesso.</div>
+            <div class="content-sub">As informações da ninhada foram atualizadas.</div>
+          </div>
+        <% } %>
+
         <form method="post" action="<%= formAction %>">
           <div class="content-card" style="margin-bottom:18px;">
             <div class="content-title">Informações da Ninhada</div>
@@ -247,6 +254,7 @@
       const deathCausesAfterBirth = <%- JSON.stringify(deathCausesAfterBirth || []) %>;
       const currentDeadAtBirthCauses = <%- JSON.stringify(deadAtBirthCauses || []) %>;
       const currentDeadAfterBirthCauses = <%- JSON.stringify(deadAfterBirthCauses || []) %>;
+      const lastEmsStorageKey = "catech:lastEmsCode";
       const kittens = <%- JSON.stringify(kittens.map((kitten) => ({
         ...kitten,
         kittenCatId: kitten.kittenCatId || null,
@@ -265,8 +273,33 @@
       const deadAfterBirthDetails = document.getElementById("deadAfterBirthDetails");
       const deadAfterBirthCauses = document.getElementById("deadAfterBirthCauses");
 
+      function getLastEmsCode() {
+        try {
+          return localStorage.getItem(lastEmsStorageKey) || "";
+        } catch {
+          return "";
+        }
+      }
+
+      function setLastEmsCode(value) {
+        if (!value) return;
+        try {
+          localStorage.setItem(lastEmsStorageKey, value);
+        } catch {
+          // Se o navegador bloquear armazenamento local, apenas não reaproveita o EMS.
+        }
+      }
+
+      function applySingleBreedDefault(select) {
+        if (breeds.length === 1 && select && !select.value) {
+          select.value = breeds[0];
+        }
+      }
+
       function bindBreedToEms(select, emsSelect, currentValue) {
+        applySingleBreedDefault(select);
         const emsList = window.EMS_BY_BREED[select.value] || [];
+        const preferredValue = currentValue || getLastEmsCode();
         emsSelect.innerHTML = "";
 
         if (!emsList.length) {
@@ -281,7 +314,7 @@
           const opt = document.createElement("option");
           opt.value = ems;
           opt.textContent = ems;
-          if (currentValue === ems) opt.selected = true;
+          if (preferredValue === ems) opt.selected = true;
           emsSelect.appendChild(opt);
         });
       }
@@ -408,7 +441,7 @@
                   <label class="field-label">Raça</label>
                   <select name="kitten_breed_${i}" data-kit-breed="${i}">
                     <option value="">Raça...</option>
-                    ${breeds.map((breed) => `<option value="${breed}" ${kitten.breed === breed ? "selected" : ""}>${breed}</option>`).join("")}
+                    ${breeds.map((breed) => `<option value="${breed}" ${kitten.breed === breed || (!kitten.breed && breeds.length === 1) ? "selected" : ""}>${breed}</option>`).join("")}
                   </select>
                 </div>
                 <div class="litter-kitten-field">
@@ -439,6 +472,7 @@
           const kitten = kittens[idx] || {};
           bindBreedToEms(select, emsSelect, kitten.emsEyes || "");
           select.addEventListener("change", () => bindBreedToEms(select, emsSelect, ""));
+          emsSelect.addEventListener("change", () => setLastEmsCode(emsSelect.value));
         });
 
         document.querySelectorAll(".kitten-microchip").forEach((input) => {

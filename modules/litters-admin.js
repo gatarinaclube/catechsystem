@@ -278,6 +278,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       catteryName,
       kittenNameMaxLength,
       error,
+      success: false,
     };
   }
 
@@ -622,7 +623,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           persistLitter(tx, payload, null)
         );
 
-        res.redirect(`/admin/litters/${litter.id}`);
+        res.redirect(`/admin/litters/${litter.id}?saved=1`);
       } catch (err) {
         const litter = {
           ...req.body,
@@ -666,6 +667,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         formTitle: "Editar Ninhada",
         formAction: `/admin/litters/${litter.id}`,
         cancelPath: "/admin/litters",
+        success: req.query.saved === "1",
       });
     }
   );
@@ -755,7 +757,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           persistLitter(tx, payload, existingLitter)
         );
 
-        res.redirect(`/admin/litters/${existingLitter.id}`);
+        res.redirect(`/admin/litters/${existingLitter.id}?saved=1`);
       } catch (err) {
         const litter = {
           ...existingLitter,
