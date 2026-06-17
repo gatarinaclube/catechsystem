@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Resumo Reserva/Pagamento - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+    <style>
+      .reservation-add-form {
+        display: grid;
+        grid-template-columns: minmax(260px, 1fr) auto;
+        gap: 12px;
+        align-items: end;
+      }
+      .reservation-table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--border-soft);
+        border-radius: 12px;
+        background: #ffffff;
+      }
+      .reservation-table {
+        width: 100%;
+        min-width: 1900px;
+        border-collapse: collapse;
+        font-size: 12px;
+        line-height: 1.25;
+      }
+      .reservation-table th,
+      .reservation-table td {
+        border: 1px solid #1f2937;
+        padding: 4px 6px;
+        vertical-align: middle;
+        white-space: nowrap;
+      }
+      .reservation-table th {
+        background: #a3a3a3;
+        color: #111827;
+        font-weight: 900;
+        text-align: center;
+      }
+      .reservation-mother-cell {
+        background: #bfd8ad;
+        font-weight: 900;
+        text-align: center;
+        min-width: 150px;
+      }
+      .reservation-litter-cell {
+        background: #bfd8ad;
+        text-align: center;
+        min-width: 110px;
+      }
+      .reservation-input,
+      .reservation-select {
+        width: 100%;
+        min-width: 70px;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        font-weight: 700;
+        padding: 0;
+      }
+      .reservation-input:focus,
+      .reservation-select:focus {
+        outline: 2px solid rgba(37, 99, 235, 0.35);
+        background: #ffffff;
+      }
+      .reservation-date {
+        min-width: 105px;
+      }
+      .reservation-location {
+        min-width: 140px;
+      }
+      .reservation-payment-dates {
+        min-width: 170px;
+        max-width: 260px;
+        white-space: normal;
+      }
+      .reservation-table .amount {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      .reservation-table .is-available td:not(.reservation-mother-cell):not(.reservation-litter-cell) {
+        background: #d9ead3;
+      }
+      .reservation-table .is-reserved td:not(.reservation-mother-cell):not(.reservation-litter-cell) {
+        background: #c6e0b4;
+      }
+      .reservation-table .is-unavailable td:not(.reservation-mother-cell):not(.reservation-litter-cell) {
+        background: #f9d5a7;
+      }
+      .reservation-table .is-delivered td:not(.reservation-mother-cell):not(.reservation-litter-cell) {
+        background: #d9e2f3;
+      }
+      .reservation-table .is-deceased td:not(.reservation-mother-cell):not(.reservation-litter-cell) {
+        background: #f4cccc;
+        color: #991b1b;
+      }
+      .reservation-negative {
+        color: #dc2626;
+        font-weight: 900;
+      }
+      .reservation-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+        color: var(--text-muted);
+        font-size: 12px;
+      }
+      .reservation-legend span {
+        border: 1px solid var(--border-soft);
+        border-radius: 999px;
+        padding: 5px 9px;
+      }
+      .legend-available { background: #d9ead3; }
+      .legend-reserved { background: #c6e0b4; }
+      .legend-unavailable { background: #f9d5a7; }
+      .legend-delivered { background: #d9e2f3; }
+      @media (max-width: 700px) {
+        .reservation-add-form {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Resumo Reserva/Pagamento</h2>
+            <div class="welcome-sub">Acompanhamento de ninhadas, reservas, entregas, manuais, frete e pagamentos dos filhotes.</div>
+          </div>
+          <div class="actions">
+            <a href="/reports" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <% if (success) { %>
+          <div class="content-card" style="border-left:4px solid #16a34a; margin-bottom:18px;">
+            <div class="content-sub">Resumo salvo com sucesso.</div>
+          </div>
+        <% } %>
+
+        <% if (error) { %>
+          <div class="content-card" style="border-left:4px solid #b91c1c; margin-bottom:18px;">
+            <div class="content-sub"><%= error %></div>
+          </div>
+        <% } %>
+
+        <section class="content-card module-panel">
+          <div class="content-title">Adicionar Ninhada</div>
+          <div class="content-sub">Digite o número, nome da mãe, pai, data de nascimento ou escolha uma das opções encontradas.</div>
+          <form class="reservation-add-form" method="post" action="/reports/resumo-reserva-pagamento/add">
+            <div class="field">
+              <label class="field-label" for="litterQuery">Buscar ninhada</label>
+              <input id="litterQuery" name="litterQuery" list="litterOptions" placeholder="Ex.: Estrela, 21/01/2025, número da ninhada..." autocomplete="off" />
+              <input id="litterId" name="litterId" type="hidden" />
+              <datalist id="litterOptions">
+                <% litterOptions.forEach(function(option) { %>
+                  <option data-id="<%= option.id %>" value="<%= option.label %>"></option>
+                <% }) %>
+              </datalist>
+            </div>
+            <button class="btn btn-primary" type="submit">Adicionar ninhada</button>
+          </form>
+        </section>
+
+        <form method="post" action="/reports/resumo-reserva-pagamento/save">
+          <section class="content-card">
+            <div class="report-summary">
+              <div>
+                <div class="content-title">Ninhadas no resumo</div>
+                <div class="content-sub"><%= summaries.length %> ninhada(s) adicionada(s).</div>
+              </div>
+              <% if (summaries.length) { %>
+                <button class="btn btn-primary" type="submit">Salvar alterações</button>
+              <% } %>
+            </div>
+
+            <div class="reservation-legend">
+              <span class="legend-available">Disponível</span>
+              <span class="legend-reserved">Reservado/com receita</span>
+              <span class="legend-unavailable">Indisponível/sem receita</span>
+              <span class="legend-delivered">Entregue</span>
+            </div>
+
+            <% if (!summaries.length) { %>
+              <div class="empty" style="margin-top:14px;">Nenhuma ninhada adicionada ao resumo.</div>
+            <% } else { %>
+              <div class="reservation-table-wrap" style="margin-top:14px;">
+                <table class="reservation-table">
+                  <thead>
+                    <tr>
+                      <th>Mãe</th>
+                      <th>Nascimento</th>
+                      <th>Reg. Ninhada</th>
+                      <th>Entrega</th>
+                      <th>Reserva Aérea</th>
+                      <th>Local / Entrega</th>
+                      <th>Gato</th>
+                      <th>Comprador</th>
+                      <th>Nome Gato</th>
+                      <th>Conta/Nota</th>
+                      <th>Grupo</th>
+                      <th>Manual</th>
+                      <th>Valor</th>
+                      <th>Frete</th>
+                      <th>Total</th>
+                      <th>Restam</th>
+                      <th>Pago</th>
+                      <th>Data Pagamento</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% summaries.forEach(function(summary) { %>
+                      <% const kittens = summary.kittens.length ? summary.kittens : [{ empty: true, rowClass: 'is-unavailable' }]; %>
+                      <% kittens.forEach(function(kitten, index) { %>
+                        <tr class="<%= kitten.rowClass %>">
+                          <% if (index === 0) { %>
+                            <td class="reservation-mother-cell" rowspan="<%= kittens.length %>"><%= summary.litter.femaleName || '-' %></td>
+                            <td class="reservation-litter-cell" rowspan="<%= kittens.length %>"><%= summary.litterBirthLabel || '-' %></td>
+                            <td class="reservation-litter-cell" rowspan="<%= kittens.length %>">
+                              <select class="reservation-select" name="registrationStatus[<%= summary.id %>]">
+                                <% registrationOptions.forEach(function(option) { %>
+                                  <option value="<%= option %>" <%= summary.registrationStatus === option ? 'selected' : '' %>><%= option %></option>
+                                <% }) %>
+                              </select>
+                            </td>
+                          <% } %>
+
+                          <% if (kitten.empty) { %>
+                            <td colspan="15">Nenhum filhote cadastrado nesta ninhada.</td>
+                          <% } else { %>
+                            <td>
+                              <input class="reservation-input reservation-date" type="date" name="kittenRows[<%= summary.id %>][<%= kitten.id %>][deliveryDate]" value="<%= kitten.deliveryDateInput %>" />
+                            </td>
+                            <td>
+                              <select class="reservation-select" name="kittenRows[<%= summary.id %>][<%= kitten.id %>][airReservation]">
+                                <% airReservationOptions.forEach(function(option) { %>
+                                  <option value="<%= option %>" <%= kitten.airReservation === option ? 'selected' : '' %>><%= option %></option>
+                                <% }) %>
+                              </select>
+                            </td>
+                            <td>
+                              <input class="reservation-input reservation-location" name="kittenRows[<%= summary.id %>][<%= kitten.id %>][deliveryLocation]" value="<%= kitten.deliveryLocation %>" placeholder="Cidade/local" />
+                            </td>
+                            <td><strong><%= kitten.kittenNumberLabel %></strong></td>
+                            <td><%= kitten.buyerFirstName || '' %></td>
+                            <td><strong><%= kitten.kittenNameLabel %></strong></td>
+                            <td><%= kitten.accountNote || '' %></td>
+                            <td>
+                              <select class="reservation-select" name="kittenRows[<%= summary.id %>][<%= kitten.id %>][groupStatus]">
+                                <% yesNoOptions.forEach(function(option) { %>
+                                  <option value="<%= option %>" <%= kitten.groupStatus === option ? 'selected' : '' %>><%= option %></option>
+                                <% }) %>
+                              </select>
+                            </td>
+                            <td>
+                              <select class="reservation-select" name="kittenRows[<%= summary.id %>][<%= kitten.id %>][manualStatus]">
+                                <% manualOptions.forEach(function(option) { %>
+                                  <option value="<%= option %>" <%= kitten.manualStatus === option ? 'selected' : '' %>><%= option %></option>
+                                <% }) %>
+                              </select>
+                            </td>
+                            <td class="amount"><%= kitten.valueLabel || '' %></td>
+                            <td class="amount"><%= kitten.freightLabel || '' %></td>
+                            <td class="amount"><strong><%= kitten.totalLabel || '' %></strong></td>
+                            <td class="amount <%= kitten.remainingLabel && !/^R\$\s?0/.test(kitten.remainingLabel) ? 'reservation-negative' : '' %>"><%= kitten.remainingLabel || '' %></td>
+                            <td class="amount"><strong><%= kitten.paidLabel || '' %></strong></td>
+                            <td class="reservation-payment-dates"><%= kitten.paymentDates || '' %></td>
+                          <% } %>
+                        </tr>
+                      <% }) %>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+          </section>
+        </form>
+      </main>
+    </div>
+
+    <script>
+      const litterInput = document.getElementById("litterQuery");
+      const litterIdInput = document.getElementById("litterId");
+      const litterOptions = Array.from(document.querySelectorAll("#litterOptions option"));
+
+      litterInput?.addEventListener("input", () => {
+        const selected = litterOptions.find((option) => option.value === litterInput.value);
+        litterIdInput.value = selected ? selected.dataset.id || "" : "";
+      });
+    </script>
+  </body>
+</html>

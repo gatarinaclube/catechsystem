@@ -1202,6 +1202,7 @@ model Litter {
 
   // Relação com serviços (ex.: Registro de Ninhada)
   serviceRequests ServiceRequest[]
+  reservationPaymentSummaries ReservationPaymentLitter[]
 
   createdAt DateTime @default(now())
 }
@@ -1225,8 +1226,43 @@ model LitterKitten {
   breedingRole String? // NEW_DAM / NEW_SIRE
   obs          String?
   deceased     Boolean? @default(false)
+  reservationPaymentRows ReservationPaymentKitten[]
 
   createdAt DateTime @default(now())
+}
+
+model ReservationPaymentLitter {
+  id                 Int      @id @default(autoincrement())
+  ownerId            Int?
+  litterId           Int
+  registrationStatus String   @default("Solicitar")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  litter Litter @relation(fields: [litterId], references: [id], onDelete: Cascade)
+  rows   ReservationPaymentKitten[]
+
+  @@unique([ownerId, litterId])
+  @@index([ownerId])
+}
+
+model ReservationPaymentKitten {
+  id               Int      @id @default(autoincrement())
+  summaryId        Int
+  litterKittenId   Int
+  deliveryDate     DateTime?
+  deliveryLocation String?
+  airReservation   String   @default("Não")
+  groupStatus      String   @default("Não")
+  manualStatus     String   @default("Não Enviado")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  summary ReservationPaymentLitter @relation(fields: [summaryId], references: [id], onDelete: Cascade)
+  kitten  LitterKitten             @relation(fields: [litterKittenId], references: [id], onDelete: Cascade)
+
+  @@unique([summaryId, litterKittenId])
+  @@index([litterKittenId])
 }
 
 model MatingPlan {
