@@ -1255,6 +1255,7 @@ model ReservationPaymentKitten {
   airReservation   String   @default("Não")
   groupStatus      String   @default("Não")
   manualStatus     String   @default("Não Enviado")
+  hidden           Boolean  @default(false)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

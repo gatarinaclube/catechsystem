@@ -761,6 +761,21 @@ function reservationLitterSortNumber(summary) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : Number(summary?.litterId || summary?.litter?.id || summary?.id || 0);
 }
 
+function shortMotherName(litter) {
+  const name = String(litter?.femaleName || "").trim();
+  if (!name) return "-";
+
+  const withoutCountryPrefix = name.replace(/^[A-Z]{2}\*[^ ]+\s+/i, "").trim();
+  if (withoutCountryPrefix && withoutCountryPrefix !== name) return withoutCountryPrefix;
+
+  const catteryName = String(litter?.catteryName || "").trim();
+  if (catteryName && name.toLowerCase().startsWith(catteryName.toLowerCase())) {
+    return name.slice(catteryName.length).trim() || name;
+  }
+
+  return name;
+}
+
 async function loadReservationLitterOptions(prisma, req) {
   const litters = await prisma.litter.findMany({
     where: littersScope(req),
@@ -866,6 +881,44 @@ async function ensureReservationSummary(prisma, req, litter) {
   });
 }
 
+async function ensureReservationKittenRow(prisma, summaryId, litterKittenId, data = {}) {
+  return prisma.reservationPaymentKitten.upsert({
+    where: {
+      summaryId_litterKittenId: {
+        summaryId,
+        litterKittenId,
+      },
+    },
+    update: data,
+    create: {
+      summaryId,
+      litterKittenId,
+      ...data,
+    },
+  });
+}
+
+function parseSummaryKittenToken(value) {
+  const [summaryText, kittenText] = String(value || "").split(":");
+  const summaryId = Number(summaryText);
+  const litterKittenId = Number(kittenText);
+  if (!Number.isFinite(summaryId) || !Number.isFinite(litterKittenId)) {
+    return null;
+  }
+  return { summaryId, litterKittenId };
+}
+
+async function ensureSummaryKittenAccess(prisma, req, summaryId, litterKittenId) {
+  const summary = await prisma.reservationPaymentLitter.findFirst({
+    where: { id: summaryId, ...ownerScope(req) },
+    include: { litter: { include: { kittens: { select: { id: true } } } } },
+  });
+
+  if (!summary) return null;
+  const validKitten = (summary.litter?.kittens || []).some((kitten) => kitten.id === litterKittenId);
+  return validKitten ? summary : null;
+}
+
 async function loadReservationPaymentReport(prisma, req) {
   const summaries = await prisma.reservationPaymentLitter.findMany({
     where: ownerScope(req),
@@ -909,34 +962,39 @@ async function loadReservationPaymentReport(prisma, req) {
 
   return summaries.map((summary) => {
     const rowByKittenId = new Map(summary.rows.map((row) => [row.litterKittenId, row]));
+    const mappedKittens = (summary.litter?.kittens || []).map((kitten) => {
+      const manual = rowByKittenId.get(kitten.id) || {};
+      const revenue = kitten.kittenCatId ? revenueByKittenId.get(kitten.kittenCatId) : null;
+      const financial = revenueSummary(revenue);
+      return {
+        ...kitten,
+        manual,
+        hidden: manual.hidden === true,
+        rowClass: kittenReservationClass(kitten, revenue),
+        deliveryDateInput: manual.deliveryDate ? formatDateInput(manual.deliveryDate) : "",
+        deliveryLocation: manual.deliveryLocation || "",
+        airReservation: manual.airReservation || "Não",
+        groupStatus: manual.groupStatus || "Não",
+        manualStatus: manual.manualStatus || "Não Enviado",
+        kittenNumberLabel: kitten.kittenNumber || kitten.index || "-",
+        kittenNameLabel: kitten.name || kitten.kittenCat?.name || "-",
+        buyerFirstName: financial.buyerFirstName,
+        accountNote: financial.accountNote,
+        valueLabel: financial.valueCents ? formatCurrency(financial.valueCents) : "",
+        freightLabel: financial.freightCents ? formatCurrency(financial.freightCents) : "",
+        totalLabel: financial.totalCents ? formatCurrency(financial.totalCents) : "",
+        paidLabel: financial.paidCents ? formatCurrency(financial.paidCents) : "",
+        remainingLabel: financial.totalCents ? formatCurrency(financial.remainingCents) : "",
+        paymentDates: financial.paymentDates,
+      };
+    });
+
     return {
       ...summary,
+      motherShortName: shortMotherName(summary.litter),
       litterBirthLabel: formatDateOnlyLabel(summary.litter?.litterBirthDate),
-      kittens: (summary.litter?.kittens || []).map((kitten) => {
-        const manual = rowByKittenId.get(kitten.id) || {};
-        const revenue = kitten.kittenCatId ? revenueByKittenId.get(kitten.kittenCatId) : null;
-        const financial = revenueSummary(revenue);
-        return {
-          ...kitten,
-          manual,
-          rowClass: kittenReservationClass(kitten, revenue),
-          deliveryDateInput: manual.deliveryDate ? formatDateInput(manual.deliveryDate) : "",
-          deliveryLocation: manual.deliveryLocation || "",
-          airReservation: manual.airReservation || "Não",
-          groupStatus: manual.groupStatus || "Não",
-          manualStatus: manual.manualStatus || "Não Enviado",
-          kittenNumberLabel: kitten.kittenNumber || kitten.index || "-",
-          kittenNameLabel: kitten.name || kitten.kittenCat?.name || "-",
-          buyerFirstName: financial.buyerFirstName,
-          accountNote: financial.accountNote,
-          valueLabel: financial.valueCents ? formatCurrency(financial.valueCents) : "",
-          freightLabel: financial.freightCents ? formatCurrency(financial.freightCents) : "",
-          totalLabel: financial.totalCents ? formatCurrency(financial.totalCents) : "",
-          paidLabel: financial.paidCents ? formatCurrency(financial.paidCents) : "",
-          remainingLabel: financial.totalCents ? formatCurrency(financial.remainingCents) : "",
-          paymentDates: financial.paymentDates,
-        };
-      }),
+      kittens: mappedKittens.filter((kitten) => !kitten.hidden),
+      hiddenKittens: mappedKittens.filter((kitten) => kitten.hidden),
     };
   }).sort((a, b) => {
     const numericCompare = reservationLitterSortNumber(a) - reservationLitterSortNumber(b);
@@ -1611,6 +1669,81 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       } catch (err) {
         console.error("Erro ao adicionar ninhada ao resumo:", err);
         res.redirect(`/reports/resumo-reserva-pagamento?error=${encodeURIComponent("Erro ao adicionar ninhada ao resumo.")}`);
+      }
+    }
+  );
+
+  router.post(
+    "/reports/resumo-reserva-pagamento/hide-kitten",
+    requireAuth,
+    requirePermission("admin.reports"),
+    async (req, res) => {
+      try {
+        const token = parseSummaryKittenToken(req.body.hideKitten);
+        if (!token) {
+          return res.redirect(`/reports/resumo-reserva-pagamento?error=${encodeURIComponent("Filhote não encontrado para ocultar.")}`);
+        }
+
+        const summary = await ensureSummaryKittenAccess(prisma, req, token.summaryId, token.litterKittenId);
+        if (!summary) {
+          return res.redirect(`/reports/resumo-reserva-pagamento?error=${encodeURIComponent("Filhote não encontrado para ocultar.")}`);
+        }
+
+        await ensureReservationKittenRow(prisma, token.summaryId, token.litterKittenId, { hidden: true });
+        res.redirect("/reports/resumo-reserva-pagamento?ok=1");
+      } catch (err) {
+        console.error("Erro ao ocultar filhote no resumo:", err);
+        res.redirect(`/reports/resumo-reserva-pagamento?error=${encodeURIComponent("Erro ao ocultar filhote.")}`);
+      }
+    }
+  );
+
+  router.post(
+    "/reports/resumo-reserva-pagamento/show-kitten",
+    requireAuth,
+    requirePermission("admin.reports"),
+    async (req, res) => {
+      try {
+        const token = parseSummaryKittenToken(req.body.showKitten);
+        if (!token) {
+          return res.redirect(`/reports/resumo-reserva-pagamento?error=${encodeURIComponent("Filhote não encontrado para restaurar.")}`);
+        }
+
+        const summary = await ensureSummaryKittenAccess(prisma, req, token.summaryId, token.litterKittenId);
+        if (!summary) {
+          return res.redirect(`/reports/resumo-reserva-pagamento?error=${encodeURIComponent("Filhote não encontrado para restaurar.")}`);
+        }
+
+        await ensureReservationKittenRow(prisma, token.summaryId, token.litterKittenId, { hidden: false });
+        res.redirect("/reports/resumo-reserva-pagamento?ok=1");
+      } catch (err) {
+        console.error("Erro ao restaurar filhote no resumo:", err);
+        res.redirect(`/reports/resumo-reserva-pagamento?error=${encodeURIComponent("Erro ao restaurar filhote.")}`);
+      }
+    }
+  );
+
+  router.post(
+    "/reports/resumo-reserva-pagamento/remove-litter",
+    requireAuth,
+    requirePermission("admin.reports"),
+    async (req, res) => {
+      try {
+        const summaryId = Number(req.body.removeSummary);
+        if (!Number.isFinite(summaryId)) {
+          return res.redirect(`/reports/resumo-reserva-pagamento?error=${encodeURIComponent("Ninhada não encontrada para remover do resumo.")}`);
+        }
+
+        await prisma.reservationPaymentLitter.deleteMany({
+          where: {
+            id: summaryId,
+            ...ownerScope(req),
+          },
+        });
+        res.redirect("/reports/resumo-reserva-pagamento?ok=1");
+      } catch (err) {
+        console.error("Erro ao remover ninhada do resumo:", err);
+        res.redirect(`/reports/resumo-reserva-pagamento?error=${encodeURIComponent("Erro ao remover ninhada do resumo.")}`);
       }
     }
   );
