@@ -303,6 +303,9 @@
               <div class="empty" style="margin-top:14px;">Nenhuma ninhada adicionada ao resumo.</div>
             <% } else { %>
               <div class="reservation-table-shell">
+                <% summaries.forEach(function(summary) { %>
+                  <input type="hidden" name="summaryIds[]" value="<%= summary.id %>" />
+                <% }) %>
                 <div class="reservation-table-wrap" style="margin-top:14px;" id="reservationTableWrap">
                   <table class="reservation-table">
                     <thead>
@@ -378,14 +381,14 @@
                             </td>
                             <td><strong><%= kitten.kittenNameLabel %></strong></td>
                             <td>
-                              <input class="reservation-input reservation-date" type="date" name="kittenRows[<%= summary.id %>][<%= kitten.id %>][deliveryDate]" value="<%= kitten.deliveryDateInput %>" />
+                              <input class="reservation-input reservation-date" type="date" name="kittenRow_<%= summary.id %>_<%= kitten.id %>_deliveryDate" value="<%= kitten.deliveryDateInput %>" />
                             </td>
                             <td><%= kitten.buyerFirstName || '' %></td>
                             <td>
-                              <input class="reservation-input reservation-location" name="kittenRows[<%= summary.id %>][<%= kitten.id %>][deliveryLocation]" value="<%= kitten.deliveryLocation %>" placeholder="Cidade/local" />
+                              <input class="reservation-input reservation-location" name="kittenRow_<%= summary.id %>_<%= kitten.id %>_deliveryLocation" value="<%= kitten.deliveryLocation %>" placeholder="Cidade/local" />
                             </td>
                             <td>
-                              <select class="reservation-select" name="kittenRows[<%= summary.id %>][<%= kitten.id %>][airReservation]">
+                              <select class="reservation-select" name="kittenRow_<%= summary.id %>_<%= kitten.id %>_airReservation">
                                 <% airReservationOptions.forEach(function(option) { %>
                                     <option value="<%= option %>" <%= kitten.airReservation === option ? 'selected' : '' %>><%= option %></option>
                                 <% }) %>
@@ -399,14 +402,14 @@
                             <td class="reservation-payment-dates"><%= kitten.paymentDates || '' %></td>
                             <td><%= kitten.accountNote || '' %></td>
                             <td>
-                              <select class="reservation-select" name="kittenRows[<%= summary.id %>][<%= kitten.id %>][groupStatus]">
+                              <select class="reservation-select" name="kittenRow_<%= summary.id %>_<%= kitten.id %>_groupStatus">
                                 <% yesNoOptions.forEach(function(option) { %>
                                     <option value="<%= option %>" <%= kitten.groupStatus === option ? 'selected' : '' %>><%= option %></option>
                                   <% }) %>
                                 </select>
                               </td>
                               <td>
-                                <select class="reservation-select" name="kittenRows[<%= summary.id %>][<%= kitten.id %>][manualStatus]">
+                                <select class="reservation-select" name="kittenRow_<%= summary.id %>_<%= kitten.id %>_manualStatus">
                                   <% manualOptions.forEach(function(option) { %>
                                     <option value="<%= option %>" <%= kitten.manualStatus === option ? 'selected' : '' %>><%= option %></option>
                                 <% }) %>

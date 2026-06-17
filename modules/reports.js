@@ -692,24 +692,37 @@ function normalizeOption(value, allowed, fallback) {
 function normalizeReservationSavePayload(body) {
   const registrationStatus = { ...(body.registrationStatus || {}) };
   const kittenRows = { ...(body.kittenRows || {}) };
+  const summaryIds = new Set([].concat(body.summaryIds || []).map(Number).filter(Boolean));
 
   Object.entries(body || {}).forEach(([key, value]) => {
     const registrationMatch = key.match(/^registrationStatus\[(\d+)\]$/);
     if (registrationMatch) {
       registrationStatus[registrationMatch[1]] = value;
+      summaryIds.add(Number(registrationMatch[1]));
       return;
     }
 
     const kittenMatch = key.match(/^kittenRows\[(\d+)\]\[(\d+)\]\[([^\]]+)\]$/);
     if (kittenMatch) {
       const [, summaryId, kittenId, field] = kittenMatch;
+      summaryIds.add(Number(summaryId));
+      kittenRows[summaryId] = kittenRows[summaryId] || {};
+      kittenRows[summaryId][kittenId] = kittenRows[summaryId][kittenId] || {};
+      kittenRows[summaryId][kittenId][field] = value;
+      return;
+    }
+
+    const flatKittenMatch = key.match(/^kittenRow_(\d+)_(\d+)_(\w+)$/);
+    if (flatKittenMatch) {
+      const [, summaryId, kittenId, field] = flatKittenMatch;
+      summaryIds.add(Number(summaryId));
       kittenRows[summaryId] = kittenRows[summaryId] || {};
       kittenRows[summaryId][kittenId] = kittenRows[summaryId][kittenId] || {};
       kittenRows[summaryId][kittenId][field] = value;
     }
   });
 
-  return { registrationStatus, kittenRows };
+  return { registrationStatus, kittenRows, summaryIds: Array.from(summaryIds) };
 }
 
 function paymentDatesLabel(parcels) {
@@ -1789,11 +1802,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requirePermission("admin.reports"),
     async (req, res) => {
       try {
-        const { registrationStatus, kittenRows } = normalizeReservationSavePayload(req.body);
-        const summaryIds = Object.keys({
-          ...registrationStatus,
-          ...kittenRows,
-        }).map(Number).filter(Boolean);
+        const { registrationStatus, kittenRows, summaryIds } = normalizeReservationSavePayload(req.body);
 
         const summaries = summaryIds.length
           ? await prisma.reservationPaymentLitter.findMany({
