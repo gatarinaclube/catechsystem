@@ -330,11 +330,13 @@ function mapRevenueRows(revenues, filters) {
         ...revenue,
         parcelNumber: parcel.number,
         parcelLabel: `${parcel.number || "-"} / ${revenue.installments || "-"}`,
+        paymentLabel: parcel.number ? `Pagamento ${parcel.number}/${revenue.installments || "-"}` : "",
         paidDateTime: paidTime,
         dateLabel: formatDateOnlyLabel(paidDate),
         amountLabel: formatCurrency(parcel.amountCents),
         amountCents: parcel.amountCents || 0,
         clientLabel: revenue.client?.fullName || "Cliente desconhecido",
+        invoiceLabel: revenue.invoiceNumber ? `NF ${revenue.invoiceNumber}` : "",
         paymentAccount,
         note: parcelCancellationNote(parcel),
       });
@@ -470,6 +472,9 @@ function mapTransferRows(transfers, filters) {
 }
 
 function mapCashFlowRows(expenses, revenueRows, transfers, filters, refundRows = []) {
+  const invoiceLabel = (row) => row.invoiceNumber ? `NF ${row.invoiceNumber}` : "";
+  const parcelLabel = (row) => row.parcelLabel ? `Pagamento ${String(row.parcelLabel).replace(/\s+/g, "")}` : "";
+
   const expenseRows = mapExpenseRows(expenses).map((expense) => ({
     id: `expense-${expense.id}`,
     dateTime: new Date(expense.competenceDate).getTime(),
@@ -488,7 +493,7 @@ function mapCashFlowRows(expenses, revenueRows, transfers, filters, refundRows =
     dateLabel: revenue.dateLabel,
     typeLabel: "Entrada",
     account: revenue.paymentAccount || "-",
-    description: [kittenNameOnly(revenue.kittenLabel), revenue.clientLabel].filter(Boolean).join(" · ") || "Receita",
+    description: [kittenNameOnly(revenue.kittenLabel), revenue.clientLabel, invoiceLabel(revenue), parcelLabel(revenue)].filter(Boolean).join(" · ") || "Receita",
     note: revenue.note || "",
     amountCents: Number(revenue.amountCents || 0),
     amountLabel: formatCurrency(revenue.amountCents),
@@ -500,7 +505,7 @@ function mapCashFlowRows(expenses, revenueRows, transfers, filters, refundRows =
     dateLabel: refund.dateLabel,
     typeLabel: "Estorno",
     account: refund.paymentAccount || "-",
-    description: [kittenNameOnly(refund.kittenLabel), refund.clientLabel].filter(Boolean).join(" · ") || "Estorno",
+    description: [kittenNameOnly(refund.kittenLabel), refund.clientLabel, invoiceLabel(refund), parcelLabel(refund)].filter(Boolean).join(" · ") || "Estorno",
     note: refund.note || "",
     amountCents: Number(refund.amountCents || 0),
     amountLabel: refund.amountLabel,
@@ -699,6 +704,13 @@ function normalizeReservationSavePayload(body) {
     if (registrationMatch) {
       registrationStatus[registrationMatch[1]] = value;
       summaryIds.add(Number(registrationMatch[1]));
+      return;
+    }
+
+    const flatRegistrationMatch = key.match(/^registrationStatus_(\d+)$/);
+    if (flatRegistrationMatch) {
+      registrationStatus[flatRegistrationMatch[1]] = value;
+      summaryIds.add(Number(flatRegistrationMatch[1]));
       return;
     }
 
@@ -1257,11 +1269,11 @@ function renderRevenuesPdf(res, rows, filters, totalLabel) {
   const columns = [
     { label: "Data", x: 40, width: 62 },
     { label: "Filhote", x: 108, width: 95 },
-    { label: "N da Nota", x: 207, width: 52 },
-    { label: "Parcela", x: 263, width: 42 },
-    { label: "Cliente", x: 309, width: 85 },
-    { label: "Conta", x: 398, width: 66 },
-    { label: "Valor", x: 468, width: 59 },
+    { label: "Nota", x: 207, width: 55 },
+    { label: "Pagamento", x: 266, width: 70 },
+    { label: "Cliente", x: 340, width: 76 },
+    { label: "Conta", x: 420, width: 55 },
+    { label: "Valor", x: 479, width: 48 },
   ];
 
   function drawHeader(y) {
@@ -1279,8 +1291,8 @@ function renderRevenuesPdf(res, rows, filters, totalLabel) {
     const textHeight = Math.max(11, pdfMaxColumnHeight(doc, [
       { ...columns[0], value: "dateLabel" },
       { ...columns[1], value: (item) => kittenNameOnly(item.kittenLabel) },
-      { ...columns[2], value: "invoiceNumber" },
-      { ...columns[3], value: "parcelLabel" },
+      { ...columns[2], value: "invoiceLabel" },
+      { ...columns[3], value: "paymentLabel" },
       { ...columns[4], value: "clientLabel" },
       { ...columns[5], value: "paymentAccount" },
       { ...columns[6], value: "amountLabel" },
@@ -1306,8 +1318,8 @@ function renderRevenuesPdf(res, rows, filters, totalLabel) {
     doc.font("Helvetica").fontSize(8).fillColor("#111827");
     doc.text(row.dateLabel, columns[0].x, y, { width: columns[0].width });
     doc.text(kittenNameOnly(row.kittenLabel), columns[1].x, y, { width: columns[1].width });
-    doc.text(row.invoiceNumber || "", columns[2].x, y, { width: columns[2].width });
-    doc.text(row.parcelLabel || "-", columns[3].x, y, { width: columns[3].width });
+    doc.text(row.invoiceLabel || "", columns[2].x, y, { width: columns[2].width });
+    doc.text(row.paymentLabel || "-", columns[3].x, y, { width: columns[3].width });
     doc.text(row.clientLabel, columns[4].x, y, { width: columns[4].width });
     doc.text(row.paymentAccount || "-", columns[5].x, y, { width: columns[5].width });
     doc.text(row.amountLabel, columns[6].x, y, { width: columns[6].width, align: "right" });

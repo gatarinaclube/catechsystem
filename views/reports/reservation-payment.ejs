@@ -353,7 +353,7 @@
                               </td>
                               <td class="reservation-litter-cell <%= registrationPendingClass %>" rowspan="<%= kittens.length %>"><%= summary.litterBirthLabel || '-' %></td>
                               <td class="reservation-litter-cell <%= registrationPendingClass %>" rowspan="<%= kittens.length %>">
-                                <select class="reservation-select" name="registrationStatus[<%= summary.id %>]">
+                                <select class="reservation-select" name="registrationStatus_<%= summary.id %>">
                                   <% registrationOptions.forEach(function(option) { %>
                                     <option value="<%= option %>" <%= summary.registrationStatus === option ? 'selected' : '' %>><%= option %></option>
                                   <% }) %>

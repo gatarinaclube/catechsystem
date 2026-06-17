@@ -80,6 +80,7 @@
                     <th>Cliente</th>
                     <th>Conta</th>
                     <th>Nota fiscal</th>
+                    <th>Pagamento</th>
                     <th class="amount">Valor</th>
                   </tr>
                 </thead>
@@ -94,7 +95,8 @@
                       </td>
                       <td><%= row.clientLabel || '-' %></td>
                       <td><%= row.paymentAccount || '-' %></td>
-                      <td><%= row.invoiceNumber || '-' %></td>
+                      <td><%= row.invoiceLabel || '-' %></td>
+                      <td><%= row.paymentLabel || '-' %></td>
                       <td class="amount"><%= row.amountLabel %></td>
                     </tr>
                   <% }) %>
