@@ -290,7 +290,7 @@
           <div class="mating-search-grid">
             <div class="field">
               <label class="field-label" for="matingCatSearch">Pesquisar gato</label>
-              <input id="matingCatSearch" type="search" placeholder="Digite nome, mãe, pai, status ou alguma informação..." autocomplete="off" />
+              <input id="matingCatSearch" type="search" placeholder="Digite o nome do gato..." autocomplete="off" />
               <div class="section-note">Ao pesquisar, os gatos encontrados sobem para visualização e edição.</div>
             </div>
             <button class="btn" type="button" id="clearMatingSearch">Limpar</button>
@@ -422,14 +422,7 @@
                   class="mating-row <%= row.supplement?.active ? 'is-supplementing' : '' %>"
                   data-mating-row
                   data-original-order="<%= index %>"
-                  data-search="<%= [
-                    row.femaleDisplayName,
-                    row.fatherName,
-                    row.motherName,
-                    row.birthDateLabel,
-                    row.status,
-                    group.label
-                  ].filter(Boolean).join(' ').toLowerCase() %>"
+                  data-search="<%= String(row.femaleDisplayName || '').toLowerCase() %>"
                 >
                   <input type="hidden" name="ownerId" value="<%= selectedOwnerId || '' %>" />
                   <div class="mating-table">

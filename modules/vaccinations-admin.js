@@ -101,6 +101,21 @@ function normalizeCompleteDateInput(value) {
   return formatDateInput(text);
 }
 
+function hasOtherOwner(cat) {
+  return (
+    cat?.ownershipType === "CO-OWNERSHIP" ||
+    cat?.ownershipType === "OTHER" ||
+    Boolean(cat?.currentOwnerClientId) ||
+    (Boolean(cat?.currentOwnerId) && cat.currentOwnerId !== cat.ownerId)
+  );
+}
+
+function isBreederHiddenFromVaccination(cat) {
+  const isKittenRecord = Boolean(cat?.kittenNumber || cat?.litterKitten);
+  const isBreederRecord = !isKittenRecord && (cat?.gender === "M" || cat?.gender === "F");
+  return isBreederRecord && cat?.neutered === true && hasOtherOwner(cat);
+}
+
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
@@ -169,6 +184,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       cats.forEach((cat) => {
         if (!isRoutineModuleCatVisible(cat)) return;
+        if (isBreederHiddenFromVaccination(cat)) return;
         const category = classifyOperationalCat(cat);
         if (!category) return;
 

@@ -165,7 +165,7 @@
           <div class="vaccination-search-grid">
             <div class="field">
               <label class="field-label" for="vaccinationSearch">Pesquisar gato</label>
-              <input id="vaccinationSearch" type="search" placeholder="Digite nome, mãe, nascimento ou situação..." autocomplete="off" />
+              <input id="vaccinationSearch" type="search" placeholder="Digite o nome do gato..." autocomplete="off" />
               <div class="section-note">Ao pesquisar, os gatos encontrados sobem para o topo da categoria.</div>
             </div>
             <button class="btn" type="button" id="clearVaccinationSearch">Limpar</button>
@@ -219,13 +219,7 @@
                       class="vaccination-cat-card is-<%= row.vaccinationState %>"
                       data-vaccination-card
                       data-original-order="<%= index %>"
-                      data-search="<%= [
-                        row.displayName,
-                        row.motherName,
-                        row.birthDateLabel,
-                        row.vaccinationSummary,
-                        row.vaccinationState
-                      ].filter(Boolean).join(' ').toLowerCase() %>"
+                      data-search="<%= String(row.displayName || '').toLowerCase() %>"
                     >
                       <summary>
                         <div class="vaccination-cat-summary-main">
