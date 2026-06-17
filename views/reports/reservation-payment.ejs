@@ -27,6 +27,18 @@
         font-size: 12px;
         line-height: 1.25;
       }
+      .reservation-scrollbar {
+        overflow-x: auto;
+        overflow-y: hidden;
+        height: 18px;
+        margin-top: 8px;
+        border: 1px solid var(--border-soft);
+        border-radius: 999px;
+        background: #f8fafc;
+      }
+      .reservation-scrollbar-inner {
+        height: 1px;
+      }
       .reservation-table th,
       .reservation-table td {
         border: 1px solid #1f2937;
@@ -194,7 +206,7 @@
             <% if (!summaries.length) { %>
               <div class="empty" style="margin-top:14px;">Nenhuma ninhada adicionada ao resumo.</div>
             <% } else { %>
-              <div class="reservation-table-wrap" style="margin-top:14px;">
+              <div class="reservation-table-wrap" style="margin-top:14px;" id="reservationTableWrap">
                 <table class="reservation-table">
                   <thead>
                     <tr>
@@ -282,6 +294,9 @@
                   </tbody>
                 </table>
               </div>
+              <div class="reservation-scrollbar" id="reservationScrollbar" aria-label="Rolagem horizontal da tabela">
+                <div class="reservation-scrollbar-inner" id="reservationScrollbarInner"></div>
+              </div>
             <% } %>
           </section>
         </form>
@@ -297,6 +312,35 @@
         const selected = litterOptions.find((option) => option.value === litterInput.value);
         litterIdInput.value = selected ? selected.dataset.id || "" : "";
       });
+
+      const tableWrap = document.getElementById("reservationTableWrap");
+      const bottomScrollbar = document.getElementById("reservationScrollbar");
+      const bottomScrollbarInner = document.getElementById("reservationScrollbarInner");
+
+      if (tableWrap && bottomScrollbar && bottomScrollbarInner) {
+        const syncWidth = () => {
+          bottomScrollbarInner.style.width = `${tableWrap.scrollWidth}px`;
+        };
+        let syncingFromTable = false;
+        let syncingFromBar = false;
+
+        tableWrap.addEventListener("scroll", () => {
+          if (syncingFromBar) return;
+          syncingFromTable = true;
+          bottomScrollbar.scrollLeft = tableWrap.scrollLeft;
+          syncingFromTable = false;
+        });
+
+        bottomScrollbar.addEventListener("scroll", () => {
+          if (syncingFromTable) return;
+          syncingFromBar = true;
+          tableWrap.scrollLeft = bottomScrollbar.scrollLeft;
+          syncingFromBar = false;
+        });
+
+        syncWidth();
+        window.addEventListener("resize", syncWidth);
+      }
     </script>
   </body>
 </html>

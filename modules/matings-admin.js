@@ -9,6 +9,7 @@ const {
   ageInMonths,
   buildDisplayName,
   classifyOperationalCat,
+  isRoutineModuleCatVisible,
 } = require("../utils/cattery-admin");
 
 const STATUS_GROUPS = [
@@ -172,9 +173,29 @@ function buildPedigreeNode(cat, depth = 4) {
   };
 }
 
+function hasOtherOwner(cat) {
+  return (
+    cat?.ownershipType === "CO-OWNERSHIP" ||
+    cat?.ownershipType === "OTHER" ||
+    Boolean(cat?.currentOwnerClientId) ||
+    (Boolean(cat?.currentOwnerId) && cat.currentOwnerId !== cat.ownerId)
+  );
+}
+
+function isKittenRecord(cat) {
+  return Boolean(cat?.kittenNumber || cat?.litterKitten);
+}
+
+function isAdultOtherOwner(cat) {
+  return !isKittenRecord(cat) && hasOtherOwner(cat);
+}
+
 function isFemaleAvailableForMatingModule(female) {
+  if (!isRoutineModuleCatVisible(female)) return false;
+  if (isAdultOtherOwner(female)) return false;
   if (female.deceased === true || female.neutered === true) return false;
   if (female.delivered === true) return false;
+  if (female.kittenAvailabilityStatus === "DELIVERED") return false;
   if ((female.kittenNumber || female.litterKitten) && female.breedingProspect !== true) {
     return false;
   }
@@ -186,8 +207,11 @@ function isDevelopingFemale(female) {
 }
 
 function isMaleAvailableForMatingModule(male) {
+  if (!isRoutineModuleCatVisible(male)) return false;
+  if (isAdultOtherOwner(male)) return false;
   if (male.deceased === true || male.neutered === true) return false;
   if (male.delivered === true) return false;
+  if (male.kittenAvailabilityStatus === "DELIVERED") return false;
   if ((male.kittenNumber || male.litterKitten) && male.breedingProspect !== true) {
     return false;
   }
@@ -232,6 +256,10 @@ function buildNextActions(grouped) {
   return actions
     .sort((a, b) => a.orderDate - b.orderDate)
     .slice(0, 6);
+}
+
+function statusLabel(value) {
+  return STATUS_GROUPS.find((group) => group.key === value)?.label || "Para Acasalar";
 }
 
 module.exports = (prisma, requireAuth, requirePermission) => {
@@ -282,11 +310,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         titleAfterName: true,
         country: true,
         currentOwnerId: true,
+        currentOwnerClientId: true,
         ownerId: true,
+        ownershipType: true,
         neutered: true,
         deceased: true,
         kittenNumber: true,
         delivered: true,
+        kittenAvailabilityStatus: true,
         gender: true,
         birthDate: true,
         breedingProspect: true,
@@ -296,7 +327,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     })).map((male) => ({
       ...male,
       displayName: buildDisplayName(male),
-    }));
+    })).filter(isMaleAvailableForMatingModule);
 
     const plans = await prisma.matingPlan.findMany({
       where: {
@@ -330,9 +361,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       grouped[status].push({
         female,
         plan,
-        maleOptions: males.filter((male) =>
-          classifyOperationalCat(male) === "sires" || isMaleAvailableForMatingModule(male)
-        ),
+        maleOptions: males.filter(isMaleAvailableForMatingModule),
         litterHistory,
         nextCrossDate,
         dppDate,
@@ -446,6 +475,35 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         create: payload,
         update: payload,
       });
+
+      if (req.get("X-Manual-Update") === "true" || req.accepts("json")) {
+        const updatedFemale = await prisma.cat.findUnique({
+          where: { id: femaleCatId },
+          include: {
+            owner: { include: { settings: true } },
+          },
+        });
+        const nextCrossDate = computeNextCrossDate(updatedFemale?.birthDate, litterHistory);
+        const dppDate = computeDpp(payload.matingStartDate, payload.matingEndDate);
+        const gestationDays = computeGestationDays(payload.matingStartDate, payload.matingEndDate);
+        const responseStatus = updatedFemale && isDevelopingFemale(updatedFemale)
+          ? "EM_DESENVOLVIMENTO"
+          : payload.status;
+        const supplement = computeSupplementInfo(updatedFemale?.owner?.settings, payload, nextCrossDate);
+
+        return res.json({
+          ok: true,
+          status: responseStatus,
+          statusLabel: statusLabel(responseStatus),
+          nextCrossLabel: nextCrossDate ? formatDate(nextCrossDate) : "-",
+          dppLabel: dppDate ? formatDate(dppDate) : "-",
+          gestationLabel: gestationDays !== null ? `${gestationDays} dias de gestação` : "-",
+          supplementActive: Boolean(supplement?.active),
+          supplementText: supplement?.active
+            ? `${supplement.phase} · início ${formatDate(supplement.startDate)} · ${supplement.endOpen ? "até lançar a data de cruza" : `fim ${formatDate(supplement.endDate)}`}`
+            : "",
+        });
+      }
 
       const redirectQuery = selectedOwnerId ? `?ownerId=${selectedOwnerId}` : "";
       res.redirect(`/admin/matings${redirectQuery}`);

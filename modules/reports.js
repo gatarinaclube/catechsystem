@@ -755,6 +755,12 @@ function littersScope(req) {
   return canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId };
 }
 
+function reservationLitterSortNumber(summary) {
+  const raw = String(summary?.litter?.litterNumber || "").match(/\d+/)?.[0];
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : Number(summary?.litterId || summary?.litter?.id || summary?.id || 0);
+}
+
 async function loadReservationLitterOptions(prisma, req) {
   const litters = await prisma.litter.findMany({
     where: littersScope(req),
@@ -932,6 +938,9 @@ async function loadReservationPaymentReport(prisma, req) {
         };
       }),
     };
+  }).sort((a, b) => {
+    const numericCompare = reservationLitterSortNumber(a) - reservationLitterSortNumber(b);
+    return numericCompare || Number(a.litterId) - Number(b.litterId);
   });
 }
 

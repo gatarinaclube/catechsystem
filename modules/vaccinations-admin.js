@@ -116,6 +116,37 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     return Boolean(cat);
   }
 
+  async function vaccinationResponseData(req, catId, antirabicHistory, felineHistory) {
+    const cat = await prisma.cat.findFirst({
+      where: { id: catId, ...ownerScope(req) },
+      include: {
+        owner: { include: { settings: true } },
+      },
+    });
+    const nextAntirabic = computeNextAntirabic(cat?.birthDate, antirabicHistory, cat?.owner?.settings);
+    const nextFeline = computeNextFeline(cat?.birthDate, felineHistory, cat?.owner?.settings);
+    const vaccinationState = getVaccinationState(nextAntirabic, nextFeline);
+    const vaccinationSummary = buildVaccinationSummary(nextAntirabic, nextFeline, vaccinationState);
+
+    return {
+      ok: true,
+      vaccinationState,
+      vaccinationSummary,
+      stateLabel: vaccinationState === "overdue"
+        ? "Vencida"
+        : vaccinationState === "upcoming"
+          ? "Próxima"
+          : "Em dia",
+      pillClass: vaccinationState === "overdue"
+        ? "is-red"
+        : vaccinationState === "upcoming"
+          ? "is-yellow"
+          : "is-green",
+      nextAntirabicLabel: nextAntirabic ? formatDate(nextAntirabic) : "-",
+      nextFelineLabel: nextFeline ? formatDate(nextFeline) : "-",
+    };
+  }
+
   router.get(
     "/admin/vaccinations",
     requireAuth,
@@ -232,6 +263,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       if (req.get("X-Autosave") === "true") {
         return res.sendStatus(204);
+      }
+
+      if (req.get("X-Manual-Update") === "true" || req.accepts("json")) {
+        return res.json(await vaccinationResponseData(req, catId, antirabicHistory, felineHistory));
       }
 
       res.redirect("/admin/vaccinations");
