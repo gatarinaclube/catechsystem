@@ -6,6 +6,23 @@
     <link rel="stylesheet" href="/css/theme.css" />
     <link rel="stylesheet" href="/css/layout.css" />
     <link rel="stylesheet" href="/css/cattery-admin.css" />
+    <style>
+      .cash-flow-summary-grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+
+      @media (max-width: 1100px) {
+        .cash-flow-summary-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 700px) {
+        .cash-flow-summary-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
   </head>
   <body>
     <div class="shell">
@@ -60,10 +77,18 @@
         </div>
 
         <div class="content-card">
-          <div class="report-summary-grid">
+          <div class="report-summary-grid cash-flow-summary-grid">
             <div>
               <div class="content-sub">Entradas</div>
               <div class="report-total cash-in"><%= incomeLabel %></div>
+            </div>
+            <div>
+              <div class="content-sub">Cancelamentos</div>
+              <div class="report-total cash-out"><%= canceledLabel %></div>
+            </div>
+            <div>
+              <div class="content-sub">Total recebido</div>
+              <div class="report-total cash-in"><%= receivedLabel %></div>
             </div>
             <div>
               <div class="content-sub">Saídas</div>

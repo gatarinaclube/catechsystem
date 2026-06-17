@@ -335,6 +335,7 @@ function mapRevenueRows(revenues, filters) {
         dateLabel: formatDateOnlyLabel(paidDate),
         amountLabel: formatCurrency(parcel.amountCents),
         amountCents: parcel.amountCents || 0,
+        canceled: parcel.canceled === true,
         clientLabel: revenue.client?.fullName || "Cliente desconhecido",
         invoiceLabel: revenue.invoiceNumber ? `NF ${revenue.invoiceNumber}` : "",
         paymentAccount,
@@ -347,6 +348,23 @@ function mapRevenueRows(revenues, filters) {
     const dateCompare = b.paidDateTime - a.paidDateTime;
     return dateCompare || Number(b.id) - Number(a.id);
   });
+}
+
+function buildRevenueTotals(rows) {
+  const totalCents = rows.reduce((sum, row) => sum + Number(row.amountCents || 0), 0);
+  const canceledCents = rows
+    .filter((row) => row.canceled)
+    .reduce((sum, row) => sum + Number(row.amountCents || 0), 0);
+  const receivedCents = totalCents - canceledCents;
+
+  return {
+    totalCents,
+    canceledCents,
+    receivedCents,
+    totalLabel: formatCurrency(totalCents),
+    canceledLabel: formatCurrency(canceledCents),
+    receivedLabel: formatCurrency(receivedCents),
+  };
 }
 
 function currentMonthStartDate() {
@@ -497,6 +515,7 @@ function mapCashFlowRows(expenses, revenueRows, transfers, filters, refundRows =
     note: revenue.note || "",
     amountCents: Number(revenue.amountCents || 0),
     amountLabel: formatCurrency(revenue.amountCents),
+    canceled: revenue.canceled === true,
   }));
 
   const refundCashRows = refundRows.map((refund) => ({
@@ -515,6 +534,33 @@ function mapCashFlowRows(expenses, revenueRows, transfers, filters, refundRows =
     const dateCompare = b.dateTime - a.dateTime;
     return dateCompare || String(b.id).localeCompare(String(a.id));
   });
+}
+
+function buildCashFlowTotals(rows) {
+  const incomeCents = rows
+    .filter((row) => row.amountCents > 0)
+    .reduce((sum, row) => sum + Number(row.amountCents || 0), 0);
+  const canceledCents = rows
+    .filter((row) => row.canceled)
+    .reduce((sum, row) => sum + Number(row.amountCents || 0), 0);
+  const receivedCents = incomeCents - canceledCents;
+  const expenseCents = rows
+    .filter((row) => row.amountCents < 0)
+    .reduce((sum, row) => sum + Math.abs(Number(row.amountCents || 0)), 0);
+  const balanceCents = incomeCents - expenseCents;
+
+  return {
+    incomeCents,
+    canceledCents,
+    receivedCents,
+    expenseCents,
+    balanceCents,
+    incomeLabel: formatCurrency(incomeCents),
+    canceledLabel: formatCurrency(canceledCents),
+    receivedLabel: formatCurrency(receivedCents),
+    expenseLabel: formatCurrency(expenseCents),
+    balanceLabel: formatCurrency(balanceCents),
+  };
 }
 
 function monthKeyFromDate(date) {
@@ -1249,7 +1295,7 @@ function renderExpensesPdf(res, rows, filters, totalLabel) {
   doc.end();
 }
 
-function renderRevenuesPdf(res, rows, filters, totalLabel) {
+function renderRevenuesPdf(res, rows, filters, totals) {
   const doc = new PDFDocument({ margin: 40, size: "A4" });
   const fileName = `relatorio-receitas-${filters.startDateInput}-${filters.endDateInput}.pdf`;
 
@@ -1263,7 +1309,7 @@ function renderRevenuesPdf(res, rows, filters, totalLabel) {
     `Período: ${formatDateOnlyLabel(filters.startDate)} a ${formatDateOnlyLabel(filters.endDate)}`
   );
   doc.text(`Conta: ${filters.account || "Todas"}`);
-  doc.text(`Total: ${totalLabel}`);
+  doc.text(`Total: ${totals.totalLabel} | Cancelamentos: ${totals.canceledLabel} | Total Recebidos: ${totals.receivedLabel}`);
   doc.moveDown(1);
 
   const columns = [
@@ -1353,7 +1399,8 @@ function renderCashFlowPdf(res, rows, filters, totals) {
     `Período: ${formatDateOnlyLabel(filters.startDate)} a ${formatDateOnlyLabel(filters.endDate)}`
   );
   doc.text(`Conta: ${filters.account || "Todas"}`);
-  doc.text(`Entradas: ${totals.incomeLabel} | Saídas: ${totals.expenseLabel} | Saldo: ${totals.balanceLabel}`);
+  doc.text(`Entradas: ${totals.incomeLabel} | Cancelamentos: ${totals.canceledLabel} | Total Recebidos: ${totals.receivedLabel}`);
+  doc.text(`Saídas: ${totals.expenseLabel} | Saldo: ${totals.balanceLabel}`);
   doc.moveDown(1);
 
   const columns = [
@@ -1943,10 +1990,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         orderBy: [{ createdAt: "desc" }],
       });
       const rows = mapRevenueRows(revenues, filters);
-      const totalCents = rows.reduce(
-        (sum, row) => sum + row.amountCents,
-        0
-      );
+      const totals = buildRevenueTotals(rows);
 
       res.render("reports/revenues", {
         user: req.user,
@@ -1954,7 +1998,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         rows,
         filters,
         accountOptions: await loadAccountOptions(prisma, req),
-        totalLabel: formatCurrency(totalCents),
+        totalLabel: totals.totalLabel,
+        canceledLabel: totals.canceledLabel,
+        receivedLabel: totals.receivedLabel,
         pdfQuery: buildQueryString(filters, true),
       });
     }
@@ -1972,12 +2018,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         orderBy: [{ createdAt: "desc" }],
       });
       const rows = mapRevenueRows(revenues, filters);
-      const totalCents = rows.reduce(
-        (sum, row) => sum + row.amountCents,
-        0
-      );
+      const totals = buildRevenueTotals(rows);
 
-      renderRevenuesPdf(res, rows, filters, formatCurrency(totalCents));
+      renderRevenuesPdf(res, rows, filters, totals);
     }
   );
 
@@ -2013,13 +2056,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         filters,
         refundRows
       );
-      const incomeCents = rows
-        .filter((row) => row.amountCents > 0)
-        .reduce((sum, row) => sum + row.amountCents, 0);
-      const expenseCents = rows
-        .filter((row) => row.amountCents < 0)
-        .reduce((sum, row) => sum + Math.abs(row.amountCents), 0);
-      const balanceCents = incomeCents - expenseCents;
+      const totals = buildCashFlowTotals(rows);
 
       res.render("reports/cash-flow", {
         user: req.user,
@@ -2027,9 +2064,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         rows,
         filters,
         accountOptions: await loadAccountOptions(prisma, req),
-        incomeLabel: formatCurrency(incomeCents),
-        expenseLabel: formatCurrency(expenseCents),
-        balanceLabel: formatCurrency(balanceCents),
+        incomeLabel: totals.incomeLabel,
+        canceledLabel: totals.canceledLabel,
+        receivedLabel: totals.receivedLabel,
+        expenseLabel: totals.expenseLabel,
+        balanceLabel: totals.balanceLabel,
         pdfQuery: buildQueryString(filters, true),
       });
     }
@@ -2067,19 +2106,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         filters,
         refundRows
       );
-      const incomeCents = rows
-        .filter((row) => row.amountCents > 0)
-        .reduce((sum, row) => sum + row.amountCents, 0);
-      const expenseCents = rows
-        .filter((row) => row.amountCents < 0)
-        .reduce((sum, row) => sum + Math.abs(row.amountCents), 0);
-      const balanceCents = incomeCents - expenseCents;
+      const totals = buildCashFlowTotals(rows);
 
-      renderCashFlowPdf(res, rows, filters, {
-        incomeLabel: formatCurrency(incomeCents),
-        expenseLabel: formatCurrency(expenseCents),
-        balanceLabel: formatCurrency(balanceCents),
-      });
+      renderCashFlowPdf(res, rows, filters, totals);
     }
   );
 

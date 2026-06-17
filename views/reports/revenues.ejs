@@ -65,7 +65,21 @@
               <div class="content-title">Receitas encontradas</div>
               <div class="content-sub"><%= rows.length %> lançamento(s) no período selecionado.</div>
             </div>
-            <div class="report-total"><%= totalLabel %></div>
+          </div>
+
+          <div class="report-summary-grid">
+            <div>
+              <div class="content-sub">Total</div>
+              <div class="report-total cash-in"><%= totalLabel %></div>
+            </div>
+            <div>
+              <div class="content-sub">Cancelamentos</div>
+              <div class="report-total cash-out"><%= canceledLabel %></div>
+            </div>
+            <div>
+              <div class="content-sub">Total Recebidos</div>
+              <div class="report-total"><%= receivedLabel %></div>
+            </div>
           </div>
 
           <% if (!rows.length) { %>
