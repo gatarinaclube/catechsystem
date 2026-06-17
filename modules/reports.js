@@ -689,6 +689,29 @@ function normalizeOption(value, allowed, fallback) {
   return allowed.includes(text) ? text : fallback;
 }
 
+function normalizeReservationSavePayload(body) {
+  const registrationStatus = { ...(body.registrationStatus || {}) };
+  const kittenRows = { ...(body.kittenRows || {}) };
+
+  Object.entries(body || {}).forEach(([key, value]) => {
+    const registrationMatch = key.match(/^registrationStatus\[(\d+)\]$/);
+    if (registrationMatch) {
+      registrationStatus[registrationMatch[1]] = value;
+      return;
+    }
+
+    const kittenMatch = key.match(/^kittenRows\[(\d+)\]\[(\d+)\]\[([^\]]+)\]$/);
+    if (kittenMatch) {
+      const [, summaryId, kittenId, field] = kittenMatch;
+      kittenRows[summaryId] = kittenRows[summaryId] || {};
+      kittenRows[summaryId][kittenId] = kittenRows[summaryId][kittenId] || {};
+      kittenRows[summaryId][kittenId][field] = value;
+    }
+  });
+
+  return { registrationStatus, kittenRows };
+}
+
 function paymentDatesLabel(parcels) {
   return parcels
     .filter((parcel) => parcel.paid && parcel.date && !parcel.canceled)
@@ -738,9 +761,14 @@ function revenueSummary(revenue) {
   };
 }
 
-function kittenReservationClass(kitten, revenue) {
+function revenueHasCanceledPayment(revenue) {
+  return parseParcelData(revenue?.parcelDataJson).some((parcel) => parcel.canceled === true);
+}
+
+function kittenReservationClass(kitten, revenue, forceAvailable = false) {
   const status = String(kitten.kittenCat?.kittenAvailabilityStatus || "").toUpperCase();
   if (status === "DECEASED" || kitten.deceased) return "is-deceased";
+  if (forceAvailable) return "is-available";
   if (status === "DELIVERED" || kitten.kittenCat?.delivered) return "is-delivered";
   if (revenue || status === "RESERVED" || kitten.kittenCat?.sold) return "is-reserved";
   if (status === "AVAILABLE") return "is-available";
@@ -954,7 +982,13 @@ async function loadReservationPaymentReport(prisma, req) {
       })
     : [];
   const revenueByKittenId = new Map();
+  const canceledRevenueKittenIds = new Set();
   revenues.forEach((revenue) => {
+    if (revenueHasCanceledPayment(revenue)) {
+      canceledRevenueKittenIds.add(revenue.kittenId);
+      return;
+    }
+
     if (!revenueByKittenId.has(revenue.kittenId)) {
       revenueByKittenId.set(revenue.kittenId, revenue);
     }
@@ -965,12 +999,13 @@ async function loadReservationPaymentReport(prisma, req) {
     const mappedKittens = (summary.litter?.kittens || []).map((kitten) => {
       const manual = rowByKittenId.get(kitten.id) || {};
       const revenue = kitten.kittenCatId ? revenueByKittenId.get(kitten.kittenCatId) : null;
+      const forceAvailable = Boolean(kitten.kittenCatId && !revenue && canceledRevenueKittenIds.has(kitten.kittenCatId));
       const financial = revenueSummary(revenue);
       return {
         ...kitten,
         manual,
         hidden: manual.hidden === true,
-        rowClass: kittenReservationClass(kitten, revenue),
+        rowClass: kittenReservationClass(kitten, revenue, forceAvailable),
         deliveryDateInput: manual.deliveryDate ? formatDateInput(manual.deliveryDate) : "",
         deliveryLocation: manual.deliveryLocation || "",
         airReservation: manual.airReservation || "Não",
@@ -1754,8 +1789,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requirePermission("admin.reports"),
     async (req, res) => {
       try {
-        const registrationStatus = req.body.registrationStatus || {};
-        const kittenRows = req.body.kittenRows || {};
+        const { registrationStatus, kittenRows } = normalizeReservationSavePayload(req.body);
         const summaryIds = Object.keys({
           ...registrationStatus,
           ...kittenRows,

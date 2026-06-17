@@ -183,7 +183,7 @@
         font-variant-numeric: tabular-nums;
       }
       .reservation-table .is-available td:not(.reservation-mother-cell):not(.reservation-litter-cell) {
-        background: #d9ead3;
+        background: #dbeafe;
       }
       .reservation-table .is-reserved td:not(.reservation-mother-cell):not(.reservation-litter-cell) {
         background: #c6e0b4;
@@ -192,7 +192,7 @@
         background: #f9d5a7;
       }
       .reservation-table .is-delivered td:not(.reservation-mother-cell):not(.reservation-litter-cell) {
-        background: #d9e2f3;
+        background: #e5e7eb;
       }
       .reservation-table .is-deceased td:not(.reservation-mother-cell):not(.reservation-litter-cell) {
         background: #f4cccc;
@@ -215,10 +215,14 @@
         border-radius: 999px;
         padding: 5px 9px;
       }
-      .legend-available { background: #d9ead3; }
+      .legend-available { background: #dbeafe; }
       .legend-reserved { background: #c6e0b4; }
       .legend-unavailable { background: #f9d5a7; }
-      .legend-delivered { background: #d9e2f3; }
+      .legend-delivered { background: #e5e7eb; }
+      .reservation-mother-cell.is-registration-pending,
+      .reservation-litter-cell.is-registration-pending {
+        background: #f9d5a7;
+      }
       @media (max-width: 900px) {
         .main {
           max-width: 100vw;
@@ -329,7 +333,8 @@
                         <% kittens.forEach(function(kitten, index) { %>
                           <tr class="<%= kitten.rowClass %> <%= index === 0 ? 'reservation-litter-start' : '' %> <%= index === kittens.length - 1 ? 'reservation-litter-end' : '' %>">
                             <% if (index === 0) { %>
-                              <td class="reservation-mother-cell" rowspan="<%= kittens.length %>">
+                              <% const registrationPendingClass = summary.registrationStatus === 'Solicitar' ? 'is-registration-pending' : ''; %>
+                              <td class="reservation-mother-cell <%= registrationPendingClass %>" rowspan="<%= kittens.length %>">
                                 <div><%= summary.motherShortName || '-' %></div>
                                 <button
                                   class="reservation-icon-button reservation-remove-litter"
@@ -343,8 +348,8 @@
                                   data-confirm-action="Remover esta ninhada do resumo? A ninhada original não será apagada."
                                 >×</button>
                               </td>
-                              <td class="reservation-litter-cell" rowspan="<%= kittens.length %>"><%= summary.litterBirthLabel || '-' %></td>
-                              <td class="reservation-litter-cell" rowspan="<%= kittens.length %>">
+                              <td class="reservation-litter-cell <%= registrationPendingClass %>" rowspan="<%= kittens.length %>"><%= summary.litterBirthLabel || '-' %></td>
+                              <td class="reservation-litter-cell <%= registrationPendingClass %>" rowspan="<%= kittens.length %>">
                                 <select class="reservation-select" name="registrationStatus[<%= summary.id %>]">
                                   <% registrationOptions.forEach(function(option) { %>
                                     <option value="<%= option %>" <%= summary.registrationStatus === option ? 'selected' : '' %>><%= option %></option>
@@ -445,6 +450,9 @@
                   <% }) %>
                 </details>
               <% } %>
+              <div class="actions" style="justify-content:flex-end; margin-top:14px;">
+                <button class="btn btn-primary" type="submit">Salvar alterações</button>
+              </div>
             <% } %>
           </section>
         </form>
