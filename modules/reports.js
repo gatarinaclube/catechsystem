@@ -836,6 +836,16 @@ function revenueHasCanceledPayment(revenue) {
   return parseParcelData(revenue?.parcelDataJson).some((parcel) => parcel.canceled === true);
 }
 
+function reservationKittenNameLabel(kitten) {
+  const currentName = String(kitten?.kittenCat?.name || kitten?.name || "").trim();
+  if (currentName) return currentName;
+
+  const sex = String(kitten?.kittenCat?.gender || kitten?.sex || "").trim().toUpperCase();
+  if (sex === "M") return "Macho";
+  if (sex === "F") return "Fêmea";
+  return "-";
+}
+
 function kittenReservationClass(kitten, revenue, forceAvailable = false) {
   const status = String(kitten.kittenCat?.kittenAvailabilityStatus || "").toUpperCase();
   if (status === "DECEASED" || kitten.deceased) return "is-deceased";
@@ -1083,7 +1093,7 @@ async function loadReservationPaymentReport(prisma, req) {
         groupStatus: manual.groupStatus || "Não",
         manualStatus: manual.manualStatus || "Não Enviado",
         kittenNumberLabel: kitten.kittenNumber || kitten.index || "-",
-        kittenNameLabel: kitten.name || kitten.kittenCat?.name || "-",
+        kittenNameLabel: reservationKittenNameLabel(kitten),
         buyerFirstName: financial.buyerFirstName,
         accountNote: financial.accountNote,
         valueLabel: financial.valueCents ? formatCurrency(financial.valueCents) : "",

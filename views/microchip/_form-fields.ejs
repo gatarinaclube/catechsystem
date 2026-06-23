@@ -77,7 +77,7 @@
     <input type="text" name="ownerName" value="<%= animal ? animal.ownerName : '' %>" required />
   </label>
   <label>CPF
-    <input type="text" name="ownerCpf" value="<%= animal ? (animal.ownerCpf || '') : '' %>" />
+    <input type="text" name="ownerCpf" inputmode="numeric" maxlength="14" value="<%= animal ? (animal.ownerCpf || '') : '' %>" />
   </label>
   <label>Data de nascimento
     <input type="date" name="ownerBirthDate" value="<%= animal ? dateInputValue(animal.ownerBirthDate) : '' %>" />

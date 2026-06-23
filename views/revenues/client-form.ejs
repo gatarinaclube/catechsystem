@@ -25,7 +25,7 @@
         </div>
         <div class="field">
           <label for="document">CPF/RG/Passaporte</label>
-          <input id="document" name="document" value="<%= client && client.document ? client.document : '' %>" />
+          <input id="document" name="document" data-document-mask="cpf-cnpj" value="<%= client && client.document ? client.document : '' %>" />
         </div>
         <div class="quick-grid">
           <div class="field">
@@ -93,6 +93,7 @@
         <a class="quick-options-link" href="/dashboard" title="Página inicial">⌂</a>
       </div>
     </main>
+    <script src="/js/document-masks.js"></script>
     <script>
       const states = [
         ["AC", "Acre"], ["AL", "Alagoas"], ["AP", "Amapá"], ["AM", "Amazonas"],

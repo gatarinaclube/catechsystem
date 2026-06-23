@@ -12,6 +12,7 @@ const { buildDisplayName, formatDate, formatDateInput, parseDate } = require("..
 const { sendStatusEmail } = require("../utils/mailer");
 const { buildUserSmtpConfig, shapeSmtpSettings } = require("../utils/userSmtp");
 const { ROLES, normalizeRole } = require("../utils/access");
+const { formatCpfCnpj, formatPhone } = require("../utils/format");
 
 const execFileAsync = promisify(execFile);
 
@@ -327,7 +328,7 @@ function uniqueContacts(contacts) {
       label: compact(contact.label),
       name: compact(contact.name),
       document: compact(contact.document),
-      phone: compact(contact.phone),
+      phone: formatPhone(contact.phone),
       type: compact(contact.type),
     }))
     .filter((contact) => {
@@ -1237,16 +1238,16 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           email: client.email,
           label: `Cliente: ${client.fullName}`,
           name: client.fullName,
-          document: client.document,
-          phone: client.phone,
+          document: formatCpfCnpj(client.document),
+          phone: formatPhone(client.phone),
           type: "Cliente",
         })),
         ...suppliers.map((supplier) => ({
           email: supplier.email,
           label: `Fornecedor: ${supplier.commercialName}`,
           name: supplier.contactName || supplier.commercialName,
-          document: supplier.cnpj,
-          phone: supplier.contactPhone || supplier.phone,
+          document: formatCpfCnpj(supplier.cnpj),
+          phone: formatPhone(supplier.contactPhone || supplier.phone),
           type: "Fornecedor",
         })),
       ]);
@@ -1282,8 +1283,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
         const recipientEmails = parseArray(req.body.recipientEmail).map(compact).filter(Boolean);
         const recipientNames = parseArray(req.body.recipientName).map(compact);
-        const recipientDocuments = parseArray(req.body.recipientDocument).map(compact);
-        const recipientPhones = parseArray(req.body.recipientPhone).map(compact);
+        const recipientDocuments = parseArray(req.body.recipientDocument).map((value) => formatCpfCnpj(compact(value)));
+        const recipientPhones = parseArray(req.body.recipientPhone).map((value) => formatPhone(compact(value)));
         const recipientPages = parseArray(req.body.recipientSignaturePage);
         const recipientXs = parseArray(req.body.recipientSignatureX);
         const recipientYs = parseArray(req.body.recipientSignatureY);
@@ -1357,7 +1358,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             signerName: owner?.name || "Remetente",
             signerEmail: owner?.email || null,
             signerDocument: owner?.cpf || null,
-            signerPhone: owner?.phones || null,
+            signerPhone: formatPhone(owner?.phones) || null,
             signatureSource: "SENDER",
             signaturePage: firstSenderPosition.page || 1,
             signatureX: firstSenderPosition.x ?? null,
@@ -1378,7 +1379,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               signerName: recipient.name || null,
               signerEmail: recipient.email,
               signerDocument: recipient.document || null,
-              signerPhone: recipient.phone || null,
+              signerPhone: formatPhone(recipient.phone) || null,
               signatureSource: "EXTERNAL_CONTRACT",
               signaturePage: recipient.positions[0]?.page || parseNullablePositiveInt(recipient.page) || 1,
               signatureX: recipient.positions[0]?.x ?? parseCoordinate(recipient.x),
@@ -1553,8 +1554,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const smtpConfig = buildUserSmtpConfig(settings);
       const signerEmail = compact(req.body.signerEmail || document.client?.email);
       const signerName = compact(req.body.signerName || document.client?.fullName);
-      const signerDocument = compact(req.body.signerDocument || document.client?.document);
-      const signerPhone = compact(req.body.signerPhone || document.client?.phone);
+      const signerDocument = formatCpfCnpj(compact(req.body.signerDocument || document.client?.document));
+      const signerPhone = formatPhone(compact(req.body.signerPhone || document.client?.phone));
       const token = crypto.randomBytes(32).toString("hex");
       const user = await prisma.user.findUnique({ where: { id: req.session.userId } });
       const unsignedPdf = await buildDocumentPdfBuffer({
@@ -1853,7 +1854,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       const signerEmail = compact(req.body.signerEmail || signatureRequest.signerEmail);
       const signerName = compact(req.body.signerName || signatureRequest.signerName);
-      const signerDocument = compact(req.body.signerDocument || signatureRequest.signerDocument);
+      const signerDocument = formatCpfCnpj(compact(req.body.signerDocument || signatureRequest.signerDocument));
       if (!signerEmail || !signerName || !signerDocument) {
         return res.redirect(`/assinatura/${req.params.token}?error=Informe nome, documento e e-mail para receber o código.`);
       }

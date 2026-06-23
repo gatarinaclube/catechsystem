@@ -381,6 +381,7 @@ model UserSettings {
   marketingInstagramUrl            String?
   marketingWhatsappUrl             String?
   marketingFooterText              String?
+  modulePreferencesJson            String?
   createdAt                        DateTime @default(now())
   updatedAt                        DateTime @updatedAt
 }

@@ -1,6 +1,7 @@
 // modules/users.js
 const express = require("express");
 const { ROLES, getRoleLabel, normalizeRole, isAdminRole } = require("../utils/access");
+const { formatCpfCnpj, formatPhone } = require("../utils/format");
 
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
@@ -104,6 +105,40 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       console.error("Erro ao listar usuários:", err);
       res.status(500).send("Erro ao listar usuários");
     }
+  });
+
+  // --------- VISUALIZAR SISTEMA COMO USUÁRIO ---------
+  router.post("/users/:id/view-as", requireAuth, requirePermission("admin.users"), async (req, res) => {
+    const { userId, isAdmin } = getAuthInfo(req);
+    const targetId = Number(req.params.id);
+
+    if (!isAdmin) {
+      return res.status(403).send("Acesso restrito apenas para administradores.");
+    }
+
+    if (!Number.isFinite(targetId) || targetId <= 0 || targetId === userId) {
+      return res.redirect("/users");
+    }
+
+    const targetUser = await prisma.user.findUnique({
+      where: { id: targetId },
+      select: { id: true, role: true, approvalStatus: true },
+    });
+
+    if (!targetUser) {
+      return res.status(404).send("Usuário não encontrado.");
+    }
+
+    req.session.adminViewAs = {
+      adminId: userId,
+      adminRole: ROLES.ADMIN,
+      targetId: targetUser.id,
+      startedAt: new Date().toISOString(),
+    };
+    req.session.userId = targetUser.id;
+    req.session.userRole = normalizeRole(targetUser.role);
+
+    return res.redirect("/dashboard");
   });
 
   // --------- DETALHES DO USUÁRIO ---------
@@ -211,13 +246,13 @@ router.post("/users/:id", requireAuth, requirePermission("admin.users"), async (
       data: {
         name,
         email: normalizedEmail,
-        cpf,
+        cpf: formatCpfCnpj(cpf),
         address,
         city,
         cep,
         state,
         country,
-        phones,
+        phones: formatPhone(phones),
         clubs,
         role: isAdmin ? normalizeRole(role) || ROLES.BASIC : existingUser?.role || ROLES.PREMIUM,
         approvalStatus: isAdmin ? finalStatus : existingUser?.approvalStatus || "DEFERIDO",

@@ -5,6 +5,7 @@ const multer = require("multer");
 const bcrypt = require("bcryptjs");
 const { sendStatusEmail } = require("../utils/mailer");
 const { baseSeo, organizationSchema } = require("../utils/seo");
+const { formatCpf, formatPhone } = require("../utils/format");
 
 const CAT_BREEDS = [
   "Abissínio", "Aegean", "American Bobtail", "American Curl", "American Shorthair",
@@ -117,7 +118,7 @@ function readPhones(body) {
   const types = Array.isArray(body.phoneType) ? body.phoneType : [body.phoneType];
   return numbers
     .map((number, index) => ({
-      number: String(number || "").trim(),
+      number: formatPhone(number),
       type: String(types[index] || "Celular").trim(),
     }))
     .filter((phone) => phone.number);
@@ -279,7 +280,7 @@ function registrationDataFromBody(body, passwordHash, photos) {
     color: String(body.color || "").trim() || null,
     size: String(body.size || "").trim() || null,
     ownerName: String(body.ownerName || "").trim(),
-    ownerCpf: String(body.ownerCpf || "").replace(/\D/g, "") || null,
+    ownerCpf: formatCpf(body.ownerCpf) || null,
     ownerBirthDate: parseDateValue(body.ownerBirthDate),
     ownerStreet: String(body.ownerStreet || "").trim() || null,
     ownerNumber: String(body.ownerNumber || "").trim() || null,
@@ -431,7 +432,7 @@ module.exports = function publicMicrochipRouterFactory(prisma, requireAuth, requ
     try {
       const microchip = normalizeMicrochip(req.body.microchip);
       const name = String(req.body.name || "").trim();
-      const phone = String(req.body.phone || "").trim();
+      const phone = formatPhone(req.body.phone);
       const email = String(req.body.email || "").trim();
       const subject = String(req.body.subject || "").trim();
       const message = String(req.body.message || "").trim();
@@ -638,7 +639,7 @@ module.exports = function publicMicrochipRouterFactory(prisma, requireAuth, requ
         res.render("microchip/admin-detail", {
           user: req.user,
           currentPath: "/admin/microchips",
-          registration,
+          registration: { ...registration, ownerCpf: formatCpf(registration.ownerCpf) },
           contacts,
           phones: parseJsonArray(registration.phonesJson),
           photos: parseJsonArray(registration.photosJson),

@@ -1,5 +1,6 @@
 const express = require("express");
 const { canViewAllData } = require("../utils/access");
+const { formatCnpj, formatCpfCnpj, formatPhone } = require("../utils/format");
 
 function todayForInput() {
   return new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
@@ -124,7 +125,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       commercialName,
       defaultCategory,
       tradeName: cleanText(req.body.tradeName) || null,
-      cnpj: onlyDigits(req.body.cnpj) || null,
+      cnpj: formatCnpj(req.body.cnpj) || null,
       cep: onlyDigits(req.body.cep) || null,
       street: cleanText(req.body.street) || null,
       number: cleanText(req.body.number) || null,
@@ -133,9 +134,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       city: cleanText(req.body.city) || null,
       state: cleanText(req.body.state).toUpperCase() || null,
       email: cleanText(req.body.email).toLowerCase() || null,
-      phone: cleanText(req.body.phone) || null,
+      phone: formatPhone(req.body.phone) || null,
       contactName: cleanText(req.body.contactName) || null,
-      contactPhone: cleanText(req.body.contactPhone) || null,
+      contactPhone: formatPhone(req.body.contactPhone) || null,
     };
   }
 
@@ -248,10 +249,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   }
 
   async function loadSupplierRows(req) {
-    return prisma.expenseSupplier.findMany({
+    const suppliers = await prisma.expenseSupplier.findMany({
       where: supplierScope(req),
       orderBy: [{ commercialName: "asc" }],
     });
+    return suppliers.map((supplier) => ({
+      ...supplier,
+      cnpj: formatCnpj(supplier.cnpj),
+    }));
   }
 
   async function ensureUniqueSupplierCnpj(req, cnpj, excludeId = null) {
@@ -394,7 +399,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   function clientData(req) {
     return {
       fullName: cleanText(req.body.fullName),
-      document: cleanText(req.body.document) || null,
+      document: formatCpfCnpj(cleanText(req.body.document)) || null,
       cep: cleanText(req.body.cep) || null,
       street: cleanText(req.body.street) || null,
       number: cleanText(req.body.number) || null,
@@ -404,7 +409,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       state: cleanText(req.body.state) || null,
       country: cleanText(req.body.country) || null,
       email: cleanText(req.body.email) || null,
-      phone: cleanText(req.body.phone) || null,
+      phone: formatPhone(req.body.phone) || null,
     };
   }
 
@@ -842,7 +847,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         orderBy: { fullName: "asc" },
         include: { _count: { select: { revenues: true } } },
       });
-      const clients = search
+      const clients = (search
         ? allClients.filter((client) => {
             const name = String(client.fullName || "").toLowerCase();
             const document = normalizeDocument(client.document);
@@ -851,7 +856,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               (normalizedSearch && document.includes(normalizedSearch))
             );
           })
-        : allClients;
+        : allClients).map((client) => ({
+          ...client,
+          document: formatCpfCnpj(client.document),
+        }));
       res.render("administrative/clients", {
         user: req.user,
         currentPath: "/administrativo",

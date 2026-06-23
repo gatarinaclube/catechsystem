@@ -202,6 +202,11 @@
         color: #dc2626;
         font-weight: 900;
       }
+      .reservation-warning-text,
+      .reservation-warning-text .reservation-select {
+        color: #dc2626;
+        font-weight: 900;
+      }
       .reservation-legend {
         display: flex;
         flex-wrap: wrap;
@@ -401,15 +406,15 @@
                             <td class="amount <%= kitten.remainingLabel && !/^R\$\s?0/.test(kitten.remainingLabel) ? 'reservation-negative' : '' %>"><%= kitten.remainingLabel || '' %></td>
                             <td class="reservation-payment-dates"><%= kitten.paymentDates || '' %></td>
                             <td><%= kitten.accountNote || '' %></td>
-                            <td>
-                              <select class="reservation-select" name="kittenRow_<%= summary.id %>_<%= kitten.id %>_groupStatus">
+                            <td class="<%= kitten.groupStatus === 'Não' ? 'reservation-warning-text' : '' %>">
+                              <select class="reservation-select" data-reservation-warning-value="Não" name="kittenRow_<%= summary.id %>_<%= kitten.id %>_groupStatus">
                                 <% yesNoOptions.forEach(function(option) { %>
                                     <option value="<%= option %>" <%= kitten.groupStatus === option ? 'selected' : '' %>><%= option %></option>
                                   <% }) %>
                                 </select>
                               </td>
-                              <td>
-                                <select class="reservation-select" name="kittenRow_<%= summary.id %>_<%= kitten.id %>_manualStatus">
+                              <td class="<%= kitten.manualStatus === 'Não Enviado' ? 'reservation-warning-text' : '' %>">
+                                <select class="reservation-select" data-reservation-warning-value="Não Enviado" name="kittenRow_<%= summary.id %>_<%= kitten.id %>_manualStatus">
                                   <% manualOptions.forEach(function(option) { %>
                                     <option value="<%= option %>" <%= kitten.manualStatus === option ? 'selected' : '' %>><%= option %></option>
                                 <% }) %>
@@ -478,6 +483,16 @@
             event.preventDefault();
           }
         });
+      });
+
+      document.querySelectorAll("[data-reservation-warning-value]").forEach((select) => {
+        const updateWarning = () => {
+          const cell = select.closest("td");
+          if (!cell) return;
+          cell.classList.toggle("reservation-warning-text", select.value === select.dataset.reservationWarningValue);
+        };
+        select.addEventListener("change", updateWarning);
+        updateWarning();
       });
 
       const tableWrap = document.getElementById("reservationTableWrap");

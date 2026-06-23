@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Central de Ajuda - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Central de Ajuda</h2>
+            <div class="welcome-sub">Orientações de uso do sistema, organizadas por módulos e funções.</div>
+          </div>
+          <div class="actions">
+            <a href="/dashboard" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <section class="content-card help-hero-card">
+          <div>
+            <div class="content-title">Encontre rapidamente uma orientação</div>
+            <div class="content-sub">
+              Digite o nome do módulo, função, campo ou dúvida. A busca procura também por palavras relacionadas.
+            </div>
+          </div>
+          <div class="help-search-wrap">
+            <input
+              id="helpSearch"
+              type="search"
+              placeholder="Buscar por vacinação, ninhada, vitrine, despesas..."
+              autocomplete="off"
+            />
+            <span id="helpSearchCount" class="status-pill">Todos os temas</span>
+          </div>
+        </section>
+
+        <section class="content-card" style="border-left:4px solid #f59e0b; margin-bottom:18px;">
+          <div class="content-title">Regra de manutenção</div>
+          <div class="content-sub">
+            Sempre que um módulo, campo, regra ou fluxo for alterado, esta página e os ícones de informação do sistema devem ser atualizados junto.
+          </div>
+        </section>
+
+        <div class="help-sections" id="helpSections">
+          <% sections.forEach(function(section, sectionIndex) { %>
+            <details class="content-card help-section" open data-help-section>
+              <summary class="dashboard-panel-summary">
+                <div>
+                  <div class="content-title"><%= section.title %></div>
+                  <div class="content-sub"><%= section.description %></div>
+                </div>
+                <span class="dashboard-panel-icon">+</span>
+              </summary>
+
+              <div class="help-topic-grid">
+                <% section.items.forEach(function(item) { %>
+                  <article
+                    class="help-topic"
+                    data-help-topic
+                    data-search="<%= [section.title, section.description, item.title, item.content, (item.tags || []).join(' ')].join(' ').toLowerCase() %>"
+                  >
+                    <div class="help-topic-kicker"><%= section.title %></div>
+                    <h3><%= item.title %></h3>
+                    <p><%= item.content %></p>
+                    <% if (item.tags && item.tags.length) { %>
+                      <div class="help-tags">
+                        <% item.tags.forEach(function(tag) { %>
+                          <span><%= tag %></span>
+                        <% }) %>
+                      </div>
+                    <% } %>
+                  </article>
+                <% }) %>
+              </div>
+            </details>
+          <% }) %>
+        </div>
+
+        <div id="helpEmpty" class="content-card empty" style="display:none;">
+          Nenhum tema encontrado. Tente buscar por outro termo ou consulte o suporte.
+        </div>
+      </main>
+    </div>
+
+    <script src="/js/help-popups.js"></script>
+    <script src="/js/document-masks.js"></script>
+    <script>
+      const searchInput = document.getElementById("helpSearch");
+      const count = document.getElementById("helpSearchCount");
+      const empty = document.getElementById("helpEmpty");
+      const sections = Array.from(document.querySelectorAll("[data-help-section]"));
+      const topics = Array.from(document.querySelectorAll("[data-help-topic]"));
+
+      function normalize(value) {
+        return String(value || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .trim();
+      }
+
+      function filterHelp() {
+        const query = normalize(searchInput.value);
+        let visibleCount = 0;
+
+        topics.forEach((topic) => {
+          const haystack = normalize(topic.dataset.search);
+          const visible = !query || haystack.includes(query);
+          topic.style.display = visible ? "" : "none";
+          if (visible) visibleCount += 1;
+        });
+
+        sections.forEach((section) => {
+          const visibleTopics = Array.from(section.querySelectorAll("[data-help-topic]"))
+            .some((topic) => topic.style.display !== "none");
+          section.style.display = visibleTopics ? "" : "none";
+          if (query && visibleTopics) section.open = true;
+        });
+
+        empty.style.display = visibleCount ? "none" : "";
+        count.textContent = query ? `${visibleCount} tema(s)` : "Todos os temas";
+      }
+
+      searchInput.addEventListener("input", filterHelp);
+    </script>
+  </body>
+</html>

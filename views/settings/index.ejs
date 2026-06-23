@@ -118,6 +118,34 @@
         background: #ffffff;
         padding: 10px 12px;
       }
+      .settings-module-grid {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      }
+      .settings-module-group {
+        border: 1px solid var(--border-soft);
+        border-radius: 12px;
+        padding: 12px;
+        background: #ffffff;
+      }
+      .settings-module-group h3 {
+        color: var(--text-main);
+        font-size: 14px;
+        margin: 0 0 10px;
+      }
+      .settings-switch.is-disabled {
+        color: #94a3b8;
+        cursor: not-allowed;
+        opacity: 0.82;
+      }
+      .settings-switch small {
+        display: block;
+        color: #9a3412;
+        font-size: 11px;
+        line-height: 1.3;
+        margin-top: 3px;
+      }
       .breed-picker {
         display: grid;
         grid-template-columns: minmax(220px, 360px) auto;
@@ -228,9 +256,20 @@
             <div class="welcome-sub">Preferências do login para dados do gatil, raças e exames.</div>
           </div>
           <div class="actions">
-            <a href="/dashboard" class="btn">Voltar</a>
+            <% if (!(typeof initialSetupRequired !== "undefined" && initialSetupRequired)) { %>
+              <a href="/dashboard" class="btn">Voltar</a>
+            <% } %>
           </div>
         </div>
+
+        <% if (typeof initialSetupRequired !== "undefined" && initialSetupRequired) { %>
+          <div class="content-card" style="border-left:4px solid #f59e0b; margin-bottom:18px; background:#fff7ed;">
+            <div class="content-title">Configuração inicial obrigatória</div>
+            <div class="content-sub">
+              Antes de acessar os demais módulos, salve esta página de Configurações. Aqui você define os dados básicos do gatil, raças, exames e preferências usadas em todo o sistema.
+            </div>
+          </div>
+        <% } %>
 
         <% if (success) { %>
           <div class="content-card" style="border-left:4px solid #16a34a; margin-bottom:18px;">
@@ -313,6 +352,54 @@
           <details class="content-card settings-panel">
             <summary>
               <div>
+                <div class="content-title">Módulos do menu</div>
+                <div class="content-sub">Escolha quais módulos permitidos pelo seu plano devem aparecer no menu lateral.</div>
+              </div>
+            </summary>
+            <div class="settings-panel-body">
+              <div class="content-sub" style="margin-bottom:12px;">
+                Módulos bloqueados aparecem para consulta, mas só podem ser ativados em planos que tenham acesso ao recurso.
+              </div>
+              <%
+                const moduleGroups = {};
+                (modulePreferenceRows || []).forEach(function(moduleRow) {
+                  if (!moduleGroups[moduleRow.group]) moduleGroups[moduleRow.group] = [];
+                  moduleGroups[moduleRow.group].push(moduleRow);
+                });
+              %>
+              <div class="settings-module-grid">
+                <% Object.keys(moduleGroups).forEach(function(groupName) { %>
+                  <section class="settings-module-group">
+                    <h3><%= groupName %></h3>
+                    <div class="settings-switch-list">
+                      <% moduleGroups[groupName].forEach(function(moduleRow) { %>
+                        <label class="settings-switch <%= moduleRow.allowed ? '' : 'is-disabled' %>">
+                          <input
+                            type="checkbox"
+                            name="modulePreferences"
+                            value="<%= moduleRow.key %>"
+                            <%= moduleRow.checked ? "checked" : "" %>
+                            <%= moduleRow.allowed ? "" : "disabled" %>
+                          />
+                          <span class="settings-switch-track"></span>
+                          <span>
+                            <%= moduleRow.label %>
+                            <% if (!moduleRow.allowed) { %>
+                              <small>Disponível em: <%= moduleRow.requirementLabel %></small>
+                            <% } %>
+                          </span>
+                        </label>
+                      <% }) %>
+                    </div>
+                  </section>
+                <% }) %>
+              </div>
+            </div>
+          </details>
+
+          <details class="content-card settings-panel">
+            <summary>
+              <div>
                 <div class="content-title">Dados do Veterinário</div>
                 <div class="content-sub">Informações usadas em atestados e documentos quando houver veterinário fixo.</div>
               </div>
@@ -358,7 +445,7 @@
               </div>
               <div class="field">
                 <label class="field-label" for="veterinarianCnpj">CNPJ</label>
-                <input id="veterinarianCnpj" name="veterinarianCnpj" type="text" value="<%= settings.veterinarianCnpj || '' %>" />
+                <input id="veterinarianCnpj" name="veterinarianCnpj" type="text" inputmode="numeric" maxlength="18" value="<%= settings.veterinarianCnpj || '' %>" />
               </div>
             </div>
             <div class="grid-3" style="margin-top:12px;">

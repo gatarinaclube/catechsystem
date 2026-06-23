@@ -110,7 +110,7 @@
                   <div class="field"><label>Gatil do proprietário externo</label><input name="externalOwnerCattery" value="<%= l.externalOwnerCattery || '' %>" /></div>
                   <div class="field"><label>Nome do proprietário externo</label><input name="externalOwnerName" value="<%= l.externalOwnerName || '' %>" /></div>
                   <div class="field"><label>E-mail do proprietário externo</label><input name="externalOwnerEmail" value="<%= l.externalOwnerEmail || '' %>" /></div>
-                  <div class="field"><label>CPF do proprietário externo</label><input name="externalOwnerCpf" value="<%= l.externalOwnerCpf || '' %>" /></div>
+                  <div class="field"><label>CPF do proprietário externo</label><input name="externalOwnerCpf" inputmode="numeric" maxlength="14" value="<%= l.externalOwnerCpf || '' %>" /></div>
                   <div class="field"><label>Telefone do proprietário externo</label><input name="externalOwnerPhone" value="<%= l.externalOwnerPhone || '' %>" /></div>
                   <div class="field">
                     <label>Autorização do proprietário externo</label>
@@ -424,6 +424,7 @@
     </div>
   <datalist id="judgesList"></datalist>
   <script src="/js/judges.js"></script>
+  <script src="/js/document-masks.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const judgesList = document.getElementById("judgesList");

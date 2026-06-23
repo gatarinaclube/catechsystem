@@ -22,7 +22,7 @@
       <form method="post" action="/billing/dados" class="auth-form">
         <div class="auth-field">
           <label for="cpf">CPF/CNPJ</label>
-          <input id="cpf" name="cpf" type="text" value="<%= user.cpf || '' %>" required />
+          <input id="cpf" name="cpf" type="text" inputmode="numeric" maxlength="18" value="<%= user.cpf || '' %>" required />
         </div>
 
         <div class="auth-field">
@@ -37,5 +37,6 @@
         <a href="/dashboard">Voltar ao painel</a>
       </div>
     </div>
+    <script src="/js/document-masks.js"></script>
   </body>
 </html>

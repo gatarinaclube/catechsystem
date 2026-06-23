@@ -6,6 +6,7 @@ const path = require("path");
 const { sendStatusEmail } = require("../utils/mailer");
 const { canViewAllData } = require("../utils/access");
 const { getFileUploadLimit, validateFilesForRole } = require("../utils/planLimits");
+const { formatCpf, formatPhone } = require("../utils/format");
 
 function escapeHtml(str) {
   return String(str || "")
@@ -420,8 +421,8 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
               maleOwnership: req.body.maleOwnership === "NOT_OWNER" ? "NOT_OWNER" : "OWNER",
               externalOwnerName: cleanText(req.body.externalOwnerName),
               externalOwnerEmail: cleanText(req.body.externalOwnerEmail),
-              externalOwnerCpf: cleanText(req.body.externalOwnerCpf),
-              externalOwnerPhone: cleanText(req.body.externalOwnerPhone),
+              externalOwnerCpf: formatCpf(req.body.externalOwnerCpf) || null,
+              externalOwnerPhone: formatPhone(req.body.externalOwnerPhone) || null,
               externalOwnerCattery: cleanText(req.body.externalOwnerCattery),
               ...(authFile ? { externalOwnerAuthorization: authFile } : {}),
               femaleName: cleanText(req.body.femaleName),
@@ -592,7 +593,7 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
               state: oldOwnerType === "ME" && req.body.memberType === "NAO_FIFE" ? cleanText(req.body.state) : null,
               cep: oldOwnerType === "ME" && req.body.memberType === "NAO_FIFE" ? cleanText(req.body.cep) : null,
               email: oldOwnerType === "ME" && req.body.memberType === "NAO_FIFE" ? cleanText(req.body.email) : null,
-              phone: oldOwnerType === "ME" && req.body.memberType === "NAO_FIFE" ? cleanText(req.body.phone) : null,
+              phone: oldOwnerType === "ME" && req.body.memberType === "NAO_FIFE" ? formatPhone(req.body.phone) || null : null,
               ...(authFile ? { authorizationFile: authFile } : {}),
             },
           });
@@ -1043,8 +1044,8 @@ if (litterId) {
             maleOwnership: req.body.maleOwnership === "NOT_OWNER" ? "NOT_OWNER" : "OWNER",
             externalOwnerName: cleanText(req.body.externalOwnerName),
             externalOwnerEmail: cleanText(req.body.externalOwnerEmail),
-            externalOwnerCpf: cleanText(req.body.externalOwnerCpf),
-            externalOwnerPhone: cleanText(req.body.externalOwnerPhone),
+            externalOwnerCpf: formatCpf(req.body.externalOwnerCpf) || null,
+            externalOwnerPhone: formatPhone(req.body.externalOwnerPhone) || null,
             externalOwnerCattery: cleanText(req.body.externalOwnerCattery),
             femaleName: cleanText(req.body.femaleName),
             femaleBreed: cleanText(req.body.femaleBreed),

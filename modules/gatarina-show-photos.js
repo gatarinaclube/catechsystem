@@ -4,6 +4,7 @@ const path = require("path");
 const multer = require("multer");
 const { Prisma } = require("@prisma/client");
 const { sendStatusEmail } = require("../utils/mailer");
+const { formatPhone } = require("../utils/format");
 
 const EVENT_KEY = "gatarina-show-2026";
 const PUBLIC_PATH = "/fotosgatarina2026";
@@ -207,7 +208,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       const name = String(req.body.name || "").trim();
       const email = String(req.body.email || "").trim().toLowerCase();
-      const phone = String(req.body.phone || "").trim();
+      const phone = formatPhone(req.body.phone);
       const note = String(req.body.note || "").trim();
 
       if (!name || !email) {

@@ -9,6 +9,7 @@ const {
   notifyUserServiceConfirmation,
 } = require("../utils/adminNotifications");
 const { getFileUploadLimit, validateFilesForRole } = require("../utils/planLimits");
+const { formatPhone } = require("../utils/format");
 
 
 
@@ -313,7 +314,7 @@ await prisma.transferRequest.create({
         : null,
     phone:
       memberType === "NAO_FIFE" && oldOwnerType === "ME"
-        ? phone
+        ? formatPhone(phone)
         : null,
 
     authorizationFile: authorizationFilePath,

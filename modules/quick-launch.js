@@ -517,7 +517,7 @@ module.exports = (prisma) => {
       registeredSuppliers = supplierRows.map((supplier) => supplier.commercialName);
       supplierDefaults = supplierRows.map((supplier) => ({
         name: supplier.commercialName,
-        label: [supplier.tradeName, supplier.cnpj ? `CNPJ ${supplier.cnpj}` : ""].filter(Boolean).join(" · "),
+        label: [supplier.tradeName, supplier.cnpj ? `CNPJ ${formatCnpj(supplier.cnpj)}` : ""].filter(Boolean).join(" · "),
         defaultCategory: supplier.defaultCategory || "",
       }));
     } catch {
@@ -829,6 +829,7 @@ module.exports = (prisma) => {
     const commercialName = cleanText(body.commercialName);
     const defaultCategory = cleanText(body.defaultCategory);
     const cnpj = onlyDigits(body.cnpj);
+    const formattedCnpj = formatCnpj(cnpj);
 
     if (!commercialName) throw new Error("Informe o Nome Comercial do fornecedor.");
     if (!defaultCategory) throw new Error("Informe a Categoria Padrão do fornecedor.");
@@ -841,7 +842,7 @@ module.exports = (prisma) => {
 
     if (cnpj) {
       const duplicateCnpj = await prisma.expenseSupplier.findFirst({
-        where: { ownerId, cnpj },
+        where: { ownerId, OR: [{ cnpj }, { cnpj: formattedCnpj }] },
         select: { id: true },
       });
       if (duplicateCnpj) throw new Error("Já existe um fornecedor cadastrado com este CNPJ.");
@@ -852,7 +853,7 @@ module.exports = (prisma) => {
         ownerId,
         commercialName,
         defaultCategory,
-        cnpj: cnpj || null,
+        cnpj: cnpj ? formattedCnpj : null,
       },
     });
 
@@ -938,7 +939,7 @@ module.exports = (prisma) => {
 
         if (analysis.cnpj) {
           registeredSupplier = await prisma.expenseSupplier.findFirst({
-            where: { ownerId: user.id, cnpj: analysis.cnpj },
+          where: { ownerId: user.id, OR: [{ cnpj: analysis.cnpj }, { cnpj: formatCnpj(analysis.cnpj) }] },
             select: { commercialName: true, defaultCategory: true, tradeName: true },
           });
         }

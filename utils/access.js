@@ -192,6 +192,7 @@ function buildAccessContext(role) {
 module.exports = {
   ROLES,
   ROLE_LABELS,
+  PERMISSIONS,
   normalizeRole,
   getRoleLabel,
   userCan,

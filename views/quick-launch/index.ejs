@@ -98,7 +98,7 @@
             </div>
             <div class="field">
               <label for="newSupplierCnpj">CNPJ</label>
-              <input id="newSupplierCnpj" form="publicSupplierForm" name="cnpj" inputmode="numeric" placeholder="Opcional" />
+              <input id="newSupplierCnpj" form="publicSupplierForm" name="cnpj" inputmode="numeric" maxlength="18" placeholder="Opcional" />
             </div>
             <div class="quick-panel-actions">
               <button class="btn" type="submit" form="publicSupplierForm">Salvar fornecedor</button>
@@ -190,6 +190,7 @@
         </footer>
       <% } %>
     </main>
+    <script src="/js/document-masks.js"></script>
     <script>
       const amount = document.getElementById("amount");
       const supplier = document.getElementById("supplier");

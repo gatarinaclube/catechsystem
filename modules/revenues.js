@@ -1,6 +1,7 @@
 const express = require("express");
 const { canViewAllData, userCan } = require("../utils/access");
 const { buildDisplayName, kittenFallbackDisplayName } = require("../utils/cattery-admin");
+const { formatCpfCnpj, formatPhone } = require("../utils/format");
 
 const DEFAULT_PAYMENT_ACCOUNT = "";
 
@@ -361,7 +362,10 @@ module.exports = (prisma) => {
       .sort((a, b) => a.localeCompare(b, "pt-BR"));
 
     return {
-      clients,
+      clients: clients.map((client) => ({
+        ...client,
+        document: formatCpfCnpj(client.document),
+      })),
       kittenGroups: [
         {
           label: "Disponíveis",
@@ -687,7 +691,7 @@ function buildRevenueData(body, existing = null) {
         data: {
           ownerId: req.session?.userId || null,
           fullName: req.body.fullName,
-          document: req.body.document || null,
+          document: formatCpfCnpj(req.body.document) || null,
           cep: req.body.cep || null,
           street: req.body.street || null,
           number: req.body.number || null,
@@ -697,7 +701,7 @@ function buildRevenueData(body, existing = null) {
           state: req.body.state || null,
           country: req.body.country || null,
           email: req.body.email || null,
-          phone: req.body.phone || null,
+          phone: formatPhone(req.body.phone) || null,
         },
       });
       res.redirect("/receitas");

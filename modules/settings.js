@@ -5,6 +5,7 @@ const path = require("path");
 const fs = require("fs");
 const { ROLES, isAdminRole, normalizeRole } = require("../utils/access");
 const { encryptSecret, shapeSmtpSettings } = require("../utils/userSmtp");
+const { formatCnpj, formatPhone } = require("../utils/format");
 const {
   MANAGED_PLAN_ROLES,
   getFileUploadLimit,
@@ -19,6 +20,11 @@ const {
   parseJsonList,
   selectedExamsFromSettings,
 } = require("../utils/userPreferences");
+const {
+  MODULE_PREFERENCES,
+  modulePreferenceRowsForRole,
+  normalizeModulePreferences,
+} = require("../utils/modulePreferences");
 
 const MEMBERSHIP_OPTIONS = ["FIFe", "TICa", "WCF"];
 const VACCINE_REMINDER_GROUP_OPTIONS = [
@@ -171,7 +177,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         "marketingSmtpPort",
         "marketingSmtpSecure",
         "marketingSmtpUser",
-        "marketingSmtpPassEncrypted"
+        "marketingSmtpPassEncrypted",
+        "modulePreferencesJson"
       FROM "UserSettings"
       WHERE "userId" = ${userId}
       LIMIT 1
@@ -228,28 +235,40 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       marketingSmtpSecure: Boolean(settings?.marketingSmtpSecure),
       marketingSmtpUser: settings?.marketingSmtpUser || "",
       marketingSmtpPassEncrypted: settings?.marketingSmtpPassEncrypted || null,
+      modulePreferences: normalizeModulePreferences(settings?.modulePreferencesJson),
       smtpSettings: shapeSmtpSettings(settings),
     };
   }
 
   router.get("/settings", requireAuth, requirePermission("admin.settings"), async (req, res) => {
     try {
+      const savedSettings = await prisma.userSettings.findUnique({
+        where: { userId: req.session.userId },
+        select: { id: true },
+      });
       const settings = await getSettings(req.session.userId);
       const showQuickFinanceLinks = canUseQuickFinanceLinks(req.session.userRole);
       const expensePublicToken = showQuickFinanceLinks
         ? await ensureExpensePublicToken(prisma, req.user)
         : null;
+      const initialSetupRequired = req.query.initial === "1" || !savedSettings;
+      if (savedSettings) {
+        req.session.initialSettingsSaved = true;
+      }
+      const modulePreferenceRows = modulePreferenceRowsForRole(req.session.userRole, settings.modulePreferences);
 
       res.render("settings/index", {
         user: req.user,
         currentPath: req.path,
         settings,
+        initialSetupRequired,
         showQuickFinanceLinks,
         expensePublicLink: expensePublicToken ? buildAbsoluteUrl(req, `/despesas/u/${expensePublicToken}`) : "",
         membershipOptions: MEMBERSHIP_OPTIONS,
         breedOptions: BREED_OPTIONS,
         examOptions: EXAM_OPTIONS,
         vaccineReminderGroupOptions: VACCINE_REMINDER_GROUP_OPTIONS,
+        modulePreferenceRows,
         planLimits: isAdminRole(req.session.userRole) ? getPlanLimitRows() : [],
         canManagePlanLimits: isAdminRole(req.session.userRole),
         success: req.query.saved === "1",
@@ -273,6 +292,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     });
   }, async (req, res) => {
     const existingSettings = await getSettings(req.session.userId);
+    const savedSettingsBefore = await prisma.userSettings.findUnique({
+      where: { userId: req.session.userId },
+      select: { id: true },
+    });
     const logoFile = req.files?.logo?.[0] || null;
     const veterinarianLogoFile = req.files?.veterinarianLogo?.[0] || null;
     const smtpPassword = (req.body.smtpPassword || "").trim();
@@ -287,12 +310,12 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       crmvUf: (req.body.crmvUf || "").trim().toUpperCase().slice(0, 2),
       veterinarianClinicName: (req.body.veterinarianClinicName || "").trim(),
       veterinarianTradeName: (req.body.veterinarianTradeName || "").trim(),
-      veterinarianCnpj: (req.body.veterinarianCnpj || "").trim(),
+      veterinarianCnpj: formatCnpj(req.body.veterinarianCnpj),
       veterinarianAddress: (req.body.veterinarianAddress || "").trim(),
       veterinarianCity: (req.body.veterinarianCity || "").trim(),
       veterinarianCep: (req.body.veterinarianCep || "").trim(),
       veterinarianState: (req.body.veterinarianState || "").trim(),
-      veterinarianPhone: (req.body.veterinarianPhone || "").trim(),
+      veterinarianPhone: formatPhone(req.body.veterinarianPhone),
       veterinarianMobile: (req.body.veterinarianMobile || "").trim(),
       veterinarianEmail: (req.body.veterinarianEmail || "").trim(),
       logoPath: logoFile ? `/uploads/settings-logos/${logoFile.filename}` : existingSettings.logoPath,
@@ -335,6 +358,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           ? encryptSecret(smtpPassword)
           : existingSettings.marketingSmtpPassEncrypted || null,
     };
+    const allowedModulePreferenceKeys = modulePreferenceRowsForRole(req.session.userRole, existingSettings.modulePreferences)
+      .filter((module) => module.allowed)
+      .map((module) => module.key);
+    const selectedModulePreferenceKeys = filterAllowed(req.body.modulePreferences, allowedModulePreferenceKeys);
+    settings.modulePreferences = selectedModulePreferenceKeys;
     settings.smtpSettings = shapeSmtpSettings(settings);
     const canManagePlanLimits = isAdminRole(req.session.userRole);
     const planLimits = canManagePlanLimits ? buildPlanLimitRows(req.body) : getPlanLimitRows();
@@ -393,6 +421,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           "marketingSmtpSecure",
           "marketingSmtpUser",
           "marketingSmtpPassEncrypted",
+          "modulePreferencesJson",
           "updatedAt"
         )
         VALUES (
@@ -442,6 +471,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           ${settings.marketingSmtpSecure},
           ${settings.marketingSmtpUser || null},
           ${settings.marketingSmtpPassEncrypted || null},
+          ${JSON.stringify(settings.modulePreferences)},
           CURRENT_TIMESTAMP
         )
         ON CONFLICT ("userId") DO UPDATE SET
@@ -490,6 +520,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           "marketingSmtpSecure" = EXCLUDED."marketingSmtpSecure",
           "marketingSmtpUser" = EXCLUDED."marketingSmtpUser",
           "marketingSmtpPassEncrypted" = EXCLUDED."marketingSmtpPassEncrypted",
+          "modulePreferencesJson" = EXCLUDED."modulePreferencesJson",
           "updatedAt" = CURRENT_TIMESTAMP
       `;
 
@@ -511,6 +542,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         setPlanLimitOverrides(planLimits);
       }
 
+      req.session.initialSettingsSaved = true;
+      req.session.modulePreferences = settings.modulePreferences;
       res.redirect("/settings?saved=1");
     } catch (err) {
       console.error("Erro ao salvar configurações:", err);
@@ -528,12 +561,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         user: req.user,
         currentPath: "/settings",
         settings,
+        initialSetupRequired: !savedSettingsBefore,
         showQuickFinanceLinks,
         expensePublicLink,
         membershipOptions: MEMBERSHIP_OPTIONS,
         breedOptions: BREED_OPTIONS,
         examOptions: EXAM_OPTIONS,
         vaccineReminderGroupOptions: VACCINE_REMINDER_GROUP_OPTIONS,
+        modulePreferenceRows: modulePreferenceRowsForRole(req.session.userRole, settings.modulePreferences),
         planLimits,
         canManagePlanLimits,
         success: false,

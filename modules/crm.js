@@ -5,6 +5,7 @@ const path = require("path");
 const multer = require("multer");
 const { canViewAllData } = require("../utils/access");
 const { sendStatusEmail } = require("../utils/mailer");
+const { formatCpfCnpj, formatPhone } = require("../utils/format");
 
 const baseUploadsDir = process.env.UPLOADS_DIR
   ? process.env.UPLOADS_DIR
@@ -403,7 +404,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   function clientData(req) {
     return {
       fullName: req.body.fullName,
-      document: req.body.document || null,
+      document: formatCpfCnpj(req.body.document) || null,
       cep: req.body.cep || null,
       street: req.body.street || null,
       number: req.body.number || null,
@@ -413,7 +414,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       state: req.body.state || null,
       country: req.body.country || null,
       email: req.body.email || null,
-      phone: req.body.phone || null,
+      phone: formatPhone(req.body.phone) || null,
     };
   }
 
@@ -732,6 +733,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     }
     const mappedClients = clients.map((client) => ({
       ...client,
+      document: formatCpfCnpj(client.document),
       createdAtLabel: formatDateLabel(client.createdAt),
       isComplete: isClientComplete(client),
       salesCount: client._count?.revenues || 0,

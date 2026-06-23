@@ -348,6 +348,8 @@
       <div class="form-row">
         <label>CPF</label>
         <input type="text" name="externalOwnerCpf"
+               inputmode="numeric"
+               maxlength="14"
                value="<%= litter?.externalOwnerCpf || '' %>" />
       </div>
 
@@ -636,6 +638,7 @@
 
 <datalist id="judgesList"></datalist>
 <script src="/js/judges.js"></script>
+<script src="/js/document-masks.js"></script>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
     const list = document.getElementById("judgesList");

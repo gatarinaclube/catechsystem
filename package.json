@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "check:help": "node scripts/check-help-popups.js",
+    "version:deploy": "node scripts/print-app-version.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

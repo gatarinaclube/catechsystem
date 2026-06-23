@@ -103,6 +103,17 @@
                         <% } else { %>
                           <span class="badge-status badge-status--new">Novo cadastro</span>
                         <% } %>
+                        <% if (u.role !== 'ADMIN') { %>
+                          <form method="post" action="/users/<%= u.id %>/view-as" style="margin:0;">
+                            <button
+                              class="btn"
+                              type="submit"
+                              onclick="return confirm('Visualizar o sistema como este usuário em modo somente leitura?');"
+                            >
+                              Visualizar
+                            </button>
+                          </form>
+                        <% } %>
                         <%- include('_quick-actions', { u, roleOptions, approvalOptions }) %>
                       </div>
                     </li>

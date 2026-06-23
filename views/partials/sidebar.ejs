@@ -17,35 +17,54 @@
       <% } %>
     </div>
 
-    <% if (access && access.canAccessMyProfile) { %>
-  <div style="margin-top:8px; font-size:12px;">
-    <a href="/meus-dados" style="color:inherit; text-decoration:none;">
-      Meu Cadastro
-    </a>
-  </div>
-<% } %>
-
+    <% if (typeof adminViewAs !== "undefined" && adminViewAs) { %>
+      <div
+        style="
+          margin-top: 10px;
+          padding: 10px;
+          border: 1px solid #f59e0b;
+          border-radius: 10px;
+          background: #fff7ed;
+          color: #7c2d12;
+          font-size: 12px;
+          line-height: 1.35;
+        "
+      >
+        <strong>Somente visualização</strong>
+        <div style="margin-top:4px;">
+          Vendo como <%= adminViewAs.target && adminViewAs.target.name ? adminViewAs.target.name : "usuário" %>.
+        </div>
+        <form method="post" action="/admin/view-as/stop" style="margin-top:8px;">
+          <button
+            type="submit"
+            class="btn"
+            style="width:100%; padding:6px 8px; font-size:12px;"
+          >
+            Voltar ao administrador
+          </button>
+        </form>
+      </div>
+    <% } %>
 
     <div class="menu-title">Menu</div>
-
-    <form class="global-search" method="get" action="/buscar">
-      <input
-        type="search"
-        name="q"
-        placeholder="Buscar..."
-        value="<%= typeof searchQuery !== 'undefined' ? searchQuery : '' %>"
-        aria-label="Buscar no sistema"
-      />
-      <button type="submit" class="btn" title="Buscar">⌕</button>
-    </form>
 
     <nav class="menu">
       <%
         const currentUserRole = access && access.role ? access.role : (user && user.role ? user.role : "");
         const showPlanUpgrade = ["BASIC", "MASTER"].includes(String(currentUserRole || "").toUpperCase());
+        const selectedMenuModules = Array.isArray(typeof modulePreferences !== "undefined" ? modulePreferences : null)
+          ? modulePreferences
+          : null;
+        function isPreferenceEnabled(item) {
+          return !item.preferenceKey || !selectedMenuModules || selectedMenuModules.includes(item.preferenceKey);
+        }
+        function isSectionActive(items) {
+          return items.some((item) => item.allowed !== false && isPreferenceEnabled(item) && currentPath && currentPath.startsWith(item.match));
+        }
         function moduleHelp(item) {
           const helpByLabel = {
             "Página inicial": "Mostra os principais indicadores e atalhos do sistema, reunindo pendências, rotina do gatil e acesso rápido aos módulos.",
+            "Meu Cadastro": "Mostra seus dados cadastrais, perfil contratado, limitações e links públicos disponíveis para uso.",
             "Todos os gatos": "Lista os gatos cadastrados no sistema para consulta, edição e acompanhamento dos registros.",
             "Meus gatos": "Lista os gatos do seu gatil para consulta, edição e acompanhamento dos registros.",
             "Serviços": "Área para solicitar serviços, acompanhar protocolos enviados e corrigir pendências quando necessário.",
@@ -54,7 +73,8 @@
             "Usuários": "Gerenciamento dos usuários, perfis, dados cadastrais, aprovações e links individuais do sistema.",
             "Configurações": "Configura dados do gatil, veterinário, logo, raças, exames e limites disponíveis por perfil.",
             "Gestão de Microchip": "Área administrativa para localizar cadastros públicos de microchip, conferir dados do tutor e registrar contatos sobre animais encontrados.",
-            "Financeiro": "Configuração administrativa dos valores comerciais, associação e APIs Asaas de produção e teste.",
+            "Financeiro técnico": "Configuração administrativa dos valores comerciais, associação e APIs Asaas de produção e teste.",
+            "Financeiro": "Área administrativa do gatil com receitas, despesas, contas, clientes, fornecedores e produtos/serviços.",
             "Reprodutores": "Cadastro e gestão de padreadores, matrizes e gatos reprodutores do gatil.",
             "Ninhadas": "Registro operacional das ninhadas, estatísticas de parto, filhotes e acompanhamento da reprodução.",
             "Filhotes": "Gestão dos filhotes cadastrados via Registro de Ninhada ou Ninhadas. Novos filhotes entram por esses fluxos; filhotes externos para reprodução devem ser cadastrados como reprodutor/matriz.",
@@ -72,6 +92,7 @@
             "Relatórios": "Relatórios financeiros, fluxo de caixa, despesas, receitas e acompanhamento estratégico.",
             "Administrativo": "Área financeira e administrativa com contas, receitas, despesas, clientes, fornecedores e contas a pagar/receber.",
             "CatBreeder Pro": "Área de cursos e conteúdos da plataforma Academy vinculada ao sistema.",
+            "Academy": "Área de conteúdos, treinamentos e materiais da plataforma.",
             "Upgrade de Plano": "Compare as opções e ative um plano com mais recursos, como CRM, relatórios, administrativo financeiro e vitrine completa.",
           };
           return item.help || helpByLabel[item.label] || `Abre o módulo ${item.label}.`;
@@ -80,6 +101,7 @@
         function renderMenuItem(item) {
           const allowed = item.allowed !== false;
           if (!allowed && item.hideWhenDenied) return;
+          if (allowed && !isPreferenceEnabled(item)) return;
           const active = allowed && currentPath && currentPath.startsWith(item.match);
           const classes = [active ? "active" : "", allowed ? "" : "menu-disabled"].filter(Boolean).join(" ");
       %>
@@ -104,91 +126,68 @@
 
       <% [
         { href: "/dashboard", match: "/dashboard", icon: "🏠", label: "Página inicial", allowed: true },
-        { href: "/cats", match: "/cats", icon: "🐾", label: (access && access.canViewAllCats) ? "Todos os gatos" : "Meus gatos", allowed: access && access.canManageCats },
-        { href: "/services", match: "/services", icon: "🧾", label: "Serviços", allowed: access && access.canAccessServices },
-        { href: "/ffb-services", match: "/ffb-services", icon: "🛠️", label: "Serviços FFB", allowed: access && access.canAccessFfbServices, hideWhenDenied: true },
-        { href: "/admin/fotos-gatarina-2026", match: "/admin/fotos-gatarina-2026", icon: "📸", label: "Fotos Gatarina 2026", allowed: access && access.canManageGatarinaPhotos, hideWhenDenied: true },
-        { href: "/users", match: "/users", icon: "👥", label: "Usuários", allowed: access && access.canManageUsers, hideWhenDenied: true },
+        { href: "/meus-dados", match: "/meus-dados", icon: "👤", label: "Meu Cadastro", allowed: access && access.canAccessMyProfile },
+        { href: "/cats", match: "/cats", icon: "🐾", label: (access && access.canViewAllCats) ? "Todos os gatos" : "Meus gatos", allowed: access && access.canManageCats, preferenceKey: "cats" },
+        { href: "/services", match: "/services", icon: "🧾", label: "Serviços", allowed: access && access.canAccessServices, preferenceKey: "services" },
         { href: "/settings", match: "/settings", icon: "⚙️", label: "Configurações", allowed: access && access.canAccessSettings },
-        { href: "/admin/financeiro", match: "/admin/financeiro", icon: "💳", label: "Financeiro", allowed: access && access.canManageFinanceSettings, hideWhenDenied: true },
-        { href: "/admin/microchips", match: "/admin/microchips", icon: "🔎", label: "Gestão de Microchip", allowed: access && access.canManageMicrochips, hideWhenDenied: true },
         { href: "/billing/pay", match: "/billing/pay", icon: "⬆️", label: "Upgrade de Plano", allowed: showPlanUpgrade },
       ].forEach(renderMenuItem); %>
 
-      <div
-        style="
-          margin: 14px 0 8px;
-          padding-top: 12px;
-          border-top: 1px solid #f59e0b;
-          font-size: 11px;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #f59e0b;
-        "
-      >
-        Gestão do Gatil
-      </div>
+      <%
+        const adminItems = [
+          { href: "/ffb-services", match: "/ffb-services", icon: "🛠️", label: "Serviços FFB", allowed: access && access.canAccessFfbServices, hideWhenDenied: true, preferenceKey: "ffbServices" },
+          { href: "/admin/fotos-gatarina-2026", match: "/admin/fotos-gatarina-2026", icon: "📸", label: "Fotos Gatarina 2026", allowed: access && access.canManageGatarinaPhotos, hideWhenDenied: true, preferenceKey: "gatarinaPhotos" },
+          { href: "/users", match: "/users", icon: "👥", label: "Usuários", allowed: access && access.canManageUsers, hideWhenDenied: true, preferenceKey: "users" },
+          { href: "/admin/microchips", match: "/admin/microchips", icon: "🔎", label: "Gestão de Microchip", allowed: access && access.canManageMicrochips, hideWhenDenied: true, preferenceKey: "microchips" },
+          { href: "/admin/financeiro", match: "/admin/financeiro", icon: "💳", label: "Financeiro técnico", allowed: access && access.canManageFinanceSettings, hideWhenDenied: true, preferenceKey: "financeSettings" },
+        ];
+      %>
+      <% if (access && access.isAdmin && adminItems.some((item) => item.allowed !== false)) { %>
+        <details class="menu-section" <%= isSectionActive(adminItems) ? "open" : "" %>>
+          <summary>Administração do Sistema</summary>
+          <div class="menu-section-body">
+            <% adminItems.forEach(renderMenuItem); %>
+          </div>
+        </details>
+      <% } %>
 
-      <div
-        style="
-          margin: 8px 0 6px;
-          font-size: 10px;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #9ca3af;
-        "
-      >
-        Operacional
-      </div>
+      <%
+        const catteryItems = [
+        { href: "/breeders", match: "/breeders", icon: "🐱", label: "Reprodutores", allowed: access && access.canAccessBreeders, preferenceKey: "breeders" },
+        { href: "/admin/matings", match: "/admin/matings", icon: "💞", label: "Acasalamentos", allowed: access && access.canAccessMatingsAdmin, preferenceKey: "matings" },
+        { href: "/admin/litters", match: "/admin/litters", icon: "🐾", label: "Ninhadas", allowed: access && access.canAccessLittersAdmin, preferenceKey: "litters" },
+        { href: "/admin/kittens", match: "/admin/kittens", icon: "🐣", label: "Filhotes", allowed: access && access.canAccessKittensAdmin, preferenceKey: "kittens" },
+        { href: "/admin/vaccinations", match: "/admin/vaccinations", icon: "💉", label: "Vacinação", allowed: access && access.canAccessVaccinationsAdmin, preferenceKey: "vaccinations" },
+        { href: "/admin/deworming", match: "/admin/deworming", icon: "🧪", label: "Vermifugação", allowed: access && access.canAccessDewormingAdmin, preferenceKey: "deworming" },
+        { href: "/admin/weighing", match: "/admin/weighing", icon: "⚖️", label: "Pesagem", allowed: access && access.canAccessWeighingAdmin, preferenceKey: "weighing" },
+        { href: "/admin/treatments", match: "/admin/treatments", icon: "💊", label: "Tratamento", allowed: access && access.canAccessTreatmentsAdmin, preferenceKey: "treatments" },
+        { href: "/admin/exams", match: "/admin/exams", icon: "🩺", label: "Exames", allowed: access && access.canAccessExamsAdmin, preferenceKey: "exams" },
+        { href: "/admin/history", match: "/admin/history", icon: "📚", label: "Histórico", allowed: access && access.canAccessHistoryAdmin, preferenceKey: "history" },
+        ];
+      %>
+      <details class="menu-section" <%= isSectionActive(catteryItems) ? "open" : "" %>>
+        <summary>Gestão do Gatil</summary>
+        <div class="menu-section-body">
+          <% catteryItems.forEach(renderMenuItem); %>
+        </div>
+      </details>
 
-      <% [
-        { href: "/breeders", match: "/breeders", icon: "🐱", label: "Reprodutores", allowed: access && access.canAccessBreeders },
-        { href: "/admin/litters", match: "/admin/litters", icon: "🐾", label: "Ninhadas", allowed: access && access.canAccessLittersAdmin },
-        { href: "/admin/kittens", match: "/admin/kittens", icon: "🐣", label: "Filhotes", allowed: access && access.canAccessKittensAdmin },
-        { href: "/admin/matings", match: "/admin/matings", icon: "💞", label: "Acasalamentos", allowed: access && access.canAccessMatingsAdmin },
-        { href: "/admin/vaccinations", match: "/admin/vaccinations", icon: "💉", label: "Vacinação", allowed: access && access.canAccessVaccinationsAdmin },
-        { href: "/admin/deworming", match: "/admin/deworming", icon: "🧪", label: "Vermifugação", allowed: access && access.canAccessDewormingAdmin },
-        { href: "/admin/weighing", match: "/admin/weighing", icon: "⚖️", label: "Pesagem", allowed: access && access.canAccessWeighingAdmin },
-        { href: "/admin/treatments", match: "/admin/treatments", icon: "💊", label: "Tratamento", allowed: access && access.canAccessTreatmentsAdmin },
-        { href: "/admin/exams", match: "/admin/exams", icon: "🩺", label: "Exames", allowed: access && access.canAccessExamsAdmin },
-        { href: "/admin/history", match: "/admin/history", icon: "📚", label: "Histórico", allowed: access && access.canAccessHistoryAdmin },
-      ].forEach(renderMenuItem); %>
-
-      <div
-        style="
-          margin: 12px 0 6px;
-          font-size: 10px;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #9ca3af;
-        "
-      >
-        Tático
-      </div>
-
-      <% [
-        { href: "/painel", match: "/painel", icon: "🖥️", label: "Painel", allowed: access && access.canAccessTacticalPanel },
-        { href: "/crm", match: "/crm", icon: "🤝", label: "CRM", allowed: access && access.canAccessCrm },
-        { href: "/admin/vitrine-filhotes", match: "/admin/vitrine-filhotes", icon: "📷", label: "Vitrine de Filhotes", allowed: access && access.canManageShowcase },
-        { href: "/documentos", match: "/documentos", icon: "📄", label: "Documentos", allowed: access && access.canAccessDocuments },
-      ].forEach(renderMenuItem); %>
-
-      <div
-        style="
-          margin: 12px 0 6px;
-          font-size: 10px;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #9ca3af;
-        "
-      >
-        Estratégico
-      </div>
-
-      <% [
-        { href: "/reports", match: "/reports", icon: "📊", label: "Relatórios", allowed: access && access.canAccessReports },
-        { href: "/administrativo", match: "/administrativo", icon: "🏦", label: "Administrativo", allowed: access && access.canAccessAdministrative },
-      ].forEach(renderMenuItem); %>
+      <%
+        const adminManagementItems = [
+          { href: "/administrativo", match: "/administrativo", icon: "🏦", label: "Financeiro", allowed: access && access.canAccessAdministrative, preferenceKey: "administrative" },
+          { href: "/documentos", match: "/documentos", icon: "📄", label: "Documentos", allowed: access && access.canAccessDocuments, preferenceKey: "documents" },
+          { href: "/reports", match: "/reports", icon: "📊", label: "Relatórios", allowed: access && access.canAccessReports, preferenceKey: "reports" },
+          { href: "/painel", match: "/painel", icon: "🖥️", label: "Painel", allowed: access && access.canAccessTacticalPanel, preferenceKey: "tacticalPanel" },
+          { href: "/crm", match: "/crm", icon: "🤝", label: "CRM", allowed: access && access.canAccessCrm, preferenceKey: "crm" },
+          { href: "/admin/vitrine-filhotes", match: "/admin/vitrine-filhotes", icon: "📷", label: "Vitrine de Filhotes", allowed: access && access.canManageShowcase, preferenceKey: "showcase" },
+        ];
+      %>
+      <details class="menu-section" <%= isSectionActive(adminManagementItems) ? "open" : "" %>>
+        <summary>Administrativo</summary>
+        <div class="menu-section-body">
+          <% adminManagementItems.forEach(renderMenuItem); %>
+        </div>
+      </details>
 
       <div
         style="
@@ -205,22 +204,37 @@
       </div>
 
       <% [
-        { href: "/academy", match: "/academy", icon: "🎓", label: "CatBreeder Pro", allowed: access && access.canAccessAcademy },
+        { href: "/academy", match: "/academy", icon: "🎓", label: "CatBreeder Pro", allowed: access && access.isAdmin && access.canAccessAcademy, preferenceKey: "academy" },
       ].forEach(renderMenuItem); %>
     </nav>
   </div>
 
   <div class="menu-footer">
+    <div class="app-version">Versão: <%= typeof appVersion !== "undefined" ? appVersion : "" %></div>
     <div>Logado como <%= user && user.email ? user.email : "" %></div>
     <div class="menu-footer-actions">
-      <button
-        type="button"
-        class="menu-footer-help"
-        data-help-title="Ajuda"
-        data-help-text="Precisa de ajuda com o CaTech System? Entre em contato pelo e-mail contato@gatarina.com.br ou pelo WhatsApp +55 49 93381-6900."
-      >Ajuda</button>
+      <a href="/ajuda">Ajuda</a>
       <a href="/logout">Sair</a>
     </div>
   </div>
 </aside>
 <script src="/js/help-popups.js"></script>
+<script src="/js/document-masks.js"></script>
+<% if (typeof adminViewAs !== "undefined" && adminViewAs) { %>
+  <script>
+    document.querySelectorAll("form").forEach((form) => {
+      const method = String(form.getAttribute("method") || "get").toLowerCase();
+      const action = String(form.getAttribute("action") || "");
+      if (method === "get" || action === "/admin/view-as/stop") return;
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        window.alert("Modo somente visualização. Retorne ao perfil de administrador para realizar alterações.");
+      });
+
+      form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach((button) => {
+        button.title = "Somente visualização";
+      });
+    });
+  </script>
+<% } %>

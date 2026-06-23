@@ -183,7 +183,7 @@
               </div>
               <div>
                 <label for="signerDocument">CPF/CNPJ ou documento</label>
-                <input id="signerDocument" name="signerDocument" value="<%= signatureRequest.signerDocument || '' %>" required />
+                <input id="signerDocument" name="signerDocument" data-document-mask="cpf-cnpj" value="<%= signatureRequest.signerDocument || '' %>" required />
               </div>
               <div>
                 <label for="signerEmail">E-mail para receber o OTP</label>
@@ -234,5 +234,6 @@
         }, () => {}, { enableHighAccuracy: false, timeout: 5000 });
       }
     </script>
+    <script src="/js/document-masks.js"></script>
   </body>
 </html>

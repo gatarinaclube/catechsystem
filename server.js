@@ -83,8 +83,12 @@ const documentsRouterFactory = require("./modules/documents");
 const billingFinanceRouterFactory = require("./modules/billing-finance");
 const gatarinaShowPhotosRouterFactory = require("./modules/gatarina-show-photos");
 const publicMicrochipRouterFactory = require("./modules/public-microchip");
+const helpRouterFactory = require("./modules/help");
 const { startVaccineReminderScheduler } = require("./utils/vaccineReminderJob");
 const { baseSeo, organizationSchema } = require("./utils/seo");
+const { formatCpfCnpj, formatPhone } = require("./utils/format");
+const { normalizeModulePreferences } = require("./utils/modulePreferences");
+const { getAppVersion } = require("./utils/appVersion");
 const {generateTitleHomologationPDF,} = require("./modules/pdf/titleHomologationPdf");
 const {generatePedigreeHomologationPDF,} = require("./modules/pdf/pedigreeHomologationPdf");
 const { generateCatteryRegistrationPDF } = require("./modules/pdf/catteryRegistrationPdf");
@@ -100,6 +104,8 @@ console.log(">>> Iniciando CaTech COMPLETO (modularizado)");
 
 const app = express();
 const prisma = new PrismaClient();
+const appVersion = getAppVersion();
+console.log("Versão CaTech:", appVersion);
 
 loadAsaasRuntimeConfig(prisma).catch((err) => {
   console.error("Erro ao carregar configurações Asaas:", err);
@@ -302,6 +308,26 @@ app.use(
   })
 );
 
+const ACTIVE_SESSION_WINDOW_MINUTES = 15;
+
+app.use((req, res, next) => {
+  if (req.session?.userId) {
+    req.session.lastSeenAt = new Date().toISOString();
+  }
+  next();
+});
+
+app.use((req, res, next) => {
+  const viewAs = req.session?.adminViewAs;
+  if (!viewAs || !isWriteMethod(req.method)) return next();
+
+  if (req.path === "/admin/view-as/stop") return next();
+
+  return res.status(403).send(
+    "Visualização somente leitura. Retorne ao perfil de administrador para realizar alterações."
+  );
+});
+
 
 // ---------- MIDDLEWARES DE AUTENTICAÇÃO ----------
 function requireAuth(req, res, next) {
@@ -328,6 +354,202 @@ function requirePermission(permission) {
     }
 
     next();
+  };
+}
+
+app.post("/admin/view-as/stop", requireAuth, (req, res) => {
+  const viewAs = req.session.adminViewAs;
+  if (!viewAs?.adminId || !isAdminRole(viewAs.adminRole)) {
+    clearAdminViewAs(req);
+    return res.redirect("/dashboard");
+  }
+
+  req.session.userId = viewAs.adminId;
+  req.session.userRole = normalizeRole(viewAs.adminRole);
+  clearAdminViewAs(req);
+  return res.redirect("/users");
+});
+
+function isWriteMethod(method) {
+  return !["GET", "HEAD", "OPTIONS"].includes(String(method || "").toUpperCase());
+}
+
+function clearAdminViewAs(req) {
+  delete req.session.adminViewAs;
+}
+
+function isInitialSetupAllowedPath(pathValue) {
+  const currentPath = String(pathValue || "");
+  const allowedPrefixes = [
+    "/settings",
+    "/ajuda",
+    "/logout",
+    "/login",
+    "/billing",
+    "/associacao",
+    "/admin/view-as/stop",
+  ];
+
+  return allowedPrefixes.some((prefix) => currentPath === prefix || currentPath.startsWith(`${prefix}/`));
+}
+
+function getSessionStoreRows(sessionStore) {
+  return new Promise((resolve) => {
+    if (!sessionStore || typeof sessionStore.all !== "function") {
+      resolve([]);
+      return;
+    }
+
+    sessionStore.all((err, sessions) => {
+      if (err || !sessions) {
+        if (err) console.error("Erro ao ler sessões ativas:", err);
+        resolve([]);
+        return;
+      }
+
+      if (Array.isArray(sessions)) {
+        resolve(sessions);
+        return;
+      }
+
+      resolve(Object.values(sessions));
+    });
+  });
+}
+
+async function buildActiveUserSessions(req) {
+  const sessions = await getSessionStoreRows(req.sessionStore);
+  const activeSince = Date.now() - ACTIVE_SESSION_WINDOW_MINUTES * 60 * 1000;
+  const activeByUserId = new Map();
+
+  sessions.forEach((sessionRow) => {
+    const viewedByAdmin = sessionRow?.adminViewAs;
+    const userId = Number(viewedByAdmin?.adminId || sessionRow?.userId || 0);
+    if (!userId) return;
+
+    const lastSeen = sessionRow?.lastSeenAt ? new Date(sessionRow.lastSeenAt) : null;
+    if (!lastSeen || Number.isNaN(lastSeen.getTime()) || lastSeen.getTime() < activeSince) return;
+
+    const existing = activeByUserId.get(userId);
+    if (!existing || lastSeen > existing.lastSeen) {
+      activeByUserId.set(userId, {
+        userId,
+        lastSeen,
+        viewingAsUserId: viewedByAdmin?.targetId ? Number(viewedByAdmin.targetId) : null,
+      });
+    }
+  });
+
+  const activeEntries = [...activeByUserId.values()].sort((a, b) => b.lastSeen - a.lastSeen);
+  if (!activeEntries.length) return [];
+
+  const [users, viewedUsers] = await Promise.all([
+    prisma.user.findMany({
+      where: { id: { in: activeEntries.map((entry) => entry.userId) } },
+      select: { id: true, name: true, email: true, role: true },
+    }),
+    prisma.user.findMany({
+      where: {
+        id: {
+          in: activeEntries
+            .map((entry) => entry.viewingAsUserId)
+            .filter(Boolean),
+        },
+      },
+      select: { id: true, name: true, email: true },
+    }),
+  ]);
+
+  const userById = new Map(users.map((user) => [user.id, user]));
+  const viewedUserById = new Map(viewedUsers.map((user) => [user.id, user]));
+
+  return activeEntries
+    .map((entry) => {
+      const user = userById.get(entry.userId);
+      if (!user) return null;
+      const viewedUser = entry.viewingAsUserId ? viewedUserById.get(entry.viewingAsUserId) : null;
+      return {
+        id: user.id,
+        name: user.name || user.email || "Usuário",
+        email: user.email || "",
+        roleLabel: getRoleLabel(user.role),
+        lastSeenLabel: entry.lastSeen.toLocaleTimeString("pt-BR", {
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: "America/Sao_Paulo",
+        }),
+        viewingAsLabel: viewedUser ? viewedUser.name || viewedUser.email || "usuário" : "",
+      };
+    })
+    .filter(Boolean);
+}
+
+async function buildAdminOverview(req) {
+  const [
+    totalUsers,
+    roleRows,
+    approvalRows,
+    totalCats,
+    totalLitters,
+    totalKittens,
+    activeUsers,
+  ] = await Promise.all([
+    prisma.user.count(),
+    prisma.user.groupBy({ by: ["role"], _count: { _all: true } }),
+    prisma.user.groupBy({ by: ["approvalStatus"], _count: { _all: true } }),
+    prisma.cat.count(),
+    prisma.litter.count(),
+    prisma.cat.count({
+      where: {
+        OR: [{ kittenNumber: { not: null } }, { litterKitten: { isNot: null } }],
+      },
+    }),
+    buildActiveUserSessions(req),
+  ]);
+
+  const roleOrder = [
+    ROLES.ADMIN,
+    ROLES.ASSOCIADO_PREMIUM,
+    ROLES.ASSOCIADO_A,
+    ROLES.ASSOCIADO_B,
+    ROLES.PREMIUM,
+    ROLES.MASTER,
+    ROLES.BASIC,
+    ROLES.CATBREED,
+  ];
+  const roleCounts = new Map(roleOrder.map((role) => [role, 0]));
+  roleRows.forEach((row) => {
+    const role = normalizeRole(row.role);
+    roleCounts.set(role, (roleCounts.get(role) || 0) + row._count._all);
+  });
+
+  const approvalCounts = new Map();
+  approvalRows.forEach((row) => {
+    approvalCounts.set(row.approvalStatus || "SEM_STATUS", row._count._all);
+  });
+
+  return {
+    totals: {
+      users: totalUsers,
+      cats: totalCats,
+      litters: totalLitters,
+      kittens: totalKittens,
+    },
+    usersByRole: [...roleCounts.entries()]
+      .filter(([, count]) => count > 0)
+      .map(([role, count]) => ({
+        role,
+        label: getRoleLabel(role),
+        count,
+      })),
+    approval: {
+      active: approvalCounts.get("DEFERIDO") || 0,
+      pending: approvalCounts.get("INDEFERIDO") || 0,
+      restricted: approvalCounts.get("RESTRICAO") || 0,
+      inactive: approvalCounts.get("INATIVO") || 0,
+    },
+    activeUsers,
+    activeWindowMinutes: ACTIVE_SESSION_WINDOW_MINUTES,
   };
 }
 
@@ -618,6 +840,7 @@ async function handleSystemLogin(req, res, loginKind) {
 
     const associationStatus = associationPaymentStatus(user);
     if (associationStatus) {
+      clearAdminViewAs(req);
       req.session.userId = user.id;
       req.session.userRole = normalizeRole(user.role);
       return res.redirect("/associacao/pagamento");
@@ -636,6 +859,7 @@ async function handleSystemLogin(req, res, loginKind) {
           })
         : user;
 
+      clearAdminViewAs(req);
       req.session.userId = updatedUser.id;
       req.session.userRole = normalizeRole(updatedUser.role);
       return res.redirect("/billing/pay");
@@ -649,6 +873,7 @@ async function handleSystemLogin(req, res, loginKind) {
       }));
     }
 
+    clearAdminViewAs(req);
     req.session.userId = user.id;
     req.session.userRole = normalizeRole(user.role);
 
@@ -666,6 +891,10 @@ app.use(async (req, res, next) => {
     req.user = null;
     res.locals.user = null;
     res.locals.access = buildAccessContext(sessionRole);
+    req.adminViewAs = null;
+    res.locals.adminViewAs = null;
+    res.locals.modulePreferences = normalizeModulePreferences(null);
+    res.locals.appVersion = appVersion;
 
     if (!req.session?.userId) {
       return next();
@@ -698,7 +927,65 @@ app.use(async (req, res, next) => {
     res.locals.user = req.user;
     res.locals.access = userAccess;
 
+    if (!req.session.modulePreferences) {
+      const settingsRows = await prisma.$queryRaw`
+        SELECT "modulePreferencesJson"
+        FROM "UserSettings"
+        WHERE "userId" = ${req.user.id}
+        LIMIT 1
+      `;
+      req.session.modulePreferences = normalizeModulePreferences(settingsRows[0]?.modulePreferencesJson);
+    }
+    res.locals.modulePreferences = req.session.modulePreferences;
+
+    if (req.session.adminViewAs?.adminId) {
+      const adminUser = await prisma.user.findUnique({
+        where: { id: req.session.adminViewAs.adminId },
+        select: { id: true, name: true, email: true, role: true },
+      });
+
+      if (adminUser && isAdminRole(adminUser.role)) {
+        req.adminViewAs = {
+          admin: {
+            ...adminUser,
+            role: normalizeRole(adminUser.role),
+          },
+          target: req.user,
+        };
+        res.locals.adminViewAs = req.adminViewAs;
+      } else {
+        clearAdminViewAs(req);
+      }
+    }
+
     next();
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.use(async (req, res, next) => {
+  try {
+    if (!req.session?.userId || !req.user) return next();
+    if (req.session.initialSettingsSaved) return next();
+    if (isInitialSetupAllowedPath(req.path)) return next();
+    if (req.session.adminViewAs) return next();
+    if (associationPaymentStatus(req.user) || commercialPaymentStatus(req.user)) return next();
+
+    const role = normalizeRole(req.user.role || req.session.userRole);
+    if (isAdminRole(role) || role === ROLES.CATBREED) return next();
+
+    const settings = await prisma.userSettings.findUnique({
+      where: { userId: req.user.id },
+      select: { id: true },
+    });
+
+    if (settings) {
+      req.session.initialSettingsSaved = true;
+      return next();
+    }
+
+    return res.redirect("/settings?initial=1");
   } catch (err) {
     next(err);
   }
@@ -807,7 +1094,7 @@ function billingDocumentDigits(value) {
 app.post("/contato", async (req, res) => {
   const name = String(req.body.name || "").trim();
   const email = String(req.body.email || "").trim();
-  const phone = String(req.body.phone || "").trim();
+  const phone = formatPhone(req.body.phone);
 
   if (!name || !email || !phone) {
     return res.redirect("/?contato=erro#contato");
@@ -1070,9 +1357,9 @@ const createdUser = await prisma.user.create({
     cep,
     state,
     country,
-    phones,
+    phones: formatPhone(phones),
     email: normalizedEmail,
-    cpf,
+    cpf: formatCpfCnpj(cpf),
     password: passwordHash,
     role: ROLES.ASSOCIADO_A,
     clubs: clubsValue,
@@ -1234,8 +1521,8 @@ app.post("/planos/:plan/cadastro", async (req, res) => {
       data: {
         name,
         email: normalizedEmail,
-        phones,
-        cpf,
+        phones: formatPhone(phones),
+        cpf: formatCpfCnpj(cpf),
         password: passwordHash,
         role: ROLES.PREMIUM,
         approvalStatus: "DEFERIDO",
@@ -1333,7 +1620,7 @@ app.get("/billing/dados", requireAuth, async (req, res) => {
 
 app.post("/billing/dados", requireAuth, async (req, res) => {
   const cpf = String(req.body.cpf || "").trim();
-  const phones = String(req.body.phones || "").trim();
+  const phones = formatPhone(req.body.phones);
 
   const user = await prisma.user.findUnique({ where: { id: req.session.userId } });
   if (!user) return res.redirect("/login");
@@ -1348,7 +1635,7 @@ app.post("/billing/dados", requireAuth, async (req, res) => {
   await prisma.user.update({
     where: { id: user.id },
     data: {
-      cpf,
+      cpf: formatCpfCnpj(cpf),
       phones: user.phones || phones || undefined,
     },
   });
@@ -1669,6 +1956,10 @@ if (!isAdminRole(req.session.userRole)) {
   );
 }
 
+const adminOverview = isAdminRole(req.session.userRole)
+  ? await buildAdminOverview(req)
+  : null;
+
 const kittenStatusRows = await prisma.cat.groupBy({
   by: ["kittenAvailabilityStatus"],
   where: {
@@ -1954,6 +2245,7 @@ res.render("dashboard", {
 
   pendingServices,
 pendingServicesCount: pendingServices.length,
+  adminOverview,
   onboarding,
   administrativePanel,
   operationalPanel,
@@ -1973,6 +2265,7 @@ app.get("/buscar", requireAuth, async (req, res) => {
   const query = String(req.query.q || "").trim();
   const userScope = canViewAllData(req.session.userRole) ? {} : { ownerId: req.session.userId };
   const contains = { contains: query, mode: "insensitive" };
+  const formattedDocumentQuery = formatCpfCnpj(query);
   const results = {
     cats: [],
     litters: [],
@@ -2025,6 +2318,9 @@ app.get("/buscar", requireAuth, async (req, res) => {
           OR: [
             { fullName: contains },
             { document: contains },
+            ...(formattedDocumentQuery && formattedDocumentQuery !== query
+              ? [{ document: { contains: formattedDocumentQuery, mode: "insensitive" } }]
+              : []),
             { email: contains },
             { phone: contains },
           ],
@@ -2033,6 +2329,10 @@ app.get("/buscar", requireAuth, async (req, res) => {
         take: 12,
         select: { id: true, fullName: true, document: true, city: true, state: true },
       });
+      results.clients = results.clients.map((client) => ({
+        ...client,
+        document: formatCpfCnpj(client.document),
+      }));
     }
 
     if (userCan(req.session.userRole, "admin.sales")) {
@@ -2377,11 +2677,13 @@ const transfersRouter = require("./modules/transfers")(
   requireAuth,
   requirePermission
 );
+const helpRouter = helpRouterFactory(requireAuth);
 
 app.use(catsRouter);
 app.use(littersRouter);
 app.use(usersRouter);
 app.use(transfersRouter);
+app.use(helpRouter);
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 // MÓDULO: HOMOLOGAÇÃO DE TÍTULOS

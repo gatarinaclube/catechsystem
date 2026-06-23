@@ -1,7 +1,7 @@
 <div class="form-grid">
   <div class="field">
     <label class="field-label" for="<%= prefix %>-cnpj">CNPJ</label>
-    <input id="<%= prefix %>-cnpj" name="cnpj" inputmode="numeric" value="<%= supplier.cnpj || '' %>" placeholder="00.000.000/0000-00" />
+    <input id="<%= prefix %>-cnpj" name="cnpj" inputmode="numeric" maxlength="18" value="<%= supplier.cnpj || '' %>" placeholder="00.000.000/0000-00" />
   </div>
   <div class="field">
     <label class="field-label" for="<%= prefix %>-commercialName">Nome Comercial</label>

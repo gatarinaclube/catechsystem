@@ -26,10 +26,13 @@
             </div>
           </div>
           <div class="actions">
-            <a href="/cats/new" class="btn-primary btn">+ Novo gato</a>
-            <a href="/cats" class="btn">
-  <%= (access && access.canViewAllCats) ? "Ver todos os gatos" : "Ver meus gatos" %>
-</a>
+            <% if (access && access.isAdmin) { %>
+              <a href="/users" class="btn-primary btn">Usuários</a>
+              <a href="/admin/financeiro" class="btn">Financeiro</a>
+            <% } else { %>
+              <a href="/cats/new" class="btn-primary btn">+ Novo gato</a>
+              <a href="/cats" class="btn">Ver meus gatos</a>
+            <% } %>
           </div>
         </div>
 
@@ -161,6 +164,88 @@
   </div>
 <% } %>
 
+<% if (access && access.isAdmin && typeof adminOverview !== "undefined" && adminOverview) { %>
+  <section class="content-card" style="margin-bottom:20px;">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap;">
+      <div>
+        <div class="content-title title-with-help">
+          Visão geral do sistema
+          <button class="help-info-button" type="button" data-help-title="Visão geral do sistema" data-help-text="Mostra indicadores globais para o administrador acompanhar usuários, perfis, gatos cadastrados e sessões ativas recentes antes de realizar atualizações.">i</button>
+        </div>
+        <div class="content-sub">Resumo administrativo consolidado de todos os usuários.</div>
+      </div>
+      <a href="/users" class="btn">Gerenciar usuários</a>
+    </div>
+
+    <div class="metric-grid" style="margin-top:14px;">
+      <div class="metric-card is-blue">
+        <div class="metric-label">Usuários</div>
+        <div class="metric-value"><%= adminOverview.totals.users %></div>
+        <div class="metric-note">Ativos: <%= adminOverview.approval.active %> · Pendentes: <%= adminOverview.approval.pending %></div>
+      </div>
+      <div class="metric-card is-green">
+        <div class="metric-label">Gatos cadastrados</div>
+        <div class="metric-value"><%= adminOverview.totals.cats %></div>
+        <div class="metric-note">Considerando todos os usuários</div>
+      </div>
+      <div class="metric-card is-purple">
+        <div class="metric-label">Ninhadas</div>
+        <div class="metric-value"><%= adminOverview.totals.litters %></div>
+        <div class="metric-note">Total registrado no sistema</div>
+      </div>
+      <div class="metric-card is-yellow">
+        <div class="metric-label">Filhotes</div>
+        <div class="metric-value"><%= adminOverview.totals.kittens %></div>
+        <div class="metric-note">Filhotes vinculados a ninhadas/listas</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="metric-grid" style="margin-bottom:20px;">
+    <section class="content-card">
+      <div class="content-title">Usuários por perfil</div>
+      <div class="content-sub">Distribuição atual dos perfis cadastrados.</div>
+      <div class="record-list" style="margin-top:12px;">
+        <% adminOverview.usersByRole.forEach(function(row) { %>
+          <div class="record-row">
+            <div class="record-main">
+              <strong><%= row.label %></strong>
+            </div>
+            <span class="status-pill"><%= row.count %></span>
+          </div>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="content-card">
+      <div class="content-title">Usuários logados (<%= adminOverview.activeUsers.length %>)</div>
+      <div class="content-sub">
+        Ativos nos últimos <%= adminOverview.activeWindowMinutes %> minutos. Ideal para conferir antes de atualizar o sistema.
+      </div>
+      <% if (adminOverview.activeUsers.length) { %>
+        <div class="record-list" style="margin-top:12px;">
+          <% adminOverview.activeUsers.forEach(function(activeUser) { %>
+            <div class="record-row">
+              <div class="record-main">
+                <strong><%= activeUser.name %></strong>
+                <div class="content-sub" style="font-size:12px; margin:2px 0 0;">
+                  <%= activeUser.roleLabel %>
+                  <% if (activeUser.viewingAsLabel) { %>
+                    · visualizando <%= activeUser.viewingAsLabel %>
+                  <% } %>
+                </div>
+              </div>
+              <span class="status-pill is-green"><%= activeUser.lastSeenLabel %></span>
+            </div>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <div class="empty" style="margin-top:12px;">Nenhum usuário ativo recentemente.</div>
+      <% } %>
+    </section>
+  </div>
+<% } %>
+
 <% if (access && !access.isAdmin && pendingServicesCount > 0) { %>
   <div class="content-card" style="border-left: 4px solid #f59e0b; margin-bottom: 20px;">
     <div class="content-title" style="display:flex; align-items:center; gap:8px;">
@@ -198,7 +283,7 @@
 <% } %>
 
 
-        <% if (administrativePanel) { %>
+        <% if (administrativePanel && !(access && access.isAdmin)) { %>
           <details class="content-card dashboard-panel" style="margin-bottom:20px;">
             <summary class="dashboard-panel-summary">
               <div>
@@ -235,7 +320,7 @@
           </details>
         <% } %>
 
-        <% if (operationalPanel) { %>
+        <% if (operationalPanel && !(access && access.isAdmin)) { %>
           <details class="content-card dashboard-panel" style="margin-bottom:20px;">
             <summary class="dashboard-panel-summary">
               <div>
@@ -274,6 +359,7 @@
 
 
 
+        <% if (!(access && access.isAdmin)) { %>
         <div class="content-card">
           <div class="content-title title-with-help">
             Atalhos rápidos
@@ -370,3 +456,4 @@
     </div>
   </div>
 </div>
+<% } %>

@@ -10,6 +10,7 @@ const {
 const { getFileUploadLimit, validateFilesForRole } = require("../utils/planLimits");
 const { selectedBreedsFromSettings } = require("../utils/userPreferences");
 const { buildDisplayName } = require("../utils/cattery-admin");
+const { formatCpf, formatPhone } = require("../utils/format");
 
 const baseUploadsDir =
   process.env.UPLOADS_DIR
@@ -526,8 +527,8 @@ maleOwnership: isMaleNotOwner ? "NOT_OWNER" : "OWNER",
           // Novo proprietário do macho (apenas se marcado)
          externalOwnerName: isMaleNotOwner ? externalOwnerName || null : null,
 externalOwnerEmail: isMaleNotOwner ? externalOwnerEmail || null : null,
-externalOwnerCpf: isMaleNotOwner ? externalOwnerCpf || null : null,
-externalOwnerPhone: isMaleNotOwner ? externalOwnerPhone || null : null,
+externalOwnerCpf: isMaleNotOwner ? formatCpf(externalOwnerCpf) || null : null,
+externalOwnerPhone: isMaleNotOwner ? formatPhone(externalOwnerPhone) || null : null,
 externalOwnerCattery: isMaleNotOwner ? externalOwnerCattery || null : null,
 
           // Ninhada

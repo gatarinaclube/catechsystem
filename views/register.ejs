@@ -45,7 +45,7 @@
 
                 <div class="field">
                   <label class="field-label" for="cpf">CPF</label>
-                  <input id="cpf" type="text" name="cpf" required />
+                  <input id="cpf" type="text" name="cpf" inputmode="numeric" maxlength="18" required />
                 </div>
 
                 <div class="field">
@@ -318,6 +318,7 @@
     </div>
 
     <!-- SCRIPT SIMPLES PARA EXIBIR O CAMPO DO GATIL -->
+    <script src="/js/document-masks.js"></script>
     <script>
       function toggleFifeCattery(show) {
         const block = document.getElementById("fifeCatteryBlock");
@@ -345,7 +346,6 @@
     </script>
   </body>
 </html>
-
 
 
 
