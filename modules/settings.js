@@ -3,7 +3,7 @@ const crypto = require("crypto");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const { ROLES, isAdminRole, normalizeRole } = require("../utils/access");
+const { ROLES, isAdminRole, normalizeRole, userCan } = require("../utils/access");
 const { encryptSecret, shapeSmtpSettings } = require("../utils/userSmtp");
 const { formatCnpj, formatPhone } = require("../utils/format");
 const {
@@ -248,6 +248,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       });
       const settings = await getSettings(req.session.userId);
       const showQuickFinanceLinks = canUseQuickFinanceLinks(req.session.userRole);
+      const canUseVaccineNotifications = userCan(req.session.userRole, "notifications.vaccine");
       const expensePublicToken = showQuickFinanceLinks
         ? await ensureExpensePublicToken(prisma, req.user)
         : null;
@@ -268,6 +269,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         breedOptions: BREED_OPTIONS,
         examOptions: EXAM_OPTIONS,
         vaccineReminderGroupOptions: VACCINE_REMINDER_GROUP_OPTIONS,
+        canUseVaccineNotifications,
         modulePreferenceRows,
         planLimits: isAdminRole(req.session.userRole) ? getPlanLimitRows() : [],
         canManagePlanLimits: isAdminRole(req.session.userRole),
@@ -300,6 +302,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const veterinarianLogoFile = req.files?.veterinarianLogo?.[0] || null;
     const smtpPassword = (req.body.smtpPassword || "").trim();
     const clearSmtpPassword = req.body.clearSmtpPassword === "on";
+    const canUseVaccineNotifications = userCan(req.session.userRole, "notifications.vaccine");
     const settings = {
       catteryName: (req.body.catteryName || "").trim(),
       catteryEmail: (req.body.catteryEmail || "").trim(),
@@ -329,12 +332,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       memberships: filterAllowed(req.body.memberships, MEMBERSHIP_OPTIONS),
       breeds: filterAllowed(req.body.breeds, BREED_OPTIONS),
       exams: filterAllowed(req.body.exams, EXAM_OPTIONS),
-      vaccineReminderEnabled: req.body.vaccineReminderEnabled === "on",
+      vaccineReminderEnabled: canUseVaccineNotifications && req.body.vaccineReminderEnabled === "on",
       vaccineReminderDaysBefore: parseNullableInteger(req.body.vaccineReminderDaysBefore) ?? 15,
-      vaccineReminderGroups: filterAllowed(
-        req.body.vaccineReminderGroups,
-        VACCINE_REMINDER_GROUP_OPTIONS.map((option) => option.value)
-      ),
+      vaccineReminderGroups: canUseVaccineNotifications
+        ? filterAllowed(
+            req.body.vaccineReminderGroups,
+            VACCINE_REMINDER_GROUP_OPTIONS.map((option) => option.value)
+          )
+        : [],
       matingSupplementEnabled: req.body.matingSupplementEnabled === "on",
       matingSupplementDaysBefore: parseNullableInteger(req.body.matingSupplementDaysBefore) ?? 15,
       matingSupplementDaysAfter: parseNullableInteger(req.body.matingSupplementDaysAfter) ?? 30,
@@ -568,6 +573,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         breedOptions: BREED_OPTIONS,
         examOptions: EXAM_OPTIONS,
         vaccineReminderGroupOptions: VACCINE_REMINDER_GROUP_OPTIONS,
+        canUseVaccineNotifications,
         modulePreferenceRows: modulePreferenceRowsForRole(req.session.userRole, settings.modulePreferences),
         planLimits,
         canManagePlanLimits,

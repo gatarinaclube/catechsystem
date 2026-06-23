@@ -601,6 +601,34 @@
   gap: 12px;
 }
 
+.profile-plan-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+.profile-plan-summary-item {
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 14px;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+}
+
+.profile-plan-summary-item span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.profile-plan-summary-item strong {
+  color: var(--text-main);
+  font-size: 16px;
+}
+
 .profile-plan-card {
   border: 1px solid var(--border-soft);
   border-radius: 12px;
@@ -1957,6 +1985,21 @@ textarea:focus {
 .report-card:hover {
   border-color: #cbd5e1;
   transform: translateY(-1px);
+}
+
+.report-card.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+  background: #f8fafc;
+}
+
+.report-card.is-disabled:hover {
+  border-color: var(--border-soft);
+  transform: none;
+}
+
+.report-card.is-disabled .report-card-action {
+  color: #64748b;
 }
 
 .report-card-icon {

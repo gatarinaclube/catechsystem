@@ -63,6 +63,12 @@ const MASTER_LEVEL_ROLES = [
   ROLES.ASSOCIADO_A,
 ];
 
+const PREMIUM_LEVEL_ROLES = [
+  ROLES.ADMIN,
+  ROLES.PREMIUM,
+  ROLES.ASSOCIADO_PREMIUM,
+];
+
 const PERMISSIONS = {
   "dashboard.view": BASIC_LEVEL_ROLES,
   "profile.self": [...BASIC_LEVEL_ROLES, ROLES.CATBREED],
@@ -88,21 +94,23 @@ const PERMISSIONS = {
   "admin.kittens": BASIC_LEVEL_ROLES,
   "admin.matings": BASIC_LEVEL_ROLES,
   "admin.vaccinations": BASIC_LEVEL_ROLES,
-  "admin.deworming": BASIC_LEVEL_ROLES,
-  "admin.weighing": BASIC_LEVEL_ROLES,
-  "admin.exams": BASIC_LEVEL_ROLES,
-  "admin.treatments": BASIC_LEVEL_ROLES,
+  "admin.deworming": MASTER_LEVEL_ROLES,
+  "admin.weighing": MASTER_LEVEL_ROLES,
+  "admin.exams": MASTER_LEVEL_ROLES,
+  "admin.treatments": MASTER_LEVEL_ROLES,
   "admin.history": BASIC_LEVEL_ROLES,
   "admin.quickLaunch": MASTER_LEVEL_ROLES,
   "admin.revenues": MASTER_LEVEL_ROLES,
   "admin.crm": MASTER_LEVEL_ROLES,
   "admin.sales": MASTER_LEVEL_ROLES,
-  "admin.tacticalPanel": BASIC_LEVEL_ROLES,
-  "admin.documents": BASIC_LEVEL_ROLES,
+  "admin.tacticalPanel": MASTER_LEVEL_ROLES,
+  "admin.documents": MASTER_LEVEL_ROLES,
   "admin.reports": MASTER_LEVEL_ROLES,
-  "admin.administrative": MASTER_LEVEL_ROLES,
+  "admin.reportsAdvanced": PREMIUM_LEVEL_ROLES,
+  "admin.administrative": PREMIUM_LEVEL_ROLES,
+  "notifications.vaccine": MASTER_LEVEL_ROLES,
   "academy.access": [ROLES.ADMIN],
-  "showcase.manage": BASIC_LEVEL_ROLES,
+  "showcase.manage": MASTER_LEVEL_ROLES,
 };
 
 function normalizeRole(role) {
@@ -167,7 +175,9 @@ function buildAccessContext(role) {
     canAccessTacticalPanel: userCan(normalizedRole, "admin.tacticalPanel"),
     canAccessDocuments: userCan(normalizedRole, "admin.documents"),
     canAccessReports: userCan(normalizedRole, "admin.reports"),
+    canAccessAdvancedReports: userCan(normalizedRole, "admin.reportsAdvanced"),
     canAccessAdministrative: userCan(normalizedRole, "admin.administrative"),
+    canUseVaccineNotifications: userCan(normalizedRole, "notifications.vaccine"),
     canAccessAcademy: userCan(normalizedRole, "academy.access"),
     canManageShowcase: userCan(normalizedRole, "showcase.manage"),
     canUseLitterService: userCan(normalizedRole, "service.litter"),

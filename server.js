@@ -89,6 +89,7 @@ const { baseSeo, organizationSchema } = require("./utils/seo");
 const { formatCpfCnpj, formatPhone } = require("./utils/format");
 const { normalizeModulePreferences } = require("./utils/modulePreferences");
 const { getAppVersion } = require("./utils/appVersion");
+const { buildProfilePlanCards, buildPlanComparisonRows } = require("./utils/planComparison");
 const {generateTitleHomologationPDF,} = require("./modules/pdf/titleHomologationPdf");
 const {generatePedigreeHomologationPDF,} = require("./modules/pdf/pedigreeHomologationPdf");
 const { generateCatteryRegistrationPDF } = require("./modules/pdf/catteryRegistrationPdf");
@@ -171,89 +172,6 @@ function addUploadedFileToArchive(archive, label, filePath, missingFiles = null)
     return false;
   }
 }
-
-function buildProfileAccessGroups(role) {
-  const groups = [
-    {
-      title: "Operacional",
-      modules: [
-        { label: "Vitrine de Filhotes", permission: "showcase.manage" },
-        { label: "Reprodutores", permission: "admin.breeders" },
-        { label: "Ninhadas", permission: "admin.litters" },
-        { label: "Filhotes", permission: "admin.kittens" },
-        { label: "Acasalamentos", permission: "admin.matings" },
-        { label: "Vacinação", permission: "admin.vaccinations" },
-        { label: "Vermifugação", permission: "admin.deworming" },
-        { label: "Pesagem", permission: "admin.weighing" },
-        { label: "Exames", permission: "admin.exams" },
-        { label: "Histórico", permission: "admin.history" },
-      ],
-    },
-    {
-      title: "Tático",
-      modules: [
-        { label: "CRM", permission: "admin.crm" },
-        { label: "Painel", permission: "admin.tacticalPanel" },
-      ],
-    },
-    {
-      title: "Estratégico",
-      modules: [
-        { label: "Relatórios", permission: "admin.reports" },
-        { label: "Administrativo", permission: "admin.administrative" },
-      ],
-    },
-    {
-      title: "Academy",
-      modules: [
-        { label: "CatBreeder Pro", permission: "academy.access" },
-      ],
-    },
-  ];
-
-  return groups.map((group) => ({
-    ...group,
-    modules: group.modules.map((module) => ({
-      ...module,
-      allowed: userCan(role, module.permission),
-    })),
-  }));
-}
-
-function buildProfilePlanCards(currentRole) {
-  const normalizedCurrentRole = normalizeRole(currentRole);
-  const comparisonRoles = [ROLES.ASSOCIADO_PREMIUM, ROLES.ASSOCIADO_A, ROLES.ASSOCIADO_B].includes(normalizedCurrentRole)
-    ? [ROLES.ASSOCIADO_B, ROLES.ASSOCIADO_A, ROLES.ASSOCIADO_PREMIUM]
-    : [ROLES.BASIC, ROLES.MASTER, ROLES.PREMIUM];
-
-  return comparisonRoles.map((role) => {
-    const limits = getCreationLimits(role);
-    const uploadLimit = getFileUploadLimit(role);
-    const limitLabel = (value) => (value === null ? "Ilimitado" : value);
-    const showcaseLitterLabel = limits.showcaseLitters === null
-      ? "Ilimitado"
-      : `${limits.showcaseLitters} ninhada${limits.showcaseLitters === 1 ? "" : "s"} por vez`;
-    const showcaseLitterNote = limits.showcaseLitters === 1
-      ? "Para incluir uma nova ninhada, exclua a ninhada atual da vitrine."
-      : null;
-
-    return {
-      role,
-      title: getRoleLabel(role),
-      isCurrent: normalizedCurrentRole === role,
-      accessGroups: buildProfileAccessGroups(role),
-      items: [
-        { label: "Padreadores", value: limitLabel(limits.breeders) },
-        { label: "Tamanho por arquivo", value: uploadLimit.label },
-        { label: "Ninhadas por ano", value: limitLabel(limits.littersPerYear) },
-        { label: "Filhotes por ano", value: limitLabel(limits.kittensPerYear) },
-        { label: "Vitrine de filhotes", value: showcaseLitterLabel, note: showcaseLitterNote },
-        { label: "Comparativos de evolução", value: limitLabel(limits.showcaseEvolutionComparisons) },
-      ],
-    };
-  });
-}
-
 
 // ---------- MIDDLEWARES BÁSICOS ----------
 app.use(express.urlencoded({ extended: true }));
@@ -793,6 +711,38 @@ function billingReminderForUser(user) {
   };
 }
 
+function formatProfilePlanDate(value) {
+  if (!value) return "Sem vencimento cadastrado";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Sem vencimento cadastrado";
+  return date.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+}
+
+function profilePlanSummary(user) {
+  const status = String(user?.subscriptionStatus || "").toUpperCase();
+  const statusLabels = {
+    ACTIVE: "Ativo",
+    TRIALING: "Teste gratuito",
+    PENDING: "Pagamento pendente",
+    EXPIRED: "Vencido",
+    CANCELED: "Cancelado",
+    PENDING_ASSOCIATION_PAYMENT: "Pagamento de associação pendente",
+  };
+  const originLabels = {
+    NON_ASSOCIATE: "Plano comercial",
+    ASSOCIATE: "Associação",
+  };
+
+  return {
+    planLabel: getRoleLabel(user?.role),
+    selectedPlan: user?.selectedPlan ? getRoleLabel(user.selectedPlan) : "",
+    originLabel: originLabels[user?.accountOrigin] || "Cadastro interno",
+    statusLabel: statusLabels[status] || (status ? status : "Não informado"),
+    expirationLabel: formatProfilePlanDate(user?.trialEndsAt),
+    activatedAtLabel: user?.planActivatedAt ? formatProfilePlanDate(user.planActivatedAt) : "",
+  };
+}
+
 async function configureAsaasBillingForUser(user, plan, billingMode = "MONTHLY_PIX", status = "PENDING") {
   if (!isAsaasConfigured()) return null;
 
@@ -935,6 +885,8 @@ app.use(async (req, res, next) => {
         LIMIT 1
       `;
       req.session.modulePreferences = normalizeModulePreferences(settingsRows[0]?.modulePreferencesJson);
+    } else {
+      req.session.modulePreferences = normalizeModulePreferences(JSON.stringify(req.session.modulePreferences));
     }
     res.locals.modulePreferences = req.session.modulePreferences;
 
@@ -1019,6 +971,7 @@ app.get("/planos", (req, res) => {
   res.render("public-plans", {
     user: req.user,
     plans: commercialPlanList(),
+    planComparisonRows: buildPlanComparisonRows(),
   });
 });
 
@@ -2373,6 +2326,7 @@ app.get("/meus-dados", requireAuth, async (req, res) => {
     res.render("users/my-profile", {
       user,
       currentPath: "/meus-dados",
+      profilePlanSummary: profilePlanSummary(user),
       profilePlanCards: buildProfilePlanCards(user.role),
     });
   } catch (err) {

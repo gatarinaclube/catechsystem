@@ -128,7 +128,6 @@
         { href: "/dashboard", match: "/dashboard", icon: "🏠", label: "Página inicial", allowed: true },
         { href: "/meus-dados", match: "/meus-dados", icon: "👤", label: "Meu Cadastro", allowed: access && access.canAccessMyProfile },
         { href: "/cats", match: "/cats", icon: "🐾", label: (access && access.canViewAllCats) ? "Todos os gatos" : "Meus gatos", allowed: access && access.canManageCats, preferenceKey: "cats" },
-        { href: "/services", match: "/services", icon: "🧾", label: "Serviços", allowed: access && access.canAccessServices, preferenceKey: "services" },
         { href: "/settings", match: "/settings", icon: "⚙️", label: "Configurações", allowed: access && access.canAccessSettings },
         { href: "/billing/pay", match: "/billing/pay", icon: "⬆️", label: "Upgrade de Plano", allowed: showPlanUpgrade },
       ].forEach(renderMenuItem); %>

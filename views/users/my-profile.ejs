@@ -79,6 +79,40 @@
           </div>
         </div>
 
+        <% if (typeof profilePlanSummary !== 'undefined' && profilePlanSummary) { %>
+          <div class="section">
+            <div class="section-title">Plano contratado</div>
+            <div class="profile-plan-summary">
+              <div class="profile-plan-summary-item">
+                <span>Plano contratado</span>
+                <strong><%= profilePlanSummary.selectedPlan || profilePlanSummary.planLabel %></strong>
+              </div>
+              <div class="profile-plan-summary-item">
+                <span>Perfil atual</span>
+                <strong><%= profilePlanSummary.planLabel %></strong>
+              </div>
+              <div class="profile-plan-summary-item">
+                <span>Origem do acesso</span>
+                <strong><%= profilePlanSummary.originLabel %></strong>
+              </div>
+              <div class="profile-plan-summary-item">
+                <span>Status</span>
+                <strong><%= profilePlanSummary.statusLabel %></strong>
+              </div>
+              <div class="profile-plan-summary-item">
+                <span>Vencimento do plano</span>
+                <strong><%= profilePlanSummary.expirationLabel %></strong>
+              </div>
+              <% if (profilePlanSummary.activatedAtLabel) { %>
+                <div class="profile-plan-summary-item">
+                  <span>Ativado em</span>
+                  <strong><%= profilePlanSummary.activatedAtLabel %></strong>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        <% } %>
+
         <% if (typeof profilePlanCards !== 'undefined' && profilePlanCards.length) { %>
           <div class="section">
             <div class="section-title">Perfis e limitações</div>
@@ -94,33 +128,16 @@
                   </div>
 
                   <div class="profile-plan-list">
-                    <% plan.items.forEach((item) => { %>
+                    <% plan.rows.forEach((item) => { %>
                       <div class="profile-plan-item">
-                        <span>
-                          <%= item.label %>
-                          <% if (item.note) { %>
-                            <small><%= item.note %></small>
-                          <% } %>
-                        </span>
-                        <strong><%= item.value %></strong>
-                      </div>
-                    <% }) %>
-                  </div>
-
-                  <div class="profile-module-access">
-                    <% plan.accessGroups.forEach((group) => { %>
-                      <div class="profile-module-group">
-                        <div class="profile-module-group-title"><%= group.title %></div>
-                        <div class="profile-module-list">
-                          <% group.modules.forEach((module) => { %>
-                            <div class="profile-module-row">
-                              <span><%= module.label %></span>
-                              <strong class="<%= module.allowed ? 'is-allowed' : 'is-blocked' %>">
-                                <%= module.allowed ? 'Liberado' : 'Bloqueado' %>
-                              </strong>
-                            </div>
-                          <% }) %>
-                        </div>
+                        <span><%= item.label %></span>
+                        <% if (item.type === "check") { %>
+                          <strong class="<%= item.value ? 'is-allowed' : 'is-blocked' %>">
+                            <%= item.value ? '✅' : '❌' %>
+                          </strong>
+                        <% } else { %>
+                          <strong><%= item.value %></strong>
+                        <% } %>
                       </div>
                     <% }) %>
                   </div>

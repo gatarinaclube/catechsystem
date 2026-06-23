@@ -2,7 +2,6 @@ const { PERMISSIONS, ROLES, getRoleLabel, normalizeRole, userCan } = require("./
 
 const MODULE_PREFERENCES = [
   { key: "cats", label: "Meus Gatos", group: "Principal", permission: "cats.manage" },
-  { key: "services", label: "Serviços", group: "Principal", permission: "services.portal", defaultHidden: true },
   { key: "breeders", label: "Reprodutores", group: "Gestão do Gatil", permission: "admin.breeders" },
   { key: "matings", label: "Acasalamentos", group: "Gestão do Gatil", permission: "admin.matings" },
   { key: "litters", label: "Ninhadas", group: "Gestão do Gatil", permission: "admin.litters" },
@@ -81,7 +80,7 @@ function modulePreferenceRowsForRole(role, selectedPreferences) {
     ? selectedPreferences
     : normalizeModulePreferences(selectedPreferences);
 
-  return MODULE_PREFERENCES.map((module) => {
+  return MODULE_PREFERENCES.filter((module) => !module.adminOnly || normalizedRole === ROLES.ADMIN).map((module) => {
     const allowed = userCan(normalizedRole, module.permission);
     return {
       ...module,

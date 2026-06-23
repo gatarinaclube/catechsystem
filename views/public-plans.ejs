@@ -75,37 +75,27 @@
               featured: true
             }
           ];
-          const planComparisonRows = [
+          const commercialRows = [
             { label: "Recomendação", type: "text", values: { basic: ["Gatil iniciante", "Gatil pequeno", "Tutor de gatos"], master: ["Gatil médio"], premium: ["Gatil grande"] } },
             { label: "Pagamento mensal", type: "price", values: { basic: ["R$ 14,90", "mês"], master: ["R$ 24,90", "mês"], premium: ["R$ 34,90", "mês"] } },
             { label: "Pagamento 12X cartão", type: "price", values: { basic: ["12X Cartão", "R$ 149,90", "R$ 12,50/mês"], master: ["12X Cartão", "R$ 249,90", "R$ 20,83/mês"], premium: ["12X Cartão", "R$ 349,90", "R$ 29,16/mês"] } },
             { label: "Pagamento anual", type: "price", values: { basic: ["PIX", "R$ 120,00", "R$ 10,00/mês"], master: ["PIX", "R$ 200,00", "R$ 16,67/mês"], premium: ["PIX", "R$ 300,00", "R$ 25,00/mês"] } },
-            { label: "Cadastro de filhotes", type: "text", values: { basic: ["Até 10 filhotes/ano"], master: ["Até 40 filhotes/ano"], premium: ["Ilimitado"] } },
-            { label: "Ninhadas", type: "text", values: { basic: ["Até 4 ninhadas/ano"], master: ["Até 15 ninhadas/ano"], premium: ["Ilimitado"] } },
-            { label: "Upload", type: "text", values: { basic: ["500 KB por arquivo"], master: ["1 MB por arquivo"], premium: ["2 MB por arquivo"] } },
-            { label: "Diminuição de arquivo", type: "text", values: { basic: ["5 documentos/mês"], master: ["10 documentos/mês"], premium: ["Ilimitado"] } },
-            { label: "Assinatura eletrônica", type: "text", values: { basic: ["5 documentos/mês"], master: ["10 documentos/mês"], premium: ["Ilimitado"] } },
-            { label: "Reprodutores", type: "check", values: { basic: true, master: true, premium: true } },
-            { label: "Acasalamentos", type: "check", values: { basic: true, master: true, premium: true } },
-            { label: "Ninhadas", type: "check", values: { basic: true, master: true, premium: true } },
-            { label: "Filhotes", type: "check", values: { basic: true, master: true, premium: true } },
-            { label: "Histórico do gato", type: "check", values: { basic: true, master: true, premium: true } },
-            { label: "Vacinação", type: "check", values: { basic: true, master: true, premium: true } },
-            { label: "Notificações", type: "check", values: { basic: true, master: true, premium: true } },
-            { label: "Vermifugação", type: "check", values: { basic: true, master: true, premium: true } },
-            { label: "Pesagem", type: "check", values: { basic: true, master: true, premium: true } },
-            { label: "Tratamentos", type: "check", values: { basic: true, master: true, premium: true } },
-            { label: "Exames", type: "check", values: { basic: true, master: true, premium: true } },
-            { label: "Pesquisa de Microchip Pública", type: "check", values: { basic: true, master: true, premium: true } },
-            { label: "Documentos", type: "check", values: { basic: false, master: true, premium: true } },
-            { label: "CRM de clientes", type: "check", values: { basic: false, master: true, premium: true } },
-            { label: "Vitrine de filhotes", type: "check", values: { basic: false, master: true, premium: true } },
-            { label: "Relatórios básicos", type: "check", values: { basic: false, master: true, premium: true } },
-            { label: "Relatórios avançados", type: "check", values: { basic: false, master: false, premium: true } },
-            { label: "Administrativo financeiro", type: "check", values: { basic: false, master: false, premium: true } },
-            { label: "Contas a pagar/receber", type: "check", values: { basic: false, master: false, premium: true } },
-            { label: "Fluxo de caixa", type: "check", values: { basic: false, master: false, premium: true } }
           ];
+          const featureRows = (planComparisonRows || []).map(function(row) {
+            if (row.type === "text") {
+              return {
+                label: row.label,
+                type: row.type,
+                values: {
+                  basic: [row.values.basic],
+                  master: [row.values.master],
+                  premium: [row.values.premium]
+                }
+              };
+            }
+            return row;
+          });
+          const comparisonRows = commercialRows.concat(featureRows);
         %>
 
         <div class="public-plan-benefit-grid" aria-label="Escolha pelo momento do gatil">
@@ -149,7 +139,7 @@
                 </tr>
               </thead>
               <tbody>
-                <% planComparisonRows.forEach(function(row) { %>
+                <% comparisonRows.forEach(function(row) { %>
                   <tr class="public-plan-row-<%= row.type %>">
                     <th scope="row"><%= row.label %></th>
                     <% planColumns.forEach(function(plan) { const value = row.values[plan.key]; %>

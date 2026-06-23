@@ -702,15 +702,21 @@
             </div>
 
             <div class="settings-toggle-row">
-              <label class="settings-switch">
+              <label class="settings-switch <%= canUseVaccineNotifications ? '' : 'is-disabled' %>">
                 <input
                   id="vaccineReminderEnabled"
                   name="vaccineReminderEnabled"
                   type="checkbox"
-                  <%= settings.vaccineReminderEnabled ? "checked" : "" %>
+                  <%= settings.vaccineReminderEnabled && canUseVaccineNotifications ? "checked" : "" %>
+                  <%= canUseVaccineNotifications ? "" : "disabled" %>
                 />
                 <span class="settings-switch-track"></span>
-                <span>Enviar e-mail automático</span>
+                <span>
+                  Enviar e-mail automático
+                  <% if (!canUseVaccineNotifications) { %>
+                    <small>Disponível a partir do plano Master.</small>
+                  <% } %>
+                </span>
               </label>
             </div>
 
@@ -831,7 +837,8 @@
                         type="checkbox"
                         name="vaccineReminderGroups"
                         value="<%= option.value %>"
-                        <%= settings.vaccineReminderGroups.includes(option.value) ? "checked" : "" %>
+                        <%= settings.vaccineReminderGroups.includes(option.value) && canUseVaccineNotifications ? "checked" : "" %>
+                        <%= canUseVaccineNotifications ? "" : "disabled" %>
                       />
                       <span><%= option.label %></span>
                     </label>

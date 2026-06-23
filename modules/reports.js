@@ -1,6 +1,6 @@
 const express = require("express");
 const PDFDocument = require("pdfkit");
-const { canViewAllData } = require("../utils/access");
+const { canViewAllData, userCan } = require("../utils/access");
 
 function todayParts() {
   const today = new Date().toLocaleDateString("en-CA", {
@@ -1741,6 +1741,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       res.render("reports/index", {
         user: req.user,
         currentPath: "/reports",
+        canAccessAdvancedReports: userCan(req.session.userRole, "admin.reportsAdvanced"),
       });
     }
   );
@@ -2038,6 +2039,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     "/reports/cash-flow",
     requireAuth,
     requirePermission("admin.reports"),
+    requirePermission("admin.reportsAdvanced"),
     async (req, res) => {
       const filters = buildExpenseFilters(req.query);
       const expenses = await prisma.quickLaunchEntry.findMany({
@@ -2088,6 +2090,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     "/reports/cash-flow/pdf",
     requireAuth,
     requirePermission("admin.reports"),
+    requirePermission("admin.reportsAdvanced"),
     async (req, res) => {
       const filters = buildExpenseFilters(req.query);
       const expenses = await prisma.quickLaunchEntry.findMany({
@@ -2126,6 +2129,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     "/reports/credit-cards/invoice-dates",
     requireAuth,
     requirePermission("admin.reports"),
+    requirePermission("admin.reportsAdvanced"),
     async (req, res) => {
       const cardName = String(req.body.card || "").trim();
       const month = /^\d{4}-\d{2}$/.test(req.body.month || "")
@@ -2183,6 +2187,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     "/reports/credit-cards",
     requireAuth,
     requirePermission("admin.reports"),
+    requirePermission("admin.reportsAdvanced"),
     async (req, res) => {
       const filters = buildCreditCardFilters(req.query);
       const cardOptions = await loadCreditCardAccounts(prisma, req);
@@ -2227,6 +2232,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     "/reports/credit-cards/pdf",
     requireAuth,
     requirePermission("admin.reports"),
+    requirePermission("admin.reportsAdvanced"),
     async (req, res) => {
       const filters = buildCreditCardFilters(req.query);
       const cardOptions = await loadCreditCardAccounts(prisma, req);
@@ -2326,6 +2332,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     "/reports/accounting",
     requireAuth,
     requirePermission("admin.reports"),
+    requirePermission("admin.reportsAdvanced"),
     async (req, res) => {
       const filters = buildAccountingFilters(req.query);
       const data = await loadAccountingData(req, filters);
@@ -2349,6 +2356,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     "/reports/accounting/pdf",
     requireAuth,
     requirePermission("admin.reports"),
+    requirePermission("admin.reportsAdvanced"),
     async (req, res) => {
       const filters = buildAccountingFilters(req.query);
       const data = await loadAccountingData(req, filters);
