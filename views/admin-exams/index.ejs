@@ -8,17 +8,46 @@
     <link rel="stylesheet" href="/css/cattery-admin.css" />
     <style>
       .exam-table-wrap {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
         overflow-x: auto;
+        overflow-y: visible;
         border: 1px solid var(--border-soft);
         border-radius: 8px;
         background: #fff;
       }
+      .exam-table-shell {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow: hidden;
+      }
       .exam-table {
         width: max-content;
         min-width: 100%;
+        max-width: none;
         border-collapse: separate;
         border-spacing: 0;
         font-size: 13px;
+      }
+      .exam-scrollbar {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        height: 18px;
+        margin-top: 8px;
+        border: 1px solid var(--border-soft);
+        border-radius: 999px;
+        background: #f8fafc;
+        position: sticky;
+        bottom: 0;
+        z-index: 3;
+      }
+      .exam-scrollbar-inner {
+        height: 1px;
+        min-width: 100%;
       }
       .exam-table th,
       .exam-table td {
@@ -42,9 +71,6 @@
       .exam-cat-cell {
         min-width: 220px;
         max-width: 260px;
-      }
-      .exam-date-cell {
-        min-width: 130px;
       }
       .exam-genetic-cell {
         min-width: 230px;
@@ -80,6 +106,12 @@
       .exam-row input[type="date"] {
         height: 34px;
         padding: 6px 8px;
+      }
+      .exam-genetic-controls {
+        display: grid;
+        grid-template-columns: minmax(120px, 1fr) 74px;
+        gap: 6px;
+        align-items: center;
       }
       .exam-row .mini-stack {
         gap: 6px;
@@ -165,92 +197,101 @@
                 <% items.forEach(function(row) { %>
                   <form id="exam-form-<%= row.cat.id %>" method="post" action="/admin/exams/<%= row.cat.id %>" enctype="multipart/form-data"></form>
                 <% }) %>
-                <div class="exam-table-wrap">
-                  <table class="exam-table">
-                    <thead>
-                      <tr>
-                        <th>Nome do gato</th>
-                        <th>Data de nascimento</th>
-                        <% const firstExamSet = items[0] && items[0].activeExams ? items[0].activeExams : activeExams; %>
-                        <% (firstExamSet.genetic || []).forEach(function(exam) { %>
-                          <th><%= exam.label %></th>
-                        <% }) %>
-                        <% if (firstExamSet.hcm) { %>
-                          <th>HCM - Doppler</th>
-                          <th>Próximo HCM</th>
-                        <% } %>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <% items.forEach(function(row) { %>
-                        <tr class="exam-row <%= row.urgent ? 'is-urgent' : '' %>" data-form-id="exam-form-<%= row.cat.id %>">
-                          <td class="exam-cat-cell">
-                            <div class="item-title" style="color:<%= row.urgent ? '#dc2626' : 'inherit' %>;"><%= row.displayName %></div>
-                            <span class="status-pill <%= row.urgent ? 'is-red' : 'is-blue' %>">
-                              <%= row.urgent ? 'Atenção' : 'Acompanhamento' %>
-                            </span>
-                          </td>
-                          <td class="exam-date-cell"><strong><%= row.birthDateLabel %></strong></td>
-                          <% row.geneticExams.forEach(function(exam) { %>
-                            <td class="exam-genetic-cell">
-                              <div class="mini-stack">
-                                <% if (exam.inheritedNn && !exam.file) { %>
-                                  <span class="status-pill is-green">Antecedente OK</span>
-                                <% } %>
-                                <select form="exam-form-<%= row.cat.id %>" name="<%= exam.key %>Source" data-source-toggle="<%= exam.key %>">
-                                  <option value="">Selecione</option>
-                                  <% sourceOptions.forEach(function(option) { %>
-                                    <option value="<%= option %>" <%= exam.source === option ? "selected" : "" %>><%= option %></option>
-                                  <% }) %>
-                                </select>
-                                <select form="exam-form-<%= row.cat.id %>" name="<%= exam.key %>Result">
-                                  <option value="">Resultado</option>
-                                  <% exam.results.forEach(function(option) { %>
-                                    <option value="<%= option %>" <%= exam.result === option ? "selected" : "" %>><%= option %></option>
-                                  <% }) %>
-                                </select>
-                                <div class="exam-upload" data-upload-box="<%= exam.key %>">
-                                  <% if (exam.file) { %>
-                                    <a class="exam-file-link" href="<%= exam.file %>" target="_blank">Arquivo atual</a>
-                                  <% } %>
-                                  <input form="exam-form-<%= row.cat.id %>" type="file" name="<%= exam.key %>Doc" accept=".pdf,image/*" />
-                                </div>
-                              </div>
-                            </td>
+                <div class="exam-table-shell">
+                  <div class="exam-table-wrap" data-exam-table-wrap>
+                    <table class="exam-table">
+                      <thead>
+                        <tr>
+                          <th>Nome do gato</th>
+                          <% const firstExamSet = items[0] && items[0].activeExams ? items[0].activeExams : activeExams; %>
+                          <% (firstExamSet.genetic || []).forEach(function(exam) { %>
+                            <th><%= exam.label %></th>
                           <% }) %>
-                          <% if (row.activeExams && row.activeExams.hcm) { %>
-                            <td class="exam-hcm-cell">
-                              <div class="mini-stack" data-eco-box>
-                                <% row.ecoHistory.forEach(function(item, index) { %>
-                                  <div class="inline-plus exam-eco-row" data-eco-row>
-                                    <% if (item.date) { %>
-                                      <input form="exam-form-<%= row.cat.id %>" type="hidden" name="ecoDates" value="<%= item.date %>" />
-                                      <input form="exam-form-<%= row.cat.id %>" type="hidden" name="ecoFiles" value="<%= item.file || '' %>" />
-                                      <span class="history-date-display"><%= formatDate(item.date) %></span>
-                                      <% if (item.file) { %>
-                                        <a class="exam-file-link" href="<%= item.file %>" target="_blank">Arquivo</a>
-                                      <% } %>
-                                      <input form="exam-form-<%= row.cat.id %>" type="file" name="hcmDoc_<%= index %>" accept=".pdf,image/*" />
-                                      <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
-                                    <% } else { %>
-                                      <input form="exam-form-<%= row.cat.id %>" type="date" name="ecoDates" value="" />
-                                      <input form="exam-form-<%= row.cat.id %>" type="hidden" name="ecoFiles" value="" />
-                                    <% } %>
-                                  </div>
-                                <% }) %>
-                                <div class="history-add-row">
-                                  <button type="button" class="btn add-eco">+</button>
-                                </div>
-                              </div>
-                            </td>
-                            <td class="exam-next-cell">
-                              <strong><%= row.nextEco ? formatDate(row.nextEco) : (row.isFounder ? 'Último válido' : '-') %></strong>
-                            </td>
+                          <% if (firstExamSet.hcm) { %>
+                            <th>HCM - Doppler</th>
+                            <th>Próximo HCM</th>
                           <% } %>
                         </tr>
-                      <% }) %>
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        <% items.forEach(function(row) { %>
+                          <tr class="exam-row <%= row.urgent ? 'is-urgent' : '' %>" data-form-id="exam-form-<%= row.cat.id %>">
+                            <td class="exam-cat-cell">
+                              <div class="item-title" style="color:<%= row.urgent ? '#dc2626' : 'inherit' %>;"><%= row.displayName %></div>
+                              <div class="content-sub" style="font-size:11px; margin:2px 0 6px;">
+                                Nasc.: <%= row.birthDateLabel %>
+                              </div>
+                              <span class="status-pill <%= row.urgent ? 'is-red' : 'is-blue' %>">
+                                <%= row.urgent ? 'Atenção' : 'Acompanhamento' %>
+                              </span>
+                            </td>
+                            <% row.geneticExams.forEach(function(exam) { %>
+                              <td class="exam-genetic-cell">
+                                <div class="mini-stack">
+                                  <% if (exam.inheritedNn && !exam.file) { %>
+                                    <span class="status-pill is-green">Antecedente OK</span>
+                                  <% } %>
+                                  <div class="exam-genetic-controls">
+                                    <select form="exam-form-<%= row.cat.id %>" name="<%= exam.key %>Source" data-source-toggle="<%= exam.key %>">
+                                      <option value="">Status</option>
+                                      <% sourceOptions.forEach(function(option) { %>
+                                        <option value="<%= option %>" <%= exam.source === option ? "selected" : "" %>><%= option %></option>
+                                      <% }) %>
+                                    </select>
+                                    <select form="exam-form-<%= row.cat.id %>" name="<%= exam.key %>Result">
+                                      <option value="">Resultado</option>
+                                      <% exam.results.forEach(function(option) { %>
+                                        <option value="<%= option %>" <%= exam.result === option ? "selected" : "" %>><%= option %></option>
+                                      <% }) %>
+                                    </select>
+                                  </div>
+                                  <div class="exam-upload" data-upload-box="<%= exam.key %>">
+                                    <% if (exam.file) { %>
+                                      <a class="exam-file-link" href="<%= exam.file %>" target="_blank">Arquivo atual</a>
+                                    <% } %>
+                                    <input form="exam-form-<%= row.cat.id %>" type="file" name="<%= exam.key %>Doc" accept=".pdf,image/*" />
+                                  </div>
+                                </div>
+                              </td>
+                            <% }) %>
+                            <% if (row.activeExams && row.activeExams.hcm) { %>
+                              <td class="exam-hcm-cell">
+                                <div class="mini-stack" data-eco-box>
+                                  <% row.ecoHistory.forEach(function(item, index) { %>
+                                    <div class="inline-plus exam-eco-row" data-eco-row>
+                                      <% if (item.date) { %>
+                                        <input form="exam-form-<%= row.cat.id %>" type="hidden" name="ecoDates" value="<%= item.date %>" />
+                                        <input form="exam-form-<%= row.cat.id %>" type="hidden" name="ecoFiles" value="<%= item.file || '' %>" />
+                                        <span class="history-date-display"><%= formatDate(item.date) %></span>
+                                        <% if (item.file) { %>
+                                          <a class="exam-file-link" href="<%= item.file %>" target="_blank">Arquivo</a>
+                                        <% } %>
+                                        <input form="exam-form-<%= row.cat.id %>" type="file" name="hcmDoc_<%= index %>" accept=".pdf,image/*" />
+                                        <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
+                                      <% } else { %>
+                                        <input form="exam-form-<%= row.cat.id %>" type="date" name="ecoDates" value="" />
+                                        <input form="exam-form-<%= row.cat.id %>" type="hidden" name="ecoFiles" value="" />
+                                        <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
+                                      <% } %>
+                                    </div>
+                                  <% }) %>
+                                  <div class="history-add-row">
+                                    <button type="button" class="btn add-eco">+</button>
+                                  </div>
+                                </div>
+                              </td>
+                              <td class="exam-next-cell">
+                                <strong><%= row.nextEco ? formatDate(row.nextEco) : (row.isFounder ? 'Último válido' : '-') %></strong>
+                              </td>
+                            <% } %>
+                          </tr>
+                        <% }) %>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="exam-scrollbar" data-exam-scrollbar aria-label="Rolagem horizontal da tabela de exames">
+                    <div class="exam-scrollbar-inner" data-exam-scrollbar-inner></div>
+                  </div>
                 </div>
               <% } %>
             </div>
@@ -293,6 +334,12 @@
           const parts = value.split("-");
           if (parts.length !== 3) return value;
           return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        function isCompleteIsoDate(value) {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return false;
+          const parsed = new Date(`${value}T00:00:00`);
+          return !Number.isNaN(parsed.getTime());
         }
 
         function getExamRow(element) {
@@ -345,7 +392,11 @@
             const row = document.createElement("div");
             row.className = "inline-plus exam-eco-row";
             row.dataset.ecoRow = "";
-            row.innerHTML = '<input type="date" name="ecoDates" value="" /><input type="hidden" name="ecoFiles" value="" />';
+            row.innerHTML = `
+              <input type="date" name="ecoDates" value="" />
+              <input type="hidden" name="ecoFiles" value="" />
+              <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
+            `;
             const form = getForm(button);
             row.querySelectorAll("input").forEach((input) => {
               if (form?.id) input.setAttribute("form", form.id);
@@ -365,6 +416,8 @@
         }
 
         function bindDelete(button) {
+          if (!button || button.dataset.boundDelete === "true") return;
+          button.dataset.boundDelete = "true";
           button.addEventListener("click", () => {
             const row = button.closest("[data-eco-row]");
             const examRow = getExamRow(button);
@@ -379,8 +432,9 @@
         function bindEcoRow(row) {
           const input = row.querySelector('input[type="date"]');
           if (input) {
-            input.addEventListener("change", () => {
-              if (!input.value) return;
+            const commitDate = () => {
+              if (!isCompleteIsoDate(input.value) || row.dataset.dateCommitted === input.value) return;
+              row.dataset.dateCommitted = input.value;
               row.innerHTML = `
                 <input type="hidden" name="ecoDates" value="${input.value}" />
                 <input type="hidden" name="ecoFiles" value="" />
@@ -397,7 +451,11 @@
               bindFileInputs(row);
               bindDelete(row.querySelector(".delete-history-date"));
               autosave(form, examRow);
-            });
+            };
+
+            input.addEventListener("input", commitDate);
+            input.addEventListener("change", commitDate);
+            input.addEventListener("blur", commitDate);
           }
 
           const deleteButton = row.querySelector(".delete-history-date");
@@ -434,6 +492,41 @@
           syncExamUploads(row);
           reindexEcoRows(row);
           bindFileInputs(row);
+        });
+
+        document.querySelectorAll(".exam-table-shell").forEach((shell) => {
+          const tableWrap = shell.querySelector("[data-exam-table-wrap]");
+          const bottomScrollbar = shell.querySelector("[data-exam-scrollbar]");
+          const bottomScrollbarInner = shell.querySelector("[data-exam-scrollbar-inner]");
+          const table = shell.querySelector(".exam-table");
+          if (!tableWrap || !bottomScrollbar || !bottomScrollbarInner) return;
+
+          const syncWidth = () => {
+            const tableWidth = table ? table.scrollWidth : 0;
+            const scrollWidth = Math.max(tableWidth, tableWrap.scrollWidth, tableWrap.clientWidth);
+            bottomScrollbarInner.style.width = `${scrollWidth}px`;
+            bottomScrollbar.style.display = scrollWidth > tableWrap.clientWidth ? "block" : "none";
+            bottomScrollbar.scrollLeft = tableWrap.scrollLeft;
+          };
+          let syncingFromTable = false;
+          let syncingFromBar = false;
+
+          tableWrap.addEventListener("scroll", () => {
+            if (syncingFromBar) return;
+            syncingFromTable = true;
+            bottomScrollbar.scrollLeft = tableWrap.scrollLeft;
+            syncingFromTable = false;
+          });
+
+          bottomScrollbar.addEventListener("scroll", () => {
+            if (syncingFromTable) return;
+            syncingFromBar = true;
+            tableWrap.scrollLeft = bottomScrollbar.scrollLeft;
+            syncingFromBar = false;
+          });
+
+          window.addEventListener("resize", syncWidth);
+          requestAnimationFrame(syncWidth);
         });
       })();
     </script>
