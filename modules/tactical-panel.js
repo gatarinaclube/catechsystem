@@ -8,8 +8,10 @@ const {
   buildDisplayName,
   formatDate,
   formatDateInput,
+  isRoutineModuleCatVisible,
   parseDate,
 } = require("../utils/cattery-admin");
+const { userCan } = require("../utils/access");
 const vaccineUtils = require("../utils/vaccines");
 
 function safeJsonParse(value, fallback = []) {
@@ -141,6 +143,68 @@ function isMonitoredCat(cat) {
   return true;
 }
 
+function hasOtherOwner(cat) {
+  return (
+    cat?.ownershipType === "CO-OWNERSHIP" ||
+    cat?.ownershipType === "OTHER" ||
+    Boolean(cat?.currentOwnerClientId) ||
+    (Boolean(cat?.currentOwnerId) && cat.currentOwnerId !== cat.ownerId)
+  );
+}
+
+function isBreederHiddenFromVaccination(cat) {
+  const kittenRecord = isKittenRecord(cat);
+  const breederRecord = !kittenRecord && (cat?.gender === "M" || cat?.gender === "F");
+  return breederRecord && cat?.neutered === true && hasOtherOwner(cat);
+}
+
+function isVisibleInVaccinationPanel(cat) {
+  return isRoutineModuleCatVisible(cat) && !isBreederHiddenFromVaccination(cat);
+}
+
+function medicationDateKey(value) {
+  return formatDateInput(value) || "";
+}
+
+function groupMedicationsByPeriod(medications) {
+  const groups = new Map();
+
+  medications.forEach((item) => {
+    const key = [
+      item.medication || "",
+      item.dosage || "",
+      item.schedule || "",
+      item.startDate || "",
+      item.endDate || "",
+    ].join("|");
+
+    if (!groups.has(key)) {
+      groups.set(key, {
+        medication: item.medication,
+        dosage: item.dosage,
+        schedule: item.schedule,
+        startDate: item.startDate,
+        endDate: item.endDate,
+        startDateLabel: item.startDateLabel,
+        endDateLabel: item.endDateLabel,
+        catNames: [],
+        catCount: 0,
+      });
+    }
+
+    const group = groups.get(key);
+    group.catNames.push(item.catName);
+    group.catCount += 1;
+  });
+
+  return [...groups.values()].sort((a, b) => {
+    const aEnd = parseDate(a.endDate) || new Date(8640000000000000);
+    const bEnd = parseDate(b.endDate) || new Date(8640000000000000);
+    if (aEnd - bEnd !== 0) return aEnd - bEnd;
+    return String(a.medication || "").localeCompare(String(b.medication || ""), "pt-BR");
+  });
+}
+
 async function ensureDashboardPublicToken(prisma, userId) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -189,7 +253,9 @@ async function buildPanelData(prisma, ownerId) {
   const exams = [];
   const matings = [];
 
-  cats.forEach((cat) => {
+  const visibleCats = cats.filter(isVisibleInVaccinationPanel);
+
+  visibleCats.forEach((cat) => {
     const displayName = buildDisplayName(cat);
 
     cat.historyEntries.forEach((entry) => {
@@ -202,12 +268,16 @@ async function buildPanelData(prisma, ownerId) {
       })();
       if (!isActiveMedication(item, today)) return;
 
+      const finalDate = item.dischargeDate || item.endDate;
       medications.push({
         catName: displayName,
         medication: item.medication,
         dosage: item.dosage || "",
-        schedule: item.dosageSchedule || "",
-        endDateLabel: formatDate(item.dischargeDate || item.endDate) || "Sem alta",
+        schedule: item.dosageSchedule || item.administrationTime || "",
+        startDate: medicationDateKey(item.startDate),
+        endDate: medicationDateKey(finalDate),
+        startDateLabel: formatDate(item.startDate) || "Sem início",
+        endDateLabel: formatDate(finalDate) || "Sem alta",
       });
     });
 
@@ -263,15 +333,16 @@ async function buildPanelData(prisma, ownerId) {
   vaccines.sort((a, b) => a.date - b.date);
   exams.sort((a, b) => a.date - b.date);
   matings.sort((a, b) => (a.date || today) - (b.date || today));
+  const groupedMedications = groupMedicationsByPeriod(medications);
 
   return {
-    medications: medications.slice(0, 12),
+    medications: groupedMedications.slice(0, 12),
     vaccines: vaccines.slice(0, 10),
     matings: matings.slice(0, 10),
     exams: exams.slice(0, 5),
     summary: {
-      cats: cats.filter(isMonitoredCat).length,
-      alerts: medications.length + vaccines.length + matings.length + exams.length,
+      cats: visibleCats.filter(isMonitoredCat).length,
+      alerts: groupedMedications.length + vaccines.length + matings.length + exams.length,
       matingFemales: matings.length,
       overdueVaccines: vaccines.filter((item) => item.status.days < 0).length,
       overdueExams: exams.filter((item) => item.status.days < 0).length,
@@ -296,11 +367,15 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     try {
       const user = await prisma.user.findUnique({
         where: { dashboardPublicToken: String(req.params.token || "").trim() },
-        select: { id: true, name: true, fifeCatteryName: true },
+        select: { id: true, name: true, fifeCatteryName: true, role: true },
       });
 
       if (!user) {
         return res.status(404).send("Painel não encontrado.");
+      }
+
+      if (!userCan(user.role, "admin.tacticalPanel")) {
+        return res.status(403).send("Este painel não está disponível para o plano atual.");
       }
 
       const panel = await buildPanelData(prisma, user.id);

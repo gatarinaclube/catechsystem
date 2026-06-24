@@ -295,7 +295,8 @@
               </div>
               <span class="dashboard-panel-icon">+</span>
             </summary>
-            <div class="metric-grid dashboard-panel-body">
+            <div class="dashboard-panel-body">
+            <div class="metric-grid">
               <a class="metric-card is-blue" href="<%= access && access.canAccessRevenues ? '/receitas/lista' : '#' %>" style="text-decoration:none;">
                 <div class="metric-label">Receitas do mês</div>
                 <div class="metric-value" style="font-size:20px;"><%= administrativePanel.finance.incomeLabel %></div>
@@ -309,13 +310,54 @@
               <a class="metric-card is-yellow" href="<%= access && access.canAccessRevenues ? '/administrativo/contas-a-receber' : '#' %>" style="text-decoration:none;">
                 <div class="metric-label">Contas a receber</div>
                 <div class="metric-value" style="font-size:20px;"><%= administrativePanel.finance.nextReceivableLabel %></div>
-                <div class="metric-note">Próximos 10 dias: <%= administrativePanel.finance.nextReceivableCount %></div>
+                <div class="metric-note">Próximos 15 dias: <%= administrativePanel.finance.nextReceivableCount %></div>
               </a>
               <a class="metric-card is-purple" href="<%= access && access.canAccessAdministrative ? '/administrativo/contas-a-pagar' : '#' %>" style="text-decoration:none;">
                 <div class="metric-label">Contas a pagar</div>
                 <div class="metric-value" style="font-size:20px;"><%= administrativePanel.finance.nextPayableLabel %></div>
-                <div class="metric-note">Próximos 10 dias: <%= administrativePanel.finance.nextPayableCount %></div>
+                <div class="metric-note">Próximos 15 dias: <%= administrativePanel.finance.nextPayableCount %></div>
               </a>
+            </div>
+
+            <div class="dashboard-finance-lists">
+              <section class="dashboard-finance-list">
+                <div class="content-title" style="font-size:15px;">A receber nos próximos 15 dias</div>
+                <% if (administrativePanel.finance.nextReceivableItems.length) { %>
+                  <div class="record-list">
+                    <% administrativePanel.finance.nextReceivableItems.forEach(function(item) { %>
+                      <a class="record-row" href="<%= access && access.canAccessRevenues ? item.href : '#' %>" style="text-decoration:none; color:inherit;">
+                        <div class="record-main">
+                          <strong><%= item.dateLabel %> · <%= item.title %></strong>
+                          <small><%= [item.client, item.parcelLabel].filter(Boolean).join(' · ') %></small>
+                        </div>
+                        <span class="status-pill is-green"><%= item.amountLabel %></span>
+                      </a>
+                    <% }) %>
+                  </div>
+                <% } else { %>
+                  <div class="content-sub">Nenhuma conta a receber nos próximos 15 dias.</div>
+                <% } %>
+              </section>
+
+              <section class="dashboard-finance-list">
+                <div class="content-title" style="font-size:15px;">A pagar nos próximos 15 dias</div>
+                <% if (administrativePanel.finance.nextPayableItems.length) { %>
+                  <div class="record-list">
+                    <% administrativePanel.finance.nextPayableItems.forEach(function(item) { %>
+                      <a class="record-row" href="<%= access && access.canAccessAdministrative ? item.href : '#' %>" style="text-decoration:none; color:inherit;">
+                        <div class="record-main">
+                          <strong><%= item.dateLabel %> · <%= item.title %></strong>
+                          <small><%= item.sub || 'Conta a pagar' %></small>
+                        </div>
+                        <span class="status-pill is-red"><%= item.amountLabel %></span>
+                      </a>
+                    <% }) %>
+                  </div>
+                <% } else { %>
+                  <div class="content-sub">Nenhuma conta a pagar nos próximos 15 dias.</div>
+                <% } %>
+              </section>
+            </div>
             </div>
           </details>
         <% } %>

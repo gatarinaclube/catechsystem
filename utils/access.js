@@ -105,7 +105,7 @@ const PERMISSIONS = {
   "admin.sales": MASTER_LEVEL_ROLES,
   "admin.tacticalPanel": MASTER_LEVEL_ROLES,
   "admin.documents": MASTER_LEVEL_ROLES,
-  "admin.reports": MASTER_LEVEL_ROLES,
+  "admin.reports": PREMIUM_LEVEL_ROLES,
   "admin.reportsAdvanced": PREMIUM_LEVEL_ROLES,
   "admin.administrative": PREMIUM_LEVEL_ROLES,
   "notifications.vaccine": MASTER_LEVEL_ROLES,

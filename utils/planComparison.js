@@ -17,7 +17,7 @@ const FEATURE_COMPARISON_ROWS = [
   { label: "Vitrine de filhotes", type: "check", values: { basic: false, master: true, premium: true } },
   { label: "Painel de Controle", type: "check", values: { basic: false, master: true, premium: true } },
   { label: "Comparativo de Evolução", type: "check", values: { basic: false, master: true, premium: true } },
-  { label: "Relatórios básicos", type: "check", values: { basic: false, master: true, premium: true } },
+  { label: "Relatórios básicos", type: "check", values: { basic: false, master: false, premium: true } },
   { label: "Relatórios avançados", type: "check", values: { basic: false, master: false, premium: true } },
   { label: "Administrativo financeiro", type: "check", values: { basic: false, master: false, premium: true } },
   { label: "Contas a pagar/receber", type: "check", values: { basic: false, master: false, premium: true } },

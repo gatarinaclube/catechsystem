@@ -34,11 +34,11 @@
           </div>
         <% } %>
 
-        <section class="content-card" style="margin-bottom:18px;">
+        <section class="signature-workspace-card" style="margin-bottom:18px;">
           <div class="history-section-head" style="margin-bottom:12px;">
             <div>
-              <div class="content-title">Novo contrato para assinatura</div>
-              <div class="content-sub">Informe o contrato, os destinatários e marque onde cada assinatura será aplicada.</div>
+              <div class="content-title">Novo documento</div>
+              <div class="content-sub">Envie o PDF, informe os signatários e posicione assinaturas, rubricas e campos visíveis.</div>
             </div>
             <span class="status-pill <%= smtpSettings.isComplete ? 'is-green' : 'is-yellow' %>">
               <%= smtpSettings.isComplete ? 'SMTP configurado' : 'SMTP pendente' %>
@@ -52,6 +52,14 @@
           <% } %>
 
           <form method="post" action="/documentos/assinaturas/criar" enctype="multipart/form-data" id="signatureCreateForm">
+            <div class="signature-workspace">
+              <aside class="signature-setup-panel">
+                <div class="signature-mode-tabs" aria-label="Modo de envio">
+                  <button type="button" class="is-active">Enviar um arquivo</button>
+                  <button type="button" disabled>Modelos</button>
+                  <button type="button" disabled>WhatsApp</button>
+                </div>
+
             <div class="grid-2">
               <div class="field">
                 <label class="field-label" for="externalTitle">Contrato</label>
@@ -76,10 +84,15 @@
             <div class="field-panel signature-recipient-panel" style="margin-top:14px;">
               <div class="history-section-head" style="margin-bottom:10px;">
                 <div>
-                  <div class="content-title">Destinatários</div>
-                  <div class="content-sub">Digite o e-mail completo ou selecione clientes e fornecedores já cadastrados.</div>
+                  <div class="content-title">Signatários</div>
+                  <div class="content-sub">Digite o e-mail ou selecione clientes e fornecedores cadastrados.</div>
                 </div>
                 <button class="btn" type="button" id="addRecipientButton">+</button>
+              </div>
+
+              <div class="signature-order-toggle" aria-label="Ordem de assinatura">
+                <button type="button" class="is-active">Sem ordem</button>
+                <button type="button">Com ordem</button>
               </div>
 
               <datalist id="signatureEmailSuggestions">
@@ -96,9 +109,14 @@
                       <input name="recipientEmail" type="email" list="signatureEmailSuggestions" placeholder="cliente@email.com" required />
                       <button class="btn signature-select-target" type="button" data-target="recipient:0">Marcar assinatura</button>
                     </div>
-                    <input type="hidden" name="recipientName" />
-                    <input type="hidden" name="recipientDocument" />
-                    <input type="hidden" name="recipientPhone" />
+                    <details class="signature-extra-options">
+                      <summary>Mais opções +</summary>
+                      <div class="grid-3">
+                        <input type="text" name="recipientName" placeholder="Nome completo" />
+                        <input type="text" name="recipientDocument" placeholder="CPF/CNPJ" />
+                        <input type="text" name="recipientPhone" placeholder="Telefone" />
+                      </div>
+                    </details>
                     <input type="hidden" name="recipientSignatureX" />
                     <input type="hidden" name="recipientSignatureY" />
                     <input type="hidden" name="recipientSignaturePage" />
@@ -127,23 +145,57 @@
               <input type="hidden" id="senderSignaturePositions" name="senderSignaturePositions" />
             </div>
 
+            <div class="field-panel signature-field-panel" style="margin-top:14px;">
+              <div class="content-title">Campos visíveis</div>
+              <div class="content-sub">Selecione o campo e clique no PDF para posicionar. A marcação pode ser removida clicando nela.</div>
+              <div class="signature-field-toolbar" role="toolbar" aria-label="Campos de assinatura">
+                <button type="button" class="signature-field-button is-active" data-field-type="signature">Assinatura</button>
+                <button type="button" class="signature-field-button" data-field-type="rubric">Rubrica</button>
+                <button type="button" class="signature-field-button" data-field-type="name">Nome</button>
+                <button type="button" class="signature-field-button" data-field-type="document">CPF</button>
+                <button type="button" class="signature-field-button" data-field-type="date">Data</button>
+              </div>
+              <label class="field-label" for="signatureRepeatMode" style="margin-top:12px;">Repetir campo</label>
+              <select id="signatureRepeatMode">
+                <option value="page">Apenas nesta página</option>
+                <option value="all">Repetir em todas as páginas</option>
+                <option value="except-last">Repetir em todas as páginas exceto a última</option>
+              </select>
+            </div>
+
+              </aside>
+
+              <section class="signature-document-stage">
+                <div class="signature-stage-head">
+                  <div>
+                    <strong>Pré-visualização do documento</strong>
+                    <span>Role pelas páginas e clique no local onde cada campo deve aparecer.</span>
+                  </div>
+                  <span class="status-pill is-blue">PDF/A visual</span>
+                </div>
             <div id="uploadDocumentFields" style="margin-top:12px;">
               <div class="pdf-signature-preview" id="pdfSignaturePreview" hidden>
                 <div id="pdfPages" class="pdf-signature-pages" aria-label="Pré-visualização do PDF"></div>
+              </div>
+              <div class="signature-upload-drop" id="signatureUploadDrop">
+                <strong>Arraste o documento aqui</strong>
+                <span>ou selecione o arquivo PDF no painel lateral para pré-visualizar.</span>
               </div>
             </div>
 
             <div class="form-actions" style="text-align:right; margin-top:14px;">
               <button type="submit" class="btn btn-primary">Gerar links / enviar e-mails</button>
             </div>
+              </section>
+            </div>
           </form>
         </section>
 
-        <section class="content-card">
+        <section class="content-card signature-documents-panel">
           <div class="documents-section-title">
             <div>
-              <div class="content-title">Links e auditoria</div>
-              <div class="content-sub">Acompanhe cada contrato, seus destinatários e a assinatura do usuário.</div>
+              <div class="content-title">Documentos em Minha organização</div>
+              <div class="content-sub">Acompanhe signatários, envio, abertura, assinatura e evidências de cada documento.</div>
             </div>
           </div>
 
@@ -152,12 +204,29 @@
           <% } else { %>
             <div class="signature-request-list">
               <% signatureGroups.forEach(function(group) { %>
+                <%
+                  const signedCount = group.requests.filter(function(request) { return request.status === 'SIGNED'; }).length;
+                  const activeCount = group.requests.filter(function(request) { return request.status !== 'CANCELED'; }).length || group.requests.length;
+                  const pendingCount = Math.max(activeCount - signedCount, 0);
+                  const groupStatusLabel = pendingCount > 0 ? `Aguardando (${signedCount} de ${activeCount})` : `Concluído (${signedCount} de ${activeCount})`;
+                %>
                 <article class="signature-request-card">
                   <div class="signature-request-head">
                     <div class="signature-request-person">
                       <div class="record-title"><%= group.document?.title || 'Contrato' %></div>
-                      <div class="record-sub"><%= group.recipientRequests.length %> destinatário(s) · <%= group.senderRequest ? 'com assinatura do usuário' : 'sem assinatura do usuário' %></div>
+                      <div class="record-sub"><%= group.document?.createdAt ? new Date(group.document.createdAt).toLocaleString('pt-BR') : '' %></div>
                     </div>
+                    <span class="status-pill <%= pendingCount > 0 ? 'is-yellow' : 'is-green' %>"><%= groupStatusLabel %></span>
+                  </div>
+                  <div class="signature-card-signers">
+                    <% group.requests.forEach(function(request) { %>
+                      <div class="<%= request.status === 'SIGNED' ? 'is-signed' : 'is-pending' %>">
+                        <span><%= request.status === 'SIGNED' ? '✓' : '◷' %></span>
+                        <strong><%= request.signatureSource === 'SENDER' ? 'Usuário remetente' : (request.signerName || request.signerEmail || 'Destinatário') %></strong>
+                      </div>
+                    <% }) %>
+                  </div>
+                  <div class="signature-request-head signature-request-actions-head">
                     <% if (group.senderRequest && group.senderRequest.status !== 'SIGNED' && group.senderRequest.status !== 'CANCELED' && group.senderRequest.status !== 'BLOCKED') { %>
                       <a class="btn btn-primary" href="<%= group.senderRequest.publicUrl %>" target="_blank" rel="noopener noreferrer">Assinar como remetente</a>
                     <% } else if (group.senderRequest && group.senderRequest.status === 'SIGNED') { %>
@@ -241,9 +310,13 @@
       const pdfSignaturePreview = document.getElementById("pdfSignaturePreview");
       const pdfPages = document.getElementById("pdfPages");
       const signaturePositionLabel = document.getElementById("signaturePositionLabel");
+      const signatureUploadDrop = document.getElementById("signatureUploadDrop");
+      const signatureRepeatMode = document.getElementById("signatureRepeatMode");
       let activeTarget = "sender";
+      let activeFieldType = "signature";
       let recipientIndex = 1;
       let renderedPdfUrl = null;
+      let renderedPageCount = 0;
 
       if (window.pdfjsLib) {
         pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
@@ -261,6 +334,21 @@
         return email || `Destinatário ${Number(index) + 1}`;
       }
 
+      function fieldTypeLabel(type) {
+        const labels = {
+          signature: "Assinatura",
+          rubric: "Rubrica",
+          name: "Nome",
+          document: "CPF",
+          date: "Data",
+        };
+        return labels[type] || "Assinatura";
+      }
+
+      function markerText(target, type) {
+        return `${fieldTypeLabel(type)} · ${markerLabel(target)}`;
+      }
+
       function updateContactFields(row) {
         const emailInput = row.querySelector('input[name="recipientEmail"]');
         const contact = findSuggestion(emailInput.value);
@@ -268,15 +356,16 @@
         row.querySelector('input[name="recipientDocument"]').value = contact?.document || "";
         row.querySelector('input[name="recipientPhone"]').value = contact?.phone || "";
         const target = `recipient:${row.dataset.recipientIndex}`;
-        const marker = pdfPages.querySelector(`[data-target="${target}"]`);
-        if (marker) marker.textContent = markerLabel(target);
+        pdfPages.querySelectorAll(`[data-target="${target}"]`).forEach((marker) => {
+          marker.textContent = markerText(target, marker.dataset.fieldType || "signature");
+        });
       }
 
       function wireRecipientRow(row) {
         row.querySelector('input[name="recipientEmail"]').addEventListener("input", () => updateContactFields(row));
         row.querySelector(".signature-select-target").addEventListener("click", (event) => {
           activeTarget = event.currentTarget.dataset.target;
-          signaturePositionLabel.textContent = `Clique no PDF para marcar: ${markerLabel(activeTarget)}.`;
+          signaturePositionLabel.textContent = `Clique no PDF para marcar ${fieldTypeLabel(activeFieldType)}: ${markerLabel(activeTarget)}.`;
         });
       }
 
@@ -293,9 +382,14 @@
               <button class="btn signature-select-target" type="button" data-target="recipient:${index}">Marcar assinatura</button>
               <button class="btn signature-remove-recipient" type="button">Remover</button>
             </div>
-            <input type="hidden" name="recipientName" />
-            <input type="hidden" name="recipientDocument" />
-            <input type="hidden" name="recipientPhone" />
+            <details class="signature-extra-options">
+              <summary>Mais opções +</summary>
+              <div class="grid-3">
+                <input type="text" name="recipientName" placeholder="Nome completo" />
+                <input type="text" name="recipientDocument" placeholder="CPF/CNPJ" />
+                <input type="text" name="recipientPhone" placeholder="Telefone" />
+              </div>
+            </details>
             <input type="hidden" name="recipientSignatureX" />
             <input type="hidden" name="recipientSignatureY" />
             <input type="hidden" name="recipientSignaturePage" />
@@ -370,11 +464,11 @@
       function updatePositionSummary(fields, positions) {
         if (!fields?.summary) return;
         if (!positions.length) {
-          fields.summary.textContent = "Assinatura ainda não marcada.";
+          fields.summary.textContent = "Nenhum campo marcado.";
           return;
         }
         const pages = [...new Set(positions.map((position) => Number(position.page)).filter(Boolean))].sort((a, b) => a - b);
-        fields.summary.textContent = `${positions.length} assinatura(s) marcada(s) na(s) página(s): ${pages.join(", ")}.`;
+        fields.summary.textContent = `${positions.length} campo(s) marcado(s) na(s) página(s): ${pages.join(", ")}.`;
       }
 
       function removeTargetMarker(target, markerIndex) {
@@ -386,35 +480,56 @@
         signaturePositionLabel.textContent = `Marcação removida para ${markerLabel(target)}.`;
       }
 
-      function setTargetCoordinates(target, pageNumber, x, y) {
-        const fields = fieldsForTarget(target);
-        if (!fields) return;
-        const positions = readPositions(fields);
-        const markerIndex = Date.now() + Math.floor(Math.random() * 1000);
-        positions.push({
-          index: markerIndex,
-          page: pageNumber,
-          x: Number(x.toFixed(4)),
-          y: Number(y.toFixed(4)),
-        });
-        writePositions(fields, positions);
+      function pagesForRepeat(clickedPage) {
+        const mode = signatureRepeatMode?.value || "page";
+        if (mode === "all") {
+          return Array.from({ length: renderedPageCount || clickedPage }, (_item, index) => index + 1);
+        }
+        if (mode === "except-last") {
+          const count = Math.max(1, (renderedPageCount || clickedPage) - 1);
+          return Array.from({ length: count }, (_item, index) => index + 1);
+        }
+        return [clickedPage];
+      }
 
+      function addMarkerElement(target, markerIndex, pageNumber, x, y, fieldType) {
         const marker = document.createElement("button");
         marker.type = "button";
         marker.className = target === "sender" ? "signature-marker is-sender" : "signature-marker";
         marker.dataset.target = target;
         marker.dataset.markerIndex = String(markerIndex);
+        marker.dataset.fieldType = fieldType;
         marker.title = "Clique para remover esta marcação";
         marker.addEventListener("click", (event) => {
           event.stopPropagation();
           removeTargetMarker(target, markerIndex);
         });
-        marker.textContent = markerLabel(target);
+        marker.textContent = markerText(target, fieldType);
         marker.style.left = `${x * 100}%`;
         marker.style.top = `${y * 100}%`;
         const page = pdfPages.querySelector(`[data-page-number="${pageNumber}"] .pdf-signature-marker-layer`);
         page?.appendChild(marker);
-        signaturePositionLabel.textContent = `Assinatura marcada para ${markerLabel(target)} na página ${pageNumber}. Clique na marcação para excluir.`;
+      }
+
+      function setTargetCoordinates(target, pageNumber, x, y) {
+        const fields = fieldsForTarget(target);
+        if (!fields) return;
+        const positions = readPositions(fields);
+        const targetPages = pagesForRepeat(pageNumber);
+        targetPages.forEach((targetPage) => {
+          const markerIndex = Date.now() + Math.floor(Math.random() * 100000);
+          const position = {
+            index: markerIndex,
+            page: targetPage,
+            x: Number(x.toFixed(4)),
+            y: Number(y.toFixed(4)),
+            type: activeFieldType,
+          };
+          positions.push(position);
+          addMarkerElement(target, markerIndex, targetPage, x, y, activeFieldType);
+        });
+        writePositions(fields, positions);
+        signaturePositionLabel.textContent = `${fieldTypeLabel(activeFieldType)} marcada para ${markerLabel(target)} em ${targetPages.length} página(s). Clique na marcação para excluir.`;
       }
 
       async function renderPdfPreview(file) {
@@ -425,7 +540,9 @@
         }
         const buffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+        renderedPageCount = pdf.numPages;
         pdfPages.innerHTML = "";
+        if (signatureUploadDrop) signatureUploadDrop.hidden = true;
         for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
           const page = await pdf.getPage(pageNumber);
           const containerWidth = Math.min(920, Math.max(320, pdfSignaturePreview.clientWidth - 36));
@@ -463,7 +580,14 @@
       document.querySelectorAll(".signature-select-target").forEach((button) => {
         button.addEventListener("click", (event) => {
           activeTarget = event.currentTarget.dataset.target;
-          signaturePositionLabel.textContent = `Clique no PDF para marcar: ${markerLabel(activeTarget)}.`;
+          signaturePositionLabel.textContent = `Clique no PDF para marcar ${fieldTypeLabel(activeFieldType)}: ${markerLabel(activeTarget)}.`;
+        });
+      });
+      document.querySelectorAll(".signature-field-button").forEach((button) => {
+        button.addEventListener("click", () => {
+          activeFieldType = button.dataset.fieldType || "signature";
+          document.querySelectorAll(".signature-field-button").forEach((item) => item.classList.toggle("is-active", item === button));
+          signaturePositionLabel.textContent = `Campo selecionado: ${fieldTypeLabel(activeFieldType)}. Clique no PDF para marcar ${markerLabel(activeTarget)}.`;
         });
       });
       document.querySelectorAll(".signature-recipient-row").forEach(wireRecipientRow);
@@ -476,11 +600,37 @@
         renderedPdfUrl = URL.createObjectURL(file);
         clearAllSignaturePositions();
         pdfPages.innerHTML = "";
+        if (signatureUploadDrop) signatureUploadDrop.hidden = true;
         renderPdfPreview(file).catch(() => {
           pdfSignaturePreview.hidden = false;
+          if (signatureUploadDrop) signatureUploadDrop.hidden = true;
           pdfPages.innerHTML = '<div class="section-note">Não foi possível abrir a pré-visualização deste PDF.</div>';
         });
       });
+
+      if (signatureUploadDrop) {
+        signatureUploadDrop.addEventListener("click", () => signaturePdf.click());
+        ["dragenter", "dragover"].forEach((eventName) => {
+          signatureUploadDrop.addEventListener(eventName, (event) => {
+            event.preventDefault();
+            signatureUploadDrop.classList.add("is-dragging");
+          });
+        });
+        ["dragleave", "drop"].forEach((eventName) => {
+          signatureUploadDrop.addEventListener(eventName, (event) => {
+            event.preventDefault();
+            signatureUploadDrop.classList.remove("is-dragging");
+          });
+        });
+        signatureUploadDrop.addEventListener("drop", (event) => {
+          const file = event.dataTransfer?.files?.[0];
+          if (!file) return;
+          const transfer = new DataTransfer();
+          transfer.items.add(file);
+          signaturePdf.files = transfer.files;
+          signaturePdf.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+      }
 
       pdfSignaturePreview.addEventListener("click", (event) => {
         if (event.target.closest(".signature-marker")) return;

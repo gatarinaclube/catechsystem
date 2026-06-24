@@ -1961,9 +1961,10 @@ let receivableCents = 0;
 let receivableCount = 0;
 const attentionLimitDate = new Date(today);
 attentionLimitDate.setDate(attentionLimitDate.getDate() + 15);
-const nextTenDays = new Date(today);
-nextTenDays.setDate(nextTenDays.getDate() + 10);
+const nextFifteenDays = new Date(today);
+nextFifteenDays.setDate(nextFifteenDays.getDate() + 15);
 const receivableAttention = [];
+const nextReceivableItems = [];
 let nextReceivableCents = 0;
 let nextReceivableCount = 0;
 monthRevenues.forEach((revenue) => {
@@ -1974,13 +1975,22 @@ monthRevenues.forEach((revenue) => {
     if (parcel.paid && parcelDate >= monthStart && parcelDate < nextMonthStart) {
       monthRevenueCents += amount;
     }
-    if (!parcel.paid && parcelDate >= today) {
+    if (!parcel.paid && !parcel.canceled && parcelDate >= today) {
       receivableCents += amount;
       receivableCount += 1;
     }
-    if (!parcel.paid && !parcel.canceled && parcelDate >= today && parcelDate <= nextTenDays) {
+    if (!parcel.paid && !parcel.canceled && parcelDate >= today && parcelDate <= nextFifteenDays) {
       nextReceivableCents += amount;
       nextReceivableCount += 1;
+      nextReceivableItems.push({
+        date: parcelDate,
+        dateLabel: dateLabel(parcelDate),
+        title: revenue.kittenLabel || "Receita",
+        client: revenue.client?.fullName || "",
+        parcelLabel: `Parcela ${index + 1}`,
+        amountLabel: moneyLabel(amount),
+        href: `/receitas/${revenue.id}`,
+      });
     }
     if (!parcel.paid && parcelDate <= attentionLimitDate) {
       receivableAttention.push({
@@ -2001,14 +2011,30 @@ const nextPayables = await prisma.accountPayable.findMany({
   where: {
     ...userScope,
     status: "PENDING",
-    dueDate: { gte: today, lte: nextTenDays },
+    dueDate: { gte: today, lte: nextFifteenDays },
   },
-  select: { amountCents: true },
+  select: {
+    id: true,
+    supplier: true,
+    category: true,
+    description: true,
+    amountCents: true,
+    dueDate: true,
+  },
+  orderBy: [{ dueDate: "asc" }, { supplier: "asc" }],
 });
 const nextPayableCents = nextPayables.reduce(
   (sum, row) => sum + Number(row.amountCents || 0),
   0
 );
+const nextPayableItems = nextPayables.map((payable) => ({
+  id: payable.id,
+  dateLabel: dateLabel(payable.dueDate),
+  title: payable.supplier || payable.description || "Conta a pagar",
+  sub: [payable.category, payable.description].filter(Boolean).join(" · "),
+  amountLabel: moneyLabel(payable.amountCents),
+  href: "/administrativo/contas-a-pagar",
+}));
 
 const weighingAttentionPlans = await prisma.weighingPlan.findMany({
   where: {
@@ -2181,8 +2207,10 @@ const administrativePanel = {
     balanceLabel: moneyLabel(monthRevenueCents - monthExpenseCents),
     nextReceivableLabel: moneyLabel(nextReceivableCents),
     nextReceivableCount,
+    nextReceivableItems: nextReceivableItems.sort((a, b) => a.date - b.date).slice(0, 8),
     nextPayableLabel: moneyLabel(nextPayableCents),
     nextPayableCount: nextPayables.length,
+    nextPayableItems: nextPayableItems.slice(0, 8),
   },
 };
 

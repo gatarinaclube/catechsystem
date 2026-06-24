@@ -1,0 +1,217 @@
+IDENTIFICAÇÃO DAS PARTES CONTRATANTES
+
+VENDEDOR: {{vendedorQualificacao}}
+COMPRADOR: {{compradorQualificacao}}
+As partes acima identificadas têm, entre si, justo e acertado o presente Contrato de Responsabilidade de Cuidados, Compra e Venda, que se regerá pelas cláusulas seguintes e pelas condições descritas no presente. 
+DO OBJETO DO CONTRATO
+
+Cláusula 1ª. O presente contrato tem como OBJETO, o animal abaixo identificado:
+
+{{gatoFicha}}
+
+Cláusula 2ª. O COMPRADOR declara estar ciente de que o animal objeto deste Contrato é um ser vivo que sente alegria, afeição, saudade, fome, sede, frio, calor, medo e dor. Além disso, necessita comer, beber, dormir e fazer suas necessidades fisiológicas diariamente, além de brincar, descansar, interagir com pessoas e objetos (inclusive podendo danificá-los). Pode adoecer, sendo necessário tratá-lo convenientemente. Pode viver por menos de um ano, ou muitos anos até finalmente morrer. Pode, ainda, causar alergias em seres humanos, ou (por determinação médica) não ser indicado para o convívio direto com mulheres grávidas e/ou crianças. A raça possui maior probabilidade de verbalização, podendo miar mais que o normal.
+Cláusula 3ª. O VENDEDOR garante que o animal objeto deste Contrato é “de raça pura”, e está dentro dos padrões estéticos e comportamentais da raça, mas não se responsabiliza pelas características futuras do mesmo, tais como: beleza, tamanho, peso, temperamento, comportamento, capacidade reprodutiva, perfil e ou desempenho apropriado para competições e ou exposições, visto que os cuidados, condições de manejo e o ambiente poderão influenciar no seu desenvolvimento.
+Cláusula 4ª. O VENDEDOR garante que o animal objeto deste Contrato foi devidamente avaliado por médico veterinário e: 
+(a) encontra-se em perfeito estado de saúde; 
+(b) está devidamente vermifugado e desparasitado; 
+(c) está adequadamente vacinado com vacina importada, aplicada por médico veterinário, sendo administradas todas as vacinas aplicáveis ao animal até o momento da entrega, conforme evidenciado na carteira de vacinação que o acompanha (Vacina Feline IV e Antirrábica).
+(d) está assegurado de não desenvolver cegueira hereditária pela doença Atrofia de Retina Progressiva (PRA-b), conforme exames realizados nos pais;
+(e) está assegurado de não desenvolver anemia hereditária pela Deficiência da enzima Piruvato Quinase (PKDef), conforme exames realizados nos pais;
+Cláusula 5ª. O COMPRADOR declara ter tido a oportunidade de observar suficiente e satisfatoriamente os aspectos estéticos do animal objeto deste Contrato, através de fotografias e ou vídeos, anteriormente à aquisição, não sofrendo qualquer forma de coerção que o levasse a adquiri-lo. 
+Cláusula 6ª. O COMPRADOR declara ter sido orientado a somente receber o animal objeto deste Contrato em adequadas condições de higiene, consciente e sem qualquer sinal de maus tratos, deformidades físicas ou sintomas visíveis indicadores da presença de ectoparasitas, dermatoses, infecções ou doenças sistêmicas infectocontagiosas. Ciente que pequenas alterações na ponta das orelhas e patas em alguns casos podem aparecer devido a higienização e excesso de lambedura da mãe, durante os primeiros dias de vida. Assim como pode apresentar pequenas verrugas de nascença em seu corpo. Filhotes da raça {{raca}} são mais sensíveis e têm maior probabilidade de desestabilização por baixa imunidade ocasionado por estresse, onde quadros de diarréia, corrimento nasal, secreção ocular ou outras alterações podem acontecer com maior frequência durante seu período filhote/jovem, primeiros dias/meses de adaptação, ficando por responsabilidade do COMPRADOR a estabilização e cuidados com o filhote após a entrega.  Devendo o COMPRADOR submeter este animal a exame veterinário da sua escolha, nos 3 (três) primeiros dias de posse do mesmo, e obter por escrito atestado de saúde. Esse atestado deve ser enviado ao VENDEDOR via e-mail ({{vendedorEmail}}).
+Cláusula 7ª. O {{gatil}} tem como objetivo o desenvolvimento, o   aprimoramento e a difusão da raça. Assegura linhagens de sangue puras, mantém plantel com padreadores e matrizes registrados, obedecendo aos padrões da raça ditados pela Federação Internacional de Felinos (FIFe) e Federação Felina Brasileira (FFB). Os valores arrecadados com a venda de seus filhotes, são revertidos no melhoramento genético e qualidade de vida de seu plantel.
+
+DA ENTREGA
+
+Cláusula 8ª. O momento da entrega do animal objeto deste contrato está prevista para ser realizada a partir do dia 09 de julho de 2026, preferencialmente no endereço do VENDEDOR, neste caso sem custos adicionais ao COMPRADOR. Ficando por responsabilidade do COMPRADOR os cuidados de transporte e adaptação após a entrega do filhote, inclusive de estabilização de imunidade ocasionado pela viagem.
+Parágrafo Primeiro. Em caso de indisponibilidade do COMPRADOR em realizar a retirada no endereço do VENDEDOR, o COMPRADOR poderá optar pelo recebimento em Chapecó/SC, com transporte terrestre realizado pelo VENDEDOR, a princípio em data próxima a dia 10 de julho de 2026, conforme disponibilidade e logística do VENDEDOR. Neste caso, fica acertado que o COMPRADOR pagará ao VENDEDOR pelo transporte o valor de R$500,00 (quinhentos reais) referente aos custos de transporte. Ficando por responsabilidade do COMPRADOR os cuidados após o recebimento do filhote, inclusive de estabilização de imunidade ocasionado pela viagem.
+Parágrafo Segundo. Caso por algum motivo o COMPRADOR não consiga realizar a retirada no endereço do VENDEDOR, ou o VENDEDOR não possa realizar a entrega/envio em data determinada na Cláusula 8ª e seus parágrafos, por qualquer motivo, inclusive por indisponibilidade pessoal, restrições pandêmicas, indisponibilidade ou alterações de malha aérea, bloqueio de rodovias por acidentes ou greves, o VENDEDOR responsabiliza-se em realizar a entrega ou envio em data mais breve possível, conforme normalização da situação de impedimento de envio/entrega, sendo necessário o COMPRADOR aguardar por nova disponibilidade de deslocamento e logística do VENDEDOR, onde em algumas situações poderá ser necessário o COMPRADOR realizar a retirada em aeroporto com melhor logística aérea. Fica acordado que nestes casos todos os custos de entrega/envio são por conta do COMPRADOR, principalmente em necessidade de entrega por via aérea na cabine acompanhado. 
+Cláusula 9ª. O COMPRADOR deve submeter este animal a exame veterinário da sua escolha, nos 3 (três) primeiros dias de posse do mesmo, e obter por escrito atestado de saúde. Esse atestado deve ser enviado ao VENDEDOR via e-mail ({{vendedorEmail}}).
+Cláusula 10ª. A partir do momento da entrega, fica o COMPRADOR responsável por garantir a integridade física e mental, e saúde do animal, de forma que quaisquer danos ao animal depois da entrega são de inteira responsabilidade do COMPRADOR, além de incorrerem na perda imediata de todas as garantias deste Contrato.
+Parágrafo Único. A adaptação de um filhote da raça {{raca}}, em um novo ambiente, pode levar até 15 (quinze) dias, período que pode ser influenciado conforme atenção e condições fornecidas ao filhote desde os primeiros minutos da sua chegada. 
+
+DOS CUIDADOS COM O ANIMAL E RESPONSABILIDADES 
+
+Cláusula 11ª. O COMPRADOR declara: 
+(a) estar ciente que receberá do VENDEDOR, todas as orientações para adequado transporte, manejo, alimentação e cuidado com o animal objeto deste Contrato, através do “Manual de Cuidados Básicos {{gatil}}”, em arquivo digital enviado por e-mail após a realização do pagamento, onde deverá garantir a leitura e aplicabilidade das orientações;
+(b) estar ciente que a remoção das unhas, corte das cordas vocais ou mutilação da cauda e orelha do animal objeto deste Contrato constitui crime, de acordo com a Resolução no 877/08 do CFMV, baseada no artigo no 32 da Lei no 9605/98.
+Cláusula 12ª. A partir do momento da entrega, o COMPRADOR assume a RESPONSABILIDADE de cuidar do bem-estar e da saúde do animal objeto deste Contrato, comprometendo-se a: 
+(a) transportá-lo de forma adequada e segura, em contêiner de transporte adequadamente construído fechado e arejado, com espaço suficiente para o animal ficar em pé e girar 360º sobre o seu eixo vertical; 
+(b) prover ao animal, desde os primeiros minutos, ambiente agradável, protegido, seguro, higiênico, dotado de estruturas que permitam que ele se exercite, brinque e se desenvolva de forma saudável; 
+(c) não confinar o animal em gaiolas, banheiros, lavanderia, depósitos, garagem, sacadas, baias ou locais insalubres, nem que possibilitem a sua fuga;
+(d) providenciar para os primeiros 3 (três) dias um cômodo seguro, e exclusivo, o qual deve ser preparado conforme orientações, eliminando todos os locais em que o filhote possa se esconder, como espaço embaixo da cama, cômoda, atrás de armários, sofás e qualquer outro móvel do local. Somente permitir que o filhote explore outros ambientes após estar muito bem adaptado e já demonstra confiança na nova família. 
+(e) não permitir o contato do animal com produtos e/ou embalagens que contenham material ou resíduos químicos, tóxicos e corrosivos, como por exemplo produtos de higiene e limpeza;
+(f) disponibilizar ração e água potável em comedouro e bebedouro adequados para estes fins, em quantidades suficientes e em adequadas condições higiênico-sanitárias; 
+(g) fornecer ao animal desde o primeiro dia de sua chegada, exclusivamente ração Super Premium, mantendo pelo período mínimo de 30 (trinta) dias, a mesma ração fornecida antes do momento da entrega: Ração Royal Canin (Hair & Skin e/ou Kitten), embalagem de 1.500 gramas (um mil e quinhentas gramas), filhotes possuem maior probabilidade de desconfortos e inflamações intestinais, onde em alguns casos pode ser necessário oferecer a ração Gastrointestinal Care, também da Royal Canin.
+(h) em caso de baixa imunidade oferecer diariamente ou semanalmente, conforme orientação veterinária, suplementação com Nuxcell Fell, Lisyn Cat e Promum Cat.
+(i) fornecer ao animal, pelo período mínimo de 14 (quatorze) dias, iniciando no primeiro dia de sua chegada, uma vez ao dia, 2,0g de probiótico Beneflora Vet da AVERT, a fim de fortalecer sua função intestinal; 
+(j) fornecer ao animal, nos 3 (três) primeiros dias, iniciando no primeiro dia de sua chegada, uma bisnaga de 3ml por dia de Promum Defense Boost Cat, continuando a manutenção administrando uma dose a cada 7 (sete) dias, a fim de fortalecer sua imunidade;
+(k) submetê-lo a acompanhamento veterinário entre os 3 (três) primeiros dias após sua chegada, conforme Cláusula 9ª deste contrato, quando necessário e também quando orientado pelo VENDEDOR; 
+(l) manter atualizadas as vacinações e vermifugações periódicas, de acordo com orientações impressas na carteira de vacinação que o acompanha e do médico veterinário. Caso opte por realizar a vacinação para FeLV, está deve ser aplicada somente após 30 dias da chegada do filhote em sua nova residência.
+(m) administrar medicações, vermífugos, probióticos e qualquer tipo de medicação via oral com utilização de aplicador de ponta de silicone, com técnica de duas pessoas, não utilizando técnica de enrolar na toalha;
+(n) prover atividades físicas e lúdicas em áreas com dimensões, luminosidade, insolação e arejamento adequados ao desenvolvimento saudável do animal; 
+(o) não deixar o animal sozinho ou desassistido por mais de uma hora, durante os primeiros 3 (três) dias da sua chegada, após os primeiros 3 (três) dias não deixar o animal sozinho ou desassistido por períodos superiores a 24 (vinte e quatro) horas; 
+(p) não agredir o animal de qualquer forma, ou em qualquer grau, física ou verbalmente; 
+(q) não possibilitar, facilitar, oferecer condições propositais para que o animal realize caça de insetos, roedores, serpentes, aracnídeos e/ou qualquer ser vivo peçonhento, toxico ou transmissor de parasitas e doenças;
+(r) não permitir que o animal tenha contato com outros animais, receba visitas, frequente lugares públicos ou de alto contágio, pelo período de no mínimo 15 (quinze) dias após a sua chegada; 
+(s) oferecer caixa higiênica exclusiva, com tamanho adequado e com material higiênico a base de mineral de origem sedimentar vulcânica 100% natural (Diatomita), extra fina, ou Pellet durante os primeiros 15 (quinze) dias da sua chegada.
+(t) instalar antes do recebimento do animal, rede de proteção em todas as janelas e sacadas, da casa ou apartamento, para evitar fugas ou quedas;
+(u) não permitir que o animal vagueie livremente fora das dependências de sua residência, salvo com acompanhamento e na contenção de guias, quando a residência for cercada por muros deve ser providenciado tecnologias que evitem que o animal ultrapasse os limites da área privativa dos muros;
+(v) realizar exames de HIV e Leucemia Felina (FIV e FeLV), em qualquer outro gato que venha a ter contato com o filhote deste contrato;
+(w) verificar e eliminar o contato com plantas ou produtos tóxicos;
+(x) ler com atenção e seguir todas as orientações e responsabilidades descritas no “Manual de Cuidados Básicos Gatil TomiFerr Bengas”.
+Cláusula 13ª. A inobservância de qualquer dos cuidados citados no Parágrafo 12º, desobriga o VENDEDOR de quaisquer ônus relativos à diagnose, investigação e tratamento de quaisquer doenças que acometem o animal, incorrendo na perda imediata das garantias deste Contrato. Fica estabelecido entre as partes que, neste caso, o animal será imediatamente restituído ao VENDEDOR. Em situações graves que possam constituir como maus tratos ao animal, o VENDEDOR poderá denunciar o caso às autoridades competentes. Fica acordado que nenhum valor será restituído ao COMPRADOR.
+Parágrafo Único: A inobservância de qualquer dos cuidados, citados na Cláusula 12º, quando o animal objeto deste contrato ainda não tenha sido entregue, desobriga o VENDEDOR de realizar a entrega do animal objeto deste contrato, podendo o VENDEDOR cancelar o contrato caso o COMPRADOR não concorde e/ou não realize as orientações/solicitações citadas. Fica acordado também que nenhum valor será restituído ao COMPRADOR.
+
+DAS GARANTIAS 
+
+Cláusula 14ª. As garantias deste Contrato abrangem: 
+(a) todas as doenças genéticas possivelmente pré-existentes, cujos sinais e sintomas sejam detectados em até 7 (sete) dias após o momento da entrega do animal, com diagnóstico evidenciado através de laudo médico-veterinário, comprovado com exames laboratoriais realizados/coletados em até 7 (sete) dias após o recebimento do filhote; ou... 
+(b) todas as características, comportamentos anormais ou desvios do padrão da raça, detectados até 7 (sete) dias após o momento da entrega do animal, evidenciado através de laudo médico-veterinário.
+(c) morte causada pela doença autossômica recessiva Deficiência da Enzima Piruvato Quinase (PKDef), com diagnóstico evidenciado através de exame K/K, laudado pela University of California, Davis, associado a exames dos pais portadores da doença; 
+(d) cegueira causada pela doença autossômica recessiva Atrofia Progressiva da Retina da raça {{raca}} (PRA-b), com diagnóstico evidenciado através de exame PRA/PRA, laudado pela University of California, Davis, associado a exames dos pais portadores da doença;
+(e) morte causada pela doença Cardiopatia Hipertrófica Felina (HCM), cujos sinais e sintomas sejam detectados até o animal completar 2 (dois) anos de idade, com diagnóstico evidenciado através de exame de Ecocardiodoppler, em vida, laudado por médico veterinário cardiologista, complementado com exame, através de Biologia Molecular, negativo para Mycoplasmose.
+(f) morte ocorrida durante o transporte aéreo do VENDEDOR ao COMPRADOR, enquanto estiver em responsabilidades e cuidados da companhia aérea contratada.
+Cláusula 15ª. Caso o animal objeto deste Contrato apresente as condições descritas na Cláusula 14ª, conjunta ou isoladamente, obriga-se o COMPRADOR a: 
+(a) notificar imediatamente o VENDEDOR, através de seus canais de comunicação enviando os laudos e exames conforme descritos na Cláusula 14ª; e 
+(b) apresentá-lo diretamente ao VENDEDOR ou ao médico veterinário contratado pelo VENDEDOR (Hospital Veterinário Unidade Animal, Rua Hilário Baú, número 106, Bairro Vila Paraíso, Caçador/SC, CEP: 89503-040), para definição das ações a serem tomadas para investigação, diagnose e tratamento. O custeio do transporte até as dependências do VENDEDOR ou do médico veterinário designado correm por conta do COMPRADOR; ou...: 
+(c) ...obter do VENDEDOR autorização, por escrito, para tomar todas as ações necessárias para investigação, diagnose e tratamento do animal, conforme definido pelas partes; ou...:
+(d) ...em caso de adoecimento, em que o quadro clínico do animal, em questão, possa ser agravado por uma transferência intermunicipal ou interestadual, seja por rodovia ou transporte aéreo para o endereço do vendedor, fica acordado o tratamento na cidade de residência atual do animal deste contrato, onde o COMPRADOR se compromete com os custos de estabilização do quadro e tratamento. 
+(e) ... em caso de morte durante o transporte aéreo entre o VENDEDOR ao COMPRADOR, o VENDEDOR se responsabiliza com os trâmites e resoluções junto a companhia aérea. O VENDEDOR se compromete a devolver o valor pago pelo filhote em até 30 (trinta dias), ou disponibilizar um novo filhote ao COMPRADOR, conforme disponibilidade do VENDEDOR. O COMPRADOR não deve receber o filhote caso constate que esteja inconsciente ou em óbito, comunicando imediatamente o COMPRADOR.
+Parágrafo Primeiro. No caso de necessidade de tratamento na cidade de residência atual do animal deste contrato, as ações necessárias para investigação, diagnóstico e tratamento serão definidas de comum acordo entre as partes, inclusive em algumas situações, sendo necessário o contato entre veterinários, do COMPRADOR e do VENDEDOR, para que seja discutido o quadro clínico do animal.
+Parágrafo Segundo. A inobservância das condições descritas na Cláusula 14ª e 15ª, e seus incisos, incorrerão na perda imediata das garantias deste Contrato.
+Cláusula 16ª. Atendidas as condições descritas na Cláusula 14ª e 15ª, fica o VENDEDOR obrigado a: 
+(a) tomar todas as ações necessárias para investigação, diagnóstico e tratamento do animal; ou... 
+(b) autorizar o COMPRADOR a tomar todas as ações necessárias para investigação, diagnóstico e tratamento do animal, conforme definido pelas partes. 
+Cláusula 17ª. O COMPRADOR compromete-se a seguir total e exclusivamente as determinações deste Contrato e as demais orientações do VENDEDOR, para que seja assegurada a adequada investigação, diagnóstico e tratamento do animal. A inobservância desta condição incorrerá na perda das garantias deste Contrato.
+Parágrafo Único. Caso ocorra falta, demora ou erro em tratamento indicado por médico veterinário, ou quando ocorrer tratamento sem diagnóstico evidenciado por exames, mesmo que indicado por Médico Veterinário, incorrerá na perda das garantias deste contrato.
+Cláusula 18ª. Atendidas as condições descritas na Cláusula 9ª, 14ª, 15ª, 16ª e 17ª, havendo óbito, o COMPRADOR apresentará ao VENDEDOR o cadáver do referido animal, juntamente com laudo de óbito e necropsia emitido por entidade pública legalmente habilitada, explicitando a causa mortis do animal. A inobservância desta condição incorrerá na perda imediata das garantias deste Contrato.
+
+DAS EXCLUSÕES DA GARANTIA 
+
+Cláusula 19ª. Visto que o objeto deste contrato é um ser vivo, e a adaptação, cuidados, condições de manejo e o ambiente poderão influenciar no desenvolvimento e saúde do filhote, o COMPRADOR isenta e desobriga o VENDEDOR da responsabilidade sobre qualquer mal físico, comportamental ou doença, que venha acometer o animal objeto deste Contrato depois de decorridos os períodos descritos na Cláusula 14ª, ou por não cumprimento das Cláusulas 9ª, 12ª, 15ª, 16ª 17ª e 18ª, mesmo que de origem congênita ou genética, e também nos casos de: Coronavírus Felino (FCoV), Peritonite Infecciosa Felina (PIF), Doença Inflamatória Intestinal (DII), Tritrichomonas foetus, Giardia spp, Insuficiência Renal, Vírus da Imunodeficiência Felina (FIV), Vírus da Leucemia Felina (FeLV), Lipidose Hepática, Sarcoma de Aplicação Felino (SAF), Panleucopenia Felina, Rinotraqueite, Herpesvirus Felino, Calicivirose, Pneumonite, Bortotella Bronchiseptica, Cryptosporidium spp, Chlamydophila Felis, Influenzae, Mycoplasma Felis, Dermatites, Pancreatites, Doenças Autoimunes, Tumores Malignos (Câncer), Epilepsia Idiopática ou de origem conhecida, Shunts portossistêmicos, distúrbios alimentares ou comportamentais inclusive PICA, fraturas, alopecia, estenose ou obstrução do ducto nasolacrimal, catarata, Síndrome do Ovário Remanescente, envenenamento, Intoxicação, queda, atropelamento, furto, maus tratos e/ou alimentação ou medicação inadequada. 
+Parágrafo Primeiro. Não é possível garantir que o filhote objeto deste contrato seja negativo para Coronavírus Felino (FCoV), pois essa contaminação é comum em felinos, inclusive não deve ser utilizado somente o resultado positivo do PCR do FCoV para diagnóstico de PIF.
+Parágrafo Segundo. Para controle e cuidados é realizado exames de protozoários, como Poll de PCR para Tritrichomonas foetus e Coproparasitológico para Giardia spp e Isosporoses, em todos os filhotes antes da entrega, porém não é possível garantir que animais provenientes de gatil/canil sejam livres destas contaminações, podendo apresentar sinais e sintomas durante e após períodos de estresse e baixa imunidade. Portanto o COMPRADOR concorda e está ciente que não é possível conceder garantia para contaminações por protozoários, assim como qualquer consequência proveniente destes.
+Parágrafo Terceiro. Devido a ser uma raça de origem híbrida, próxima com o Leopardo Asiático, gatos da raça {{raca}} podem possuir algumas características anatômicas diferentes das demais raças ou gatos, como por exemplo tamanho e características do fígado, baço, pâncreas e linfonodos. Portanto, é recomendável que qualquer avaliação clínica ou interpretação de exames laboratoriais e de imagem leve em consideração essas particularidades, evitando diagnósticos equivocados baseados em parâmetros de gatos domésticos convencionais e/ou de outras raças. Sendo assim, o COMPRADOR declara estar ciente que não há garantias devido a diagnósticos realizados apenas com parâmetros de gatos domésticos ou de outras raças. 
+Parágrafo Quarto. O VENDEDOR não se responsabiliza por catarata ou qualquer outro tipo de opacidade do cristalino, independentemente de sua origem, incluindo causas congênitas, hereditárias/genéticas, juvenis, degenerativas, traumáticas, inflamatórias, metabólicas ou adquiridas ao longo da vida do animal.
+Parágrafo Quinto. Quando o COMPRADOR não realizar a leitura ou não seguir as orientações realizadas no “Manual de Cuidados Básicos”, que receberá através do e-mail, desobriga o VENDEDOR de qualquer responsabilidade e garantias deste contrato.
+
+DAS DESPESAS 
+
+Cláusula 20ª. Atendidas as condições descritas na Cláusula 9ª, 12ª, 14º, 15ª, 16ª, 17ª e 18ª, todas as despesas decorrentes de procedimentos médicos veterinários, procedimentos investigativos, de diagnose e ou tratamento do animal, serão integralmente pagas pelo VENDEDOR, até que as condições ideais de saúde do animal sejam restabelecidas, ou que ele esteja estável hemodinamicamente para retornar a casa/gatil do VENDEDOR.
+Cláusula 21ª. As despesas descritas na Cláusula 20ª, eventualmente autorizadas pelo VENDEDOR e pagas pelo COMPRADOR, serão integralmente ressarcidas pelo VENDEDOR, em no máximo 30 (trinta) dias após a efetivação do pagamento e envio dos comprovantes.
+Cláusula 22ª. O COMPRADOR declara estar ciente e concorda que nenhuma das despesas descritas na Cláusula 20ª, ou qualquer outra despesa contratada e ou paga pelo COMPRADOR sem autorização pelo VENDEDOR, será ressarcida.
+Parágrafo único: O COMPRADOR está ciente que o VENDEDOR não tem nenhum compromisso em auxiliar ou custear despesas com tratamentos ou manutenção do Animal objeto deste contrato após a entrega ao COMPRADOR.
+
+DA DEVOLUÇÃO 
+
+Cláusula 23ª. A devolução do animal objeto deste Contrato ao VENDEDOR somente poderá ocorrer, mediante avaliação da saúde e aprovação pelo médico veterinário contratado pelo VENDEDOR (Hospital Veterinário Unidade Animal, Rua Hilário Baú, número 106, Bairro Vila Paraíso, Caçador/SC, CEP: 89503-040), e exclusivamente nas seguintes situações: 
+(a) pela manifestação de qualquer sintoma ou condição inadequada de saúde ou comportamento anormal descrito e evidenciando conforme Cláusula 14ª, sendo necessário comunicar a intenção de devolução em até 7 (sete) dias após o momento da entrega; ou... 
+(b) ...em caso de óbito, quando atendidas as condições da Cláusula 18ª; ou... 
+(c) ...por qualquer outro motivo do COMPRADOR, que não envolva a saúde do animal objeto deste Contrato, em até 7 (sete) dias após o momento da entrega. 
+Cláusula 24ª. O animal ou o seu cadáver deverá ser devolvido juntamente com todos os documentos entregues na assinatura deste Contrato, ou no momento da entrega ou ainda, posteriormente. A entrega do animal e dos documentos deverá ocorrer nas instalações do VENDEDOR, e na presença do médico veterinário contratado pelo VENDEDOR (Hospital Veterinário Unidade Animal, Rua Hilário Baú, número 106, Bairro Vila Paraíso, Caçador/SC, CEP: 89503-040). A inobservância desta condição incorrerá na perda imediata das garantias deste Contrato.
+Cláusula 25ª. O descumprimento de quaisquer das cláusulas deste Contrato isentará o VENDEDOR da obrigatoriedade de aceitação da devolução do animal.
+
+DO RESSARCIMENTO 
+
+Cláusula 26ª. Na devolução causada pela manifestação de qualquer sintoma de doença ou comportamento anormal descrito e evidenciado conforme Cláusula 14ª, e atendidas as condições das Cláusulas 9ª, 12ª, 14ª, 15ª, 16ª e 17ª, o VENDEDOR compromete-se a substituir o animal doente no prazo máximo de 90 (noventa) dias a contar da data de devolução, por outro da mesma espécie, raça, sexo e padrão. Depois de decorrido o prazo de 90 (noventa) dias, se o VENDEDOR não dispuser de outro animal com as mesmas características, o COMPRADOR será ressarcido em 100% (cem por cento) do valor pago pela aquisição do animal. 
+Cláusula 27ª. Na devolução causada por óbito, nas condições descritas na Cláusula 18ª, o VENDEDOR compromete-se a substituir o animal no prazo máximo de 90 (noventa) dias a contar da data de devolução, por outro da mesma espécie, raça, sexo e padrão. Depois de decorrido o prazo de 90 (noventa) dias, se o VENDEDOR não dispuser de outro animal com as mesmas características, o COMPRADOR será ressarcido em 100% (cem por cento) do valor pago pela aquisição do animal. 
+Cláusula 28ª. Na devolução por qualquer outro motivo do COMPRADOR, que não envolva a saúde do animal objeto deste Contrato, dentro do prazo determinado na Cláusula 23ª, fica estipulado que nenhum valor será restituído ao COMPRADOR, ou seja, NÃO será obrigado o VENDEDOR restituir o valor estipulado na cláusula 34ª deste contrato, o qual será utilizado para custear despesas administrativas, tempo, atenção, orientações, envio do manual de cuidados e demais prejuízos assim como os decorrentes da quarentena à qual será submetido o animal, após a devolução. Neste caso, somente será aceita a devolução do animal, durante o período de garantia estabelecido se este estiver em adequadas condições de higiene e saúde, e esta condição puder ser atestada pelo médico veterinário contratado pelo VENDEDOR (Hospital Veterinário Unidade Animal, Rua Hilário Baú, número 106, Bairro Vila Paraíso, Caçador/SC, CEP: 89503-040). Não haverá restituição de qualquer valor gasto com o animal objeto deste Contrato ou em função dele, durante o período em que permaneceu sob os cuidados do COMPRADOR. 
+Cláusula 29ª. Na devolução por qualquer motivo do COMPRADOR, após o prazo determinado na Cláusula 23ª, fica estipulado que nenhum valor será restituído ao COMPRADOR, ou seja, NÃO será obrigado o VENDEDOR restituir valores pagos pela compra do animal ou valores gastos durante o período que permaneceu sob cuidados do COMPRADOR. Neste caso, somente será aceita a devolução do animal, se este estiver em adequadas condições de higiene e saúde, e esta condição puder ser atestada pelo médico veterinário contratado pelo VENDEDOR (Hospital Veterinário Unidade Animal, Rua Hilário Baú, número 106, Bairro Vila Paraíso, Caçador/SC, CEP: 89503-040).
+Parágrafo Único. Nas situações descritas nas Cláusulas 28ª e 29ª, o animal devolvido permanecerá sob supervisão constante do médico veterinário contratado pelo VENDEDOR (Hospital Veterinário Unidade Animal, Rua Hilário Baú, número 106, Bairro Vila Paraíso, Caçador/SC, CEP: 89503-040), pelo período de 7 (sete) dias após a data da devolução. Se durante os 7 (sete) dias o animal apresentar qualquer sinal ou sintoma de doença infectocontagiosa, o COMPRADOR custeará todas as despesas relativas à diagnose, detecção e tratamento do animal, ainda que não estando mais de posse do mesmo.
+
+DA TROCA DE ANIMAIS 
+
+Cláusula 30ª. É vedado ao COMPRADOR o direito de realizar a troca deste animal após o mesmo completar 70 (setenta) dias de vida. Neste caso: 
+(a) se o animal já tiver sido entregue, deverá ser devolvido, nas condições descritas na Cláusula 28ª e 29ª, e novo animal deverá ser adquirido;
+(b) se o animal não tiver sido entregue e já ter completado 70 (setenta) dias de vida, deverá ser feito o cancelamento deste Contrato conforme descrito na Cláusula 41ª, e novo animal deverá ser adquirido.
+(c) Até o animal completar 70 (setenta) dias de vida, o COMPRADOR poderá realizar a troca do filhote escolhido por outro filhote disponível, porém caso o VENDEDOR não tenha filhote disponível ou tenha outras pessoas com preferência de escolha de filhotes, o COMPRADOR deverá aguardar a disponibilização de filhotes.
+	Parágrafo Único. Caso ocorra a solicitação de troca do filhote, antes de completar 70 (setenta) dias de vida, o COMPRADOR desobriga o VENDEDOR da devolução do valor já pago, ficando esse valor de crédito a ser descontado no próximo filhote escolhido. O COMPRADOR está ciente que não será garantido o mesmo valor para outros filhotes, os quais podem ter valores diferentes devido a atualização de mercado, padrão de pelagem e genética.
+
+DA CASTRAÇÃO 
+
+Cláusula 31ª. O animal objeto deste Contrato foi comercializado castrado, estando o COMPRADOR ciente que o animal é incapaz de reprodução.
+Parágrafo Primeiro. O procedimento de castração será realizado antes da data prevista de entrega, aproximadamente aos 105 (cento e cinco) dias de vida do filhote, conforme orientação veterinária. 
+Parágrafo Segundo. A cirurgia de castração possui riscos como qualquer outra, portanto em caso de complicação e óbito do filhote, aplica-se imediatamente o cancelamento do contrato, conforme cláusula 40ª deste contrato. 
+Parágrafo Terceiro. No momento da entrega, o filhote pode apresentar-se com tricotomia em região abdominal, nos testículos, nas patas e/ou região dorsal, devido ao procedimento cirúrgico.
+
+DA DOCUMENTAÇÃO 
+
+Cláusula 32ª. O Pedigree do animal objeto deste Contrato é entregue juntamente com os demais documentos no momento da entrega/envio do animal. Porém, caso ocorra atraso na emissão do Pedigree, conforme prazos estipulados pela Federação Felina Brasileira (FFB) e Federação Internacional Felina (FIFe), será enviado por meio postal para o endereço do COMPRADOR, especificado neste Contrato.
+Parágrafo Único. O Pedigree do animal objeto deste Contrato terá incluída a informação “NFB – Not For Breeding”.
+Cláusula 33ª. Serão enviados/entregues para o COMPRADOR, o Pedigree, Carteira de Vacinação, Certificado de Microchip, laudo negativo para HIV e Leucemia Felina (FIV e FeLV), Hemograma e Atestado de Saúde, do filhote. Cópia dos exames PKdef, PRA-b e HCM de ancestrais e/ou padreadores e matrizes do filhote.
+
+DO PAGAMENTO 
+
+Cláusula 34ª. O COMPRADOR pagará ao VENDEDOR, pela compra do animal objeto deste Contrato, o valor TOTAL de {{valorContrato}}, mais taxa de entrega/transporte/envio quando aplicável, conforme Artigo 8º e seus parágrafos.
+
+A forma de pagamento acordada entre as partes será: {{formaPagamento}}
+
+DA RENÚNCIA 
+
+Cláusula 35ª. Após entrega do filhote o COMPRADOR concorda em devolver o animal objeto deste Contrato ao VENDEDOR, sem qualquer ônus ao VENDEDOR, caso não consiga mantê-lo ou se sinta forçado a renunciar à sua guarda, seja por motivos particulares ou por motivos de saúde do filhote, custeando, inclusive, as despesas relativas ao transporte do mesmo até as dependências do VENDEDOR. Neste caso, aplica-se às condições da Cláusula 29ª deste contrato.
+
+DAS PROIBIÇÕES E AUTORIZAÇÕES
+
+Cláusula 36ª. É expressamente proibida a utilização do nome do VENDEDOR, do Gatil, cujo sufixo consta no Pedigree do animal e de sua logomarca, bem como imagens de suas matrizes e padreadores, sem expressa autorização. Isto se aplica a qualquer meio de comunicação oral ou escrito, físico ou virtual. E o COMPRADOR concorda que quaisquer questões ou problemas, deverão ser comunicados e resolvidos com o VENDEDOR, e nenhum meio de comunicação público como redes sociais (facebook, instagram ou outros fóruns), serão usados ​​para discussões.
+Cláusula 37ª. É expressamente proibido o abandono do animal objeto deste Contrato.
+Cláusula 38ª. Conforme Lei Geral de Proteção de Dados Pessoais (LGPD), o VENDEDOR fica autorizado compartilhar os dados pessoais do COMPRADOR informados neste contrato, para a empresa Royal Canin Brasil, a qual poderá entrar em contato para orientações quanto a alimentação/nutrição do filhote objeto deste contrato.
+Cláusula 39ª. O não cumprimento das Cláusulas 36ª e ou 37ª implicará em má fé por parte do COMPRADOR, caracterizando infração contratual, ficando definida e acertada a obrigatoriedade de pagamento ao VENDEDOR, multa equivalente a 10% (dez por cento) do valor deste Contrato, estabelecido na Cláusula 34ª, além de juros de 1% (um por cento) ao mês e correção monetária com base no Índice Geral de Preços do Mercado da Fundação Getúlio Vargas (IGP-M/FGV), em caráter de punição, o que não impedirá que o VENDEDOR pleiteie em juízo indenização por perdas e danos.
+
+
+
+
+DA REPRODUÇÃO 
+
+Cláusula 39ª. O animal objeto deste Contrato foi comercializado castrado, estando o COMPRADOR ciente que o animal é incapaz de reprodução.
+
+DO CANCELAMENTO 
+
+Cláusula 40ª. O presente Contrato pode ser cancelado pelo VENDEDOR, a qualquer momento, em caso de aparecimento de anomalias ou problemas genéticos, e/ou óbito do filhote antes da data de entrega e/ou qualquer outra situação que possa colocar em risco a saúde do filhote, não estando obrigado a justificar a sua decisão. Nestes casos, estará o VENDEDOR obrigado a devolver na íntegra o valor pago pelo COMPRADOR, no prazo máximo de 30 (trinta) dias após o cancelamento. 
+Parágrafo Único: O presente Contrato pode ser cancelado pelo VENDEDOR se julgar que o COMPRADOR não terá condições de cumprir integralmente qualquer um dos termos deste Contrato, como o não cumprimento dos prazos de pagamento e principalmente os cuidados e responsabilidades citados nas Cláusulas 12º e 13ª e seus Parágrafos. Neste caso fica estipulado que nenhum valor será restituído ao COMPRADOR, ou seja, NÃO será obrigado o VENDEDOR restituir o valor estipulado na cláusula 34ª deste contrato, o qual será utilizado para custear despesas administrativas, tempo, atenção, orientações, envio do manual de cuidados e demais prejuízos que não são obrigados a serem justificados pelo VENDEDOR.
+Cláusula 41ª. O presente Contrato pode ser cancelado pelo COMPRADOR, por qualquer motivo, antes da entrega do animal objeto deste Contrato, não estando obrigado a justificar a sua decisão. Neste caso fica estipulado que nenhum valor será restituído ao COMPRADOR, ou seja, NÃO será obrigado o VENDEDOR restituir o valor estipulado na cláusula 34ª deste contrato, o qual será utilizado para custear despesas administrativas, tempo, atenção, orientações, envio do manual de cuidados e demais prejuízos que não são obrigados a serem justificados pelo VENDEDOR.
+´No caso de solicitação de troca do filhote antes dos 70 (setenta dias), conforme Cláusula 30ª e seus Parágrafos, seguido em prazo indeterminado de desistência da escolha de um novo filhote, entende-se como um CANCELAMENTO por parte do COMPRADOR, aplicando-se a Cláusula 41ª deste contrato.
+Cláusula 42ª. Após a entrega do animal, o presente Contrato não poderá ser cancelado pelo COMPRADOR. Neste caso, aplicam-se as Cláusulas 23ª, 24ª e 25ª. O ressarcimento será realizado de acordo com as Cláusulas 26ª, 27, 28ª e 29ª.
+
+DA REVENDA OU DOAÇÃO 
+
+Cláusula 43ª. O COMPRADOR concorda em somente revendê-lo ou doá-lo após a autorização por escrito do VENDEDOR, o qual deve ser comunicado imediatamente sobre a intenção.
+Cláusula 44ª. Prezando pelo bem estar e qualidade de vida do animal, o VENDEDOR tem o direito de não autorizar o COMPRADOR em revendê-lo ou doá-lo, caso constate que o animal não venha a ser bem cuidado, conforme cláusulas deste contrato.
+Cláusula 45ª. O não cumprimento das Cláusulas 43ª e ou 44ª implicará em má fé por parte do COMPRADOR, caracterizando infração contratual, ficando definida e acertada a obrigatoriedade de pagamento ao VENDEDOR, multa equivalente a 10% (dez por cento) do valor deste Contrato, estabelecido na Cláusula 34ª, além de juros de 1% (um por cento) ao mês e correção monetária com base no Índice Geral de Preços do Mercado da Fundação Getúlio Vargas (IGP-M/FGV), em caráter de punição, o que não impedirá que o VENDEDOR pleiteie em juízo indenização por perdas e danos.
+
+CONDIÇÕES GERAIS 
+
+Cláusula 46ª. O presente Contrato é intransferível, irreversível e irrevogável. 
+Cláusula 47ª. Os herdeiros, sucessores ou cessionários das partes contratantes se obrigam desde já ao inteiro teor deste contrato.
+Cláusula 48ª. O presente Contrato passa a valer a partir da assinatura pelas partes (eletronicamente, digitalmente ou fisicamente), ou a realização do primeiro pagamento conforme estipulado na Cláusula 34ª.
+
+DO FORO 
+
+Cláusula 49ª. Para dirimir quaisquer controvérsias oriundas deste Contrato, as partes elegem o foro da comarca de Caçador, estado de Santa Catarina, renunciando a qualquer outro por mais especial que seja ou venha a ser, para dirimir as dúvidas do presente Contrato, assim, como qualquer procedimento oriundo do mesmo. 
+	E, por estarem assim justas e contratadas, de acordo com as cláusulas acima expostas, rubricam todas as folhas e assinam o presente contrato, em duas vias de igual teor para que tenha efeitos legais.
+
+
+
+{{cidadeContrato}}, {{dataDocumento}}.
+
+
+_______________________________
+{{vendedor}}
+CPF/CNPJ: {{vendedorDocumento}}
+VENDEDOR
+
+
+_______________________________
+{{comprador}}
+CPF/CNPJ: {{compradorDocumento}}
+COMPRADOR
+
+
+_______________________________
+TESTEMUNHA 01
+CPF:
+
+
+_______________________________
+TESTEMUNHA 02
+CPF:

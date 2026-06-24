@@ -81,12 +81,12 @@
 
           <div class="document-pdf-reducer-layout">
             <form method="post" action="/documentos/pdf/reduzir" enctype="multipart/form-data" class="document-pdf-reducer-form" data-pdf-reducer-form>
-              <label>
-                Arquivo PDF
+              <label class="field">
+                <span class="field-label">Arquivo PDF</span>
                 <input type="file" name="pdfFile" accept="application/pdf,.pdf" required <%= compressionStats.canUse ? '' : 'disabled' %> />
               </label>
-              <label>
-                Tamanho final desejado em KB
+              <label class="field">
+                <span class="field-label">Tamanho final desejado em KB</span>
                 <input type="number" name="targetKb" min="10" step="1" placeholder="Ex.: 500" required <%= compressionStats.canUse ? '' : 'disabled' %> />
               </label>
               <div class="document-pdf-reducer-actions">

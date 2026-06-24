@@ -86,6 +86,29 @@
                   </div>
                 <% } %>
               </div>
+              <% if (type === 'SALE_CONTRACT') { %>
+                <div class="grid-2" style="margin-top:12px;">
+                  <div class="field">
+                    <label class="field-label" for="contractValue">Valor do contrato</label>
+                    <input
+                      id="contractValue"
+                      name="contractValue"
+                      type="text"
+                      value="<%= document.contractValue || '' %>"
+                      placeholder="Ex.: R$ 11.000,00"
+                    />
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="paymentTerms">Forma de pagamento</label>
+                    <textarea
+                      id="paymentTerms"
+                      name="paymentTerms"
+                      rows="3"
+                      placeholder="Ex.: PIX em duas parcelas, entrada e saldo antes da entrega."
+                    ><%= document.paymentTerms || '' %></textarea>
+                  </div>
+                </div>
+              <% } %>
             <% } %>
 
             <% if (type === 'HEALTH_CERTIFICATE') { %>
@@ -100,6 +123,66 @@
                   O logo do veterinário e os dados de cabeçalho são configurados em Configurações.
                 </div>
               </div>
+              <div class="content-card" style="margin-top:14px; background:#fbfaf7;">
+                <div class="content-title">Dados do veterinário e clínica</div>
+                <div class="content-sub">
+                  Quando algum dado ainda não estiver em Configurações, preencha aqui. Ao salvar o atestado, essas informações ficam como padrão para os próximos.
+                </div>
+                <div class="grid-2" style="margin-top:12px;">
+                  <div class="field">
+                    <label class="field-label" for="veterinarian">Médico Veterinário</label>
+                    <input id="veterinarian" name="veterinarian" type="text" value="<%= settings.veterinarian || settings.veterinarianName || '' %>" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="crmv">CRMV</label>
+                    <input id="crmv" name="crmv" type="text" value="<%= settings.crmv || '' %>" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="crmvUf">UF do CRMV</label>
+                    <input id="crmvUf" name="crmvUf" type="text" maxlength="2" value="<%= settings.crmvUf || '' %>" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="veterinarianClinicName">Clínica Veterinária</label>
+                    <input id="veterinarianClinicName" name="veterinarianClinicName" type="text" value="<%= settings.veterinarianClinicName || '' %>" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="veterinarianTradeName">Nome Fantasia</label>
+                    <input id="veterinarianTradeName" name="veterinarianTradeName" type="text" value="<%= settings.veterinarianTradeName || '' %>" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="veterinarianCnpj">CNPJ</label>
+                    <input id="veterinarianCnpj" name="veterinarianCnpj" type="text" inputmode="numeric" value="<%= settings.veterinarianCnpj || '' %>" />
+                  </div>
+                  <div class="field" style="grid-column:1/-1;">
+                    <label class="field-label" for="veterinarianAddress">Endereço da clínica</label>
+                    <input id="veterinarianAddress" name="veterinarianAddress" type="text" value="<%= settings.veterinarianAddress || '' %>" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="veterinarianCity">Cidade</label>
+                    <input id="veterinarianCity" name="veterinarianCity" type="text" value="<%= settings.veterinarianCity || '' %>" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="veterinarianState">Estado</label>
+                    <input id="veterinarianState" name="veterinarianState" type="text" value="<%= settings.veterinarianState || '' %>" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="veterinarianCep">CEP</label>
+                    <input id="veterinarianCep" name="veterinarianCep" type="text" value="<%= settings.veterinarianCep || '' %>" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="veterinarianPhone">Telefone</label>
+                    <input id="veterinarianPhone" name="veterinarianPhone" type="text" value="<%= settings.veterinarianPhone || '' %>" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="veterinarianMobile">Celular</label>
+                    <input id="veterinarianMobile" name="veterinarianMobile" type="text" value="<%= settings.veterinarianMobile || '' %>" />
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="veterinarianEmail">E-mail</label>
+                    <input id="veterinarianEmail" name="veterinarianEmail" type="email" value="<%= settings.veterinarianEmail || '' %>" />
+                  </div>
+                </div>
+              </div>
             <% } %>
           </section>
 
@@ -112,7 +195,7 @@
                 <% if (type === 'HEALTH_CERTIFICATE') { %>
                   Esse texto será salvo como padrão para os próximos atestados deste usuário. Você pode usar: {{gato}}, {{microchip}}, {{nascimento}}, {{gatil}}, {{veterinario}}, {{crmv}}, {{clinicaVeterinaria}}, {{nomeFantasiaVeterinaria}}, {{cnpjVeterinario}}, {{dataDocumento}}.
                 <% } else { %>
-                  Você pode usar: {{comprador}}, {{gato}}, {{microchip}}, {{nascimento}}, {{gatil}}, {{veterinario}}, {{crmv}}, {{dataDocumento}}.
+                  Você pode usar: {{vendedorQualificacao}}, {{compradorQualificacao}}, {{gatoFicha}}, {{valorContrato}}, {{formaPagamento}}, {{comprador}}, {{gato}}, {{microchip}}, {{nascimento}}, {{gatil}}, {{dataDocumento}}.
                 <% } %>
               </div>
             </div>

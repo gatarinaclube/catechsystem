@@ -56,10 +56,10 @@
               <% panel.medications.forEach(function(item) { %>
                 <div class="alert-row">
                   <div>
-                    <strong><%= item.catName %></strong>
-                    <span><%= item.medication %><% if (item.dosage) { %> · <%= item.dosage %><% } %><% if (item.schedule) { %> · <%= item.schedule %><% } %></span>
+                    <strong><%= item.catCount %> <%= item.catCount === 1 ? "gato" : "gatos" %></strong>
+                    <span><%= item.medication %><% if (item.dosage) { %> · <%= item.dosage %><% } %><% if (item.schedule) { %> · Horário: <%= item.schedule %><% } %></span>
                   </div>
-                  <em><%= item.endDateLabel %></em>
+                  <em><%= item.startDateLabel %> até <%= item.endDateLabel %></em>
                 </div>
               <% }); %>
             </div>

@@ -16,20 +16,39 @@ const { formatCpfCnpj, formatPhone } = require("../utils/format");
 
 const execFileAsync = promisify(execFile);
 
+function loadTextTemplate(filename, fallback) {
+  try {
+    return fs.readFileSync(path.join(__dirname, "..", "templates", filename), "utf8");
+  } catch {
+    return fallback;
+  }
+}
+
+const SALE_CONTRACT_DEFAULT_BODY = loadTextTemplate(
+  "sale-contract-default.txt",
+  `CONTRATO DE VENDA DE FILHOTE
+
+VENDEDOR: {{vendedorQualificacao}}
+COMPRADOR: {{compradorQualificacao}}
+
+DO OBJETO DO CONTRATO
+
+{{gatoFicha}}
+
+DO PAGAMENTO
+
+Valor: {{valorContrato}}
+Forma de pagamento: {{formaPagamento}}
+
+{{cidadeContrato}}, {{dataDocumento}}.`
+);
+
 const DOCUMENT_TYPES = {
   SALE_CONTRACT: {
     label: "Contrato de Venda",
     route: "contrato-venda",
     defaultTitle: "Contrato de Venda",
-    defaultBody: `CONTRATO DE VENDA DE FILHOTE
-
-Pelo presente instrumento particular, o vendedor declara realizar a venda do gato/filhote selecionado ao comprador indicado, conforme as condições combinadas entre as partes.
-
-O comprador declara estar ciente das características do animal, das orientações de manejo, saúde, adaptação e cuidados necessários.
-
-O vendedor se compromete a entregar ao comprador as informações disponíveis sobre o animal, incluindo dados de identificação, registro, vacinação, vermifugação e demais documentos pertinentes quando aplicável.
-
-As partes declaram estar de acordo com os termos acima.`,
+    defaultBody: SALE_CONTRACT_DEFAULT_BODY,
   },
   HEALTH_CERTIFICATE: {
     label: "Atestado de Saúde",
@@ -248,10 +267,56 @@ async function compressPdfToExactTarget(inputBuffer, targetKb) {
 function parseAttachments(value) {
   try {
     const parsed = JSON.parse(value || "[]");
-    return Array.isArray(parsed) ? parsed : [];
+    if (Array.isArray(parsed)) return parsed;
+    if (parsed && Array.isArray(parsed.attachments)) return parsed.attachments;
+    return [];
   } catch {
     return [];
   }
+}
+
+function parseDocumentMetadata(value) {
+  try {
+    const parsed = JSON.parse(value || "{}");
+    return parsed && !Array.isArray(parsed) && typeof parsed === "object"
+      ? parsed
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function contractMetadata(document) {
+  return parseDocumentMetadata(document?.attachmentsJson).contract || {};
+}
+
+function saleContractMetadataJson(data) {
+  return JSON.stringify({
+    contract: {
+      value: compact(data.value),
+      paymentTerms: compact(data.paymentTerms),
+    },
+  });
+}
+
+function healthCertificateSettingsFromBody(body) {
+  return {
+    veterinarianFixed: true,
+    veterinarian: compact(body.veterinarian),
+    veterinarianName: null,
+    crmv: compact(body.crmv),
+    crmvUf: compact(body.crmvUf).toUpperCase().slice(0, 2),
+    veterinarianClinicName: compact(body.veterinarianClinicName),
+    veterinarianTradeName: compact(body.veterinarianTradeName),
+    veterinarianCnpj: formatCpfCnpj(body.veterinarianCnpj),
+    veterinarianAddress: compact(body.veterinarianAddress),
+    veterinarianCity: compact(body.veterinarianCity),
+    veterinarianCep: compact(body.veterinarianCep),
+    veterinarianState: compact(body.veterinarianState),
+    veterinarianPhone: formatPhone(body.veterinarianPhone),
+    veterinarianMobile: formatPhone(body.veterinarianMobile),
+    veterinarianEmail: compact(body.veterinarianEmail),
+  };
 }
 
 function externalPdfAttachment(document) {
@@ -305,6 +370,9 @@ function parseSignaturePositions(value) {
       page: parseNullablePositiveInt(position?.page),
       x: parseCoordinate(position?.x),
       y: parseCoordinate(position?.y),
+      type: ["signature", "rubric", "name", "document", "date"].includes(position?.type)
+        ? position.type
+        : "signature",
     }))
     .filter((position) => position.page && position.x !== null && position.y !== null);
 }
@@ -477,21 +545,103 @@ function shapeCat(cat) {
   };
 }
 
-function renderTemplate(text, { document, cat, client, settings }) {
+function addressLine(parts) {
+  return parts.filter(Boolean).join(", ");
+}
+
+function sellerDisplayName(user, settings) {
+  return settings?.catteryName || user?.fifeCatteryName || user?.name || "Vendedor não informado";
+}
+
+function sellerQualification(user, settings) {
+  const name = sellerDisplayName(user, settings);
+  const document = formatCpfCnpj(user?.cpf);
+  const address = addressLine([
+    user?.address,
+    user?.city && user?.state ? `${user.city}/${user.state}` : user?.city || user?.state,
+    user?.cep ? `CEP: ${user.cep}` : "",
+  ]);
+  return [
+    name,
+    document ? `CPF/CNPJ: ${document}` : "",
+    address ? `residente/domiciliado em ${address}` : "",
+    user?.phones ? `telefone/WhatsApp: ${formatPhone(user.phones)}` : "",
+    user?.email || settings?.catteryEmail ? `e-mail: ${user?.email || settings.catteryEmail}` : "",
+  ].filter(Boolean).join(", ") + ".";
+}
+
+function buyerQualification(client) {
+  if (!client) return "Comprador não informado.";
+  const document = formatCpfCnpj(client.document);
+  const address = addressLine([
+    addressLine([client.street, client.number, client.complement]),
+    client.neighborhood,
+    client.city && client.state ? `${client.city}/${client.state}` : client.city || client.state,
+    client.cep ? `CEP: ${client.cep}` : "",
+  ]);
+  return [
+    client.fullName,
+    document ? `CPF/CNPJ: ${document}` : "",
+    address ? `residente/domiciliado em ${address}` : "",
+    client.phone ? `telefone/WhatsApp: ${formatPhone(client.phone)}` : "",
+    client.email ? `e-mail: ${client.email}` : "",
+  ].filter(Boolean).join(", ") + ".";
+}
+
+function catContractFicha(cat) {
+  if (!cat) return "Gato não selecionado.";
+  const sex = cat.gender === "M" ? "Macho" : cat.gender === "F" ? "Fêmea" : cat.gender;
+  const mother = cat.mother?.name || cat.litterKitten?.litter?.motherName || "";
+  const father = cat.father?.name || cat.litterKitten?.litter?.fatherName || "";
+  return [
+    ["Identificação", cat.displayName],
+    ["Microchip", cat.microchip],
+    ["Espécie", "Felina"],
+    ["Raça", cat.breed],
+    ["Cor", [cat.color, cat.emsCode].filter(Boolean).join(" ")],
+    ["Cor dos olhos", cat.eyeColor],
+    ["Sexo", sex],
+    ["Data de nascimento", cat.birthDateLabel],
+    ["Pedigree", cat.pedigreeNumber || cat.pedigreeFile ? "Sim" : ""],
+    ["Castrado", cat.neutered === true ? "Sim" : cat.neutered === false ? "Não" : ""],
+    ["Apto à reprodução", cat.breedingProspect === true ? "Sim" : cat.breedingProspect === false ? "Não" : ""],
+    ["Nome da mãe", mother],
+    ["Nome do pai", father],
+  ]
+    .filter(([, value]) => compact(value))
+    .map(([label, value]) => `${label}: ${value}`)
+    .join("\n");
+}
+
+function renderTemplate(text, { document, cat, client, settings, user }) {
+  const meta = contractMetadata(document);
   const replacements = {
     comprador: client?.fullName || "Comprador não informado",
-    compradorDocumento: client?.document || "",
+    compradorDocumento: formatCpfCnpj(client?.document),
     compradorEmail: client?.email || "",
-    compradorTelefone: client?.phone || "",
+    compradorTelefone: formatPhone(client?.phone),
+    compradorQualificacao: buyerQualification(client),
+    vendedor: sellerDisplayName(user, settings),
+    vendedorDocumento: formatCpfCnpj(user?.cpf),
+    vendedorEmail: user?.email || settings?.catteryEmail || "",
+    vendedorTelefone: formatPhone(user?.phones),
+    vendedorQualificacao: sellerQualification(user, settings),
     gato: cat?.displayName || "Gato não selecionado",
     microchip: cat?.microchip || "",
     nascimento: cat?.birthDateLabel || "",
+    raca: cat?.breed || "raça não informada",
+    sexo: cat?.gender === "M" ? "Macho" : cat?.gender === "F" ? "Fêmea" : cat?.gender || "",
+    cor: [cat?.color, cat?.emsCode].filter(Boolean).join(" "),
+    gatoFicha: catContractFicha(cat),
+    valorContrato: meta.value || "valor a definir",
+    formaPagamento: meta.paymentTerms || "condições de pagamento a definir",
     gatil: settings?.catteryName || "",
     veterinario: settings?.veterinarian || settings?.veterinarianName || "",
     crmv: [settings?.crmv, settings?.crmvUf].filter(Boolean).join("-"),
     clinicaVeterinaria: settings?.veterinarianClinicName || "",
     nomeFantasiaVeterinaria: settings?.veterinarianTradeName || "",
     cnpjVeterinario: settings?.veterinarianCnpj || "",
+    cidadeContrato: user?.city && user?.state ? `${user.city}/${user.state}` : user?.city || "",
     dataDocumento: formatDate(document?.documentDate) || formatDate(new Date()),
   };
 
@@ -610,7 +760,7 @@ function drawHealthCertificatePdf(doc, { document, cat, settings, user }) {
     width: 415,
     align: "right",
   });
-  doc.font("Helvetica-Bold").fontSize(12).text(settings?.veterinarianPhone ? `Telefone: ${settings.veterinarianPhone}` : "", 125, 66, {
+  doc.font("Helvetica-Bold").fontSize(12).text(settings?.veterinarianPhone ? `Telefone: ${formatPhone(settings.veterinarianPhone)}` : "", 125, 66, {
     width: 415,
     align: "right",
   });
@@ -623,12 +773,12 @@ function drawHealthCertificatePdf(doc, { document, cat, settings, user }) {
 
   drawSectionTitle(doc, 1, "PROPRIETÁRIO DO ANIMAL", 128);
   drawTableCell(doc, 46, 152, 300, 22, "Nome Completo", user?.name || settings?.catteryName);
-  drawTableCell(doc, 346, 152, 203, 22, "CPF/RG", user?.cpf);
+  drawTableCell(doc, 346, 152, 203, 22, "CPF/RG", formatCpfCnpj(user?.cpf));
   drawTableCell(doc, 46, 174, 503, 22, "Endereço", user?.address);
   drawTableCell(doc, 46, 196, 176, 22, "Cidade", user?.city);
   drawTableCell(doc, 222, 196, 154, 22, "CEP", user?.cep);
   drawTableCell(doc, 376, 196, 173, 22, "Estado", user?.state);
-  drawTableCell(doc, 46, 218, 255, 22, "Telefone", user?.phones);
+  drawTableCell(doc, 46, 218, 255, 22, "Telefone", formatPhone(user?.phones));
   drawTableCell(doc, 301, 218, 248, 22, "E-mail", user?.email);
 
   drawSectionTitle(doc, 2, "IDENTIFICAÇÃO DO ANIMAL", 255);
@@ -642,7 +792,7 @@ function drawHealthCertificatePdf(doc, { document, cat, settings, user }) {
   drawSectionTitle(doc, 3, "DECLARAÇÃO DO MÉDICO VETERINÁRIO", 360);
   doc.rect(46, 384, 503, 178).strokeColor("#111827").lineWidth(0.65).stroke();
   doc.font("Helvetica-Oblique").fontSize(10).fillColor("#111827").text(
-    renderTemplate(document.body, { document, cat, client: null, settings }),
+    renderTemplate(document.body, { document, cat, client: null, settings, user }),
     58,
     420,
     { width: 479, align: "justify", lineGap: 6 }
@@ -652,13 +802,13 @@ function drawHealthCertificatePdf(doc, { document, cat, settings, user }) {
   drawTableCell(doc, 388, 562, 161, 22, crmvLabel, crmv, { valueColor: "#ff0000" });
   drawTableCell(doc, 46, 584, 503, 22, "Clínica Veterinária", clinicName);
   drawTableCell(doc, 46, 606, 312, 22, "Nome Fantasia", tradeName);
-  drawTableCell(doc, 358, 606, 191, 22, "CNPJ", settings?.veterinarianCnpj);
+  drawTableCell(doc, 358, 606, 191, 22, "CNPJ", formatCpfCnpj(settings?.veterinarianCnpj));
   drawTableCell(doc, 46, 628, 503, 22, "Endereço", clinicAddress);
   drawTableCell(doc, 46, 650, 176, 22, "Cidade", clinicCity);
   drawTableCell(doc, 222, 650, 154, 22, "CEP", clinicCep);
   drawTableCell(doc, 376, 650, 173, 22, "Estado", clinicState);
-  drawTableCell(doc, 46, 672, 252, 22, "Telefone", settings?.veterinarianPhone);
-  drawTableCell(doc, 298, 672, 251, 22, "Celular", settings?.veterinarianMobile);
+  drawTableCell(doc, 46, 672, 252, 22, "Telefone", formatPhone(settings?.veterinarianPhone));
+  drawTableCell(doc, 298, 672, 251, 22, "Celular", formatPhone(settings?.veterinarianMobile));
   doc.rect(46, 694, 503, 48).strokeColor("#111827").lineWidth(0.65).stroke();
   doc.font("Helvetica-Bold").fontSize(7.8).fillColor("#111827").text("Assinatura e Carimbo:", 52, 699);
 
@@ -670,7 +820,7 @@ function drawHealthCertificatePdf(doc, { document, cat, settings, user }) {
     { width: 503, align: "center" }
   );
   doc.font("Helvetica").fontSize(7).fillColor("#111827").text(
-    [clinicAddress, [clinicCity, clinicState].filter(Boolean).join("/"), settings?.veterinarianPhone].filter(Boolean).join(" · "),
+    [clinicAddress, [clinicCity, clinicState].filter(Boolean).join("/"), formatPhone(settings?.veterinarianPhone)].filter(Boolean).join(" · "),
     46,
     800,
     { width: 503, align: "center" }
@@ -726,7 +876,7 @@ function buildDocumentPdfBuffer({ document, cat, client, settings, user, signatu
       .font("Helvetica")
       .fontSize(10.5)
       .fillColor("#111827")
-      .text(renderTemplate(document.body, { document, cat, client, settings }), {
+      .text(renderTemplate(document.body, { document, cat, client, settings, user }), {
         align: "justify",
         lineGap: 4,
       });
@@ -817,19 +967,42 @@ async function buildSignedExternalPdfBuffer({ document, signatureRequest }) {
       const pageIndex = Math.min(Math.max(Number(position.page || 1) - 1, 0), pages.length - 1);
       const page = pages[pageIndex];
       const { width, height } = page.getSize();
-      const signatureX = Math.max(24, Math.min(width - 210, Number(position.x) * width));
-      const signatureY = Math.max(40, Math.min(height - 40, height - Number(position.y) * height));
+      const fieldType = position.type || "signature";
+      const isSender = request.signatureSource === "SENDER";
+      const fieldWidth = fieldType === "signature" ? 190 : fieldType === "rubric" ? 132 : 118;
+      const fieldHeight = fieldType === "signature" ? 44 : 28;
+      const signatureX = Math.max(24, Math.min(width - fieldWidth - 20, Number(position.x) * width));
+      const signatureY = Math.max(32, Math.min(height - fieldHeight - 20, height - Number(position.y) * height));
+      const borderColor = isSender ? rgb(0.54, 0.2, 0.16) : rgb(0.12, 0.42, 0.22);
+      const fillColor = isSender ? rgb(1, 0.97, 0.94) : rgb(0.94, 0.99, 0.96);
+      const textColor = isSender ? rgb(0.54, 0.2, 0.16) : rgb(0.08, 0.26, 0.14);
+      const fieldValues = {
+        rubric: `Rubrica: ${signatureName(request)}`,
+        name: signatureName(request),
+        document: request.signerDocument || "CPF/documento",
+        date: formatDate(request.signedAt),
+      };
 
       page.drawRectangle({
         x: signatureX,
         y: signatureY,
-        width: 190,
-        height: 44,
-        borderColor: request.signatureSource === "SENDER" ? rgb(0.54, 0.2, 0.16) : rgb(0.12, 0.42, 0.22),
+        width: fieldWidth,
+        height: fieldHeight,
+        borderColor,
         borderWidth: 1,
-        color: request.signatureSource === "SENDER" ? rgb(1, 0.97, 0.94) : rgb(0.94, 0.99, 0.96),
+        color: fillColor,
         opacity: 0.92,
       });
+      if (fieldType !== "signature") {
+        page.drawText(fieldValues[fieldType] || signatureName(request), {
+          x: signatureX + 7,
+          y: signatureY + 10,
+          size: fieldType === "rubric" ? 7 : 8,
+          font: fieldType === "rubric" ? regularFont : font,
+          color: textColor,
+        });
+        return;
+      }
       page.drawText(request.signatureSource === "SENDER" ? "Assinado eletronicamente pelo remetente" : "Assinado eletronicamente por", {
         x: signatureX + 8,
         y: signatureY + 27,
@@ -842,7 +1015,7 @@ async function buildSignedExternalPdfBuffer({ document, signatureRequest }) {
         y: signatureY + 13,
         size: 10,
         font,
-        color: request.signatureSource === "SENDER" ? rgb(0.54, 0.2, 0.16) : rgb(0.08, 0.26, 0.14),
+        color: textColor,
       });
       page.drawText(formatDateTime(request.signedAt), {
         x: signatureX + 8,
@@ -1424,6 +1597,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           logoChoice: type === "HEALTH_CERTIFICATE"
             ? options.settings.healthCertificateLogoPreference || "NONE"
             : "NONE",
+          contractValue: "",
+          paymentTerms: "",
           attachments: [],
           emailLogs: [],
         },
@@ -1452,6 +1627,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           ...document,
           cat: shapeCat(document.cat),
           documentDate: formatDateInput(document.documentDate),
+          contractValue: contractMetadata(document).value || "",
+          paymentTerms: contractMetadata(document).paymentTerms || "",
           attachments: parseAttachments(document.attachmentsJson),
           signatureRequests: (document.signatureRequests || []).map((request) => {
             const url = `${publicBaseUrl(req)}/assinatura/${request.token}`;
@@ -1511,7 +1688,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         clientId: req.body.clientId ? Number(req.body.clientId) : null,
         documentDate: parseDate(req.body.documentDate) || null,
         logoChoice: type === "HEALTH_CERTIFICATE" ? logoChoice : null,
-        attachmentsJson: type === "CARE_MANUAL" ? JSON.stringify(attachments) : null,
+        attachmentsJson: type === "CARE_MANUAL"
+          ? JSON.stringify(attachments)
+          : type === "SALE_CONTRACT"
+            ? saleContractMetadataJson({
+              value: req.body.contractValue,
+              paymentTerms: req.body.paymentTerms,
+            })
+            : null,
       };
 
       const saved = existing
@@ -1519,14 +1703,17 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         : await prisma.catteryDocument.create({ data });
 
       if (type === "HEALTH_CERTIFICATE") {
+        const healthCertificateSettings = healthCertificateSettingsFromBody(req.body);
         await prisma.userSettings.upsert({
           where: { userId: req.session.userId },
           update: {
+            ...healthCertificateSettings,
             healthCertificateLogoPreference: logoChoice,
             healthCertificateDeclarationText: data.body,
           },
           create: {
             userId: req.session.userId,
+            ...healthCertificateSettings,
             healthCertificateLogoPreference: logoChoice,
             healthCertificateDeclarationText: data.body,
           },
@@ -1836,6 +2023,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           cat: shapeCat(signatureRequest.document.cat),
           client: signatureRequest.document.client,
           settings: signatureRequest.document.owner?.settings || {},
+          user: signatureRequest.document.owner,
         }),
         success: req.query.otp === "1" ? "Código enviado para o e-mail informado." : null,
         error: req.query.error || null,
