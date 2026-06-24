@@ -618,6 +618,7 @@
               </div>
             </summary>
             <div class="settings-panel-body">
+            <div class="content-sub" style="margin-bottom:10px;">Campos de exames exibidos</div>
             <div class="settings-switch-list">
               <% examOptions.forEach(function(option) { %>
                 <label class="settings-switch">
@@ -626,6 +627,21 @@
                   <span><%= option %></span>
                 </label>
               <% }) %>
+            </div>
+            <div class="content-sub" style="margin:16px 0 10px;">Abas do módulo Exames</div>
+            <div class="settings-switch-list">
+              <label class="settings-switch">
+                <input
+                  type="checkbox"
+                  name="examKittensTabEnabled"
+                  <%= settings.examKittensTabEnabled ? "checked" : "" %>
+                />
+                <span class="settings-switch-track"></span>
+                <span>Filhotes</span>
+              </label>
+            </div>
+            <div class="section-note" style="margin-top:10px;">
+              Quando Filhotes estiver desligado, os filhotes não aparecem no módulo Exames e não entram nos alertas de exames do Painel.
             </div>
             </div>
           </details>

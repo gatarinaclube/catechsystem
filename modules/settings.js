@@ -16,8 +16,10 @@ const {
 const {
   BREED_OPTIONS,
   EXAM_OPTIONS,
+  examKittensTabEnabledFromSettings,
   filterAllowed,
   parseJsonList,
+  selectedExamSettingsFromBody,
   selectedExamsFromSettings,
 } = require("../utils/userPreferences");
 const {
@@ -211,6 +213,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       memberships: filterAllowed(parseJsonList(settings?.membershipsJson), MEMBERSHIP_OPTIONS),
       breeds: filterAllowed(parseJsonList(settings?.breedsJson), BREED_OPTIONS),
       exams: selectedExamsFromSettings(settings, { defaultAll: true }),
+      examKittensTabEnabled: examKittensTabEnabledFromSettings(settings, { defaultEnabled: true }),
       vaccineReminderEnabled: Boolean(settings?.vaccineReminderEnabled),
       vaccineReminderDaysBefore: settings?.vaccineReminderDaysBefore ?? 15,
       vaccineReminderGroups: filterAllowed(
@@ -331,7 +334,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       healthCertificateDeclarationText: existingSettings.healthCertificateDeclarationText || "",
       memberships: filterAllowed(req.body.memberships, MEMBERSHIP_OPTIONS),
       breeds: filterAllowed(req.body.breeds, BREED_OPTIONS),
-      exams: filterAllowed(req.body.exams, EXAM_OPTIONS),
+      exams: selectedExamSettingsFromBody(req.body.exams, req.body.examKittensTabEnabled === "on"),
       vaccineReminderEnabled: canUseVaccineNotifications && req.body.vaccineReminderEnabled === "on",
       vaccineReminderDaysBefore: parseNullableInteger(req.body.vaccineReminderDaysBefore) ?? 15,
       vaccineReminderGroups: canUseVaccineNotifications

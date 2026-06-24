@@ -5,13 +5,19 @@ const multer = require("multer");
 const archiver = require("archiver");
 const { canViewAllData } = require("../utils/access");
 const { getFileUploadLimit, validateFilesForRole } = require("../utils/planLimits");
-const { selectedExamsFromSettings } = require("../utils/userPreferences");
+const {
+  examKittensTabEnabledFromSettings,
+  selectedExamsFromSettings,
+} = require("../utils/userPreferences");
 const {
   parseDate,
   formatDate,
   formatDateInput,
+  addMonths,
   addYears,
   buildDisplayName,
+  catteryNameForCat,
+  prefixWithCatteryName,
   classifyOperationalCat,
 } = require("../utils/cattery-admin");
 
@@ -23,8 +29,43 @@ const CATEGORY_META = [
 ];
 
 const SourceOptions = ["Antecedente", "Próprio", "Realizar"];
-const PkdefResults = ["N/N", "N/K"];
-const PrabfResults = ["N/N", "N/PRA"];
+const GENETIC_EXAMS = [
+  {
+    key: "pkdef",
+    label: "PKDef",
+    setting: "PKDef",
+    planSourceField: "pkdefSource",
+    planResultField: "pkdefResult",
+    docKey: "pkdef",
+    results: ["NN", "NK", "KK"],
+    legacyResults: { "N/N": "NN", "N/K": "NK" },
+  },
+  {
+    key: "pkd",
+    label: "PKD",
+    setting: "PKD",
+    docKey: "pkd",
+    results: ["NN", "ND", "DD"],
+  },
+  {
+    key: "pra",
+    label: "PRA",
+    setting: "PRA",
+    planSourceField: "prabfSource",
+    planResultField: "prabfResult",
+    docKey: "pra",
+    results: ["NN", "NP", "PP"],
+    legacyResults: { "N/N": "NN", "N/PRA": "NP" },
+  },
+  {
+    key: "hcmGenetic",
+    label: "HCM - Genético",
+    setting: "HCM - Genético",
+    docKey: "hcmGenetic",
+    results: ["NN", "NH", "HH"],
+  },
+];
+const HCM_DOPPLER_SETTING = "HCM - Doppler";
 const UPLOADS_ROOT = process.env.UPLOADS_DIR || path.join(__dirname, "..", "public", "uploads");
 const EXAMS_UPLOAD_DIR = path.join(UPLOADS_ROOT, "exams");
 
@@ -74,6 +115,40 @@ function parseExamDocs(value) {
   return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
 }
 
+function normalizeGeneticResult(value, config) {
+  const clean = String(value || "").trim().toUpperCase();
+  if (!clean) return "";
+  if (config.legacyResults?.[clean]) return config.legacyResults[clean];
+  return clean.replace(/\//g, "");
+}
+
+function readGeneticExam(cat, config) {
+  const docs = parseExamDocs(cat?.examDocsJson);
+  const meta = docs.__genetic?.[config.key] || {};
+  const source = config.planSourceField
+    ? cat?.examPlan?.[config.planSourceField] || meta.source || ""
+    : meta.source || "";
+  const result = config.planResultField
+    ? cat?.examPlan?.[config.planResultField] || meta.result || ""
+    : meta.result || "";
+  return {
+    source,
+    result: normalizeGeneticResult(result, config),
+    file: docs[config.docKey] || meta.file || "",
+  };
+}
+
+function buildExamDisplayName(cat) {
+  const name = String(cat?.name || "").trim();
+  if (!name) return buildDisplayName(cat);
+  if (/^[A-Z]{2}\*/i.test(name)) return name;
+  const catteryName = catteryNameForCat(cat);
+  return [
+    cat?.country ? `${cat.country}*` : null,
+    prefixWithCatteryName(name, catteryName),
+  ].filter(Boolean).join("");
+}
+
 function sortHistory(history) {
   return [...history]
     .map((value) => ({
@@ -99,14 +174,14 @@ function computeNextEco(birthDate, history) {
   }
 
   const last = parseDate(sorted[sorted.length - 1].date);
-  return last ? addYears(last, 1) : null;
+  return last ? addMonths(last, 18) : null;
 }
 
-function isUrgentRow(pkdefSource, prabfSource, nextEco) {
+function isUrgentRow(geneticExams, nextEco) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  if (pkdefSource === "Realizar" || prabfSource === "Realizar") {
+  if ((geneticExams || []).some((exam) => exam.source === "Realizar")) {
     return true;
   }
 
@@ -115,9 +190,8 @@ function isUrgentRow(pkdefSource, prabfSource, nextEco) {
 
 function buildActiveExamFields(selectedExams) {
   return {
-    pkdef: selectedExams.includes("PKDef"),
-    pra: selectedExams.includes("PRA"),
-    hcm: selectedExams.includes("HCM - Doppler"),
+    genetic: GENETIC_EXAMS.filter((exam) => selectedExams.includes(exam.setting)),
+    hcm: selectedExams.includes(HCM_DOPPLER_SETTING),
   };
 }
 
@@ -152,29 +226,12 @@ function resolveUploadPath(filePath) {
 }
 
 function examConfig(type) {
-  if (type === "pkdef") {
-    return {
-      label: "PKDef",
-      sourceField: "pkdefSource",
-      resultField: "pkdefResult",
-      docKey: "pkdef",
-    };
-  }
-
-  return {
-    label: "PRA",
-    sourceField: "prabfSource",
-    resultField: "prabfResult",
-    docKey: "pra",
-  };
+  return GENETIC_EXAMS.find((exam) => exam.key === type || (type === "prabf" && exam.key === "pra"));
 }
 
 function ownsNnExam(cat, config) {
-  const docs = parseExamDocs(cat?.examDocsJson);
-  const plan = cat?.examPlan || {};
-  return plan[config.sourceField] === "Próprio" &&
-    plan[config.resultField] === "N/N" &&
-    docs[config.docKey];
+  const exam = readGeneticExam(cat, config);
+  return exam.result === "NN";
 }
 
 async function loadCatForPrint(prisma, scope, catId) {
@@ -205,16 +262,19 @@ async function collectGeneticExamDocs(prisma, cat, type, relationLabel = "Gato",
   seen.add(cat.id);
 
   const config = examConfig(type);
+  if (!config) return { complete: false, docs: [] };
   const ownDocs = parseExamDocs(cat.examDocsJson);
   const displayName = buildDisplayName(cat);
 
   if (ownsNnExam(cat, config)) {
     return {
       complete: true,
-      docs: [{
-        file: ownDocs[config.docKey],
-        label: `${config.label} - ${relationLabel} - ${displayName}`,
-      }],
+      docs: ownDocs[config.docKey]
+        ? [{
+            file: ownDocs[config.docKey],
+            label: `${config.label} - ${relationLabel} - ${displayName}`,
+          }]
+        : [],
     };
   }
 
@@ -231,6 +291,32 @@ async function collectGeneticExamDocs(prisma, cat, type, relationLabel = "Gato",
     complete: Boolean(father && mother && fatherResult.complete && motherResult.complete),
     docs: [...fatherResult.docs, ...motherResult.docs],
   };
+}
+
+async function resolveNnByAncestry(prisma, cat, config, cache = new Map(), seen = new Set()) {
+  if (!cat || seen.has(cat.id)) return false;
+  const cacheKey = `${cat.id}:${config.key}`;
+  if (cache.has(cacheKey)) return cache.get(cacheKey);
+  seen.add(cat.id);
+
+  if (ownsNnExam(cat, config)) {
+    cache.set(cacheKey, true);
+    return true;
+  }
+
+  const father = await loadAncestor(prisma, cat.fatherId);
+  const mother = await loadAncestor(prisma, cat.motherId);
+  if (!father || !mother) {
+    cache.set(cacheKey, false);
+    return false;
+  }
+
+  const result = Boolean(
+    await resolveNnByAncestry(prisma, father, config, cache, new Set(seen)) &&
+    await resolveNnByAncestry(prisma, mother, config, cache, new Set(seen))
+  );
+  cache.set(cacheKey, result);
+  return result;
 }
 
 function hcmDocs(cat, onlyLatest = false) {
@@ -323,52 +409,73 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           })
         : [];
       const settingsByUserId = new Map(settingsRows.map((settings) => [settings.userId, settings]));
+      let currentUserSettings = settingsByUserId.get(req.session.userId) || null;
+      if (!currentUserSettings && !canViewAllData(req.session?.userRole)) {
+        currentUserSettings = await prisma.userSettings.findUnique({
+          where: { userId: req.session.userId },
+          select: { userId: true, examsJson: true },
+        });
+      }
       const currentUserActiveExams = await loadActiveExamFields(req);
+      const currentUserShowsKittensTab = canViewAllData(req.session?.userRole)
+        ? true
+        : examKittensTabEnabledFromSettings(currentUserSettings, { defaultEnabled: true });
       const defaultActiveExams = buildActiveExamFields(selectedExamsFromSettings(null, { defaultAll: true }));
 
       const grouped = Object.fromEntries(
         CATEGORY_META.map((category) => [category.key, []])
       );
 
-      cats.forEach((cat) => {
+      const ancestryCache = new Map();
+      for (const cat of cats) {
         const category = classifyOperationalCat(cat, {
           includeDeliveredKittensInHistory: false,
         });
-        if (!category) return;
+        if (!category) continue;
+        const ownerSettings = settingsByUserId.get(cat.ownerId) || null;
+        const showKittensTab = examKittensTabEnabledFromSettings(ownerSettings, { defaultEnabled: true });
+        if (category === "kittens" && !showKittensTab) continue;
 
         const ecoHistory = safeJsonParse(cat.examPlan?.ecoHistoryJson, [
           { date: "" },
         ]);
-        const nextEco = computeNextEco(cat.birthDate, ecoHistory);
-        const pkdefSource = cat.examPlan?.pkdefSource || "";
-        const pkdefResult = cat.examPlan?.pkdefResult || "";
-        const prabfSource = cat.examPlan?.prabfSource || "";
-        const prabfResult = cat.examPlan?.prabfResult || "";
-        const activeExams = settingsByUserId.has(cat.ownerId)
-          ? buildActiveExamFields(selectedExamsFromSettings(settingsByUserId.get(cat.ownerId), { defaultAll: true }))
+        const activeExams = ownerSettings
+          ? buildActiveExamFields(selectedExamsFromSettings(ownerSettings, { defaultAll: true }))
           : defaultActiveExams;
-        const urgent = isUrgentRow(
-          activeExams.pkdef ? pkdefSource : "",
-          activeExams.pra ? prabfSource : "",
-          activeExams.hcm ? nextEco : null
-        );
+        const hasEcoHistory = sortHistory(ecoHistory).some((item) => parseDate(item.date));
+        const nextEco = activeExams.hcm && !(category === "founders" && hasEcoHistory)
+          ? computeNextEco(cat.birthDate, ecoHistory)
+          : null;
         const examDocs = parseExamDocs(cat.examDocsJson);
+        const geneticExams = [];
+
+        for (const config of activeExams.genetic) {
+          const saved = readGeneticExam(cat, config);
+          const inheritedNn = await resolveNnByAncestry(prisma, cat, config, ancestryCache);
+          geneticExams.push({
+            ...config,
+            source: saved.source || (inheritedNn ? "Antecedente" : ""),
+            result: saved.result || (inheritedNn ? "NN" : ""),
+            file: saved.file,
+            inheritedNn,
+          });
+        }
+
+        const urgent = isUrgentRow(geneticExams, activeExams.hcm ? nextEco : null);
 
         grouped[category].push({
           cat,
-          displayName: buildDisplayName(cat),
+          displayName: buildExamDisplayName(cat),
           birthDateLabel: formatDate(cat.birthDate) || "-",
-          pkdefSource,
-          pkdefResult,
-          prabfSource,
-          prabfResult,
+          geneticExams,
           ecoHistory,
           examDocs,
           nextEco,
           urgent,
           activeExams,
+          isFounder: category === "founders",
         });
-      });
+      }
 
       Object.values(grouped).forEach((rows) => {
         rows.sort((a, b) => {
@@ -383,15 +490,24 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       res.render("admin-exams/index", {
         user: req.user,
         currentPath: req.path,
-        categories: CATEGORY_META,
+        categories: CATEGORY_META.filter((category) => (
+          category.key !== "kittens" || currentUserShowsKittensTab || grouped.kittens.length > 0
+        )),
         grouped,
         printCats: cats
+          .filter((cat) => {
+            const category = classifyOperationalCat(cat, {
+              includeDeliveredKittensInHistory: false,
+            });
+            if (category !== "kittens") return true;
+            const ownerSettings = settingsByUserId.get(cat.ownerId) || null;
+            return examKittensTabEnabledFromSettings(ownerSettings, { defaultEnabled: true });
+          })
           .map((cat) => ({ id: cat.id, label: buildDisplayName(cat) }))
           .sort((a, b) => a.label.localeCompare(b.label, "pt-BR")),
         sourceOptions: SourceOptions,
-        pkdefResults: PkdefResults,
-        prabfResults: PrabfResults,
         activeExams: currentUserActiveExams,
+        geneticExamConfigs: GENETIC_EXAMS,
         formatDate,
       });
     }
@@ -404,16 +520,30 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     async (req, res) => {
       const cat = await loadCatForPrint(prisma, ownerScope(req), req.query.catId);
       if (!cat) return res.status(404).send("Gato não encontrado.");
+      const printCategory = classifyOperationalCat(cat, {
+        includeDeliveredKittensInHistory: false,
+      });
+      if (
+        printCategory === "kittens" &&
+        !examKittensTabEnabledFromSettings(cat.owner?.settings, { defaultEnabled: true })
+      ) {
+        return res.status(404).send("Filhotes não estão habilitados no módulo Exames.");
+      }
       const activeExams = await loadActiveExamFields(req, cat.ownerId);
 
       const type = String(req.query.type || "");
       let docs = [];
       let label = "Exames";
 
-      if (type === "pkdef" && activeExams.pkdef) {
+      const activeGeneticKeys = new Set(activeExams.genetic.map((exam) => exam.key));
+      if (activeGeneticKeys.has(type)) {
+        const config = examConfig(type);
+        docs = (await collectGeneticExamDocs(prisma, cat, type)).docs;
+        label = config?.label || "Exame";
+      } else if (type === "pkdef" && activeGeneticKeys.has("pkdef")) {
         docs = (await collectGeneticExamDocs(prisma, cat, "pkdef")).docs;
         label = "PKDef";
-      } else if (type === "pra" && activeExams.pra) {
+      } else if (type === "pra" && activeGeneticKeys.has("pra")) {
         docs = (await collectGeneticExamDocs(prisma, cat, "pra")).docs;
         label = "PRA";
       } else if (type === "hcm-latest" && activeExams.hcm) {
@@ -424,8 +554,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         label = "Todos-HCM";
       } else if (type === "all") {
         docs = [
-          ...(activeExams.pkdef ? (await collectGeneticExamDocs(prisma, cat, "pkdef")).docs : []),
-          ...(activeExams.pra ? (await collectGeneticExamDocs(prisma, cat, "pra")).docs : []),
+          ...(await Promise.all(activeExams.genetic.map((exam) => collectGeneticExamDocs(prisma, cat, exam.key))))
+            .flatMap((result) => result.docs),
           ...(activeExams.hcm ? hcmDocs(cat, false) : []),
         ];
         label = "Todos-Exames";
@@ -460,8 +590,22 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         validateFilesForRole(req.files || [], req.session?.userRole);
         const existingCat = await prisma.cat.findUnique({
           where: { id: catId },
-          select: { ownerId: true, examDocsJson: true, examPlan: true },
+          include: {
+            owner: { include: { settings: true } },
+            litterKitten: { include: { litter: true } },
+            examPlan: true,
+          },
         });
+        if (!existingCat) return res.status(404).send("Gato não encontrado.");
+        const category = classifyOperationalCat(existingCat, {
+          includeDeliveredKittensInHistory: false,
+        });
+        if (
+          category === "kittens" &&
+          !examKittensTabEnabledFromSettings(existingCat.owner?.settings, { defaultEnabled: true })
+        ) {
+          return res.status(403).send("Filhotes não estão habilitados no módulo Exames.");
+        }
         const activeExams = await loadActiveExamFields(req, existingCat?.ownerId || req.session.userId);
         const examDocs = parseExamDocs(existingCat?.examDocsJson);
         const uploaded = filesByField(req.files || []);
@@ -477,22 +621,33 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               .filter((item) => item.date !== "")
           : safeJsonParse(existingCat?.examPlan?.ecoHistoryJson, []);
 
-        const pkdefUpload = activeExams.pkdef ? examFilePath(uploaded.get("pkdefDoc")?.[0]) : null;
-        const prabfUpload = activeExams.pra ? examFilePath(uploaded.get("prabfDoc")?.[0]) : null;
+        if (!examDocs.__genetic || typeof examDocs.__genetic !== "object" || Array.isArray(examDocs.__genetic)) {
+          examDocs.__genetic = {};
+        }
 
-        if (activeExams.pkdef && pkdefUpload) examDocs.pkdef = pkdefUpload;
-        if (activeExams.pra && prabfUpload) examDocs.pra = prabfUpload;
+        const activeGeneticKeys = new Set(activeExams.genetic.map((exam) => exam.key));
+        activeExams.genetic.forEach((config) => {
+          const uploadPath = examFilePath(uploaded.get(`${config.key}Doc`)?.[0]);
+          if (uploadPath) examDocs[config.docKey] = uploadPath;
+          examDocs.__genetic[config.key] = {
+            source: req.body[`${config.key}Source`] || null,
+            result: normalizeGeneticResult(req.body[`${config.key}Result`], config) || null,
+            file: examDocs[config.docKey] || "",
+          };
+        });
         if (activeExams.hcm) {
           examDocs.hcm = ecoHistory
             .filter((item) => item.file)
             .map((item) => ({ date: item.date, file: item.file }));
         }
 
+        const pkdefConfig = GENETIC_EXAMS.find((exam) => exam.key === "pkdef");
+        const praConfig = GENETIC_EXAMS.find((exam) => exam.key === "pra");
         const planData = {
-          pkdefSource: activeExams.pkdef ? req.body.pkdefSource || null : existingCat?.examPlan?.pkdefSource || null,
-          pkdefResult: activeExams.pkdef ? req.body.pkdefResult || null : existingCat?.examPlan?.pkdefResult || null,
-          prabfSource: activeExams.pra ? req.body.prabfSource || null : existingCat?.examPlan?.prabfSource || null,
-          prabfResult: activeExams.pra ? req.body.prabfResult || null : existingCat?.examPlan?.prabfResult || null,
+          pkdefSource: activeGeneticKeys.has("pkdef") ? req.body.pkdefSource || null : existingCat?.examPlan?.pkdefSource || null,
+          pkdefResult: activeGeneticKeys.has("pkdef") ? normalizeGeneticResult(req.body.pkdefResult, pkdefConfig) || null : existingCat?.examPlan?.pkdefResult || null,
+          prabfSource: activeGeneticKeys.has("pra") ? req.body.praSource || null : existingCat?.examPlan?.prabfSource || null,
+          prabfResult: activeGeneticKeys.has("pra") ? normalizeGeneticResult(req.body.praResult, praConfig) || null : existingCat?.examPlan?.prabfResult || null,
           ecoHistoryJson: JSON.stringify(ecoHistory),
         };
 

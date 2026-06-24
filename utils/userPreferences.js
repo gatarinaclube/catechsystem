@@ -6,6 +6,8 @@ const BREED_OPTIONS = [
 ];
 
 const EXAM_OPTIONS = ["PKDef", "PKD", "PRA", "HCM - Genético", "HCM - Doppler"];
+const EXAM_KITTENS_TAB_OPTION = "__SHOW_KITTENS_TAB__";
+const EXAM_KITTENS_TAB_DISABLED_OPTION = "__HIDE_KITTENS_TAB__";
 
 function normalizeList(value) {
   if (!value) return [];
@@ -58,12 +60,34 @@ function selectedExamsFromSettings(settings, { defaultAll = false } = {}) {
   return filterAllowed(parseJsonList(settings.examsJson), EXAM_OPTIONS);
 }
 
+function examKittensTabEnabledFromSettings(settings, { defaultEnabled = true } = {}) {
+  if (!settings || settings.examsJson === null || settings.examsJson === undefined) {
+    return defaultEnabled;
+  }
+
+  return !parseJsonList(settings.examsJson).includes(EXAM_KITTENS_TAB_DISABLED_OPTION);
+}
+
+function selectedExamSettingsFromBody(exams, showKittensTab) {
+  const selected = filterAllowed(exams, EXAM_OPTIONS);
+  if (showKittensTab) {
+    selected.push(EXAM_KITTENS_TAB_OPTION);
+  } else {
+    selected.push(EXAM_KITTENS_TAB_DISABLED_OPTION);
+  }
+  return selected;
+}
+
 module.exports = {
   BREED_OPTIONS,
   EXAM_OPTIONS,
+  EXAM_KITTENS_TAB_OPTION,
+  EXAM_KITTENS_TAB_DISABLED_OPTION,
   normalizeList,
   parseJsonList,
   filterAllowed,
   selectedBreedsFromSettings,
+  examKittensTabEnabledFromSettings,
+  selectedExamSettingsFromBody,
   selectedExamsFromSettings,
 };

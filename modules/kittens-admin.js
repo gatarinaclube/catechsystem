@@ -1,4 +1,7 @@
 const express = require("express");
+const fs = require("fs");
+const multer = require("multer");
+const path = require("path");
 const { canViewAllData } = require("../utils/access");
 const { ageInMonths, buildKittenRegisteredName, kittenFallbackDisplayName } = require("../utils/cattery-admin");
 const { selectedBreedsFromSettings } = require("../utils/userPreferences");
@@ -21,6 +24,33 @@ const KITTEN_STATUS_OPTIONS = [
   { value: "DELIVERED", label: "Entregue" },
   { value: "DECEASED", label: "Óbito" },
 ];
+
+const UPLOADS_ROOT = process.env.UPLOADS_DIR || path.join(__dirname, "..", "public", "uploads");
+const CONTRACT_UPLOAD_DIR = path.join(UPLOADS_ROOT, "kitten-contracts");
+
+if (!fs.existsSync(CONTRACT_UPLOAD_DIR)) {
+  fs.mkdirSync(CONTRACT_UPLOAD_DIR, { recursive: true });
+}
+
+const contractUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, CONTRACT_UPLOAD_DIR),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname || "").toLowerCase() || ".pdf";
+      cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
+    },
+  }),
+  limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = [
+      "application/pdf",
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+    ];
+    cb(allowed.includes(file.mimetype) ? null : new Error("Envie o contrato em PDF ou imagem."), allowed.includes(file.mimetype));
+  },
+});
 
 function formatDateForInput(date) {
   if (!date) return "";
@@ -48,6 +78,31 @@ function safeJsonParse(value, fallback = {}) {
   } catch {
     return fallback;
   }
+}
+
+function buildOwnershipInfo(req, existingKitten = null) {
+  const currentInfo = safeJsonParse(existingKitten?.newOwnerInfoJson);
+  const contractLink = String(req.body.ownerContractLink || "").trim();
+  const nextInfo = {
+    ...currentInfo,
+    contractLink: contractLink || null,
+  };
+
+  if (req.file) {
+    nextInfo.contractFile = {
+      path: `/uploads/kitten-contracts/${req.file.filename}`,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
+      size: req.file.size,
+      uploadedAt: new Date().toISOString(),
+    };
+  }
+
+  if (!nextInfo.contractLink && !nextInfo.contractFile && Object.keys(nextInfo).length <= 1) {
+    return null;
+  }
+
+  return JSON.stringify(nextInfo);
 }
 
 function normalizeDocument(value) {
@@ -103,6 +158,15 @@ function statusFlags(status) {
 
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
+
+  function handleContractUpload(req, res, next) {
+    contractUpload.single("ownerContractFile")(req, res, (err) => {
+      if (err) {
+        req.uploadError = err.message || "Não foi possível anexar o contrato.";
+      }
+      next();
+    });
+  }
 
   function ownerScope(req) {
     return canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId };
@@ -281,6 +345,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     }
     const availabilityData = statusFlags(req.body.kittenAvailabilityStatus || existingKitten?.kittenAvailabilityStatus || "UNAVAILABLE");
     const deathCauseData = parseDeathCauseData(req.body, availabilityData.deceased === true);
+    const ownershipInfoJson = buildOwnershipInfo(req, existingKitten);
     ensureMicrochipWhenRequired({
       microchip,
       birthDate,
@@ -314,7 +379,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         : selectedOwnerClientId
           ? "MANUAL"
           : null,
-      newOwnerInfoJson: ownerLockedBySale ? existingKitten.newOwnerInfoJson : null,
+      newOwnerInfoJson: ownershipInfoJson,
       ...availabilityData,
       ...deathCauseData,
       ownerId: existingKitten?.ownerId || req.session.userId,
@@ -493,6 +558,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     "/admin/kittens/:id",
     requireAuth,
     requirePermission("admin.kittens"),
+    handleContractUpload,
     async (req, res) => {
       const existingKitten = await prisma.cat.findUnique({
         where: { id: Number(req.params.id) },
@@ -512,6 +578,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       }
 
       try {
+        if (req.uploadError) {
+          throw new Error(req.uploadError);
+        }
         const data = await parsePayload(req, existingKitten);
         await prisma.$transaction(async (tx) => {
           const updated = await tx.cat.update({

@@ -7,36 +7,59 @@
     <link rel="stylesheet" href="/css/layout.css" />
     <link rel="stylesheet" href="/css/cattery-admin.css" />
     <style>
-      .exam-grid {
-        display: grid;
-        grid-template-columns: minmax(190px, 1.1fr) minmax(120px, .7fr) repeat(4, minmax(180px, 1fr));
-        gap: 12px;
-        align-items: start;
-        min-width: 0;
-      }
-      .exam-header {
-        font-size: 12px;
-        font-weight: 600;
-        color: var(--text-muted);
-      }
-      .exam-row {
-        padding: 12px;
+      .exam-table-wrap {
+        overflow-x: auto;
         border: 1px solid var(--border-soft);
         border-radius: 8px;
-        margin-bottom: 12px;
-        overflow: hidden;
+        background: #fff;
       }
-      .exam-row.is-urgent {
+      .exam-table {
+        width: max-content;
+        min-width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 13px;
+      }
+      .exam-table th,
+      .exam-table td {
+        border-right: 1px solid var(--border-soft);
+        border-bottom: 1px solid var(--border-soft);
+        padding: 8px;
+        vertical-align: top;
+      }
+      .exam-table th {
+        background: #f8fafc;
+        color: var(--text-muted);
+        font-size: 11px;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        text-align: left;
+        white-space: nowrap;
+      }
+      .exam-table tr.is-urgent td:first-child {
         border-left: 5px solid #dc2626;
       }
-      .exam-cell-label {
-        display: none;
-        font-size: 11px;
-        font-weight: 700;
+      .exam-cat-cell {
+        min-width: 220px;
+        max-width: 260px;
+      }
+      .exam-date-cell {
+        min-width: 130px;
+      }
+      .exam-genetic-cell {
+        min-width: 230px;
+      }
+      .exam-hcm-cell {
+        min-width: 270px;
+      }
+      .exam-next-cell {
+        min-width: 150px;
+      }
+      .exam-mini-title {
+        display: block;
         color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: .04em;
-        margin-bottom: 6px;
+        font-size: 11px;
+        margin-bottom: 4px;
       }
       .exam-upload {
         display: none;
@@ -53,6 +76,14 @@
         max-width: 100%;
         min-width: 0;
       }
+      .exam-row select,
+      .exam-row input[type="date"] {
+        height: 34px;
+        padding: 6px 8px;
+      }
+      .exam-row .mini-stack {
+        gap: 6px;
+      }
       .inline-plus.exam-eco-row {
         align-items: start;
         flex-wrap: wrap;
@@ -62,23 +93,9 @@
         flex-wrap: wrap;
         gap: 8px;
       }
-      @media (max-width: 1500px) {
-        .exam-grid {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-        .exam-header {
-          display: none;
-        }
-        .exam-cell-label {
-          display: block;
-        }
-      }
       @media (max-width: 760px) {
-        .exam-grid {
-          grid-template-columns: 1fr;
-        }
-        .exam-row {
-          padding: 10px;
+        .exam-table {
+          font-size: 12px;
         }
       }
     </style>
@@ -115,17 +132,16 @@
               </select>
             </div>
             <div class="exam-print-actions">
-              <% if (activeExams && activeExams.pkdef) { %>
-                <a class="btn" href="#" data-print-type="pkdef">PKDef</a>
-              <% } %>
-              <% if (activeExams && activeExams.pra) { %>
-                <a class="btn" href="#" data-print-type="pra">PRA</a>
+              <% if (activeExams && activeExams.genetic && activeExams.genetic.length) { %>
+                <% activeExams.genetic.forEach(function(exam) { %>
+                  <a class="btn" href="#" data-print-type="<%= exam.key %>"><%= exam.label %></a>
+                <% }) %>
               <% } %>
               <% if (activeExams && activeExams.hcm) { %>
                 <a class="btn" href="#" data-print-type="hcm-latest">Último HCM</a>
                 <a class="btn" href="#" data-print-type="hcm-all">Todos HCM</a>
               <% } %>
-              <% if (activeExams && (activeExams.pkdef || activeExams.pra || activeExams.hcm)) { %>
+              <% if (activeExams && ((activeExams.genetic && activeExams.genetic.length) || activeExams.hcm)) { %>
                 <a class="btn btn-primary" href="#" data-print-type="all">Todos</a>
               <% } %>
             </div>
@@ -143,126 +159,115 @@
               <span class="module-accordion-count"><%= items.length %></span>
             </summary>
             <div class="module-accordion-body">
-              <div class="exam-grid exam-header">
-                <div>Nome do Gato</div>
-                <div>Data de Nascimento</div>
-                <div>Exames selecionados</div>
-              </div>
-
               <% if (!items.length) { %>
                 <div class="empty" style="margin-top:12px;">Nenhum gato nesta categoria.</div>
               <% } else { %>
-                <% items.forEach(function(row) { %>
-                <form method="post" action="/admin/exams/<%= row.cat.id %>" enctype="multipart/form-data" class="exam-row <%= row.urgent ? 'is-urgent' : '' %>">
-                  <div class="exam-grid">
-                    <div>
-                      <div class="exam-cell-label">Nome do Gato</div>
-                      <div class="item-title" style="color:<%= row.urgent ? '#dc2626' : 'inherit' %>;">
-                        <%= row.displayName %>
-                      </div>
-                      <div style="margin-top:8px;">
-                        <span class="status-pill <%= row.urgent ? 'is-red' : 'is-blue' %>">
-                          <%= row.urgent ? 'Atenção' : 'Acompanhamento' %>
-                        </span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div class="exam-cell-label">Data de Nascimento</div>
-                      <strong><%= row.birthDateLabel %></strong>
-                    </div>
-
-                    <div class="exam-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); grid-column: span 4;">
-                      <% if (row.activeExams && row.activeExams.pkdef) { %>
-                        <div class="mini-stack">
-                          <div class="exam-cell-label">PKDef</div>
-                          <select name="pkdefSource" data-source-toggle="pkdef">
-                            <option value="">Selecione</option>
-                            <% sourceOptions.forEach(function(option) { %>
-                              <option value="<%= option %>" <%= row.pkdefSource === option ? "selected" : "" %>><%= option %></option>
-                            <% }) %>
-                          </select>
-                          <select name="pkdefResult">
-                            <option value="">Resultado</option>
-                            <% pkdefResults.forEach(function(option) { %>
-                              <option value="<%= option %>" <%= row.pkdefResult === option ? "selected" : "" %>><%= option %></option>
-                            <% }) %>
-                          </select>
-                          <div class="exam-upload" data-upload-box="pkdef">
-                            <% if (row.examDocs && row.examDocs.pkdef) { %>
-                              <a class="exam-file-link" href="<%= row.examDocs.pkdef %>" target="_blank">Arquivo atual</a>
-                            <% } %>
-                            <input type="file" name="pkdefDoc" accept=".pdf,image/*" />
-                          </div>
-                        </div>
-                      <% } %>
-
-                      <% if (row.activeExams && row.activeExams.pra) { %>
-                        <div class="mini-stack">
-                          <div class="exam-cell-label">PRA-bf</div>
-                          <select name="prabfSource" data-source-toggle="prabf">
-                            <option value="">Selecione</option>
-                            <% sourceOptions.forEach(function(option) { %>
-                              <option value="<%= option %>" <%= row.prabfSource === option ? "selected" : "" %>><%= option %></option>
-                            <% }) %>
-                          </select>
-                          <select name="prabfResult">
-                            <option value="">Resultado</option>
-                            <% prabfResults.forEach(function(option) { %>
-                              <option value="<%= option %>" <%= row.prabfResult === option ? "selected" : "" %>><%= option %></option>
-                            <% }) %>
-                          </select>
-                          <div class="exam-upload" data-upload-box="prabf">
-                            <% if (row.examDocs && row.examDocs.pra) { %>
-                              <a class="exam-file-link" href="<%= row.examDocs.pra %>" target="_blank">Arquivo atual</a>
-                            <% } %>
-                            <input type="file" name="prabfDoc" accept=".pdf,image/*" />
-                          </div>
-                        </div>
-                      <% } %>
-
-                      <% if (row.activeExams && row.activeExams.hcm) { %>
-                        <div class="mini-stack" data-eco-box>
-                          <div class="exam-cell-label">Ecocardiodoppler</div>
-                          <% row.ecoHistory.forEach(function(item, index) { %>
-                            <div class="inline-plus exam-eco-row" data-eco-row>
-                              <% if (item.date) { %>
-                                <input type="hidden" name="ecoDates" value="<%= item.date %>" />
-                                <input type="hidden" name="ecoFiles" value="<%= item.file || '' %>" />
-                                <span class="history-date-display"><%= formatDate(item.date) %></span>
-                                <% if (item.file) { %>
-                                  <a class="exam-file-link" href="<%= item.file %>" target="_blank">Arquivo</a>
+                <div class="exam-table-wrap">
+                  <table class="exam-table">
+                    <thead>
+                      <tr>
+                        <th>Nome do gato</th>
+                        <th>Data de nascimento</th>
+                        <% const firstExamSet = items[0] && items[0].activeExams ? items[0].activeExams : activeExams; %>
+                        <% (firstExamSet.genetic || []).forEach(function(exam) { %>
+                          <th><%= exam.label %></th>
+                        <% }) %>
+                        <% if (firstExamSet.hcm) { %>
+                          <th>HCM - Doppler</th>
+                          <th>Próximo HCM</th>
+                        <% } %>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% items.forEach(function(row) { %>
+                        <tr class="exam-row <%= row.urgent ? 'is-urgent' : '' %>" data-form-id="exam-form-<%= row.cat.id %>">
+                          <td class="exam-cat-cell">
+                            <form id="exam-form-<%= row.cat.id %>" method="post" action="/admin/exams/<%= row.cat.id %>" enctype="multipart/form-data"></form>
+                            <div class="item-title" style="color:<%= row.urgent ? '#dc2626' : 'inherit' %>;"><%= row.displayName %></div>
+                            <span class="status-pill <%= row.urgent ? 'is-red' : 'is-blue' %>">
+                              <%= row.urgent ? 'Atenção' : 'Acompanhamento' %>
+                            </span>
+                          </td>
+                          <td class="exam-date-cell"><strong><%= row.birthDateLabel %></strong></td>
+                          <% row.geneticExams.forEach(function(exam) { %>
+                            <td class="exam-genetic-cell">
+                              <div class="mini-stack">
+                                <% if (exam.inheritedNn && !exam.file) { %>
+                                  <span class="status-pill is-green">Antecedente OK</span>
                                 <% } %>
-                                <input type="file" name="hcmDoc_<%= index %>" accept=".pdf,image/*" />
-                                <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
-                              <% } else { %>
-                                <input type="date" name="ecoDates" value="" />
-                                <input type="hidden" name="ecoFiles" value="" />
-                              <% } %>
-                            </div>
+                                <select form="exam-form-<%= row.cat.id %>" name="<%= exam.key %>Source" data-source-toggle="<%= exam.key %>">
+                                  <option value="">Selecione</option>
+                                  <% sourceOptions.forEach(function(option) { %>
+                                    <option value="<%= option %>" <%= exam.source === option ? "selected" : "" %>><%= option %></option>
+                                  <% }) %>
+                                </select>
+                                <select form="exam-form-<%= row.cat.id %>" name="<%= exam.key %>Result">
+                                  <option value="">Resultado</option>
+                                  <% exam.results.forEach(function(option) { %>
+                                    <option value="<%= option %>" <%= exam.result === option ? "selected" : "" %>><%= option %></option>
+                                  <% }) %>
+                                </select>
+                                <div class="exam-upload" data-upload-box="<%= exam.key %>">
+                                  <% if (exam.file) { %>
+                                    <a class="exam-file-link" href="<%= exam.file %>" target="_blank">Arquivo atual</a>
+                                  <% } %>
+                                  <input form="exam-form-<%= row.cat.id %>" type="file" name="<%= exam.key %>Doc" accept=".pdf,image/*" />
+                                </div>
+                              </div>
+                            </td>
                           <% }) %>
-                          <div class="history-add-row">
-                            <button type="button" class="btn add-eco">+</button>
-                          </div>
-                        </div>
-
-                        <div class="mini-stack">
-                          <div class="exam-cell-label">Próximo Eco</div>
-                          <div><strong><%= row.nextEco ? formatDate(row.nextEco) : "-" %></strong></div>
-                        </div>
-                      <% } %>
-
-                      <% if (!row.activeExams || (!row.activeExams.pkdef && !row.activeExams.pra && !row.activeExams.hcm)) { %>
-                        <div class="empty">Nenhum exame selecionado nas Configurações.</div>
-                      <% } %>
-                      </div>
-                  </div>
-                </form>
-                <% }) %>
+                          <% if (row.activeExams && row.activeExams.hcm) { %>
+                            <td class="exam-hcm-cell">
+                              <div class="mini-stack" data-eco-box>
+                                <% row.ecoHistory.forEach(function(item, index) { %>
+                                  <div class="inline-plus exam-eco-row" data-eco-row>
+                                    <% if (item.date) { %>
+                                      <input form="exam-form-<%= row.cat.id %>" type="hidden" name="ecoDates" value="<%= item.date %>" />
+                                      <input form="exam-form-<%= row.cat.id %>" type="hidden" name="ecoFiles" value="<%= item.file || '' %>" />
+                                      <span class="history-date-display"><%= formatDate(item.date) %></span>
+                                      <% if (item.file) { %>
+                                        <a class="exam-file-link" href="<%= item.file %>" target="_blank">Arquivo</a>
+                                      <% } %>
+                                      <input form="exam-form-<%= row.cat.id %>" type="file" name="hcmDoc_<%= index %>" accept=".pdf,image/*" />
+                                      <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
+                                    <% } else { %>
+                                      <input form="exam-form-<%= row.cat.id %>" type="date" name="ecoDates" value="" />
+                                      <input form="exam-form-<%= row.cat.id %>" type="hidden" name="ecoFiles" value="" />
+                                    <% } %>
+                                  </div>
+                                <% }) %>
+                                <div class="history-add-row">
+                                  <button type="button" class="btn add-eco">+</button>
+                                </div>
+                              </div>
+                            </td>
+                            <td class="exam-next-cell">
+                              <strong><%= row.nextEco ? formatDate(row.nextEco) : (row.isFounder ? 'Último válido' : '-') %></strong>
+                            </td>
+                          <% } %>
+                        </tr>
+                      <% }) %>
+                    </tbody>
+                  </table>
+                </div>
               <% } %>
             </div>
           </details>
         <% }) %>
+        <section class="content-card" style="margin-top:18px;">
+          <div class="content-title">Legenda</div>
+          <div class="grid-4" style="margin-top:12px;">
+            <div><strong>NN:</strong> Negativo e não portador</div>
+            <div><strong>NK:</strong> Portador de PKDef</div>
+            <div><strong>KK:</strong> Positivo para PKDef</div>
+            <div><strong>ND:</strong> Portador de PKD</div>
+            <div><strong>DD:</strong> Positivo para PKD</div>
+            <div><strong>NP:</strong> Portador de PRA</div>
+            <div><strong>PP:</strong> Positivo para PRA</div>
+            <div><strong>NH:</strong> Portador de HCM</div>
+            <div><strong>HH:</strong> Positivo para HCM</div>
+          </div>
+        </section>
       </main>
     </div>
 
@@ -288,9 +293,19 @@
           return `${parts[2]}/${parts[1]}/${parts[0]}`;
         }
 
-        async function autosave(form) {
+        function getExamRow(element) {
+          return element?.closest?.(".exam-row") || null;
+        }
+
+        function getForm(element) {
+          const row = getExamRow(element);
+          const formId = row?.dataset.formId || element?.getAttribute?.("form") || "";
+          return formId ? document.getElementById(formId) : element?.closest?.("form");
+        }
+
+        async function autosave(form, row) {
           if (!form) return;
-          reindexEcoRows(form);
+          reindexEcoRows(row || document.querySelector(`[data-form-id="${form.id}"]`));
           if (form.dataset.submitting === "true") {
             form.dataset.pendingSave = "true";
             return;
@@ -317,7 +332,7 @@
           } finally {
             form.dataset.submitting = "false";
             if (form.dataset.pendingSave === "true") {
-              autosave(form);
+              autosave(form, row);
             }
           }
         }
@@ -329,15 +344,19 @@
             row.className = "inline-plus exam-eco-row";
             row.dataset.ecoRow = "";
             row.innerHTML = '<input type="date" name="ecoDates" value="" /><input type="hidden" name="ecoFiles" value="" />';
+            const form = getForm(button);
+            row.querySelectorAll("input").forEach((input) => {
+              if (form?.id) input.setAttribute("form", form.id);
+            });
             box.insertBefore(row, button.closest(".history-add-row"));
             bindEcoRow(row);
-            reindexEcoRows(button.closest("form"));
+            reindexEcoRows(getExamRow(button));
           });
         });
 
-        function reindexEcoRows(form) {
-          if (!form) return;
-          form.querySelectorAll("[data-eco-row]").forEach((row, index) => {
+        function reindexEcoRows(rowScope) {
+          if (!rowScope) return;
+          rowScope.querySelectorAll("[data-eco-row]").forEach((row, index) => {
             const fileInput = row.querySelector('input[type="file"]');
             if (fileInput) fileInput.name = `hcmDoc_${index}`;
           });
@@ -346,11 +365,12 @@
         function bindDelete(button) {
           button.addEventListener("click", () => {
             const row = button.closest("[data-eco-row]");
-            const form = button.closest("form");
+            const examRow = getExamRow(button);
+            const form = getForm(button);
             row.remove();
 
-            reindexEcoRows(form);
-            autosave(form);
+            reindexEcoRows(examRow);
+            autosave(form, examRow);
           });
         }
 
@@ -366,10 +386,15 @@
                 <input type="file" accept=".pdf,image/*" />
                 <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
               `;
-              reindexEcoRows(row.closest("form"));
+              const examRow = getExamRow(row);
+              const form = getForm(row);
+              row.querySelectorAll("input").forEach((newInput) => {
+                if (form?.id && !newInput.getAttribute("form")) newInput.setAttribute("form", form.id);
+              });
+              reindexEcoRows(examRow);
               bindFileInputs(row);
               bindDelete(row.querySelector(".delete-history-date"));
-              autosave(row.closest("form"));
+              autosave(form, examRow);
             });
           }
 
@@ -378,9 +403,9 @@
           bindFileInputs(row);
         }
 
-        function syncExamUploads(form) {
-          form.querySelectorAll("[data-source-toggle]").forEach((select) => {
-            const box = form.querySelector(`[data-upload-box="${select.dataset.sourceToggle}"]`);
+        function syncExamUploads(row) {
+          row.querySelectorAll("[data-source-toggle]").forEach((select) => {
+            const box = row.querySelector(`[data-upload-box="${select.dataset.sourceToggle}"]`);
             if (!box) return;
             box.classList.toggle("is-visible", select.value === "Próprio");
           });
@@ -390,22 +415,23 @@
           scope.querySelectorAll('input[type="file"]').forEach((input) => {
             if (input.dataset.boundFile === "true") return;
             input.dataset.boundFile = "true";
-            input.addEventListener("change", () => autosave(input.closest("form")));
+            input.addEventListener("change", () => autosave(getForm(input), getExamRow(input)));
           });
         }
 
         document.querySelectorAll("[data-eco-row]").forEach(bindEcoRow);
         document.querySelectorAll(".exam-row select").forEach((field) => {
           field.addEventListener("change", () => {
-            const form = field.closest("form");
-            syncExamUploads(form);
-            autosave(form);
+            const row = getExamRow(field);
+            const form = getForm(field);
+            syncExamUploads(row);
+            autosave(form, row);
           });
         });
-        document.querySelectorAll(".exam-row").forEach((form) => {
-          syncExamUploads(form);
-          reindexEcoRows(form);
-          bindFileInputs(form);
+        document.querySelectorAll(".exam-row").forEach((row) => {
+          syncExamUploads(row);
+          reindexEcoRows(row);
+          bindFileInputs(row);
         });
       })();
     </script>

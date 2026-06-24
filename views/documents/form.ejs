@@ -108,6 +108,37 @@
                     ><%= document.paymentTerms || '' %></textarea>
                   </div>
                 </div>
+                <div class="grid-3" style="margin-top:12px;">
+                  <div class="field">
+                    <label class="field-label" for="deliveryDate">Data de Entrega</label>
+                    <input
+                      id="deliveryDate"
+                      name="deliveryDate"
+                      type="date"
+                      value="<%= document.deliveryDate || '' %>"
+                    />
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="deliveryValue">Valor de Entrega</label>
+                    <input
+                      id="deliveryValue"
+                      name="deliveryValue"
+                      type="text"
+                      value="<%= document.deliveryValue || '' %>"
+                      placeholder="Ex.: R$ 750,00"
+                    />
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="deliveryLocation">Local de Entrega</label>
+                    <input
+                      id="deliveryLocation"
+                      name="deliveryLocation"
+                      type="text"
+                      value="<%= document.deliveryLocation || '' %>"
+                      placeholder="Ex.: Florianópolis/SC"
+                    />
+                  </div>
+                </div>
               <% } %>
             <% } %>
 
@@ -195,7 +226,7 @@
                 <% if (type === 'HEALTH_CERTIFICATE') { %>
                   Esse texto será salvo como padrão para os próximos atestados deste usuário. Você pode usar: {{gato}}, {{microchip}}, {{nascimento}}, {{gatil}}, {{veterinario}}, {{crmv}}, {{clinicaVeterinaria}}, {{nomeFantasiaVeterinaria}}, {{cnpjVeterinario}}, {{dataDocumento}}.
                 <% } else { %>
-                  Você pode usar: {{vendedorQualificacao}}, {{compradorQualificacao}}, {{gatoFicha}}, {{valorContrato}}, {{formaPagamento}}, {{comprador}}, {{gato}}, {{microchip}}, {{nascimento}}, {{gatil}}, {{dataDocumento}}.
+                  Você pode usar: {{vendedorQualificacao}}, {{compradorQualificacao}}, {{gatoFicha}}, {{valorContrato}}, {{formaPagamento}}, {{dataEntrega}}, {{valorEntrega}}, {{localEntrega}}, {{comprador}}, {{gato}}, {{microchip}}, {{nascimento}}, {{gatil}}, {{dataDocumento}}.
                 <% } %>
               </div>
             </div>

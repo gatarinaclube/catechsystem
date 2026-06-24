@@ -3,6 +3,7 @@ const { getCreationLimits, getFileUploadLimit } = require("./planLimits");
 
 const FEATURE_COMPARISON_ROWS = [
   { label: "Assinatura Eletrônica", type: "text", values: { basic: "5 documentos/mês", master: "10 documentos/mês", premium: "Ilimitado" } },
+  { label: "Redutor de PDF", type: "text", values: { basic: "2 arquivos/mês", master: "5 arquivos/mês", premium: "Ilimitado" } },
   { label: "Reprodutores", type: "check", values: { basic: true, master: true, premium: true } },
   { label: "Acasalamentos", type: "check", values: { basic: true, master: true, premium: true } },
   { label: "Histórico do gato", type: "check", values: { basic: true, master: true, premium: true } },

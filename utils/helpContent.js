@@ -196,10 +196,10 @@ const HELP_SECTIONS = [
           "Envie PDF para assinatura, marque os locais de assinatura para destinatários e usuário, acompanhe status e gere evidências quando assinado.",
       },
       {
-        title: "Reduzir PDF",
+        title: "Redutor de PDF",
         tags: ["compressão", "arquivo", "limite"],
         content:
-          "Ferramenta para reduzir PDF sem salvar o arquivo no sistema. Há limites mensais conforme perfil: Básico 5, Master 10 e Premium ilimitado.",
+          "Ferramenta para reduzir PDF sem salvar o arquivo no sistema. Há limites mensais conforme perfil: Básico 2 arquivos, Master 5 arquivos e Premium ilimitado.",
       },
       {
         title: "Serviços",

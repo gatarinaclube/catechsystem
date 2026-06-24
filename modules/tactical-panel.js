@@ -6,12 +6,17 @@ const {
   addYears,
   ageInMonths,
   buildDisplayName,
+  classifyOperationalCat,
   formatDate,
   formatDateInput,
   isRoutineModuleCatVisible,
   parseDate,
 } = require("../utils/cattery-admin");
 const { userCan } = require("../utils/access");
+const {
+  examKittensTabEnabledFromSettings,
+  selectedExamsFromSettings,
+} = require("../utils/userPreferences");
 const vaccineUtils = require("../utils/vaccines");
 
 function safeJsonParse(value, fallback = []) {
@@ -62,7 +67,7 @@ function computeNextEco(birthDate, history) {
   const birth = parseDate(birthDate);
   if (!sorted.length) return birth ? addYears(birth, 1) : null;
   const last = parseDate(sorted[sorted.length - 1].date);
-  return last ? addYears(last, 1) : null;
+  return last ? addMonths(last, 18) : null;
 }
 
 function laterDate(a, b) {
@@ -302,8 +307,18 @@ async function buildPanelData(prisma, ownerId) {
       });
     }
 
+    const selectedExams = selectedExamsFromSettings(cat.owner?.settings, { defaultAll: true });
+    const canShowHcm = selectedExams.includes("HCM - Doppler");
+    const examCategory = classifyOperationalCat(cat, {
+      includeDeliveredKittensInHistory: false,
+    });
+    const canShowKittenExam = examCategory !== "kittens" ||
+      examKittensTabEnabledFromSettings(cat.owner?.settings, { defaultEnabled: true });
     const ecoHistory = safeJsonParse(cat.examPlan?.ecoHistoryJson, []);
-    const nextEco = computeNextEco(cat.birthDate, ecoHistory);
+    const hasEcoHistory = sortHistoryDates(ecoHistory).length > 0;
+    const nextEco = canShowHcm && canShowKittenExam && !(examCategory === "founders" && hasEcoHistory)
+      ? computeNextEco(cat.birthDate, ecoHistory)
+      : null;
     if (nextEco && nextEco <= upcomingLimit) {
       exams.push({
         catName: displayName,

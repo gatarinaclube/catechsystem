@@ -1,6 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const {
   bumpDeploymentVersion,
+  getAppVersion,
   nextDeploymentVersion,
   writeVersionFile,
 } = require("../utils/appVersion");
@@ -16,7 +17,7 @@ async function bumpWithDatabase() {
       where: { key: SETTING_KEY },
       select: { value: true },
     });
-    const version = nextDeploymentVersion(current?.value, now);
+    const version = nextDeploymentVersion(current?.value || getAppVersion(), now);
 
     await prisma.systemSetting.upsert({
       where: { key: SETTING_KEY },

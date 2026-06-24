@@ -95,7 +95,7 @@
           </div>
         <% } %>
 
-        <form method="post" action="<%= formAction %>">
+        <form method="post" action="<%= formAction %>" enctype="multipart/form-data">
           <div class="content-card" style="margin-bottom:18px;">
             <div class="content-title">Informações dos Filhotes</div>
 
@@ -195,6 +195,7 @@
             <div class="content-title">Informações de Propriedade</div>
             <% const selectedOwnerClient = ownerClients.find(function(client) { return String(kitten?.currentOwnerClientId || '') === String(client.id); }); %>
             <% const ownerLockedBySale = kitten?.ownershipSource === 'SALE'; %>
+            <% const ownerInfo = kitten?.newOwnerInfo || {}; %>
             <div class="grid-2" style="margin-top:12px;">
               <div class="field">
                 <label class="field-label" for="ownerClientSearch">Cliente proprietário</label>
@@ -225,6 +226,36 @@
                     <option value="<%= option.value %>" <%= (kitten?.kittenAvailabilityStatus || 'UNAVAILABLE') === option.value ? "selected" : "" %>><%= option.label %></option>
                   <% }) %>
                 </select>
+              </div>
+            </div>
+            <div class="grid-2" style="margin-top:12px;">
+              <div class="field">
+                <label class="field-label" for="ownerContractLink">Link de acesso ao contrato</label>
+                <input
+                  id="ownerContractLink"
+                  name="ownerContractLink"
+                  type="url"
+                  value="<%= ownerInfo.contractLink || '' %>"
+                  placeholder="https://..."
+                />
+                <div class="section-note" style="margin-top:6px;">
+                  Use este campo para colar o link de assinatura eletrônica ou acesso externo ao contrato.
+                  <% if (ownerInfo.contractLink) { %>
+                    <br><a href="<%= ownerInfo.contractLink %>" target="_blank" rel="noopener noreferrer">Abrir link atual</a>
+                  <% } %>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="ownerContractFile">Anexar contrato</label>
+                <input id="ownerContractFile" name="ownerContractFile" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" />
+                <% if (ownerInfo.contractFile?.path) { %>
+                  <div class="section-note" style="margin-top:6px;">
+                    Contrato atual:
+                    <a href="<%= ownerInfo.contractFile.path %>" target="_blank" rel="noopener noreferrer">
+                      <%= ownerInfo.contractFile.originalName || 'Abrir arquivo' %>
+                    </a>
+                  </div>
+                <% } %>
               </div>
             </div>
             <div id="deathCauseBlock" class="grid-2" style="margin-top:12px;">

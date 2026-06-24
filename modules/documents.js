@@ -112,8 +112,8 @@ function createPdfCompressionUploadMiddleware() {
 function pdfCompressionMonthlyLimit(role) {
   const normalizedRole = normalizeRole(role);
   if ([ROLES.ADMIN, ROLES.PREMIUM, ROLES.ASSOCIADO_PREMIUM].includes(normalizedRole)) return null;
-  if ([ROLES.MASTER, ROLES.ASSOCIADO_A].includes(normalizedRole)) return 10;
-  return 5;
+  if ([ROLES.MASTER, ROLES.ASSOCIADO_A].includes(normalizedRole)) return 5;
+  return 2;
 }
 
 function currentMonthKey() {
@@ -295,6 +295,9 @@ function saleContractMetadataJson(data) {
     contract: {
       value: compact(data.value),
       paymentTerms: compact(data.paymentTerms),
+      deliveryDate: compact(data.deliveryDate),
+      deliveryValue: compact(data.deliveryValue),
+      deliveryLocation: compact(data.deliveryLocation),
     },
   });
 }
@@ -635,6 +638,9 @@ function renderTemplate(text, { document, cat, client, settings, user }) {
     gatoFicha: catContractFicha(cat),
     valorContrato: meta.value || "valor a definir",
     formaPagamento: meta.paymentTerms || "condições de pagamento a definir",
+    dataEntrega: meta.deliveryDate ? formatDate(meta.deliveryDate) || meta.deliveryDate : "data de entrega a definir",
+    valorEntrega: meta.deliveryValue || "valor de entrega a definir",
+    localEntrega: meta.deliveryLocation || "local de entrega a definir",
     gatil: settings?.catteryName || "",
     veterinario: settings?.veterinarian || settings?.veterinarianName || "",
     crmv: [settings?.crmv, settings?.crmvUf].filter(Boolean).join("-"),
@@ -1599,6 +1605,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             : "NONE",
           contractValue: "",
           paymentTerms: "",
+          deliveryDate: "",
+          deliveryValue: "",
+          deliveryLocation: "",
           attachments: [],
           emailLogs: [],
         },
@@ -1629,6 +1638,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           documentDate: formatDateInput(document.documentDate),
           contractValue: contractMetadata(document).value || "",
           paymentTerms: contractMetadata(document).paymentTerms || "",
+          deliveryDate: contractMetadata(document).deliveryDate || "",
+          deliveryValue: contractMetadata(document).deliveryValue || "",
+          deliveryLocation: contractMetadata(document).deliveryLocation || "",
           attachments: parseAttachments(document.attachmentsJson),
           signatureRequests: (document.signatureRequests || []).map((request) => {
             const url = `${publicBaseUrl(req)}/assinatura/${request.token}`;
@@ -1694,6 +1706,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             ? saleContractMetadataJson({
               value: req.body.contractValue,
               paymentTerms: req.body.paymentTerms,
+              deliveryDate: req.body.deliveryDate,
+              deliveryValue: req.body.deliveryValue,
+              deliveryLocation: req.body.deliveryLocation,
             })
             : null,
       };

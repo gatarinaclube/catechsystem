@@ -147,6 +147,8 @@ Cláusula 34ª. O COMPRADOR pagará ao VENDEDOR, pela compra do animal objeto de
 
 A forma de pagamento acordada entre as partes será: {{formaPagamento}}
 
+A entrega do animal será realizada em {{dataEntrega}}, no local {{localEntrega}}, com valor de entrega/transporte/envio de {{valorEntrega}}, quando aplicável.
+
 DA RENÚNCIA 
 
 Cláusula 35ª. Após entrega do filhote o COMPRADOR concorda em devolver o animal objeto deste Contrato ao VENDEDOR, sem qualquer ônus ao VENDEDOR, caso não consiga mantê-lo ou se sinta forçado a renunciar à sua guarda, seja por motivos particulares ou por motivos de saúde do filhote, custeando, inclusive, as despesas relativas ao transporte do mesmo até as dependências do VENDEDOR. Neste caso, aplica-se às condições da Cláusula 29ª deste contrato.
