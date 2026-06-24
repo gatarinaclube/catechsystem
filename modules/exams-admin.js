@@ -293,7 +293,7 @@ async function collectGeneticExamDocs(prisma, cat, type, relationLabel = "Gato",
   };
 }
 
-async function resolveNnByAncestry(prisma, cat, config, cache = new Map(), seen = new Set()) {
+async function resolveNnByAncestry(resolveAncestor, cat, config, cache = new Map(), seen = new Set()) {
   if (!cat || seen.has(cat.id)) return false;
   const cacheKey = `${cat.id}:${config.key}`;
   if (cache.has(cacheKey)) return cache.get(cacheKey);
@@ -304,16 +304,16 @@ async function resolveNnByAncestry(prisma, cat, config, cache = new Map(), seen 
     return true;
   }
 
-  const father = await loadAncestor(prisma, cat.fatherId);
-  const mother = await loadAncestor(prisma, cat.motherId);
+  const father = await resolveAncestor(cat.fatherId);
+  const mother = await resolveAncestor(cat.motherId);
   if (!father || !mother) {
     cache.set(cacheKey, false);
     return false;
   }
 
   const result = Boolean(
-    await resolveNnByAncestry(prisma, father, config, cache, new Set(seen)) &&
-    await resolveNnByAncestry(prisma, mother, config, cache, new Set(seen))
+    await resolveNnByAncestry(resolveAncestor, father, config, cache, new Set(seen)) &&
+    await resolveNnByAncestry(resolveAncestor, mother, config, cache, new Set(seen))
   );
   cache.set(cacheKey, result);
   return result;
@@ -427,6 +427,20 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       );
 
       const ancestryCache = new Map();
+      const catsById = new Map(cats.map((cat) => [cat.id, cat]));
+      const ancestorLookupCache = new Map();
+      async function resolveAncestor(id) {
+        if (!id) return null;
+        if (catsById.has(id)) return catsById.get(id);
+        if (ancestorLookupCache.has(id)) return ancestorLookupCache.get(id);
+
+        const promise = loadAncestor(prisma, id);
+        ancestorLookupCache.set(id, promise);
+        const ancestor = await promise;
+        if (ancestor) catsById.set(id, ancestor);
+        return ancestor;
+      }
+
       for (const cat of cats) {
         const category = classifyOperationalCat(cat, {
           includeDeliveredKittensInHistory: false,
@@ -451,7 +465,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
         for (const config of activeExams.genetic) {
           const saved = readGeneticExam(cat, config);
-          const inheritedNn = await resolveNnByAncestry(prisma, cat, config, ancestryCache);
+          const inheritedNn = await resolveNnByAncestry(resolveAncestor, cat, config, ancestryCache);
           geneticExams.push({
             ...config,
             source: saved.source || (inheritedNn ? "Antecedente" : ""),

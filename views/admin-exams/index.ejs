@@ -162,6 +162,9 @@
               <% if (!items.length) { %>
                 <div class="empty" style="margin-top:12px;">Nenhum gato nesta categoria.</div>
               <% } else { %>
+                <% items.forEach(function(row) { %>
+                  <form id="exam-form-<%= row.cat.id %>" method="post" action="/admin/exams/<%= row.cat.id %>" enctype="multipart/form-data"></form>
+                <% }) %>
                 <div class="exam-table-wrap">
                   <table class="exam-table">
                     <thead>
@@ -182,7 +185,6 @@
                       <% items.forEach(function(row) { %>
                         <tr class="exam-row <%= row.urgent ? 'is-urgent' : '' %>" data-form-id="exam-form-<%= row.cat.id %>">
                           <td class="exam-cat-cell">
-                            <form id="exam-form-<%= row.cat.id %>" method="post" action="/admin/exams/<%= row.cat.id %>" enctype="multipart/form-data"></form>
                             <div class="item-title" style="color:<%= row.urgent ? '#dc2626' : 'inherit' %>;"><%= row.displayName %></div>
                             <span class="status-pill <%= row.urgent ? 'is-red' : 'is-blue' %>">
                               <%= row.urgent ? 'Atenção' : 'Acompanhamento' %>
