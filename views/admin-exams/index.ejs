@@ -67,6 +67,9 @@
         padding: 8px;
         vertical-align: top;
       }
+      .exam-table tbody tr + tr td {
+        border-top: 3px solid #cbd5e1;
+      }
       .exam-table th {
         background: #f8fafc;
         color: var(--text-muted);
@@ -416,6 +419,21 @@
           return formId ? document.getElementById(formId) : element?.closest?.("form");
         }
 
+        function buildRowFormData(form, row) {
+          if (!row) return new FormData(form);
+          const data = new FormData();
+          row.querySelectorAll("input, select, textarea").forEach((field) => {
+            if (!field.name || field.disabled) return;
+            if ((field.type === "checkbox" || field.type === "radio") && !field.checked) return;
+            if (field.type === "file") {
+              Array.from(field.files || []).forEach((file) => data.append(field.name, file));
+              return;
+            }
+            data.append(field.name, field.value || "");
+          });
+          return data;
+        }
+
         async function autosave(form, row) {
           if (!form) return;
           reindexEcoRows(row || document.querySelector(`[data-form-id="${form.id}"]`));
@@ -430,7 +448,7 @@
           try {
             const response = await fetch(form.action, {
               method: "POST",
-              body: new FormData(form),
+              body: buildRowFormData(form, row || document.querySelector(`[data-form-id="${form.id}"]`)),
               credentials: "same-origin",
               headers: {
                 "X-Autosave": "true",
