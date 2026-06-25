@@ -80,13 +80,33 @@ function safeJsonParse(value, fallback = {}) {
   }
 }
 
+function removeContractFileFromDisk(contractFile) {
+  const publicPath = contractFile?.path;
+  if (!publicPath || !publicPath.startsWith("/uploads/kitten-contracts/")) return;
+  const fileName = path.basename(publicPath);
+  if (!fileName) return;
+  const filePath = path.join(CONTRACT_UPLOAD_DIR, fileName);
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch {
+    // A exclusao do arquivo fisico nao deve impedir o cadastro de ser salvo.
+  }
+}
+
 function buildOwnershipInfo(req, existingKitten = null) {
   const currentInfo = safeJsonParse(existingKitten?.newOwnerInfoJson);
   const contractLink = String(req.body.ownerContractLink || "").trim();
+  const deleteContractFile = req.body.ownerContractFileDelete === "1";
   const nextInfo = {
     ...currentInfo,
     contractLink: contractLink || null,
   };
+
+  if (deleteContractFile) {
+    delete nextInfo.contractFile;
+  }
 
   if (req.file) {
     nextInfo.contractFile = {
@@ -581,6 +601,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         if (req.uploadError) {
           throw new Error(req.uploadError);
         }
+        const previousOwnerInfo = safeJsonParse(existingKitten.newOwnerInfoJson);
+        const shouldRemovePreviousContractFile = Boolean(previousOwnerInfo.contractFile?.path)
+          && (req.body.ownerContractFileDelete === "1" || Boolean(req.file));
         const data = await parsePayload(req, existingKitten);
         await prisma.$transaction(async (tx) => {
           const updated = await tx.cat.update({
@@ -590,6 +613,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           await syncLitterKitten(tx, existingKitten.id, data);
           await syncDeathHistoryEntry(tx, existingKitten.id, updated);
         });
+        if (shouldRemovePreviousContractFile) {
+          removeContractFileFromDisk(previousOwnerInfo.contractFile);
+        }
         res.redirect(`/admin/kittens/${existingKitten.id}?saved=1`);
       } catch (err) {
         res.status(400).render("admin-kittens/form", {

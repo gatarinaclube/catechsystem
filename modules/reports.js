@@ -836,14 +836,56 @@ function revenueHasCanceledPayment(revenue) {
   return parseParcelData(revenue?.parcelDataJson).some((parcel) => parcel.canceled === true);
 }
 
-function reservationKittenNameLabel(kitten) {
-  const currentName = String(kitten?.kittenCat?.name || kitten?.name || "").trim();
+function stripReservationKittenPrefix(value, litter) {
+  let name = String(value || "").replace(/\s+/g, " ").trim();
+  if (!name) return "";
+
+  name = name.replace(/^[A-Z]{2}\*\s*/i, "").trim();
+
+  const catteryName = String(litter?.catteryName || "").replace(/\s+/g, " ").trim();
+  const catteryCandidates = Array.from(new Set([
+    catteryName,
+    catteryName.replace(/^gatil\s+/i, "").trim(),
+    catteryName.split(/\s+/).filter((part) => !/^gatil$/i.test(part))[0],
+  ].filter(Boolean))).sort((a, b) => b.length - a.length);
+
+  catteryCandidates.forEach((candidate) => {
+    if (!name) return;
+    const lowerName = name.toLowerCase();
+    const lowerCandidate = candidate.toLowerCase();
+    if (lowerName === lowerCandidate) return;
+    if (lowerName.startsWith(`${lowerCandidate} `) || lowerName.startsWith(lowerCandidate)) {
+      const nextName = name.slice(candidate.length).trim();
+      if (nextName) name = nextName;
+    }
+  });
+
+  if (/^[a-z]\s+[A-ZÀ-Ý]/.test(name)) {
+    name = name.slice(1).trim();
+  }
+
+  return name;
+}
+
+function reservationKittenNameLabel(kitten, litter = null) {
+  const currentName = stripReservationKittenPrefix(kitten?.name, litter)
+    || stripReservationKittenPrefix(kitten?.kittenCat?.name, litter);
   if (currentName) return currentName;
 
   const sex = String(kitten?.kittenCat?.gender || kitten?.sex || "").trim().toUpperCase();
   if (sex === "M") return "Macho";
   if (sex === "F") return "Fêmea";
   return "-";
+}
+
+function reservationKittenContractFile(kitten) {
+  const ownerInfo = safeJsonParse(kitten?.kittenCat?.newOwnerInfoJson);
+  const file = ownerInfo.contractFile || {};
+  if (!file.path) return null;
+  return {
+    path: file.path,
+    name: file.originalName || "Contrato do filhote",
+  };
 }
 
 function kittenReservationClass(kitten, revenue, forceAvailable = false) {
@@ -1093,7 +1135,8 @@ async function loadReservationPaymentReport(prisma, req) {
         groupStatus: manual.groupStatus || "Não",
         manualStatus: manual.manualStatus || "Não Enviado",
         kittenNumberLabel: kitten.kittenNumber || kitten.index || "-",
-        kittenNameLabel: reservationKittenNameLabel(kitten),
+        kittenNameLabel: reservationKittenNameLabel(kitten, summary.litter),
+        contractFile: reservationKittenContractFile(kitten),
         buyerFirstName: financial.buyerFirstName,
         accountNote: financial.accountNote,
         valueLabel: financial.valueCents ? formatCurrency(financial.valueCents) : "",

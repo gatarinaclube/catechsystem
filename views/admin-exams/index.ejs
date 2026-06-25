@@ -95,9 +95,6 @@
       .exam-next-cell {
         min-width: 150px;
       }
-      .exam-action-cell {
-        min-width: 130px;
-      }
       .exam-mini-title {
         display: block;
         color: var(--text-muted);
@@ -127,11 +124,23 @@
         font-size: 12px;
       }
       .exam-upload-button {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         width: fit-content;
+        min-height: 34px;
+        overflow: hidden;
         cursor: pointer;
+        white-space: nowrap;
       }
       .exam-upload-button input[type="file"] {
-        display: none;
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
       }
       .exam-row input,
       .exam-row select {
@@ -304,8 +313,6 @@
                           <% if (firstExamSet.hcm) { %>
                             <th>HCM - Doppler</th>
                             <th>Próximo HCM</th>
-                          <% } else { %>
-                            <th>Atualizar</th>
                           <% } %>
                         </tr>
                       </thead>
@@ -325,6 +332,7 @@
                               <span class="status-pill <%= row.urgent ? 'is-red' : 'is-blue' %>">
                                 <%= row.statusLabel || (row.urgent ? 'Exame Pendente' : 'Exames Válidos') %>
                               </span>
+                              <span class="exam-save-status" data-save-status></span>
                             </td>
                             <% row.geneticExams.forEach(function(exam) { %>
                               <td class="exam-genetic-cell">
@@ -363,7 +371,10 @@
                                   <% } %>
                                   <input form="exam-form-<%= row.cat.id %>" type="hidden" name="<%= exam.key %>DeleteDoc" value="" data-delete-doc-input="<%= exam.key %>" />
                                   <div class="exam-upload <%= exam.file ? '' : 'is-forced-visible' %>" data-upload-box="<%= exam.key %>" data-has-file="<%= exam.file ? 'true' : 'false' %>">
-                                    <input form="exam-form-<%= row.cat.id %>" type="file" name="<%= exam.key %>Doc" accept=".pdf,image/*" />
+                                    <label class="btn exam-upload-button">
+                                      Anexar exame
+                                      <input form="exam-form-<%= row.cat.id %>" type="file" name="<%= exam.key %>Doc" accept=".pdf,image/*" />
+                                    </label>
                                   </div>
                                 </div>
                               </td>
@@ -402,13 +413,6 @@
                               </td>
                               <td class="exam-next-cell">
                                 <strong><%= row.nextEco ? formatDate(row.nextEco) : (row.isFounder ? 'Último válido' : '-') %></strong>
-                                <button type="button" class="btn btn-primary" data-save-exam-row>Atualizar</button>
-                                <span class="exam-save-status" data-save-status></span>
-                              </td>
-                            <% } else { %>
-                              <td class="exam-action-cell">
-                                <button type="button" class="btn btn-primary" data-save-exam-row>Atualizar</button>
-                                <span class="exam-save-status" data-save-status></span>
                               </td>
                             <% } %>
                           </tr>
@@ -675,7 +679,9 @@
 
             input.addEventListener("input", () => {
               input.value = maskBrazilianDate(input.value);
-              commitDate();
+              if (input.value.length === 10) {
+                commitDate();
+              }
             });
             input.addEventListener("blur", commitDate);
           }
@@ -720,12 +726,6 @@
           reindexEcoRows(row);
           bindFileInputs(row);
         });
-        document.querySelectorAll("[data-save-exam-row]").forEach((button) => {
-          button.addEventListener("click", () => {
-            const row = getExamRow(button);
-            autosave(getForm(button), row, { showStatus: true });
-          });
-        });
         const examSearch = document.getElementById("examSearch");
         const examStatusFilter = document.getElementById("examStatusFilter");
         function applyExamFilters() {
@@ -751,7 +751,7 @@
             currentDoc?.classList.add("is-hidden");
             uploadBox?.classList.add("is-forced-visible");
             uploadBox?.classList.add("is-visible");
-            setSaveStatus(row, "Clique em Atualizar para salvar a exclusão.", "");
+            autosave(getForm(button), row, { showStatus: true });
           });
         });
 

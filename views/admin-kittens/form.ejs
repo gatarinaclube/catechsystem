@@ -49,6 +49,53 @@
         padding: 0;
         font-size: 16px;
       }
+      .kitten-contract-field.is-collapsed .kitten-contract-input {
+        display: none;
+      }
+      .kitten-contract-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .kitten-contract-action {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      .kitten-contract-delete {
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        color: #991b1b;
+        border-color: #fecaca;
+        background: #fff7f7;
+      }
+      .kitten-upload-button {
+        position: relative;
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .kitten-upload-button input[type="file"] {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+      }
+      .kitten-file-name {
+        margin-top: 6px;
+        color: var(--text-muted);
+        font-size: 12px;
+      }
       @media (max-width: 1000px) {
         .kitten-property-grid,
         .registered-owner-row,
@@ -229,33 +276,43 @@
               </div>
             </div>
             <div class="grid-2" style="margin-top:12px;">
-              <div class="field">
+              <div class="field kitten-contract-field <%= ownerInfo.contractLink ? 'is-collapsed' : '' %>" data-contract-link-field>
                 <label class="field-label" for="ownerContractLink">Link de acesso ao contrato</label>
+                <% if (ownerInfo.contractLink) { %>
+                  <div class="kitten-contract-actions" data-contract-link-actions>
+                    <a class="btn btn-primary kitten-contract-action" href="<%= ownerInfo.contractLink %>" target="_blank" rel="noopener noreferrer">Abrir contrato</a>
+                    <button type="button" class="btn kitten-contract-delete" data-delete-contract-link title="Excluir link" aria-label="Excluir link">&#128465;&#65039;</button>
+                  </div>
+                <% } %>
                 <input
+                  class="kitten-contract-input"
                   id="ownerContractLink"
                   name="ownerContractLink"
-                  type="url"
+                  type="<%= ownerInfo.contractLink ? 'hidden' : 'url' %>"
                   value="<%= ownerInfo.contractLink || '' %>"
                   placeholder="https://..."
                 />
+                <input type="hidden" id="ownerContractLinkDelete" name="ownerContractLinkDelete" value="" />
                 <div class="section-note" style="margin-top:6px;">
                   Use este campo para colar o link de assinatura eletrônica ou acesso externo ao contrato.
-                  <% if (ownerInfo.contractLink) { %>
-                    <br><a href="<%= ownerInfo.contractLink %>" target="_blank" rel="noopener noreferrer">Abrir link atual</a>
-                  <% } %>
                 </div>
               </div>
-              <div class="field">
+              <div class="field kitten-contract-field <%= ownerInfo.contractFile?.path ? 'is-collapsed' : '' %>" data-contract-file-field>
                 <label class="field-label" for="ownerContractFile">Anexar contrato</label>
-                <input id="ownerContractFile" name="ownerContractFile" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" />
                 <% if (ownerInfo.contractFile?.path) { %>
-                  <div class="section-note" style="margin-top:6px;">
-                    Contrato atual:
-                    <a href="<%= ownerInfo.contractFile.path %>" target="_blank" rel="noopener noreferrer">
-                      <%= ownerInfo.contractFile.originalName || 'Abrir arquivo' %>
+                  <div class="kitten-contract-actions" data-contract-file-actions>
+                    <a class="btn btn-primary kitten-contract-action" href="<%= ownerInfo.contractFile.path %>" target="_blank" rel="noopener noreferrer" download>
+                      Baixar contrato
                     </a>
+                    <button type="button" class="btn kitten-contract-delete" data-delete-contract-file title="Excluir arquivo" aria-label="Excluir arquivo">&#128465;&#65039;</button>
                   </div>
+                  <div class="kitten-file-name" data-contract-file-name><%= ownerInfo.contractFile.originalName || 'Contrato anexado' %></div>
                 <% } %>
+                <label class="btn kitten-upload-button kitten-contract-input" for="ownerContractFile">
+                  Anexar contrato
+                  <input id="ownerContractFile" name="ownerContractFile" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" />
+                </label>
+                <input type="hidden" id="ownerContractFileDelete" name="ownerContractFileDelete" value="" />
               </div>
             </div>
             <div id="deathCauseBlock" class="grid-2" style="margin-top:12px;">
@@ -305,6 +362,15 @@
       const deathCauseSelect = document.getElementById("deathCause");
       const deathCauseDescriptionBlock = document.getElementById("deathCauseDescriptionBlock");
       const deathCauseDescription = document.getElementById("deathCauseDescription");
+      const contractLinkField = document.querySelector("[data-contract-link-field]");
+      const contractLinkInput = document.getElementById("ownerContractLink");
+      const contractLinkDeleteInput = document.getElementById("ownerContractLinkDelete");
+      const deleteContractLinkButton = document.querySelector("[data-delete-contract-link]");
+      const contractFileField = document.querySelector("[data-contract-file-field]");
+      const contractFileInput = document.getElementById("ownerContractFile");
+      const contractFileDeleteInput = document.getElementById("ownerContractFileDelete");
+      const deleteContractFileButton = document.querySelector("[data-delete-contract-file]");
+      const contractFileName = document.querySelector("[data-contract-file-name]");
 
       function formatMicrochip() {
         let digits = microchipInput.value.replace(/\D/g, "").slice(0, 15);
@@ -374,12 +440,52 @@
         }
       }
 
+      function revealContractLinkInput() {
+        if (!contractLinkField || !contractLinkInput) return;
+        const actions = contractLinkField.querySelector("[data-contract-link-actions]");
+        if (actions) actions.style.display = "none";
+        contractLinkField.classList.remove("is-collapsed");
+        contractLinkInput.type = "url";
+        contractLinkInput.value = "";
+        contractLinkInput.focus();
+        if (contractLinkDeleteInput) contractLinkDeleteInput.value = "1";
+      }
+
+      function revealContractFileInput() {
+        if (!contractFileField) return;
+        const actions = contractFileField.querySelector("[data-contract-file-actions]");
+        if (actions) actions.style.display = "none";
+        if (contractFileName) contractFileName.style.display = "none";
+        contractFileField.classList.remove("is-collapsed");
+        if (contractFileDeleteInput) contractFileDeleteInput.value = "1";
+      }
+
       ownerClientSearch.addEventListener("input", syncOwnerClientId);
       ownerClientSearch.addEventListener("change", syncOwnerClientId);
       microchipInput.addEventListener("input", formatMicrochip);
       breedSelect.addEventListener("change", bindBreedToEms);
       kittenAvailabilityStatus.addEventListener("change", toggleDeathCause);
       deathCauseSelect.addEventListener("change", toggleDeathCause);
+      if (deleteContractLinkButton) {
+        deleteContractLinkButton.addEventListener("click", revealContractLinkInput);
+      }
+      if (deleteContractFileButton) {
+        deleteContractFileButton.addEventListener("click", revealContractFileInput);
+      }
+      if (contractFileInput) {
+        contractFileInput.addEventListener("change", () => {
+          if (!contractFileInput.files.length) return;
+          if (contractFileName) {
+            contractFileName.style.display = "block";
+            contractFileName.textContent = contractFileInput.files[0].name;
+          } else {
+            const fileName = document.createElement("div");
+            fileName.className = "kitten-file-name";
+            fileName.textContent = contractFileInput.files[0].name;
+            contractFileField.appendChild(fileName);
+          }
+        });
+      }
 
       renderOwnerClientInfo();
       formatMicrochip();
