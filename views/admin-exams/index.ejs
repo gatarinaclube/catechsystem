@@ -296,7 +296,7 @@
                                         <input form="exam-form-<%= row.cat.id %>" type="file" name="hcmDoc_<%= index %>" accept=".pdf,image/*" />
                                         <button type="button" class="btn exam-delete-date delete-history-date" title="Excluir esta data" aria-label="Excluir esta data">&#128465;&#65039;</button>
                                       <% } else { %>
-                                        <input form="exam-form-<%= row.cat.id %>" type="date" name="ecoDates" value="" />
+                                        <input form="exam-form-<%= row.cat.id %>" type="text" data-eco-date-input inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="" />
                                         <input form="exam-form-<%= row.cat.id %>" type="hidden" name="ecoFiles" value="" />
                                         <button type="button" class="btn exam-delete-date delete-history-date" title="Excluir esta data" aria-label="Excluir esta data">&#128465;&#65039;</button>
                                       <% } %>
@@ -379,10 +379,31 @@
           });
         }
 
-        function isCompleteIsoDate(value) {
-          if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return false;
-          const parsed = new Date(`${value}T00:00:00`);
-          return !Number.isNaN(parsed.getTime());
+        function maskBrazilianDate(value) {
+          const digits = String(value || "").replace(/\D/g, "").slice(0, 8);
+          if (digits.length <= 2) return digits;
+          if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+          return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+        }
+
+        function parseCompleteBrazilianDate(value) {
+          const match = String(value || "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+          if (!match) return null;
+          const [, dayRaw, monthRaw, yearRaw] = match;
+          const day = Number(dayRaw);
+          const month = Number(monthRaw);
+          const year = Number(yearRaw);
+          if (year < 1900 || year > 2100) return null;
+          const parsed = new Date(year, month - 1, day);
+          if (
+            Number.isNaN(parsed.getTime()) ||
+            parsed.getFullYear() !== year ||
+            parsed.getMonth() !== month - 1 ||
+            parsed.getDate() !== day
+          ) {
+            return null;
+          }
+          return `${yearRaw}-${monthRaw}-${dayRaw}`;
         }
 
         function getExamRow(element) {
@@ -436,7 +457,7 @@
             row.className = "inline-plus exam-eco-row";
             row.dataset.ecoRow = "";
             row.innerHTML = `
-              <input type="date" name="ecoDates" value="" />
+              <input type="text" data-eco-date-input inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="" />
               <input type="hidden" name="ecoFiles" value="" />
               <button type="button" class="btn exam-delete-date delete-history-date" title="Excluir esta data" aria-label="Excluir esta data">&#128465;&#65039;</button>
             `;
@@ -475,15 +496,16 @@
         }
 
         function bindEcoRow(row) {
-          const input = row.querySelector('input[type="date"]');
+          const input = row.querySelector("[data-eco-date-input]");
           if (input) {
             const commitDate = () => {
-              if (!isCompleteIsoDate(input.value) || row.dataset.dateCommitted === input.value) return;
-              row.dataset.dateCommitted = input.value;
+              const isoDate = parseCompleteBrazilianDate(input.value);
+              if (!isoDate || row.dataset.dateCommitted === isoDate) return;
+              row.dataset.dateCommitted = isoDate;
               row.innerHTML = `
-                <input type="hidden" name="ecoDates" value="${input.value}" />
+                <input type="hidden" name="ecoDates" value="${isoDate}" />
                 <input type="hidden" name="ecoFiles" value="" />
-                <span class="history-date-display">${formatDisplayDate(input.value)}</span>
+                <span class="history-date-display">${formatDisplayDate(isoDate)}</span>
                 <input type="file" accept=".pdf,image/*" />
                 <button type="button" class="btn exam-delete-date delete-history-date" title="Excluir esta data" aria-label="Excluir esta data">&#128465;&#65039;</button>
               `;
@@ -499,8 +521,10 @@
               syncExamScrollbars(row.closest(".exam-table-shell") || document);
             };
 
-            input.addEventListener("input", commitDate);
-            input.addEventListener("change", commitDate);
+            input.addEventListener("input", () => {
+              input.value = maskBrazilianDate(input.value);
+              commitDate();
+            });
             input.addEventListener("blur", commitDate);
           }
 
