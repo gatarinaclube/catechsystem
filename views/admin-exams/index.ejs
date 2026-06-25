@@ -126,6 +126,13 @@
       .exam-file-link {
         font-size: 12px;
       }
+      .exam-upload-button {
+        width: fit-content;
+        cursor: pointer;
+      }
+      .exam-upload-button input[type="file"] {
+        display: none;
+      }
       .exam-row input,
       .exam-row select {
         max-width: 100%;
@@ -373,8 +380,12 @@
                                         <span class="history-date-display"><%= formatDate(item.date) %></span>
                                         <% if (item.file) { %>
                                           <a class="exam-file-link" href="<%= item.file %>" target="_blank">Arquivo</a>
+                                        <% } else { %>
+                                          <label class="btn exam-upload-button">
+                                            Anexar exame
+                                            <input form="exam-form-<%= row.cat.id %>" type="file" name="hcmDoc_<%= index %>" accept=".pdf,image/*" />
+                                          </label>
                                         <% } %>
-                                        <input form="exam-form-<%= row.cat.id %>" type="file" name="hcmDoc_<%= index %>" accept=".pdf,image/*" />
                                         <% if (index === lastEcoIndex) { %>
                                           <button type="button" class="btn exam-delete-date delete-history-date" title="Excluir esta data" aria-label="Excluir esta data">&#128465;&#65039;</button>
                                         <% } %>
@@ -574,6 +585,9 @@
               setSaveStatus(row, "Salvo", "is-ok");
               window.setTimeout(() => setSaveStatus(row, ""), 2500);
             }
+            if (options.reloadOnSuccess) {
+              window.setTimeout(() => window.location.reload(), 500);
+            }
           } catch (error) {
             console.error(error);
             if (options.showStatus) setSaveStatus(row, "Erro ao salvar", "is-error");
@@ -641,7 +655,10 @@
                 <input type="hidden" name="ecoDates" value="${isoDate}" />
                 <input type="hidden" name="ecoFiles" value="" />
                 <span class="history-date-display">${formatDisplayDate(isoDate)}</span>
-                <input type="file" accept=".pdf,image/*" />
+                <label class="btn exam-upload-button">
+                  Anexar exame
+                  <input type="file" accept=".pdf,image/*" />
+                </label>
                 <button type="button" class="btn exam-delete-date delete-history-date" title="Excluir esta data" aria-label="Excluir esta data">&#128465;&#65039;</button>
               `;
               const examRow = getExamRow(row);
@@ -682,7 +699,10 @@
           scope.querySelectorAll('input[type="file"]').forEach((input) => {
             if (input.dataset.boundFile === "true") return;
             input.dataset.boundFile = "true";
-            input.addEventListener("change", () => autosave(getForm(input), getExamRow(input)));
+            input.addEventListener("change", () => autosave(getForm(input), getExamRow(input), {
+              showStatus: true,
+              reloadOnSuccess: true,
+            }));
           });
         }
 
