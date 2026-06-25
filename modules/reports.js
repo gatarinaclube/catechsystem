@@ -887,13 +887,27 @@ function reservationKittenNameLabel(kitten, litter = null) {
   return "-";
 }
 
-function reservationKittenContractFile(kitten) {
+function reservationKittenContractAccess(kitten) {
   const ownerInfo = safeJsonParse(kitten?.kittenCat?.newOwnerInfoJson);
   const file = ownerInfo.contractFile || {};
-  if (!file.path) return null;
+  if (file.path) {
+    return {
+      href: file.path,
+      label: file.originalName || "Contrato do filhote",
+      type: "file",
+    };
+  }
+  if (ownerInfo.contractLink) {
+    return {
+      href: ownerInfo.contractLink,
+      label: "Abrir contrato",
+      type: "link",
+    };
+  }
   return {
-    path: file.path,
-    name: file.originalName || "Contrato do filhote",
+    href: "",
+    label: "",
+    type: "",
   };
 }
 
@@ -1145,7 +1159,7 @@ async function loadReservationPaymentReport(prisma, req) {
         manualStatus: manual.manualStatus || "Não Enviado",
         kittenNumberLabel: kitten.kittenNumber || kitten.index || "-",
         kittenNameLabel: reservationKittenNameLabel(kitten, summary.litter),
-        contractFile: reservationKittenContractFile(kitten),
+        contractAccess: reservationKittenContractAccess(kitten),
         buyerFirstName: financial.buyerFirstName,
         accountNote: financial.accountNote,
         valueLabel: financial.valueCents ? formatCurrency(financial.valueCents) : "",

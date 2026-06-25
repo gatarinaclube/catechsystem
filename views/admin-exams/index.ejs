@@ -565,11 +565,16 @@
           reindexEcoRows(row || document.querySelector(`[data-form-id="${form.id}"]`));
           if (form.dataset.submitting === "true") {
             form.dataset.pendingSave = "true";
+            form.pendingSaveOptions = {
+              showStatus: Boolean(form.pendingSaveOptions?.showStatus || options.showStatus),
+              reloadOnSuccess: Boolean(form.pendingSaveOptions?.reloadOnSuccess || options.reloadOnSuccess),
+            };
             return;
           }
 
           form.dataset.submitting = "true";
           form.dataset.pendingSave = "false";
+          form.pendingSaveOptions = null;
           if (options.showStatus) setSaveStatus(row, "Salvando...");
 
           try {
@@ -583,7 +588,8 @@
             });
 
             if (!response.ok) {
-              throw new Error("Erro ao salvar exames");
+              const message = await response.text();
+              throw new Error(message || "Erro ao salvar exames");
             }
             if (options.showStatus) {
               setSaveStatus(row, "Salvo", "is-ok");
@@ -594,11 +600,13 @@
             }
           } catch (error) {
             console.error(error);
-            if (options.showStatus) setSaveStatus(row, "Erro ao salvar", "is-error");
+            if (options.showStatus) setSaveStatus(row, error.message || "Erro ao salvar", "is-error");
           } finally {
             form.dataset.submitting = "false";
             if (form.dataset.pendingSave === "true") {
-              autosave(form, row);
+              const pendingOptions = form.pendingSaveOptions || {};
+              form.pendingSaveOptions = null;
+              autosave(form, row, pendingOptions);
             }
           }
         }

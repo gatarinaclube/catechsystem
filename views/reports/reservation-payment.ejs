@@ -411,14 +411,14 @@
                             <td>
                               <span class="reservation-kitten-name">
                                 <strong><%= kitten.kittenNameLabel %></strong>
-                                <% if (kitten.contractFile?.path) { %>
+                                <% if (kitten.contractAccess?.href) { %>
                                   <a
                                     class="reservation-contract-download"
-                                    href="<%= kitten.contractFile.path %>"
-                                    download
-                                    title="Baixar contrato anexado"
-                                    aria-label="Baixar contrato anexado de <%= kitten.kittenNameLabel %>"
-                                  >↓</a>
+                                    href="<%= kitten.contractAccess.href %>"
+                                    <%= kitten.contractAccess.type === 'file' ? 'download' : 'target="_blank" rel="noopener noreferrer"' %>
+                                    title="<%= kitten.contractAccess.type === 'file' ? 'Baixar contrato anexado' : 'Abrir link do contrato' %>"
+                                    aria-label="<%= kitten.contractAccess.type === 'file' ? 'Baixar contrato anexado' : 'Abrir link do contrato' %> de <%= kitten.kittenNameLabel %>"
+                                  ><%= kitten.contractAccess.type === 'file' ? '↓' : '↗' %></a>
                                 <% } %>
                               </span>
                             </td>
