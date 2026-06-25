@@ -4,6 +4,7 @@ const multer = require("multer");
 const path = require("path");
 const { canViewAllData } = require("../utils/access");
 const { ageInMonths, buildKittenRegisteredName, kittenFallbackDisplayName } = require("../utils/cattery-admin");
+const { getFileUploadLimit, validateFilesForRole } = require("../utils/planLimits");
 const { selectedBreedsFromSettings } = require("../utils/userPreferences");
 const {
   DEATH_CAUSE_OPTIONS,
@@ -40,7 +41,7 @@ const contractUpload = multer({
       cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
     },
   }),
-  limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+  limits: { fileSize: getFileUploadLimit("ADMIN").bytes, files: 1 },
   fileFilter: (_req, file, cb) => {
     const allowed = [
       "application/pdf",
@@ -182,7 +183,18 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   function handleContractUpload(req, res, next) {
     contractUpload.single("ownerContractFile")(req, res, (err) => {
       if (err) {
-        req.uploadError = err.message || "Não foi possível anexar o contrato.";
+        const limit = getFileUploadLimit(req.session?.userRole);
+        req.uploadError = err.code === "LIMIT_FILE_SIZE"
+          ? `O contrato ultrapassa o limite de ${limit.label} permitido para seu perfil. Reduza o PDF antes de enviar.`
+          : err.message || "Não foi possível anexar o contrato.";
+      } else if (req.file) {
+        try {
+          validateFilesForRole([req.file], req.session?.userRole);
+        } catch (uploadLimitError) {
+          removeContractFileFromDisk({ path: `/uploads/kitten-contracts/${req.file.filename}` });
+          req.file = null;
+          req.uploadError = uploadLimitError.message;
+        }
       }
       next();
     });
@@ -255,6 +267,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       breeds: selectedBreeds,
       kittenStatusOptions: KITTEN_STATUS_OPTIONS,
       deathCauseOptions: DEATH_CAUSE_OPTIONS,
+      contractUploadLimit: getFileUploadLimit(req.session?.userRole),
       microchipRequiredNotice: kitten && isBlockedByMissingMicrochip(kitten)
         ? buildMissingMicrochipMessage("Este filhote")
         : null,

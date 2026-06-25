@@ -25,6 +25,15 @@ function parseDateInput(value, fallback) {
   return new Date(Date.UTC(year, month - 1, day));
 }
 
+function safeJsonParse(value, fallback = {}) {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
 function addDays(date, days) {
   const next = new Date(date);
   next.setUTCDate(next.getUTCDate() + days);
