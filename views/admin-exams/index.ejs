@@ -17,6 +17,17 @@
         border-radius: 8px;
         background: #fff;
       }
+      .shell > .main {
+        min-width: 0;
+        max-width: calc(100vw - 300px);
+      }
+      .main .content-card,
+      .module-accordion,
+      .module-accordion-body {
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
       .exam-table-shell {
         width: 100%;
         max-width: 100%;
@@ -120,12 +131,28 @@
         align-items: start;
         flex-wrap: wrap;
       }
+      .exam-delete-date {
+        width: 34px;
+        height: 34px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #b91c1c;
+        border-color: #fecaca;
+        background: #fff5f5;
+        font-size: 16px;
+        line-height: 1;
+      }
       .exam-print-actions {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
       }
       @media (max-width: 760px) {
+        .shell > .main {
+          max-width: 100vw;
+        }
         .exam-table {
           font-size: 12px;
         }
@@ -267,11 +294,11 @@
                                           <a class="exam-file-link" href="<%= item.file %>" target="_blank">Arquivo</a>
                                         <% } %>
                                         <input form="exam-form-<%= row.cat.id %>" type="file" name="hcmDoc_<%= index %>" accept=".pdf,image/*" />
-                                        <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
+                                        <button type="button" class="btn exam-delete-date delete-history-date" title="Excluir esta data" aria-label="Excluir esta data">&#128465;&#65039;</button>
                                       <% } else { %>
                                         <input form="exam-form-<%= row.cat.id %>" type="date" name="ecoDates" value="" />
                                         <input form="exam-form-<%= row.cat.id %>" type="hidden" name="ecoFiles" value="" />
-                                        <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
+                                        <button type="button" class="btn exam-delete-date delete-history-date" title="Excluir esta data" aria-label="Excluir esta data">&#128465;&#65039;</button>
                                       <% } %>
                                     </div>
                                   <% }) %>
@@ -336,6 +363,22 @@
           return `${parts[2]}/${parts[1]}/${parts[0]}`;
         }
 
+        function syncExamScrollbars(scope = document) {
+          scope.querySelectorAll(".exam-table-shell").forEach((shell) => {
+            const tableWrap = shell.querySelector("[data-exam-table-wrap]");
+            const bottomScrollbar = shell.querySelector("[data-exam-scrollbar]");
+            const bottomScrollbarInner = shell.querySelector("[data-exam-scrollbar-inner]");
+            const table = shell.querySelector(".exam-table");
+            if (!tableWrap || !bottomScrollbar || !bottomScrollbarInner) return;
+
+            const tableWidth = table ? table.scrollWidth : 0;
+            const scrollWidth = Math.max(tableWidth, tableWrap.scrollWidth, tableWrap.clientWidth);
+            bottomScrollbarInner.style.width = `${scrollWidth}px`;
+            bottomScrollbar.style.display = scrollWidth > tableWrap.clientWidth ? "block" : "none";
+            bottomScrollbar.scrollLeft = tableWrap.scrollLeft;
+          });
+        }
+
         function isCompleteIsoDate(value) {
           if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return false;
           const parsed = new Date(`${value}T00:00:00`);
@@ -395,7 +438,7 @@
             row.innerHTML = `
               <input type="date" name="ecoDates" value="" />
               <input type="hidden" name="ecoFiles" value="" />
-              <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
+              <button type="button" class="btn exam-delete-date delete-history-date" title="Excluir esta data" aria-label="Excluir esta data">&#128465;&#65039;</button>
             `;
             const form = getForm(button);
             row.querySelectorAll("input").forEach((input) => {
@@ -404,6 +447,7 @@
             box.insertBefore(row, button.closest(".history-add-row"));
             bindEcoRow(row);
             reindexEcoRows(getExamRow(button));
+            syncExamScrollbars(button.closest(".exam-table-shell") || document);
           });
         });
 
@@ -426,6 +470,7 @@
 
             reindexEcoRows(examRow);
             autosave(form, examRow);
+            syncExamScrollbars(button.closest(".exam-table-shell") || document);
           });
         }
 
@@ -440,7 +485,7 @@
                 <input type="hidden" name="ecoFiles" value="" />
                 <span class="history-date-display">${formatDisplayDate(input.value)}</span>
                 <input type="file" accept=".pdf,image/*" />
-                <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
+                <button type="button" class="btn exam-delete-date delete-history-date" title="Excluir esta data" aria-label="Excluir esta data">&#128465;&#65039;</button>
               `;
               const examRow = getExamRow(row);
               const form = getForm(row);
@@ -451,6 +496,7 @@
               bindFileInputs(row);
               bindDelete(row.querySelector(".delete-history-date"));
               autosave(form, examRow);
+              syncExamScrollbars(row.closest(".exam-table-shell") || document);
             };
 
             input.addEventListener("input", commitDate);
@@ -497,17 +543,7 @@
         document.querySelectorAll(".exam-table-shell").forEach((shell) => {
           const tableWrap = shell.querySelector("[data-exam-table-wrap]");
           const bottomScrollbar = shell.querySelector("[data-exam-scrollbar]");
-          const bottomScrollbarInner = shell.querySelector("[data-exam-scrollbar-inner]");
-          const table = shell.querySelector(".exam-table");
-          if (!tableWrap || !bottomScrollbar || !bottomScrollbarInner) return;
-
-          const syncWidth = () => {
-            const tableWidth = table ? table.scrollWidth : 0;
-            const scrollWidth = Math.max(tableWidth, tableWrap.scrollWidth, tableWrap.clientWidth);
-            bottomScrollbarInner.style.width = `${scrollWidth}px`;
-            bottomScrollbar.style.display = scrollWidth > tableWrap.clientWidth ? "block" : "none";
-            bottomScrollbar.scrollLeft = tableWrap.scrollLeft;
-          };
+          if (!tableWrap || !bottomScrollbar) return;
           let syncingFromTable = false;
           let syncingFromBar = false;
 
@@ -525,9 +561,15 @@
             syncingFromBar = false;
           });
 
-          window.addEventListener("resize", syncWidth);
-          requestAnimationFrame(syncWidth);
+          requestAnimationFrame(() => syncExamScrollbars(shell));
         });
+        document.querySelectorAll("details.module-accordion").forEach((details) => {
+          details.addEventListener("toggle", () => {
+            requestAnimationFrame(() => syncExamScrollbars(details));
+          });
+        });
+        window.addEventListener("resize", () => syncExamScrollbars());
+        requestAnimationFrame(() => syncExamScrollbars());
       })();
     </script>
   </body>
