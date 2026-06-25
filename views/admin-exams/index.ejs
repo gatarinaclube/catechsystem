@@ -95,6 +95,9 @@
       .exam-next-cell {
         min-width: 150px;
       }
+      .exam-action-cell {
+        min-width: 130px;
+      }
       .exam-mini-title {
         display: block;
         color: var(--text-muted);
@@ -107,6 +110,18 @@
       }
       .exam-upload.is-visible {
         display: grid;
+      }
+      .exam-upload.is-forced-visible {
+        display: grid;
+      }
+      .exam-current-doc {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 34px;
+      }
+      .exam-current-doc.is-hidden {
+        display: none;
       }
       .exam-file-link {
         font-size: 12px;
@@ -152,12 +167,37 @@
         flex-wrap: wrap;
         gap: 8px;
       }
+      .exam-filter-card {
+        margin-bottom: 18px;
+      }
+      .exam-filter-grid {
+        display: grid;
+        grid-template-columns: minmax(220px, 1fr) minmax(190px, 260px);
+        gap: 12px;
+        align-items: end;
+      }
+      .exam-save-status {
+        display: block;
+        min-height: 16px;
+        margin-top: 6px;
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+      .exam-save-status.is-ok {
+        color: #15803d;
+      }
+      .exam-save-status.is-error {
+        color: #b91c1c;
+      }
       @media (max-width: 760px) {
         .shell > .main {
           max-width: 100vw;
         }
         .exam-table {
           font-size: 12px;
+        }
+        .exam-filter-grid {
+          grid-template-columns: 1fr;
         }
       }
     </style>
@@ -185,13 +225,13 @@
           </div>
           <div class="grid-2" style="align-items:end;">
             <div class="field">
-              <label class="field-label" for="printCatId">Gato</label>
-              <select id="printCatId">
-                <option value="">Selecione...</option>
+              <label class="field-label" for="printCatSearch">Gato</label>
+              <input id="printCatSearch" list="printCatOptions" type="search" placeholder="Digite parte do nome do gato..." autocomplete="off" />
+              <datalist id="printCatOptions">
                 <% (printCats || []).forEach(function(cat) { %>
-                  <option value="<%= cat.id %>"><%= cat.label %></option>
+                  <option value="<%= cat.label %>" data-id="<%= cat.id %>"></option>
                 <% }) %>
-              </select>
+              </datalist>
             </div>
             <div class="exam-print-actions">
               <% if (activeExams && activeExams.genetic && activeExams.genetic.length) { %>
@@ -206,6 +246,23 @@
               <% if (activeExams && ((activeExams.genetic && activeExams.genetic.length) || activeExams.hcm)) { %>
                 <a class="btn btn-primary" href="#" data-print-type="all">Todos</a>
               <% } %>
+            </div>
+          </div>
+        </section>
+
+        <section class="content-card exam-filter-card">
+          <div class="exam-filter-grid">
+            <div class="field">
+              <label class="field-label" for="examSearch">Buscar gato</label>
+              <input id="examSearch" type="search" placeholder="Digite parte do nome do gato..." autocomplete="off" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="examStatusFilter">Status</label>
+              <select id="examStatusFilter">
+                <option value="">Todos</option>
+                <option value="valid">Exames Válidos</option>
+                <option value="pending">Exames Pendentes</option>
+              </select>
             </div>
           </div>
         </section>
@@ -240,19 +297,26 @@
                           <% if (firstExamSet.hcm) { %>
                             <th>HCM - Doppler</th>
                             <th>Próximo HCM</th>
+                          <% } else { %>
+                            <th>Atualizar</th>
                           <% } %>
                         </tr>
                       </thead>
                       <tbody>
                         <% items.forEach(function(row) { %>
-                          <tr class="exam-row <%= row.urgent ? 'is-urgent' : '' %>" data-form-id="exam-form-<%= row.cat.id %>">
+                          <tr
+                            class="exam-row <%= row.urgent ? 'is-urgent' : '' %>"
+                            data-form-id="exam-form-<%= row.cat.id %>"
+                            data-search="<%= String(row.displayName || '').toLowerCase() %>"
+                            data-status="<%= row.urgent ? 'pending' : 'valid' %>"
+                          >
                             <td class="exam-cat-cell">
                               <div class="item-title" style="color:<%= row.urgent ? '#dc2626' : 'inherit' %>;"><%= row.displayName %></div>
                               <div class="content-sub" style="font-size:11px; margin:2px 0 6px;">
                                 Nasc.: <%= row.birthDateLabel %>
                               </div>
                               <span class="status-pill <%= row.urgent ? 'is-red' : 'is-blue' %>">
-                                <%= row.urgent ? 'Atenção' : 'Acompanhamento' %>
+                                <%= row.statusLabel || (row.urgent ? 'Exame Pendente' : 'Exames Válidos') %>
                               </span>
                             </td>
                             <% row.geneticExams.forEach(function(exam) { %>
@@ -262,12 +326,21 @@
                                     <span class="status-pill is-green">Antecedente OK</span>
                                   <% } %>
                                   <div class="exam-genetic-controls">
-                                    <select form="exam-form-<%= row.cat.id %>" name="<%= exam.key %>Source" data-source-toggle="<%= exam.key %>">
+                                    <% const lockInheritedSource = exam.inheritedNn && exam.source === 'Antecedente'; %>
+                                    <select
+                                      form="exam-form-<%= row.cat.id %>"
+                                      name="<%= exam.key %>Source"
+                                      data-source-toggle="<%= exam.key %>"
+                                      <%= lockInheritedSource ? 'disabled' : '' %>
+                                    >
                                       <option value="">Status</option>
                                       <% sourceOptions.forEach(function(option) { %>
                                         <option value="<%= option %>" <%= exam.source === option ? "selected" : "" %>><%= option %></option>
                                       <% }) %>
                                     </select>
+                                    <% if (lockInheritedSource) { %>
+                                      <input form="exam-form-<%= row.cat.id %>" type="hidden" name="<%= exam.key %>Source" value="Antecedente" />
+                                    <% } %>
                                     <select form="exam-form-<%= row.cat.id %>" name="<%= exam.key %>Result">
                                       <option value="">Resultado</option>
                                       <% exam.results.forEach(function(option) { %>
@@ -275,10 +348,14 @@
                                       <% }) %>
                                     </select>
                                   </div>
-                                  <div class="exam-upload" data-upload-box="<%= exam.key %>">
-                                    <% if (exam.file) { %>
+                                  <% if (exam.file) { %>
+                                    <div class="exam-current-doc" data-current-doc="<%= exam.key %>">
                                       <a class="exam-file-link" href="<%= exam.file %>" target="_blank">Arquivo atual</a>
-                                    <% } %>
+                                      <button type="button" class="btn exam-delete-date" data-delete-genetic-doc="<%= exam.key %>" title="Excluir arquivo" aria-label="Excluir arquivo">&#128465;&#65039;</button>
+                                    </div>
+                                  <% } %>
+                                  <input form="exam-form-<%= row.cat.id %>" type="hidden" name="<%= exam.key %>DeleteDoc" value="" data-delete-doc-input="<%= exam.key %>" />
+                                  <div class="exam-upload <%= exam.file ? '' : 'is-forced-visible' %>" data-upload-box="<%= exam.key %>" data-has-file="<%= exam.file ? 'true' : 'false' %>">
                                     <input form="exam-form-<%= row.cat.id %>" type="file" name="<%= exam.key %>Doc" accept=".pdf,image/*" />
                                   </div>
                                 </div>
@@ -287,6 +364,7 @@
                             <% if (row.activeExams && row.activeExams.hcm) { %>
                               <td class="exam-hcm-cell">
                                 <div class="mini-stack" data-eco-box>
+                                  <% const lastEcoIndex = row.ecoHistory.reduce(function(lastIndex, item, currentIndex) { return item.date ? currentIndex : lastIndex; }, -1); %>
                                   <% row.ecoHistory.forEach(function(item, index) { %>
                                     <div class="inline-plus exam-eco-row" data-eco-row>
                                       <% if (item.date) { %>
@@ -297,11 +375,12 @@
                                           <a class="exam-file-link" href="<%= item.file %>" target="_blank">Arquivo</a>
                                         <% } %>
                                         <input form="exam-form-<%= row.cat.id %>" type="file" name="hcmDoc_<%= index %>" accept=".pdf,image/*" />
-                                        <button type="button" class="btn exam-delete-date delete-history-date" title="Excluir esta data" aria-label="Excluir esta data">&#128465;&#65039;</button>
+                                        <% if (index === lastEcoIndex) { %>
+                                          <button type="button" class="btn exam-delete-date delete-history-date" title="Excluir esta data" aria-label="Excluir esta data">&#128465;&#65039;</button>
+                                        <% } %>
                                       <% } else { %>
                                         <input form="exam-form-<%= row.cat.id %>" type="text" data-eco-date-input inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="" />
                                         <input form="exam-form-<%= row.cat.id %>" type="hidden" name="ecoFiles" value="" />
-                                        <button type="button" class="btn exam-delete-date delete-history-date" title="Excluir esta data" aria-label="Excluir esta data">&#128465;&#65039;</button>
                                       <% } %>
                                     </div>
                                   <% }) %>
@@ -312,6 +391,13 @@
                               </td>
                               <td class="exam-next-cell">
                                 <strong><%= row.nextEco ? formatDate(row.nextEco) : (row.isFounder ? 'Último válido' : '-') %></strong>
+                                <button type="button" class="btn btn-primary" data-save-exam-row>Atualizar</button>
+                                <span class="exam-save-status" data-save-status></span>
+                              </td>
+                            <% } else { %>
+                              <td class="exam-action-cell">
+                                <button type="button" class="btn btn-primary" data-save-exam-row>Atualizar</button>
+                                <span class="exam-save-status" data-save-status></span>
                               </td>
                             <% } %>
                           </tr>
@@ -346,18 +432,36 @@
 
     <script>
       (function () {
-        const printCatSelect = document.getElementById("printCatId");
+        const printCatSearch = document.getElementById("printCatSearch");
+        const printCatOptions = Array.from(document.querySelectorAll("#printCatOptions option"));
+        function selectedPrintCatId() {
+          const value = String(printCatSearch?.value || "").trim();
+          const exact = printCatOptions.find((option) => option.value === value);
+          if (exact) return exact.dataset.id || "";
+          const partialMatches = printCatOptions.filter((option) => (
+            normalizeSearch(option.value).includes(normalizeSearch(value))
+          ));
+          return partialMatches.length === 1 ? partialMatches[0].dataset.id || "" : "";
+        }
         document.querySelectorAll("[data-print-type]").forEach((button) => {
           button.addEventListener("click", (event) => {
-            const catId = printCatSelect?.value || "";
+            const catId = selectedPrintCatId();
             if (!catId) {
               event.preventDefault();
-              alert("Selecione um gato para imprimir os exames.");
+              alert("Digite e selecione um gato da lista para imprimir os exames.");
               return;
             }
             button.href = `/admin/exams/print?catId=${encodeURIComponent(catId)}&type=${encodeURIComponent(button.dataset.printType)}`;
           });
         });
+
+        function normalizeSearch(value) {
+          return String(value || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .trim();
+        }
 
         function formatDisplayDate(value) {
           if (!value) return "";
@@ -434,7 +538,14 @@
           return data;
         }
 
-        async function autosave(form, row) {
+        function setSaveStatus(row, message, className = "") {
+          const status = row?.querySelector("[data-save-status]");
+          if (!status) return;
+          status.textContent = message || "";
+          status.className = `exam-save-status ${className}`.trim();
+        }
+
+        async function autosave(form, row, options = {}) {
           if (!form) return;
           reindexEcoRows(row || document.querySelector(`[data-form-id="${form.id}"]`));
           if (form.dataset.submitting === "true") {
@@ -444,6 +555,7 @@
 
           form.dataset.submitting = "true";
           form.dataset.pendingSave = "false";
+          if (options.showStatus) setSaveStatus(row, "Salvando...");
 
           try {
             const response = await fetch(form.action, {
@@ -458,8 +570,13 @@
             if (!response.ok) {
               throw new Error("Erro ao salvar exames");
             }
+            if (options.showStatus) {
+              setSaveStatus(row, "Salvo", "is-ok");
+              window.setTimeout(() => setSaveStatus(row, ""), 2500);
+            }
           } catch (error) {
             console.error(error);
+            if (options.showStatus) setSaveStatus(row, "Erro ao salvar", "is-error");
           } finally {
             form.dataset.submitting = "false";
             if (form.dataset.pendingSave === "true") {
@@ -555,7 +672,9 @@
           row.querySelectorAll("[data-source-toggle]").forEach((select) => {
             const box = row.querySelector(`[data-upload-box="${select.dataset.sourceToggle}"]`);
             if (!box) return;
-            box.classList.toggle("is-visible", select.value === "Próprio");
+            const deleteInput = row.querySelector(`[data-delete-doc-input="${select.dataset.sourceToggle}"]`);
+            const hasFile = box.dataset.hasFile === "true" && deleteInput?.value !== "1";
+            box.classList.toggle("is-visible", select.value === "Próprio" && !hasFile);
           });
         }
 
@@ -580,6 +699,40 @@
           syncExamUploads(row);
           reindexEcoRows(row);
           bindFileInputs(row);
+        });
+        document.querySelectorAll("[data-save-exam-row]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const row = getExamRow(button);
+            autosave(getForm(button), row, { showStatus: true });
+          });
+        });
+        const examSearch = document.getElementById("examSearch");
+        const examStatusFilter = document.getElementById("examStatusFilter");
+        function applyExamFilters() {
+          const query = normalizeSearch(examSearch?.value);
+          const status = examStatusFilter?.value || "";
+          document.querySelectorAll(".exam-row").forEach((row) => {
+            const matchesName = !query || normalizeSearch(row.dataset.search).includes(query);
+            const matchesStatus = !status || row.dataset.status === status;
+            row.style.display = matchesName && matchesStatus ? "" : "none";
+          });
+          syncExamScrollbars();
+        }
+        examSearch?.addEventListener("input", applyExamFilters);
+        examStatusFilter?.addEventListener("change", applyExamFilters);
+        document.querySelectorAll("[data-delete-genetic-doc]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const key = button.dataset.deleteGeneticDoc;
+            const row = getExamRow(button);
+            const deleteInput = row?.querySelector(`[data-delete-doc-input="${key}"]`);
+            const currentDoc = row?.querySelector(`[data-current-doc="${key}"]`);
+            const uploadBox = row?.querySelector(`[data-upload-box="${key}"]`);
+            if (deleteInput) deleteInput.value = "1";
+            currentDoc?.classList.add("is-hidden");
+            uploadBox?.classList.add("is-forced-visible");
+            uploadBox?.classList.add("is-visible");
+            setSaveStatus(row, "Clique em Atualizar para salvar a exclusão.", "");
+          });
         });
 
         document.querySelectorAll(".exam-table-shell").forEach((shell) => {

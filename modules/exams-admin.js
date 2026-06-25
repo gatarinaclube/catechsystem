@@ -181,7 +181,11 @@ function isUrgentRow(geneticExams, nextEco) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  if ((geneticExams || []).some((exam) => exam.source === "Realizar")) {
+  if ((geneticExams || []).some((exam) => (
+    exam.source === "Realizar" ||
+    !exam.source ||
+    !exam.result
+  ))) {
     return true;
   }
 
@@ -476,6 +480,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         }
 
         const urgent = isUrgentRow(geneticExams, activeExams.hcm ? nextEco : null);
+        const statusLabel = urgent ? "Exame Pendente" : "Exames Válidos";
 
         grouped[category].push({
           cat,
@@ -486,6 +491,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           examDocs,
           nextEco,
           urgent,
+          statusLabel,
           activeExams,
           isFounder: category === "founders",
         });
@@ -642,6 +648,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         const activeGeneticKeys = new Set(activeExams.genetic.map((exam) => exam.key));
         activeExams.genetic.forEach((config) => {
           const uploadPath = examFilePath(uploaded.get(`${config.key}Doc`)?.[0]);
+          if (req.body[`${config.key}DeleteDoc`] === "1") {
+            delete examDocs[config.docKey];
+          }
           if (uploadPath) examDocs[config.docKey] = uploadPath;
           examDocs.__genetic[config.key] = {
             source: req.body[`${config.key}Source`] || null,
