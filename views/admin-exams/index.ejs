@@ -115,7 +115,7 @@
         display: flex;
         align-items: center;
         gap: 8px;
-        min-height: 34px;
+        min-height: 28px;
       }
       .exam-current-doc.is-hidden {
         display: none;
@@ -129,10 +129,13 @@
         align-items: center;
         justify-content: center;
         width: fit-content;
-        min-height: 34px;
+        min-height: 28px;
+        padding: 4px 9px;
         overflow: hidden;
         cursor: pointer;
         white-space: nowrap;
+        font-size: 12px;
+        line-height: 1.2;
       }
       .exam-upload-button input[type="file"] {
         position: absolute;
@@ -141,6 +144,19 @@
         height: 100%;
         opacity: 0;
         cursor: pointer;
+      }
+      .exam-upload-status {
+        margin-left: 6px;
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--text-muted);
+        white-space: nowrap;
+      }
+      .exam-upload-status.is-ok {
+        color: #15803d;
+      }
+      .exam-upload-status.is-error {
+        color: #b91c1c;
       }
       .exam-row input,
       .exam-row select {
@@ -166,8 +182,8 @@
         flex-wrap: wrap;
       }
       .exam-delete-date {
-        width: 34px;
-        height: 34px;
+        width: 28px;
+        height: 28px;
         padding: 0;
         display: inline-flex;
         align-items: center;
@@ -175,7 +191,7 @@
         color: #b91c1c;
         border-color: #fecaca;
         background: #fff5f5;
-        font-size: 16px;
+        font-size: 12px;
         line-height: 1;
       }
       .exam-print-actions {
@@ -560,6 +576,24 @@
           status.className = `exam-save-status ${className}`.trim();
         }
 
+        function setUploadStatus(status, message, className = "") {
+          if (!status) return;
+          status.textContent = message || "";
+          status.className = `exam-upload-status ${className}`.trim();
+        }
+
+        function ensureUploadStatus(input) {
+          const button = input.closest(".exam-upload-button");
+          if (!button) return null;
+          let status = button.parentElement?.querySelector(":scope > .exam-upload-status");
+          if (!status) {
+            status = document.createElement("span");
+            status.className = "exam-upload-status";
+            button.insertAdjacentElement("afterend", status);
+          }
+          return status;
+        }
+
         async function autosave(form, row, options = {}) {
           if (!form) return;
           reindexEcoRows(row || document.querySelector(`[data-form-id="${form.id}"]`));
@@ -568,6 +602,8 @@
             form.pendingSaveOptions = {
               showStatus: Boolean(form.pendingSaveOptions?.showStatus || options.showStatus),
               reloadOnSuccess: Boolean(form.pendingSaveOptions?.reloadOnSuccess || options.reloadOnSuccess),
+              clearFileInputsOnSuccess: Boolean(form.pendingSaveOptions?.clearFileInputsOnSuccess || options.clearFileInputsOnSuccess),
+              uploadStatusElement: options.uploadStatusElement || form.pendingSaveOptions?.uploadStatusElement || null,
             };
             return;
           }
@@ -576,6 +612,7 @@
           form.dataset.pendingSave = "false";
           form.pendingSaveOptions = null;
           if (options.showStatus) setSaveStatus(row, "Salvando...");
+          if (options.uploadStatusElement) setUploadStatus(options.uploadStatusElement, "Salvando...");
 
           try {
             const response = await fetch(form.action, {
@@ -595,12 +632,21 @@
               setSaveStatus(row, "Salvo", "is-ok");
               window.setTimeout(() => setSaveStatus(row, ""), 2500);
             }
+            if (options.uploadStatusElement) {
+              setUploadStatus(options.uploadStatusElement, "Salvo", "is-ok");
+            }
+            if (options.clearFileInputsOnSuccess) {
+              (row || document).querySelectorAll('input[type="file"]').forEach((input) => {
+                input.value = "";
+              });
+            }
             if (options.reloadOnSuccess) {
               window.setTimeout(() => window.location.reload(), 500);
             }
           } catch (error) {
             console.error(error);
             if (options.showStatus) setSaveStatus(row, error.message || "Erro ao salvar", "is-error");
+            if (options.uploadStatusElement) setUploadStatus(options.uploadStatusElement, error.message || "Erro ao salvar", "is-error");
           } finally {
             form.dataset.submitting = "false";
             if (form.dataset.pendingSave === "true") {
@@ -713,10 +759,14 @@
           scope.querySelectorAll('input[type="file"]').forEach((input) => {
             if (input.dataset.boundFile === "true") return;
             input.dataset.boundFile = "true";
-            input.addEventListener("change", () => autosave(getForm(input), getExamRow(input), {
-              showStatus: true,
-              reloadOnSuccess: true,
-            }));
+            input.addEventListener("change", () => {
+              const uploadStatus = ensureUploadStatus(input);
+              autosave(getForm(input), getExamRow(input), {
+                showStatus: true,
+                clearFileInputsOnSuccess: true,
+                uploadStatusElement: uploadStatus,
+              });
+            });
           });
         }
 
