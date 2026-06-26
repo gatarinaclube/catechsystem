@@ -4,74 +4,266 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <%- include("../partials/seo", { seo, pageTitle }) %>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/css/academy.css" />
   </head>
-  <body class="bg-[#f8faf7] text-[#1f2933]">
-    <main class="min-h-screen overflow-hidden">
-      <section class="relative px-5 py-8 md:px-10">
-        <div class="absolute inset-0 bg-[linear-gradient(135deg,#ffffff,#f8faf7_56%,#eef5ee)]"></div>
-        <div class="relative mx-auto max-w-7xl">
-          <nav class="flex items-center justify-between gap-4">
-            <a href="/academy" class="text-xl font-black tracking-tight">CatBreeder <span class="academy-gold">Pro</span></a>
-            <div class="hidden items-center gap-6 text-sm font-bold text-slate-600 md:flex">
-              <a href="/academy/sobre">Sobre</a>
-              <a href="/academy/planos">Planos</a>
-              <a href="/academy/conteudos">Conteúdos</a>
-              <a href="/academy/faq">FAQ</a>
-            </div>
-            <a href="/academy/login" class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-[#31513d] shadow-sm">Entrar</a>
-          </nav>
+  <body class="gatofilia-public">
+    <header class="gatofilia-nav">
+      <a class="gatofilia-brand" href="/gatofilia" aria-label="Gatofilia">
+        <img src="/uploads/academy/gatofilia-logo.png" alt="Gatofilia" />
+        <span>Gatofilia</span>
+      </a>
+      <nav aria-label="Navegação principal">
+        <a href="#inicio">Início</a>
+        <a href="#formacao">A Formação</a>
+        <a href="#programa">Programa</a>
+        <a href="#beneficios">Benefícios</a>
+        <a href="#instituto">Instituto</a>
+        <a href="#faq">Perguntas Frequentes</a>
+        <a href="#pre-inscricao">Pré-inscrição</a>
+        <a href="#contato">Contato</a>
+      </nav>
+      <a class="gatofilia-login" href="/academy/login">Login</a>
+    </header>
 
-          <div class="grid min-h-[78vh] items-center gap-10 py-14 md:grid-cols-[1.1fr_.9fr]">
-            <div>
-              <div class="mb-5 inline-flex rounded-full border border-[#d6a84f]/35 bg-[#fff7df] px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-[#8a641d]">
-                Academy Gatarina / CaTech
-              </div>
-              <h1 class="max-w-4xl text-5xl font-black leading-[0.95] tracking-tight md:text-7xl">
-                Formação premium para criadores felinos responsáveis.
-              </h1>
-              <p class="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-                Aulas, protocolos, biblioteca e trilhas práticas para profissionalizar manejo, saúde, reprodução e gestão do gatil.
-              </p>
-              <div class="mt-8 flex flex-col gap-3 sm:flex-row">
-                <a href="/academy/cadastro" class="rounded-full bg-[#31513d] px-6 py-3 text-center font-black text-white shadow-sm">Começar agora</a>
-                <a href="/academy/conteudos" class="rounded-full border border-slate-200 bg-white px-6 py-3 text-center font-bold text-[#31513d] shadow-sm">Ver conteúdos</a>
-              </div>
-            </div>
-
-            <div class="rounded-3xl border border-slate-200 bg-white/85 p-6 shadow-xl">
-              <div class="rounded-2xl bg-[#f8faf7] p-5">
-                <div class="text-sm uppercase tracking-[0.25em] text-[#b9892e]">Trilha em destaque</div>
-                <h2 class="mt-3 text-3xl font-black">Gatil de Alta Performance</h2>
-                <div class="mt-5 grid gap-3">
-                  <% ["Reprodução ética", "Sanidade e prevenção", "Gestão financeira", "Documentos e processos"].forEach(function(item, index) { %>
-                    <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4">
-                      <span><%= item %></span>
-                      <span class="rounded-full bg-[#31513d]/10 px-3 py-1 text-xs font-black text-[#31513d]"><%= index + 1 %></span>
-                    </div>
-                  <% }) %>
-                </div>
-              </div>
-            </div>
+    <main>
+      <section id="inicio" class="gatofilia-hero">
+        <div class="gatofilia-hero-media">
+          <img src="/uploads/academy/gatofilia-logo.png" alt="Símbolo Gatofilia em dourado" loading="eager" />
+        </div>
+        <div class="gatofilia-hero-content reveal-on-scroll">
+          <p class="gatofilia-eyebrow">Instituto de Formação em Felinocultura</p>
+          <h1>Conhecimento que inspira excelência.</h1>
+          <p>
+            A formação criada para quem deseja construir uma criação baseada em conhecimento,
+            responsabilidade e excelência.
+          </p>
+          <div class="gatofilia-actions">
+            <a class="gatofilia-button primary" href="#pre-inscricao">Quero participar</a>
+            <a class="gatofilia-button secondary" href="#formacao">Conhecer a formação</a>
           </div>
         </div>
       </section>
 
-      <section class="bg-white px-5 py-16 text-[#1f2933] md:px-10">
-        <div class="mx-auto grid max-w-7xl gap-6 md:grid-cols-3">
+      <section id="instituto" class="gatofilia-section gatofilia-intro reveal-on-scroll">
+        <div>
+          <p class="gatofilia-eyebrow">Quem somos</p>
+          <h2>Muito além de um curso.</h2>
+        </div>
+        <p>
+          A Gatofilia nasce com a missão de elevar o nível da felinocultura através da formação de
+          criadores responsáveis. Uma experiência de aprendizado pensada para unir técnica, prática,
+          ética, gestão e visão de longo prazo em uma instituição de referência para quem leva a
+          criação felina com seriedade.
+        </p>
+      </section>
+
+      <section class="gatofilia-split gatofilia-section">
+        <div class="gatofilia-photo-panel reveal-on-scroll">
+          <img src="/uploads/academy/gatofilia-logo.png" alt="Identidade Gatofilia" loading="lazy" />
+        </div>
+        <div class="reveal-on-scroll">
+          <p class="gatofilia-eyebrow">Excelência aplicada</p>
+          <h2>Por que fazer parte da Gatofilia?</h2>
+          <div class="gatofilia-check-grid">
+            <% ["Conhecimento técnico", "Experiência prática", "Networking", "Comunidade", "Atualização constante", "Metodologia exclusiva"].forEach(function(item) { %>
+              <div><span></span><%= item %></div>
+            <% }) %>
+          </div>
+        </div>
+      </section>
+
+      <section id="formacao" class="gatofilia-section reveal-on-scroll">
+        <p class="gatofilia-eyebrow">A formação</p>
+        <h2>Uma jornada completa para formar criadores mais preparados.</h2>
+        <div class="gatofilia-timeline">
           <% [
-            ["Método", "Aulas diretas para aplicar no manejo real do gatil."],
-            ["Biblioteca", "Conteúdos consultivos para rotina, saúde e gestão."],
-            ["Ecossistema", "Integrado ao CaTech System e preparado para evolução SaaS."]
-          ].forEach(function(card) { %>
-            <div class="rounded-3xl border border-slate-200 p-6 shadow-sm">
-              <h3 class="text-xl font-black"><%= card[0] %></h3>
-              <p class="mt-3 text-slate-600"><%= card[1] %></p>
-            </div>
+            ["Introdução", "Fundamentos da criação responsável e visão profissional do gatil."],
+            ["Genética", "Bases para leitura de pedigrees, seleção e planejamento."],
+            ["Saúde", "Rotina sanitária, prevenção, exames e protocolos de acompanhamento."],
+            ["Nutrição", "Critérios práticos para alimentação em diferentes fases."],
+            ["Reprodução", "Ciclos, acasalamentos, gestação, parto e cuidados neonatais."],
+            ["Manejo", "Organização do ambiente, higiene, registros e rotina operacional."],
+            ["Bem-estar", "Comportamento, socialização, enriquecimento ambiental e segurança."],
+            ["Gestão do gatil", "Processos, controles, documentos e indicadores."],
+            ["Marketing", "Posicionamento, comunicação e apresentação profissional."],
+            ["Exposições", "Preparação, leitura de padrão e experiência em pista."],
+            ["Exportação", "Noções sobre documentação, logística e responsabilidade internacional."],
+            ["Planejamento", "Estratégia de longo prazo e sustentabilidade da criação."],
+            ["Certificação", "Conclusão da jornada e reconhecimento da formação."]
+          ].forEach(function(step, index) { %>
+            <article>
+              <span><%= String(index + 1).padStart(2, "0") %></span>
+              <h3><%= step[0] %></h3>
+              <p><%= step[1] %></p>
+            </article>
           <% }) %>
         </div>
       </section>
+
+      <section id="beneficios" class="gatofilia-section reveal-on-scroll">
+        <p class="gatofilia-eyebrow">O que você receberá</p>
+        <h2>Benefícios estruturados para acompanhar sua evolução.</h2>
+        <div class="gatofilia-card-grid">
+          <% [
+            ["Certificado de conclusão", "Reconhecimento formal da jornada concluída."],
+            ["1 ano de plataforma Premium", "Acesso ao CaTech System Premium para gestão do gatil."],
+            ["Registro de gatil FIFe", "Opção de orientação para registro quando aplicável."],
+            ["1 ano de associação FIFe", "Possibilidade de associação conforme regras vigentes."],
+            ["Visita técnica", "Experiência opcional no Gatil TomiFerr Bengals."],
+            ["Grupo exclusivo", "Comunidade reservada para alunos e troca qualificada."],
+            ["Atualizações futuras", "Conteúdos complementares conforme evolução da formação."],
+            ["Materiais de apoio", "Arquivos, modelos e referências para consulta."]
+          ].forEach(function(card) { %>
+            <article class="gatofilia-card">
+              <div class="gatofilia-card-icon" aria-hidden="true"></div>
+              <h3><%= card[0] %></h3>
+              <p><%= card[1] %></p>
+            </article>
+          <% }) %>
+        </div>
+      </section>
+
+      <section id="programa" class="gatofilia-section gatofilia-gallery reveal-on-scroll">
+        <div>
+          <p class="gatofilia-eyebrow">Conhecimento na prática</p>
+          <h2>Um espaço vivo para fotos, aulas, exposições e experiências internacionais.</h2>
+        </div>
+        <div class="gatofilia-gallery-grid">
+          <div>Gatil</div>
+          <div>Aulas</div>
+          <div>Exposições</div>
+          <div>Alunos</div>
+          <div>Internacional</div>
+        </div>
+      </section>
+
+      <section class="gatofilia-method reveal-on-scroll">
+        <p class="gatofilia-eyebrow">Metodologia</p>
+        <div class="gatofilia-method-flow">
+          <% ["Paixão", "Conhecimento", "Experiência", "Excelência", "Reconhecimento"].forEach(function(item) { %>
+            <span><%= item %></span>
+          <% }) %>
+        </div>
+      </section>
+
+      <section class="gatofilia-section reveal-on-scroll">
+        <p class="gatofilia-eyebrow">Depoimentos</p>
+        <h2>Histórias que serão construídas com a primeira turma.</h2>
+        <div class="gatofilia-testimonials">
+          <% [1, 2, 3].forEach(function(index) { %>
+            <article>
+              <div class="gatofilia-avatar"></div>
+              <h3>Aluno Gatofilia</h3>
+              <p>Cidade · País</p>
+              <blockquote>Espaço reservado para depoimentos dos participantes.</blockquote>
+            </article>
+          <% }) %>
+        </div>
+      </section>
+
+      <section id="faq" class="gatofilia-section reveal-on-scroll">
+        <p class="gatofilia-eyebrow">Perguntas frequentes</p>
+        <h2>Dúvidas comuns antes de iniciar.</h2>
+        <div class="gatofilia-faq">
+          <% [
+            ["Preciso já possuir um gatil?", "Não. A formação também é indicada para quem deseja iniciar com mais segurança e planejamento."],
+            ["As aulas ficam gravadas?", "A estrutura está preparada para conteúdos gravados e materiais de consulta na plataforma."],
+            ["Receberei certificado?", "Sim. A conclusão da jornada gera certificado de participação/conclusão."],
+            ["Posso participar sendo de outro país?", "Sim. A proposta foi pensada para criadores e futuros criadores de diferentes regiões."],
+            ["Como funciona a visita técnica?", "A visita técnica será uma possibilidade opcional, conforme agenda, regras e disponibilidade."]
+          ].forEach(function(item) { %>
+            <details>
+              <summary><%= item[0] %></summary>
+              <p><%= item[1] %></p>
+            </details>
+          <% }) %>
+        </div>
+      </section>
+
+      <section id="pre-inscricao" class="gatofilia-interest reveal-on-scroll">
+        <div>
+          <p class="gatofilia-eyebrow">Manifestação de interesse</p>
+          <h2>Seja um dos primeiros alunos da Gatofilia.</h2>
+          <p>
+            As vagas são limitadas para garantir acompanhamento próximo de cada participante.
+          </p>
+          <% if (leadStatus === "ok") { %>
+            <div class="gatofilia-alert success">Interesse registrado com sucesso. Nossa equipe entrará em contato.</div>
+          <% } else if (leadStatus === "erro") { %>
+            <div class="gatofilia-alert error">Não foi possível registrar agora. Confira nome, e-mail e WhatsApp.</div>
+          <% } %>
+        </div>
+
+        <form method="post" action="<%= currentPublicPath === '/gatofilia' ? '/gatofilia/interesse' : '/academy/interesse' %>" class="gatofilia-form">
+          <label>Nome<input name="firstName" required /></label>
+          <label>Sobrenome<input name="lastName" /></label>
+          <label>E-mail<input name="email" type="email" required /></label>
+          <label>WhatsApp<input name="whatsapp" required /></label>
+          <label>Cidade<input name="city" /></label>
+          <label>Estado<input name="state" /></label>
+          <label>País<input name="country" value="Brasil" /></label>
+          <label>Possui gatil?
+            <select name="hasCattery">
+              <option value="">Selecione</option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+            </select>
+          </label>
+          <label>Nome do gatil<input name="catteryName" /></label>
+          <label>Raça criada<input name="breed" /></label>
+          <label>Há quanto tempo cria?<input name="breedingTime" /></label>
+          <label>Pretende iniciar um gatil?
+            <select name="wantsStart">
+              <option value="">Selecione</option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+            </select>
+          </label>
+          <label>Como conheceu a Gatofilia?<input name="referralSource" /></label>
+          <label class="full">Mensagem<textarea name="message" rows="4"></textarea></label>
+          <label class="full gatofilia-checkbox">
+            <input name="wantsUpdates" type="checkbox" value="1" checked />
+            <span>Desejo receber informações sobre abertura das próximas turmas.</span>
+          </label>
+          <button type="submit">Quero fazer parte da próxima turma</button>
+        </form>
+      </section>
     </main>
+
+    <footer id="contato" class="gatofilia-footer">
+      <div>
+        <img src="/uploads/academy/gatofilia-logo.png" alt="Gatofilia" />
+        <strong>Gatofilia</strong>
+      </div>
+      <nav>
+        <a href="#inicio">Início</a>
+        <a href="#formacao">Formação</a>
+        <a href="#pre-inscricao">Pré-inscrição</a>
+        <a href="/academy/login">Login</a>
+      </nav>
+      <p>
+        Instagram · WhatsApp · contato@gatarina.com.br<br />
+        © 2026 Gatofilia. Todos os direitos reservados.
+      </p>
+    </footer>
+
+    <script>
+      document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+        anchor.addEventListener("click", (event) => {
+          const target = document.querySelector(anchor.getAttribute("href"));
+          if (!target) return;
+          event.preventDefault();
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      });
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) entry.target.classList.add("is-visible");
+        });
+      }, { threshold: 0.12 });
+
+      document.querySelectorAll(".reveal-on-scroll").forEach((element) => observer.observe(element));
+    </script>
   </body>
 </html>

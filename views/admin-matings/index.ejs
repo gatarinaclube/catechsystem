@@ -224,6 +224,12 @@
       .mating-save-status.is-error {
         color: #dc2626;
       }
+      .mating-excess-warning {
+        margin-top: 4px;
+        color: #dc2626;
+        font-size: 12px;
+        font-weight: 900;
+      }
       @media (max-width: 900px) {
         .mating-table {
           grid-template-columns: 1fr;
@@ -483,7 +489,7 @@
                             <span class="history-date-display"><%= formatDate(value) %></span>
                             <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
                           <% } else { %>
-                            <input type="date" name="litterHistoryDates" value="" />
+                            <input type="text" data-history-date-input inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="" />
                           <% } %>
                         </div>
                       <% }) %>
@@ -494,16 +500,19 @@
 
                     <div>
                       <strong data-next-cross><%= row.nextCrossDate ? formatDate(row.nextCrossDate) : "-" %></strong>
+                      <div class="mating-excess-warning" data-excess-litter-warning <%= row.excessLitterWarning ? "" : "hidden" %>>Excesso de Ninhada</div>
                     </div>
 
                     <div class="mini-stack">
                       <div class="mating-date-field">
                         <label class="field-label">1º dia</label>
-                        <input type="date" name="matingStartDate" value="<%= row.plan?.matingStartDate ? formatDateInput(row.plan.matingStartDate) : '' %>" />
+                        <input type="hidden" name="matingStartDate" value="<%= row.plan?.matingStartDate ? formatDateInput(row.plan.matingStartDate) : '' %>" data-mating-date-value />
+                        <input type="text" data-mating-date-display inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="<%= row.plan?.matingStartDate ? formatDate(row.plan.matingStartDate) : '' %>" />
                       </div>
                       <div class="mating-date-field">
                         <label class="field-label">2º dia</label>
-                        <input type="date" name="matingEndDate" value="<%= row.plan?.matingEndDate ? formatDateInput(row.plan.matingEndDate) : '' %>" />
+                        <input type="hidden" name="matingEndDate" value="<%= row.plan?.matingEndDate ? formatDateInput(row.plan.matingEndDate) : '' %>" data-mating-date-value />
+                        <input type="text" data-mating-date-display inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="<%= row.plan?.matingEndDate ? formatDate(row.plan.matingEndDate) : '' %>" />
                       </div>
                     </div>
 
@@ -608,6 +617,28 @@
           element.classList.toggle("is-error", type === "error");
         }
 
+        function maskBrazilianDate(value) {
+          const digits = String(value || "").replace(/\D/g, "").slice(0, 8);
+          if (digits.length <= 2) return digits;
+          if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+          return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+        }
+
+        function parseCompleteBrazilianDate(value) {
+          const match = String(value || "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+          if (!match) return "";
+
+          const day = Number(match[1]);
+          const month = Number(match[2]);
+          const year = Number(match[3]);
+          const parsed = new Date(year, month - 1, day);
+          if (parsed.getFullYear() !== year || parsed.getMonth() !== month - 1 || parsed.getDate() !== day) {
+            return "";
+          }
+
+          return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        }
+
         async function manualUpdate(form) {
           if (!form) return;
           const button = form.querySelector(".mating-update-button");
@@ -635,6 +666,8 @@
             const dppDate = form.querySelector("[data-dpp-date]");
             const gestation = form.querySelector("[data-gestation-days]");
             if (nextCross) nextCross.textContent = data.nextCrossLabel || "-";
+            const excessWarning = form.querySelector("[data-excess-litter-warning]");
+            if (excessWarning) excessWarning.hidden = !data.excessLitterWarning;
             if (dppDate) dppDate.textContent = data.dppLabel || "-";
             if (gestation) gestation.textContent = data.gestationLabel || "-";
 
@@ -666,7 +699,7 @@
             const row = document.createElement("div");
             row.className = "inline-plus";
             row.dataset.historyRow = "";
-            row.innerHTML = '<input type="date" name="litterHistoryDates" value="" />';
+            row.innerHTML = '<input type="text" data-history-date-input inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="" />';
             box.insertBefore(row, button.closest(".history-add-row"));
             bindHistoryRow(row);
           });
@@ -689,18 +722,63 @@
           });
         }
 
+        function bindMatingDateField(input) {
+          const hidden = input.parentElement?.querySelector("[data-mating-date-value]");
+          if (!hidden) return;
+
+          function commitDate(allowEmpty = false) {
+            const value = input.value.trim();
+            if (!value) {
+              if (!allowEmpty || !hidden.value) return false;
+              hidden.value = "";
+              autosave(input.closest("form"));
+              return true;
+            }
+
+            const isoDate = parseCompleteBrazilianDate(value);
+            if (!isoDate) return false;
+            if (hidden.value !== isoDate) {
+              hidden.value = isoDate;
+              autosave(input.closest("form"));
+            }
+            return true;
+          }
+
+          input.addEventListener("input", () => {
+            input.value = maskBrazilianDate(input.value);
+            if (input.value.length === 10) commitDate(false);
+          });
+
+          input.addEventListener("blur", () => {
+            if (commitDate(true)) return;
+            input.value = hidden.value ? formatDisplayDate(hidden.value) : "";
+          });
+        }
+
         function bindHistoryRow(row) {
-          const input = row.querySelector('input[type="date"]');
+          const input = row.querySelector("[data-history-date-input]");
           if (input) {
-            input.addEventListener("change", () => {
-              if (!input.value) return;
+            function commitHistoryDate() {
+              const isoDate = parseCompleteBrazilianDate(input.value);
+              if (!isoDate) return false;
               row.innerHTML = `
-                <input type="hidden" name="litterHistoryDates" value="${input.value}" />
-                <span class="history-date-display">${formatDisplayDate(input.value)}</span>
+                <input type="hidden" name="litterHistoryDates" value="${isoDate}" />
+                <span class="history-date-display">${formatDisplayDate(isoDate)}</span>
                 <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
               `;
               addDeleteHandler(row.querySelector(".delete-history-date"));
               autosave(row.closest("form"));
+              return true;
+            }
+
+            input.addEventListener("input", () => {
+              input.value = maskBrazilianDate(input.value);
+              if (input.value.length === 10) commitHistoryDate();
+            });
+
+            input.addEventListener("blur", () => {
+              if (!input.value.trim()) return;
+              if (!commitHistoryDate()) input.value = "";
             });
           }
 
@@ -709,7 +787,8 @@
         }
 
         document.querySelectorAll("[data-history-row]").forEach(bindHistoryRow);
-        document.querySelectorAll(".mating-row select, .mating-row input[type='date']").forEach((field) => {
+        document.querySelectorAll("[data-mating-date-display]").forEach(bindMatingDateField);
+        document.querySelectorAll(".mating-row select").forEach((field) => {
           field.addEventListener("change", () => autosave(field.closest("form")));
         });
         document.querySelectorAll(".mating-update-button").forEach((button) => {

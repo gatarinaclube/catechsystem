@@ -24,6 +24,9 @@ module.exports = (prisma) => {
   const academyUpload = createAcademyUpload();
 
   router.get("/academy", publicController.home);
+  router.get("/gatofilia", publicController.home);
+  router.post("/gatofilia/interesse", publicController.interest);
+  router.post("/academy/interesse", publicController.interest);
   router.get("/academy/sobre", publicController.about);
   router.get("/academy/planos", publicController.plans);
   router.get("/academy/conteudos", publicController.contents);

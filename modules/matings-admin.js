@@ -104,7 +104,25 @@ function positiveInteger(value, fallback) {
   return Math.floor(number);
 }
 
-function computeSupplementInfo(settings, plan, nextCrossDate) {
+function hasExcessLitterWarning(litterHistoryDates) {
+  const dates = litterHistoryDates
+    .map(parseDate)
+    .filter(Boolean)
+    .sort((a, b) => a - b);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const lastThree = dates.slice(-3);
+  if (lastThree.length >= 3 && lastThree[0] >= addMonths(today, -22)) {
+    return true;
+  }
+
+  const lastTwo = dates.slice(-2);
+  return lastTwo.length >= 2 && lastTwo[0] >= addMonths(today, -10);
+}
+
+function computeSupplementInfo(settings, plan, nextCrossDate, forceActive = false) {
   if (!settings?.matingSupplementEnabled) return null;
 
   const daysBefore = positiveInteger(settings.matingSupplementDaysBefore, 15);
@@ -116,7 +134,7 @@ function computeSupplementInfo(settings, plan, nextCrossDate) {
   if (matingDate) {
     const startDate = addDays(matingDate, -daysBefore);
     const endDate = addDays(matingDate, daysAfter);
-    const active = today >= startDate && today <= endDate;
+    const active = forceActive || (today >= startDate && today <= endDate);
 
     return {
       active,
@@ -133,7 +151,7 @@ function computeSupplementInfo(settings, plan, nextCrossDate) {
   if (!expectedDate) return null;
 
   const startDate = addDays(expectedDate, -daysBefore);
-  const active = today >= startDate;
+  const active = forceActive || today >= startDate;
 
   return {
     active,
@@ -350,12 +368,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const nextCrossDate = computeNextCrossDate(female.birthDate, litterHistory);
       const dppDate = computeDpp(plan?.matingStartDate, plan?.matingEndDate);
       const gestationDays = computeGestationDays(plan?.matingStartDate, plan?.matingEndDate);
-      const supplement = computeSupplementInfo(female.owner?.settings, plan, nextCrossDate);
       const status = isDevelopingFemale(female)
         ? "EM_DESENVOLVIMENTO"
         : plan?.status || "PARA_ACASALAR";
+      const supplement = computeSupplementInfo(female.owner?.settings, plan, nextCrossDate, status === "PARA_ACASALAR");
       const fatherName = female.father?.name || female.fatherName || "-";
       const motherName = female.mother?.name || female.motherName || "-";
+      const excessLitterWarning = hasExcessLitterWarning(litterHistory);
 
       grouped[status] = grouped[status] || [];
       grouped[status].push({
@@ -367,6 +386,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         dppDate,
         gestationDays,
         supplement,
+        excessLitterWarning,
         fatherName,
         motherName,
         status,
@@ -489,13 +509,20 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         const responseStatus = updatedFemale && isDevelopingFemale(updatedFemale)
           ? "EM_DESENVOLVIMENTO"
           : payload.status;
-        const supplement = computeSupplementInfo(updatedFemale?.owner?.settings, payload, nextCrossDate);
+        const supplement = computeSupplementInfo(
+          updatedFemale?.owner?.settings,
+          payload,
+          nextCrossDate,
+          responseStatus === "PARA_ACASALAR"
+        );
+        const excessLitterWarning = hasExcessLitterWarning(litterHistory);
 
         return res.json({
           ok: true,
           status: responseStatus,
           statusLabel: statusLabel(responseStatus),
           nextCrossLabel: nextCrossDate ? formatDate(nextCrossDate) : "-",
+          excessLitterWarning,
           dppLabel: dppDate ? formatDate(dppDate) : "-",
           gestationLabel: gestationDays !== null ? `${gestationDays} dias de gestação` : "-",
           supplementActive: Boolean(supplement?.active),

@@ -125,6 +125,32 @@ model AcademyEnrollment {
   @@map("academy_enrollments")
 }
 
+model GatofiliaLead {
+  id Int @id @default(autoincrement())
+
+  firstName       String
+  lastName        String?
+  email           String
+  whatsapp        String?
+  city            String?
+  state           String?
+  country         String?
+  hasCattery      String?
+  catteryName     String?
+  breed           String?
+  breedingTime    String?
+  wantsStart      String?
+  referralSource  String?
+  message         String?
+  wantsUpdates    Boolean  @default(false)
+  whatsappPayload String?
+
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([createdAt])
+}
+
 model AcademyAuthor {
   id              Int      @id @default(autoincrement())
   user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)

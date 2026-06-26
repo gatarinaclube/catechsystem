@@ -5,12 +5,12 @@ function absoluteUrl(req, path = "/academy") {
 }
 
 function academySeo(req, options = {}) {
-  const title = options.title || "CatBreeder Pro | Formação premium para criadores felinos";
+  const title = options.title || "Gatofilia | Instituto de Formação em Felinocultura";
   const description =
     options.description ||
-    "Academy premium para criadores felinos responsáveis, integrada ao ecossistema CaTech/Gatarina.";
+    "Formação premium para criadores e novos criadores que buscam conhecimento, responsabilidade e excelência em felinocultura.";
   const path = options.path || req.originalUrl || "/academy";
-  const image = options.image || "/logos/catech-logo.png";
+  const image = options.image || "/uploads/academy/gatofilia-logo.png";
 
   return {
     title,

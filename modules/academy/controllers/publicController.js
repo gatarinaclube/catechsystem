@@ -3,6 +3,7 @@ const {
   notifyNewUser,
   notifyUserRegistrationConfirmation,
 } = require("../../../utils/adminNotifications");
+const { sendStatusEmail } = require("../../../utils/mailer");
 const {
   getEnrollment,
   getActiveSubscription,
@@ -13,12 +14,67 @@ const {
 } = require("../services/academyService");
 const { academySeo, absoluteUrl, sitemapUrl } = require("../services/academySeo");
 
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function cleanText(value, limit = 1000) {
+  return String(value || "").trim().slice(0, limit);
+}
+
 function renderPublic(req, res, view, locals = {}) {
   return res.render(`academy/public/${view}`, {
-    pageTitle: "CatBreeder Pro",
+    pageTitle: "Gatofilia",
     seo: academySeo(req, locals.seo || {}),
+    currentPublicPath: req.path,
     ...locals,
   });
+}
+
+async function notifyGatofiliaLead(lead) {
+  const adminTo = process.env.GATOFILIA_CONTACT_EMAIL || "contato@gatarina.com.br";
+  try {
+    await sendStatusEmail({
+      to: adminTo,
+      subject: "Gatofilia - Nova manifestação de interesse",
+      html: `
+        <h2>Nova manifestação de interesse</h2>
+        <p><strong>Nome:</strong> ${escapeHtml([lead.firstName, lead.lastName].filter(Boolean).join(" "))}</p>
+        <p><strong>E-mail:</strong> ${escapeHtml(lead.email)}</p>
+        <p><strong>WhatsApp:</strong> ${escapeHtml(lead.whatsapp || "-")}</p>
+        <p><strong>Cidade/Estado/País:</strong> ${escapeHtml([lead.city, lead.state, lead.country].filter(Boolean).join(" / ") || "-")}</p>
+        <p><strong>Possui gatil:</strong> ${escapeHtml(lead.hasCattery || "-")}</p>
+        <p><strong>Gatil:</strong> ${escapeHtml(lead.catteryName || "-")}</p>
+        <p><strong>Raça:</strong> ${escapeHtml(lead.breed || "-")}</p>
+        <p><strong>Tempo de criação:</strong> ${escapeHtml(lead.breedingTime || "-")}</p>
+        <p><strong>Pretende iniciar:</strong> ${escapeHtml(lead.wantsStart || "-")}</p>
+        <p><strong>Como conheceu:</strong> ${escapeHtml(lead.referralSource || "-")}</p>
+        <p><strong>Mensagem:</strong><br>${escapeHtml(lead.message || "-").replace(/\n/g, "<br>")}</p>
+      `,
+    });
+  } catch (err) {
+    console.error("Erro ao notificar lead Gatofilia:", err.message || err);
+  }
+
+  try {
+    await sendStatusEmail({
+      to: lead.email,
+      subject: "Gatofilia - Interesse recebido",
+      html: `
+        <h2>Recebemos sua manifestação de interesse</h2>
+        <p>Olá, ${escapeHtml(lead.firstName)}.</p>
+        <p>Seu contato foi registrado para a próxima turma da Gatofilia - Instituto de Formação em Felinocultura.</p>
+        <p>Assim que houver novidades sobre abertura de vagas, nossa equipe entrará em contato.</p>
+      `,
+    });
+  } catch (err) {
+    console.error("Erro ao enviar confirmação Gatofilia:", err.message || err);
+  }
 }
 
 module.exports = (prisma) => ({
@@ -28,12 +84,60 @@ module.exports = (prisma) => ({
     renderPublic(req, res, "home", {
       academy,
       catalog,
+      leadStatus: req.query.interesse || null,
       seo: {
-        path: "/academy",
-        title: "CatBreeder Pro | Formação premium para criadores felinos",
-        description: "Aulas, protocolos e trilhas práticas para criadores felinos responsáveis.",
+        path: req.path === "/gatofilia" ? "/gatofilia" : "/academy",
+        title: "Gatofilia | Instituto de Formação em Felinocultura",
+        description: "Formação premium para criadores e novos criadores que buscam conhecimento, responsabilidade e excelência em felinocultura.",
+        image: "/uploads/academy/gatofilia-logo.png",
       },
     });
+  },
+
+  interest: async (req, res) => {
+    const basePath = req.path.startsWith("/gatofilia") ? "/gatofilia" : "/academy";
+    const leadData = {
+      firstName: cleanText(req.body.firstName, 120),
+      lastName: cleanText(req.body.lastName, 120),
+      email: cleanText(req.body.email, 180).toLowerCase(),
+      whatsapp: cleanText(req.body.whatsapp, 60),
+      city: cleanText(req.body.city, 120),
+      state: cleanText(req.body.state, 80),
+      country: cleanText(req.body.country, 80),
+      hasCattery: cleanText(req.body.hasCattery, 20),
+      catteryName: cleanText(req.body.catteryName, 160),
+      breed: cleanText(req.body.breed, 160),
+      breedingTime: cleanText(req.body.breedingTime, 120),
+      wantsStart: cleanText(req.body.wantsStart, 20),
+      referralSource: cleanText(req.body.referralSource, 180),
+      message: cleanText(req.body.message, 2000),
+      wantsUpdates: Boolean(req.body.wantsUpdates),
+    };
+
+    if (!leadData.firstName || !leadData.email || !leadData.whatsapp) {
+      return res.redirect(`${basePath}?interesse=erro#pre-inscricao`);
+    }
+
+    const whatsappPayload = JSON.stringify({
+      to: leadData.whatsapp,
+      template: "gatofilia_interest",
+      message: `Olá, ${leadData.firstName}. Recebemos seu interesse na Gatofilia.`,
+      status: "prepared",
+    });
+
+    try {
+      const lead = await prisma.gatofiliaLead.create({
+        data: {
+          ...leadData,
+          whatsappPayload,
+        },
+      });
+      await notifyGatofiliaLead(lead);
+      return res.redirect(`${basePath}?interesse=ok#pre-inscricao`);
+    } catch (err) {
+      console.error("Erro ao registrar lead Gatofilia:", err.message || err);
+      return res.redirect(`${basePath}?interesse=erro#pre-inscricao`);
+    }
   },
 
   about: async (req, res) => {

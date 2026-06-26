@@ -945,6 +945,15 @@ app.use(async (req, res, next) => {
 
 // ---------- ROTAS BÁSICAS ----------
 app.get("/", (req, res) => {
+  const host = String(req.get("host") || "").toLowerCase();
+  const gatofiliaDomains = String(process.env.GATOFILIA_DOMAINS || "")
+    .split(",")
+    .map((domain) => domain.trim().toLowerCase())
+    .filter(Boolean);
+  if (host.includes("gatofilia") || gatofiliaDomains.some((domain) => host === domain || host === `www.${domain}`)) {
+    return res.redirect("/gatofilia");
+  }
+
   res.render("public-home", {
     user: req.user,
     plans: commercialPlanList(),
