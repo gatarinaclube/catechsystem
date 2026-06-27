@@ -865,67 +865,6 @@
             </div>
           </details>
 
-          <% if (canManagePlanLimits) { %>
-            <details class="content-card settings-panel">
-              <summary>
-                <div>
-                  <div class="content-title">Limites dos perfis</div>
-                  <div class="content-sub">Configuração de limites por plano de usuário.</div>
-                </div>
-              </summary>
-              <div class="settings-panel-body">
-              <div class="section-note">
-                As alterações abaixo valem automaticamente para todos os usuários do respectivo perfil.
-                Deixe os campos de quantidade em branco para permitir uso ilimitado.
-              </div>
-              <table class="plan-limit-table">
-                <thead>
-                  <tr>
-                    <th>Perfil</th>
-                    <th>Arquivo máx. (MB)</th>
-                    <th>Padreadores</th>
-                    <th>Ninhadas na vitrine</th>
-                    <th>Comparativos na vitrine</th>
-                    <th>Ninhadas por ano</th>
-                    <th>Filhotes por ano</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% planLimits.forEach(function(plan) { %>
-                    <tr>
-                      <td class="plan-limit-profile"><%= plan.label %></td>
-                      <td>
-                        <input
-                          name="plan_<%= plan.role %>_uploadLimitMb"
-                          type="number"
-                          min="0.1"
-                          step="0.1"
-                          value="<%= plan.uploadLimitMb || '' %>"
-                        />
-                      </td>
-                      <td>
-                        <input name="plan_<%= plan.role %>_breeders" type="number" min="0" step="1" value="<%= plan.breeders ?? '' %>" />
-                      </td>
-                      <td>
-                        <input name="plan_<%= plan.role %>_showcaseLitters" type="number" min="0" step="1" value="<%= plan.showcaseLitters ?? '' %>" />
-                      </td>
-                      <td>
-                        <input name="plan_<%= plan.role %>_showcaseEvolutionComparisons" type="number" min="0" step="1" value="<%= plan.showcaseEvolutionComparisons ?? '' %>" />
-                      </td>
-                      <td>
-                        <input name="plan_<%= plan.role %>_littersPerYear" type="number" min="0" step="1" value="<%= plan.littersPerYear ?? '' %>" />
-                      </td>
-                      <td>
-                        <input name="plan_<%= plan.role %>_kittensPerYear" type="number" min="0" step="1" value="<%= plan.kittensPerYear ?? '' %>" />
-                      </td>
-                    </tr>
-                  <% }) %>
-                </tbody>
-              </table>
-              </div>
-            </details>
-          <% } %>
-
           <div class="form-actions" style="text-align:right;">
             <button type="submit" class="btn btn-primary">Salvar</button>
           </div>

@@ -23,6 +23,7 @@ const {
   getFileUploadLimit,
   loadPlanLimitOverrides,
 } = require("./utils/planLimits");
+const { loadProfileRulesConfig } = require("./utils/profileRules");
 const {
   parseDate,
   addDays,
@@ -78,6 +79,7 @@ const crmRouterFactory = require("./modules/crm");
 const tacticalPanelRouterFactory = require("./modules/tactical-panel");
 const administrativeRouterFactory = require("./modules/administrative");
 const academyRouterFactory = require("./modules/academy");
+const profileRulesAdminRouterFactory = require("./modules/profile-rules-admin");
 const kittenShowcaseRouterFactory = require("./modules/kitten-showcase");
 const documentsRouterFactory = require("./modules/documents");
 const billingFinanceRouterFactory = require("./modules/billing-finance");
@@ -2820,6 +2822,13 @@ const documentsRouter = documentsRouterFactory(
 );
 app.use(documentsRouter);
 
+const profileRulesAdminRouter = profileRulesAdminRouterFactory(
+  prisma,
+  requireAuth,
+  requirePermission
+);
+app.use(profileRulesAdminRouter);
+
 const gatarinaShowPhotosRouter = gatarinaShowPhotosRouterFactory(
   prisma,
   requireAuth,
@@ -3930,9 +3939,12 @@ app.use((req, res) => {
 
 // ---------- INICIALIZAÇÃO DO SERVIDOR ----------
 const PORT = process.env.PORT || 3000;
-loadPlanLimitOverrides(prisma).finally(() => {
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-  startVaccineReminderScheduler(prisma);
-});
+Promise.all([
+  loadProfileRulesConfig(prisma),
+  loadPlanLimitOverrides(prisma),
+]).finally(() => {
+  app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
+    startVaccineReminderScheduler(prisma);
+  });
 });

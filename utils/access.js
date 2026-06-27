@@ -8,6 +8,7 @@ const ROLES = {
   BASIC: "BASIC",
   CATBREED: "CATBREED",
 };
+const { isPermissionEnabledForRole } = require("./profileRules");
 
 const LEGACY_ROLE_MAP = {
   USER: ROLES.BASIC,
@@ -88,6 +89,7 @@ const PERMISSIONS = {
   "admin.gatarinaPhotos": [ROLES.ADMIN],
   "admin.microchips": [ROLES.ADMIN],
   "admin.financeSettings": [ROLES.ADMIN],
+  "admin.profileRules": [ROLES.ADMIN],
   "admin.settings": BASIC_LEVEL_ROLES,
   "admin.breeders": BASIC_LEVEL_ROLES,
   "admin.litters": BASIC_LEVEL_ROLES,
@@ -128,6 +130,8 @@ function getRoleLabel(role) {
 
 function userCan(role, permission) {
   const normalizedRole = normalizeRole(role);
+  const dynamicRule = isPermissionEnabledForRole(normalizedRole, permission);
+  if (dynamicRule !== null) return dynamicRule;
   const allowedRoles = PERMISSIONS[permission] || [];
   return allowedRoles.includes(normalizedRole);
 }
@@ -157,6 +161,7 @@ function buildAccessContext(role) {
     canManageGatarinaPhotos: userCan(normalizedRole, "admin.gatarinaPhotos"),
     canManageMicrochips: userCan(normalizedRole, "admin.microchips"),
     canManageFinanceSettings: userCan(normalizedRole, "admin.financeSettings"),
+    canManageProfileRules: userCan(normalizedRole, "admin.profileRules"),
     canAccessSettings: userCan(normalizedRole, "admin.settings"),
     canAccessBreeders: userCan(normalizedRole, "admin.breeders"),
     canAccessLittersAdmin: userCan(normalizedRole, "admin.litters"),

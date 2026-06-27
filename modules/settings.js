@@ -3,14 +3,11 @@ const crypto = require("crypto");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const { ROLES, isAdminRole, normalizeRole, userCan } = require("../utils/access");
+const { ROLES, normalizeRole, userCan } = require("../utils/access");
 const { encryptSecret, shapeSmtpSettings } = require("../utils/userSmtp");
 const { formatCnpj, formatPhone } = require("../utils/format");
 const {
-  MANAGED_PLAN_ROLES,
   getFileUploadLimit,
-  getPlanLimitRows,
-  setPlanLimitOverrides,
   validateFilesForRole,
 } = require("../utils/planLimits");
 const {
@@ -82,14 +79,6 @@ function parseNullableInteger(value) {
   return Math.floor(number);
 }
 
-function parseUploadLimitKb(value) {
-  if (value === null || value === undefined || String(value).trim() === "") return null;
-  const normalized = String(value).replace(",", ".");
-  const number = Number(normalized);
-  if (!Number.isFinite(number) || number <= 0) return null;
-  return Math.round(number * 1024);
-}
-
 function buildAbsoluteUrl(req, path) {
   const host = req.get("host");
   const protocol = req.get("x-forwarded-proto") || req.protocol || "https";
@@ -114,18 +103,6 @@ async function ensureExpensePublicToken(prisma, user) {
   }
 
   throw new Error("Não foi possível gerar o link público de despesas.");
-}
-
-function buildPlanLimitRows(body) {
-  return MANAGED_PLAN_ROLES.map((role) => ({
-    role,
-    uploadLimitKb: parseUploadLimitKb(body[`plan_${role}_uploadLimitMb`]),
-    breeders: parseNullableInteger(body[`plan_${role}_breeders`]),
-    showcaseLitters: parseNullableInteger(body[`plan_${role}_showcaseLitters`]),
-    showcaseEvolutionComparisons: parseNullableInteger(body[`plan_${role}_showcaseEvolutionComparisons`]),
-    littersPerYear: parseNullableInteger(body[`plan_${role}_littersPerYear`]),
-    kittensPerYear: parseNullableInteger(body[`plan_${role}_kittensPerYear`]),
-  }));
 }
 
 module.exports = (prisma, requireAuth, requirePermission) => {
@@ -274,8 +251,6 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         vaccineReminderGroupOptions: VACCINE_REMINDER_GROUP_OPTIONS,
         canUseVaccineNotifications,
         modulePreferenceRows,
-        planLimits: isAdminRole(req.session.userRole) ? getPlanLimitRows() : [],
-        canManagePlanLimits: isAdminRole(req.session.userRole),
         success: req.query.saved === "1",
         error: null,
       });
@@ -372,8 +347,6 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const selectedModulePreferenceKeys = filterAllowed(req.body.modulePreferences, allowedModulePreferenceKeys);
     settings.modulePreferences = selectedModulePreferenceKeys;
     settings.smtpSettings = shapeSmtpSettings(settings);
-    const canManagePlanLimits = isAdminRole(req.session.userRole);
-    const planLimits = canManagePlanLimits ? buildPlanLimitRows(req.body) : getPlanLimitRows();
 
     try {
       if (req.uploadError) {
@@ -532,24 +505,6 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           "updatedAt" = CURRENT_TIMESTAMP
       `;
 
-      if (canManagePlanLimits) {
-        for (const row of planLimits) {
-          await prisma.rolePlanLimit.upsert({
-            where: { role: row.role },
-            update: {
-              uploadLimitKb: row.uploadLimitKb,
-              breeders: row.breeders,
-              showcaseLitters: row.showcaseLitters,
-              showcaseEvolutionComparisons: row.showcaseEvolutionComparisons,
-              littersPerYear: row.littersPerYear,
-              kittensPerYear: row.kittensPerYear,
-            },
-            create: row,
-          });
-        }
-        setPlanLimitOverrides(planLimits);
-      }
-
       req.session.initialSettingsSaved = true;
       req.session.modulePreferences = settings.modulePreferences;
       res.redirect("/settings?saved=1");
@@ -578,8 +533,6 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         vaccineReminderGroupOptions: VACCINE_REMINDER_GROUP_OPTIONS,
         canUseVaccineNotifications,
         modulePreferenceRows: modulePreferenceRowsForRole(req.session.userRole, settings.modulePreferences),
-        planLimits,
-        canManagePlanLimits,
         success: false,
         error: "Erro ao salvar configurações.",
       });

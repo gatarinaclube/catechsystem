@@ -12,6 +12,7 @@ const { buildDisplayName, formatDate, formatDateInput, parseDate } = require("..
 const { sendStatusEmail } = require("../utils/mailer");
 const { buildUserSmtpConfig, shapeSmtpSettings } = require("../utils/userSmtp");
 const { ROLES, normalizeRole } = require("../utils/access");
+const { getLimitValueForRole } = require("../utils/profileRules");
 const { formatCpfCnpj, formatPhone } = require("../utils/format");
 
 const execFileAsync = promisify(execFile);
@@ -111,9 +112,14 @@ function createPdfCompressionUploadMiddleware() {
 
 function pdfCompressionMonthlyLimit(role) {
   const normalizedRole = normalizeRole(role);
-  if ([ROLES.ADMIN, ROLES.PREMIUM, ROLES.ASSOCIADO_PREMIUM].includes(normalizedRole)) return null;
-  if ([ROLES.MASTER, ROLES.ASSOCIADO_A].includes(normalizedRole)) return 5;
-  return 2;
+  if (normalizedRole === ROLES.ADMIN) return null;
+  return getLimitValueForRole(normalizedRole, "pdfReducerPerMonth");
+}
+
+function signatureMonthlyLimit(role) {
+  const normalizedRole = normalizeRole(role);
+  if (normalizedRole === ROLES.ADMIN) return null;
+  return getLimitValueForRole(normalizedRole, "signatureDocumentsPerMonth");
 }
 
 function currentMonthKey() {
@@ -125,6 +131,14 @@ function currentMonthKey() {
   const year = parts.find((part) => part.type === "year")?.value || String(new Date().getFullYear());
   const month = parts.find((part) => part.type === "month")?.value || String(new Date().getMonth() + 1).padStart(2, "0");
   return `${year}-${month}`;
+}
+
+function currentMonthRange() {
+  const now = new Date();
+  return {
+    start: new Date(now.getFullYear(), now.getMonth(), 1),
+    end: new Date(now.getFullYear(), now.getMonth() + 1, 1),
+  };
 }
 
 async function buildPdfCompressionStats(prisma, userId, role) {
@@ -141,6 +155,27 @@ async function buildPdfCompressionStats(prisma, userId, role) {
     remaining: limit === null ? null : Math.max(0, limit - used),
     canUse: limit === null || used < limit,
     limitLabel: limit === null ? "Ilimitado" : `${limit} arquivo(s) por mês`,
+  };
+}
+
+async function buildSignatureMonthlyStats(prisma, userId, role) {
+  const limit = signatureMonthlyLimit(role);
+  const { start, end } = currentMonthRange();
+  const used = await prisma.catteryDocument.count({
+    where: {
+      ownerId: userId,
+      createdAt: { gte: start, lt: end },
+      signatureRequests: { some: {} },
+    },
+  });
+
+  return {
+    used,
+    limit,
+    isUnlimited: limit === null,
+    remaining: limit === null ? null : Math.max(0, limit - used),
+    canUse: limit === null || used < limit,
+    limitLabel: limit === null ? "Ilimitado" : `${limit} documento(s) por mês`,
   };
 }
 
@@ -1497,6 +1532,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         if (!uniqueEmails.length) {
           return res.redirect("/documentos/assinaturas?error=Inclua pelo menos um e-mail de destinatário.");
         }
+        const signatureStats = await buildSignatureMonthlyStats(prisma, req.session.userId, req.session.userRole);
+        if (!signatureStats.canUse) {
+          return res.redirect(`/documentos/assinaturas?error=${encodeURIComponent(`Limite mensal de assinatura eletrônica atingido (${signatureStats.limitLabel}).`)}`);
+        }
 
         const title = compact(req.body.externalTitle) || "Contrato para assinatura";
         const contractNote = compact(req.body.contractNote);
@@ -1750,6 +1789,12 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const document = await loadDocument(req.params.id, req.session.userId);
       if (!document || document.type !== "SALE_CONTRACT") {
         return res.redirect("/documentos?error=Contrato não encontrado.");
+      }
+      if (!document.signatureRequests?.length) {
+        const signatureStats = await buildSignatureMonthlyStats(prisma, req.session.userId, req.session.userRole);
+        if (!signatureStats.canUse) {
+          return res.redirect(`/documentos/${document.id}/editar?error=${encodeURIComponent(`Limite mensal de assinatura eletrônica atingido (${signatureStats.limitLabel}).`)}`);
+        }
       }
 
       const settings = await prisma.userSettings.findUnique({ where: { userId: req.session.userId } });

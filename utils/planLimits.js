@@ -1,4 +1,5 @@
 const { ROLES, normalizeRole, getRoleLabel } = require("./access");
+const { getLimitValueForRole, formatUploadLabel } = require("./profileRules");
 
 const MANAGED_PLAN_ROLES = [
   ROLES.PREMIUM,
@@ -87,15 +88,6 @@ function normalizeNullableNumber(value) {
   return Number.isFinite(number) && number >= 0 ? Math.floor(number) : null;
 }
 
-function formatUploadLabel(kb) {
-  if (!Number.isFinite(kb) || kb <= 0) return "Sem limite";
-  if (kb >= 1024) {
-    const mb = kb / 1024;
-    return `${Number.isInteger(mb) ? mb : mb.toFixed(1).replace(".", ",")} MB`;
-  }
-  return `${kb} KB`;
-}
-
 function rowToOverride(row) {
   if (!row || !row.role) return null;
   const role = normalizeRole(row.role);
@@ -129,6 +121,22 @@ async function loadPlanLimitOverrides(prisma) {
 function getFileUploadLimit(role) {
   const normalized = normalizeRole(role);
   const defaults = DEFAULT_FILE_UPLOAD_LIMITS[normalized] || DEFAULT_FILE_UPLOAD_LIMITS[ROLES.BASIC];
+  if (normalized === ROLES.ADMIN) return defaults;
+  const profileRuleKb = getLimitValueForRole(normalized, "uploadLimitKb");
+  if (profileRuleKb === null) {
+    return {
+      kb: null,
+      bytes: Number.MAX_SAFE_INTEGER,
+      label: "Sem limite",
+    };
+  }
+  if (Number.isFinite(profileRuleKb) && profileRuleKb > 0) {
+    return {
+      kb: profileRuleKb,
+      bytes: profileRuleKb * 1024,
+      label: formatUploadLabel(profileRuleKb),
+    };
+  }
   const overrideKb = roleLimitOverrides[normalized]?.uploadLimitKb;
 
   if (!Number.isFinite(overrideKb) || overrideKb <= 0) return defaults;
@@ -143,16 +151,25 @@ function getFileUploadLimit(role) {
 function getCreationLimits(role) {
   const normalized = normalizeRole(role);
   const defaults = DEFAULT_CREATION_LIMITS[normalized] || DEFAULT_CREATION_LIMITS[ROLES.BASIC];
+  if (normalized === ROLES.ADMIN) return { ...defaults };
   const override = roleLimitOverrides[normalized];
+  const profileKittens = getLimitValueForRole(normalized, "kittensPerYear");
+  const profileLitters = getLimitValueForRole(normalized, "littersPerYear");
 
-  if (!override) return { ...defaults };
+  const base = override
+    ? {
+        breeders: override.breeders,
+        showcaseLitters: override.showcaseLitters,
+        showcaseEvolutionComparisons: override.showcaseEvolutionComparisons,
+        littersPerYear: override.littersPerYear,
+        kittensPerYear: override.kittensPerYear,
+      }
+    : { ...defaults };
 
   return {
-    breeders: override.breeders,
-    showcaseLitters: override.showcaseLitters,
-    showcaseEvolutionComparisons: override.showcaseEvolutionComparisons,
-    littersPerYear: override.littersPerYear,
-    kittensPerYear: override.kittensPerYear,
+    ...base,
+    littersPerYear: profileLitters,
+    kittensPerYear: profileKittens,
   };
 }
 

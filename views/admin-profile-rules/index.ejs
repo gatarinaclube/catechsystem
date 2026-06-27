@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Limites por Perfil - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+    <style>
+      .profile-rules-wrap {
+        overflow-x: auto;
+      }
+      .profile-rules-table {
+        width: 100%;
+        min-width: 860px;
+        border-collapse: separate;
+        border-spacing: 0;
+        border: 1px solid var(--border-soft);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #fff;
+      }
+      .profile-rules-table th,
+      .profile-rules-table td {
+        border-bottom: 1px solid var(--border-soft);
+        border-right: 1px solid var(--border-soft);
+        padding: 12px;
+        text-align: center;
+        vertical-align: middle;
+      }
+      .profile-rules-table th:first-child,
+      .profile-rules-table td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 1;
+        width: 260px;
+        min-width: 260px;
+        text-align: left;
+        background: #f8fafc;
+        font-weight: 900;
+      }
+      .profile-rules-table thead th {
+        background: #0f172a;
+        color: #fff;
+        font-size: 13px;
+      }
+      .profile-rules-table thead th:first-child {
+        z-index: 2;
+        background: #0f172a;
+      }
+      .profile-rules-table tr:last-child td,
+      .profile-rules-table tr:last-child th {
+        border-bottom: 0;
+      }
+      .profile-rules-table th:last-child,
+      .profile-rules-table td:last-child {
+        border-right: 0;
+      }
+      .profile-rules-table input[type="number"] {
+        width: 130px;
+        max-width: 100%;
+        text-align: center;
+      }
+      .profile-rules-section-row th {
+        background: #eef2ff !important;
+        color: #1e1b4b !important;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .profile-rule-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 46px;
+        height: 28px;
+        border-radius: 999px;
+        background: #e2e8f0;
+        cursor: pointer;
+      }
+      .profile-rule-toggle input {
+        position: absolute;
+        opacity: 0;
+      }
+      .profile-rule-toggle span {
+        width: 20px;
+        height: 20px;
+        border-radius: 999px;
+        background: #94a3b8;
+        transition: 0.18s ease;
+      }
+      .profile-rule-toggle input:checked + span {
+        transform: translateX(8px);
+        background: #16a34a;
+      }
+      .profile-rules-note {
+        margin-top: 8px;
+        color: var(--text-muted);
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Limites por Perfil</h2>
+            <div class="welcome-sub">Regras globais dos planos e permissões exibidas nas tabelas comparativas.</div>
+          </div>
+          <div class="actions">
+            <a class="btn" href="/dashboard">Voltar</a>
+          </div>
+        </div>
+
+        <% if (success) { %>
+          <div class="content-card success-card">
+            <div class="content-title">Regras salvas com sucesso.</div>
+            <div class="content-sub">As tabelas de Meu Cadastro, página de planos e permissões passam a usar essas regras.</div>
+          </div>
+        <% } %>
+        <% if (error) { %>
+          <div class="content-card error-card"><%= error %></div>
+        <% } %>
+
+        <form method="post" action="/admin/perfis-limites" class="content-card module-panel">
+          <div class="history-section-head">
+            <div>
+              <div class="content-title">Tabela de regras</div>
+              <div class="content-sub">Campos vazios em limites numéricos significam uso ilimitado.</div>
+            </div>
+            <button class="btn btn-primary" type="submit">Salvar regras</button>
+          </div>
+
+          <div class="profile-rules-wrap" style="margin-top:16px;">
+            <table class="profile-rules-table">
+              <thead>
+                <tr>
+                  <th>Regra</th>
+                  <% rules.planKeys.forEach(function(planKey) { %>
+                    <th><%= rules.planLabels[planKey] %></th>
+                  <% }) %>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="profile-rules-section-row"><th colspan="<%= rules.planKeys.length + 1 %>">Limites</th></tr>
+                <% rules.limitRows.forEach(function(row) { %>
+                  <tr>
+                    <td>
+                      <div><%= row.label %></div>
+                      <div class="profile-rules-note"><%= row.unit %> · vazio: <%= row.blankLabel %></div>
+                    </td>
+                    <% rules.planKeys.forEach(function(planKey) { %>
+                      <td>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          name="limit_<%= row.key %>_<%= planKey %>"
+                          value="<%= row.values[planKey] ?? '' %>"
+                          placeholder="Ilimitado"
+                        />
+                      </td>
+                    <% }) %>
+                  </tr>
+                <% }) %>
+
+                <tr class="profile-rules-section-row"><th colspan="<%= rules.planKeys.length + 1 %>">Acessos aos módulos e recursos</th></tr>
+                <% rules.featureRows.forEach(function(row) { %>
+                  <tr>
+                    <td><%= row.label %></td>
+                    <% rules.planKeys.forEach(function(planKey) { %>
+                      <td>
+                        <label class="profile-rule-toggle" title="<%= row.label %> - <%= rules.planLabels[planKey] %>">
+                          <input
+                            type="checkbox"
+                            name="feature_<%= row.key %>_<%= planKey %>"
+                            <%= row.values[planKey] ? 'checked' : '' %>
+                          />
+                          <span aria-hidden="true"></span>
+                        </label>
+                      </td>
+                    <% }) %>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="form-actions" style="margin-top:18px; text-align:right;">
+            <button class="btn btn-primary" type="submit">Salvar regras</button>
+          </div>
+        </form>
+      </main>
+    </div>
+  </body>
+</html>
