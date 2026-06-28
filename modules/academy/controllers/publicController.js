@@ -92,9 +92,116 @@ module.exports = (prisma) => ({
       leadStatus: req.query.interesse || null,
       seo: {
         path: req.path === "/gatofilia" ? "/gatofilia" : "/academy",
-        title: "Gatofilia | Formação para Criadores de Gatos",
-        description: "Da genética à gestão do gatil: capacitação para criadores responsáveis, preparados para competir internacionalmente e construir um gatil de excelência.",
-        image: "/uploads/academy/gatofilia-hero-01.png",
+        title: "Gatofilia | Como Criar Gatos e Ter um Gatil Profissional",
+        description: "Jornada para criadores e futuros criadores de gatos: genética, reprodução, saúde, manejo, raças, exposições, gestão de gatil e criação responsável.",
+        image: "/uploads/academy/gatofilia-hero-01-1200.jpg",
+        keywords: [
+          "como ter um gatil",
+          "como criar gatos",
+          "curso para criadores de gatos",
+          "criação de gatos de raça",
+          "gatil profissional",
+          "criação responsável de gatos",
+          "felinocultura",
+          "raças de gatos",
+          "genética felina",
+          "reprodução felina",
+          "manejo de gatil",
+          "exposições felinas",
+          "Bengal",
+          "Maine Coon",
+          "Persa",
+          "British Shorthair",
+          "Ragdoll",
+          "Sphynx",
+        ],
+        jsonLd: [
+          {
+            "@context": "https://schema.org",
+            "@type": "EducationalOrganization",
+            name: "Gatofilia",
+            url: absoluteUrl(req, req.path === "/gatofilia" ? "/gatofilia" : "/academy"),
+            logo: absoluteUrl(req, "/uploads/academy/gatofilia-main-logo-360.png"),
+            sameAs: ["https://www.instagram.com/gatofilia.oficial"],
+            description: "Educação em felinocultura para criadores e futuros criadores de gatos, com foco em criação responsável, gestão de gatil, genética, saúde, reprodução e exposições felinas.",
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "Course",
+            name: "Gatofilia - Jornada para Criadores de Gatos",
+            description: "Jornada para aprender como criar gatos de forma responsável, estruturar um gatil profissional, planejar acasalamentos, cuidar da saúde felina, organizar a gestão e buscar reconhecimento em exposições.",
+            provider: {
+              "@type": "EducationalOrganization",
+              name: "Gatofilia",
+              sameAs: absoluteUrl(req, "/academy"),
+            },
+            educationalLevel: "Professional",
+            teaches: [
+              "como ter um gatil",
+              "criação responsável de gatos",
+              "genética felina",
+              "reprodução felina",
+              "manejo sanitário",
+              "gestão de gatil",
+              "raças de gatos",
+              "exposições felinas",
+            ],
+            audience: {
+              "@type": "Audience",
+              audienceType: "Criadores de gatos, futuros criadores, proprietários de gatil e interessados em felinocultura",
+            },
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: [
+              {
+                "@type": "Question",
+                name: "Como ter um gatil de forma correta?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "Para ter um gatil de forma correta é necessário estudar genética, saúde, reprodução, manejo, bem-estar, documentação, gestão e ética na criação. A Gatofilia organiza esses pilares em uma jornada estruturada para criadores.",
+                },
+              },
+              {
+                "@type": "Question",
+                name: "Preciso já possuir um gatil para participar?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "Não. A jornada foi desenvolvida para quem deseja iniciar corretamente e também para criadores que já possuem gatil e querem profissionalizar a criação.",
+                },
+              },
+              {
+                "@type": "Question",
+                name: "A Gatofilia serve para qualquer raça de gato?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "Sim. Os fundamentos de felinocultura, gestão, saúde, genética, reprodução e bem-estar são aplicáveis a diferentes raças felinas.",
+                },
+              },
+              {
+                "@type": "Question",
+                name: "Qual a melhor raça de gatos para criar?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "A melhor raça depende do perfil do criador, estrutura disponível, conhecimento técnico, objetivo de criação e compromisso com saúde, bem-estar e seleção responsável.",
+                },
+              },
+            ],
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              {
+                "@type": "ListItem",
+                position: 1,
+                name: "Gatofilia",
+                item: absoluteUrl(req, req.path === "/gatofilia" ? "/gatofilia" : "/academy"),
+              },
+            ],
+          },
+        ],
       },
     });
   },
@@ -304,6 +411,7 @@ module.exports = (prisma) => ({
 
     const urls = [
       sitemapUrl(absoluteUrl(req, "/academy"), null, "1.0"),
+      sitemapUrl(absoluteUrl(req, "/gatofilia"), null, "1.0"),
       sitemapUrl(absoluteUrl(req, "/academy/sobre"), null, "0.7"),
       sitemapUrl(absoluteUrl(req, "/academy/planos"), null, "0.8"),
       sitemapUrl(absoluteUrl(req, "/academy/conteudos"), categories[0]?.updatedAt, "0.9"),
@@ -318,6 +426,7 @@ module.exports = (prisma) => ({
     res.type("text/plain").send([
       "User-agent: *",
       "Allow: /academy",
+      "Allow: /gatofilia",
       "Disallow: /academy/app",
       "Disallow: /academy/admin",
       "Disallow: /academy/especialista",
