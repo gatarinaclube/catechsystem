@@ -86,14 +86,6 @@
           <div><strong>360°</strong><span>gestão, técnica e formação profissional</span></div>
         </div>
 
-        <ul class="gatofilia-credential-list">
-          <li>🏆 Mais de 13 anos de experiência</li>
-          <li>🌎 Exportação de gatos para 15 países</li>
-          <li>🥇 Primeiro Bengal das Américas a conquistar o título World Winner FIFe</li>
-          <li>🐱 Plataforma exclusiva de gestão para criadores</li>
-          <li>👨‍🎓 Formação completa do iniciante ao criador profissional</li>
-        </ul>
-
         <div class="gatofilia-founders">
           <div>
             <h3>Somos Edevar Tomiozzo e Maíra Ferrarin.</h3>
@@ -169,17 +161,20 @@
         </div>
         <div class="gatofilia-learning-strip">
           <p>Durante a formação você aprenderá a:</p>
-          <div>
-            <% [
-              "Planejar cruzamentos com critérios técnicos.",
-              "Construir um gatil saudável e organizado.",
-              "Criar uma marca reconhecida.",
-              "Participar de exposições nacionais e internacionais.",
-              "Exportar gatos com segurança.",
-              "Desenvolver um programa de criação sustentável."
-            ].forEach(function(item) { %>
-              <span>✔ <%= item %></span>
-            <% }) %>
+          <div class="gatofilia-learning-window" aria-label="Tópicos da formação">
+            <div class="gatofilia-learning-track">
+              <% [
+                ["Planejar cruzamentos com critérios técnicos.", "Construir um gatil saudável e organizado."],
+                ["Criar uma marca reconhecida.", "Participar de exposições nacionais e internacionais."],
+                ["Exportar gatos com segurança.", "Desenvolver um programa de criação sustentável."],
+                ["Planejar cruzamentos com critérios técnicos.", "Construir um gatil saudável e organizado."]
+              ].forEach(function(pair) { %>
+                <div class="gatofilia-learning-pair">
+                  <span>✔ <%= pair[0] %></span>
+                  <span>✔ <%= pair[1] %></span>
+                </div>
+              <% }) %>
+            </div>
           </div>
         </div>
         <div class="gatofilia-timeline">
@@ -212,24 +207,25 @@
         </div>
       </section>
 
-      <section id="beneficios" class="gatofilia-section reveal-on-scroll">
+      <section id="beneficios" class="gatofilia-section gatofilia-benefits reveal-on-scroll">
         <div class="gatofilia-section-heading centered compact">
-          <p class="gatofilia-eyebrow">Seus Benefícios</p>
+          <p class="gatofilia-eyebrow">Benefícios Extras</p>
           <h2>Muito mais do que apenas um "curso": somos uma estrutura completa para apoiar sua evolução como criador.</h2>
         </div>
-        <div class="gatofilia-card-grid">
+        <div class="gatofilia-benefit-grid">
           <% [
             ["Certificado de Conclusão", "Reconhecimento formal da conclusão da formação."],
             ["Plataforma Completa de Gestão de Gatil", "1 ano de acesso ao plano Premium do CaTech System."],
             ["Associação ao Gatarina*", "1 ano de associação à Associação Catarinense de Felinos. Opcional."],
             ["Associação FIFe*", "1 ano de associação à Federação Internacional de Felinos. Opcional."],
+            ["Registro de Gatil FIFe*", "Registro do gatil na FIFe internacional."],
             ["Visita Técnica", "Experiência exclusiva no Gatil TomiFerr Bengals. Opcional."],
             ["Grupo Exclusivo", "Acesso a uma comunidade de criadores para networking, troca de experiências e desenvolvimento contínuo."],
             ["Atualizações Futuras", "1 ano de acesso à plataforma Gatofilia, com novos conteúdos, materiais e atualizações da formação."],
             ["Materiais de Apoio", "Arquivos, modelos de documentos, checklists e referências para consulta."]
-          ].forEach(function(card) { %>
-            <article class="gatofilia-card">
-              <div class="gatofilia-card-icon" aria-hidden="true"></div>
+          ].forEach(function(card, index) { %>
+            <article class="gatofilia-benefit-card">
+              <div class="gatofilia-benefit-number" aria-hidden="true"><%= String(index + 1).padStart(2, "0") %></div>
               <h3><%= card[0] %></h3>
               <p><%= card[1] %></p>
             </article>
