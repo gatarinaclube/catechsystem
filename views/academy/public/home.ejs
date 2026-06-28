@@ -9,15 +9,21 @@
   <body class="gatofilia-public">
     <header class="gatofilia-nav" id="gatofiliaNav">
       <a class="gatofilia-brand" href="/gatofilia" aria-label="Gatofilia">
-        <img src="/uploads/academy/gatofilia-logo.png" alt="Gatofilia" />
+        <img src="/uploads/academy/gatofilia-logo-320.png" alt="Gatofilia" />
         <span>Gatofilia</span>
       </a>
-      <nav aria-label="Navegação principal">
+      <button class="gatofilia-menu-toggle" type="button" aria-controls="gatofiliaMenu" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+        <strong>Menu</strong>
+      </button>
+      <nav id="gatofiliaMenu" aria-label="Navegação principal">
         <a href="#inicio">Início</a>
-        <a href="#formacao">A Formação</a>
-        <a href="#programa">Programa</a>
-        <a href="#beneficios">Benefícios</a>
         <a href="#instituto">Quem Somos</a>
+        <a href="#formacao">Jornada</a>
+        <a href="#programa">Método</a>
+        <a href="#beneficios">Benefícios</a>
         <a href="#faq">Perguntas Frequentes</a>
         <a href="#pre-inscricao">Pré-inscrição</a>
         <a href="#contato">Contato</a>
@@ -27,13 +33,17 @@
     <main>
       <section id="inicio" class="gatofilia-hero">
         <div class="gatofilia-hero-media">
-          <img src="/uploads/academy/gatofilia-hero-01.png" alt="Criador estudando felinocultura com gato Bengal" loading="eager" />
+          <picture>
+            <source media="(max-width: 720px)" srcset="/uploads/academy/gatofilia-hero-01-720.jpg" />
+            <img src="/uploads/academy/gatofilia-hero-01-1200.jpg" alt="Criador estudando felinocultura com gato Bengal" loading="eager" />
+          </picture>
         </div>
         <div class="gatofilia-hero-content reveal-on-scroll">
           <h1>Torne-se um criador de gatos reconhecido pela excelência.</h1>
           <p>
-            Da genética à gestão do gatil. Um programa criado para formar criadores responsáveis,
-            preparados para competir internacionalmente e construir um gatil de excelência.
+            Da genética à gestão do gatil, um programa completo para acompanhar você em todas as
+            etapas da criação. Desenvolvido para formar criadores responsáveis, preparados para
+            construir um gatil de excelência e competir internacionalmente.
           </p>
           <div class="gatofilia-actions">
             <a class="gatofilia-button primary" href="#pre-inscricao">Quero participar</a>
@@ -63,18 +73,19 @@
             </p>
           </div>
           <div class="gatofilia-story-card accent">
-            <h3>Formação para realidade do gatil</h3>
+            <h3>Conhecimento para a realidade do gatil</h3>
             <p>
-              Orientamos novos criadores e programas em evolução com conhecimento fundamentado em
-              saúde, bem-estar animal, genética, ética e gestão profissional.
+              Orientamos desde novos criadores até programas de criação em desenvolvimento,
+              compartilhando conhecimento prático e atualizado para construir programas de criação
+              mais sólidos, fundamentados em saúde, bem-estar animal, genética, ética e gestão profissional.
             </p>
           </div>
           <div class="gatofilia-story-card wide">
             <p>
               Nossa metodologia une conhecimento técnico, experiência prática e vivência internacional,
-              proporcionando uma formação completa, atualizada e aplicável à criação felina moderna.
-              Mais do que formar criadores, queremos contribuir para o desenvolvimento da felinocultura
-              e transformar conhecimento em legado.
+              proporcionando uma trilha de conhecimento completa, atualizada e aplicável à criação
+              felina moderna. Mais do que formar criadores, queremos contribuir para o desenvolvimento
+              da felinocultura e transformar conhecimento em legado.
             </p>
           </div>
         </div>
@@ -111,13 +122,13 @@
             </p>
           </div>
           <figure>
-            <img src="/uploads/academy/gatofilia-edevar-maira.png" alt="Edevar Tomiozzo e Maíra Ferrarin" loading="lazy" />
+            <img src="/uploads/academy/gatofilia-edevar-maira-900.jpg" alt="Edevar Tomiozzo e Maíra Ferrarin" loading="lazy" />
           </figure>
         </div>
 
         <div class="gatofilia-proof-grid">
           <figure>
-            <img src="/uploads/academy/gatofilia-hercules-world-winner.jpg" alt="TomiFerr Hércules, World Winner FIFe" loading="lazy" />
+            <img src="/uploads/academy/gatofilia-hercules-world-winner-1200.jpg" alt="TomiFerr Hércules, World Winner FIFe" loading="lazy" />
             <figcaption>TomiFerr Hércules, World Winner FIFe</figcaption>
           </figure>
           <figure>
@@ -133,7 +144,7 @@
           <h2>Por que escolher a Gatofilia?</h2>
           <p>Uma formação criada por quem vive a felinocultura por dentro: criação, pista, gestão, exportação e desenvolvimento de raça.</p>
           <figure class="gatofilia-reason-brand">
-            <img src="/uploads/academy/gatofilia-logo.png" alt="Gatofilia" loading="lazy" />
+            <img src="/uploads/academy/gatofilia-logo-emblem-420.png" alt="Gatofilia" loading="lazy" />
           </figure>
         </div>
         <div class="reveal-on-scroll">
@@ -210,6 +221,20 @@
         </div>
       </section>
 
+      <section id="programa" class="gatofilia-section gatofilia-creator-flow reveal-on-scroll">
+        <div class="gatofilia-section-heading centered compact">
+          <p class="gatofilia-eyebrow">Método Gatofilia</p>
+          <h2>Uma jornada que transforma conhecimento em reconhecimento.</h2>
+        </div>
+        <div class="gatofilia-flow-diagram" aria-label="Fluxograma da jornada do criador">
+          <div class="gatofilia-flow-node node-knowledge">Conhecimento</div>
+          <div class="gatofilia-flow-node node-experience">Experiência</div>
+          <div class="gatofilia-flow-center">Criador</div>
+          <div class="gatofilia-flow-node node-excellence">Excelência</div>
+          <div class="gatofilia-flow-node node-recognition">Reconhecimento</div>
+        </div>
+      </section>
+
       <section id="beneficios" class="gatofilia-section gatofilia-benefits reveal-on-scroll">
         <div class="gatofilia-section-heading centered compact">
           <p class="gatofilia-eyebrow">Benefícios Extras</p>
@@ -239,20 +264,6 @@
           (Federação Internacional de Felinos) e do registro de gatil FIFe é opcional e depende da aceitação
           do interessado às normas, regulamentos e princípios éticos das respectivas instituições.
         </p>
-      </section>
-
-      <section id="programa" class="gatofilia-section gatofilia-creator-flow reveal-on-scroll">
-        <div class="gatofilia-section-heading centered compact">
-          <p class="gatofilia-eyebrow">Método Gatofilia</p>
-          <h2>Uma jornada que transforma conhecimento em reconhecimento.</h2>
-        </div>
-        <div class="gatofilia-flow-diagram" aria-label="Fluxograma da jornada do criador">
-          <div class="gatofilia-flow-node node-knowledge">Conhecimento</div>
-          <div class="gatofilia-flow-node node-experience">Experiência</div>
-          <div class="gatofilia-flow-center">Criador</div>
-          <div class="gatofilia-flow-node node-excellence">Excelência</div>
-          <div class="gatofilia-flow-node node-recognition">Reconhecimento</div>
-        </div>
       </section>
 
       <section id="faq" class="gatofilia-section reveal-on-scroll">
@@ -289,7 +300,7 @@
 
       <section id="pre-inscricao" class="gatofilia-interest reveal-on-scroll">
         <div class="gatofilia-interest-copy">
-          <p class="gatofilia-eyebrow">Manifestação de interesse</p>
+          <p class="gatofilia-eyebrow">Inicie sua jornada na Gatofilia</p>
           <h2>Seja um dos primeiros alunos da Gatofilia.</h2>
           <p>
             As vagas são limitadas para garantir acompanhamento próximo de cada participante.
@@ -304,7 +315,7 @@
         <form method="post" action="<%= currentPublicPath === '/gatofilia' ? '/gatofilia/interesse' : '/academy/interesse' %>" class="gatofilia-form gatofilia-interest-form" data-gatofilia-interest-form>
           <div class="gatofilia-form-intro">
             <span>Pré-inscrição</span>
-            <strong>Conte um pouco sobre você e sua criação.</strong>
+            <strong class="gatofilia-form-intro-copy">Preencha sua pré-inscrição sem compromisso. Entraremos em contato para apresentar todos os detalhes da formação, investimento, cronograma e esclarecer suas dúvidas.</strong>
           </div>
 
           <label>Nome<input name="firstName" required autocomplete="given-name" /></label>
@@ -372,7 +383,7 @@
 
     <footer id="contato" class="gatofilia-footer">
       <div>
-        <img src="/uploads/academy/gatofilia-logo.png" alt="Gatofilia" />
+        <img src="/uploads/academy/gatofilia-logo-320.png" alt="Gatofilia" />
         <strong>Gatofilia</strong>
       </div>
       <nav>
@@ -393,11 +404,33 @@
 
     <script src="/js/academy-interest.js"></script>
     <script>
+      const nav = document.getElementById("gatofiliaNav");
+      const menuToggle = document.querySelector(".gatofilia-menu-toggle");
+      const menu = document.getElementById("gatofiliaMenu");
+
+      function closeMobileMenu() {
+        if (!menu || !menuToggle) return;
+        menu.classList.remove("is-open");
+        menuToggle.setAttribute("aria-expanded", "false");
+      }
+
+      if (menuToggle && menu) {
+        menuToggle.addEventListener("click", () => {
+          const isOpen = menu.classList.toggle("is-open");
+          menuToggle.setAttribute("aria-expanded", String(isOpen));
+        });
+
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") closeMobileMenu();
+        });
+      }
+
       document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
         anchor.addEventListener("click", (event) => {
           const target = document.querySelector(anchor.getAttribute("href"));
           if (!target) return;
           event.preventDefault();
+          closeMobileMenu();
           target.scrollIntoView({ behavior: "smooth", block: "start" });
         });
       });
@@ -410,7 +443,6 @@
 
       document.querySelectorAll(".reveal-on-scroll").forEach((element) => observer.observe(element));
 
-      const nav = document.getElementById("gatofiliaNav");
       let navTimer;
       function showNavWhileScrolling() {
         if (!nav) return;
