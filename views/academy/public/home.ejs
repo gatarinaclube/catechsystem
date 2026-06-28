@@ -9,8 +9,11 @@
   <body class="gatofilia-public">
     <header class="gatofilia-nav" id="gatofiliaNav">
       <a class="gatofilia-brand" href="/gatofilia" aria-label="Gatofilia">
-        <img src="/uploads/academy/gatofilia-logo-320.png" alt="Gatofilia" />
-        <span>Gatofilia</span>
+        <img
+          src="/uploads/academy/gatofilia-main-logo-360.png"
+          srcset="/uploads/academy/gatofilia-main-logo-360.png 1x, /uploads/academy/gatofilia-main-logo-620.png 2x"
+          alt="Gatofilia"
+        />
       </a>
       <button class="gatofilia-menu-toggle" type="button" aria-controls="gatofiliaMenu" aria-expanded="false">
         <span></span>
@@ -41,14 +44,45 @@
         <div class="gatofilia-hero-content reveal-on-scroll">
           <h1>Torne-se um criador de gatos reconhecido pela excelência.</h1>
           <p>
-            Da genética à gestão do gatil, um programa completo para acompanhar você em todas as
-            etapas da criação. Desenvolvido para formar criadores responsáveis, preparados para
-            construir um gatil de excelência e competir internacionalmente.
+            Da genética à gestão do gatil, uma jornada completa para desenvolver criadores de
+            excelência e preparar programas de criação reconhecidos internacionalmente.
           </p>
           <div class="gatofilia-actions">
             <a class="gatofilia-button primary" href="#pre-inscricao">Quero participar</a>
             <a class="gatofilia-button secondary" href="#formacao">Conhecer o Programa</a>
           </div>
+        </div>
+      </section>
+
+      <section class="gatofilia-section gatofilia-for-you reveal-on-scroll">
+        <div class="gatofilia-for-you-copy">
+          <p class="gatofilia-eyebrow">A Gatofilia é para você que...</p>
+          <h2>Você se identifica com alguma dessas situações?</h2>
+          <div class="gatofilia-for-you-questions">
+            <p>Seu gatil cresce, mas você sente falta de organização?</p>
+            <p>Tem dúvidas sobre genética, reprodução ou seleção de reprodutores?</p>
+            <p>Quer tomar decisões com mais segurança e embasamento?</p>
+            <p>Busca reconhecimento sem abrir mão da ética e do bem-estar animal?</p>
+          </div>
+          <strong>Se respondeu "sim" para uma dessas perguntas, a Gatofilia foi criada para você.</strong>
+        </div>
+
+        <div class="gatofilia-for-you-grid" aria-label="Perfil dos criadores que podem participar da Gatofilia">
+          <% [
+            "Deseja iniciar um gatil da forma correta.",
+            "Já possui um gatil e quer profissionalizar sua criação.",
+            "Tem dificuldades para planejar acasalamentos.",
+            "Enfrenta problemas recorrentes de saúde, manejo ou reprodução.",
+            "Quer organizar melhor a gestão do seu gatil.",
+            "Não possui um sistema profissional, ou ainda está usando planilhas de Excel.",
+            "Busca reconhecimento em exposições nacionais e internacionais.",
+            "Deseja construir um programa de criação sólido, sustentável e respeitado."
+          ].forEach(function(item) { %>
+            <article>
+              <span aria-hidden="true">✓</span>
+              <p><%= item %></p>
+            </article>
+          <% }) %>
         </div>
       </section>
 
@@ -174,7 +208,10 @@
           <h2>Uma jornada estruturada para desenvolver todas as competências necessárias à criação felina profissional.</h2>
         </div>
         <div class="gatofilia-learning-strip">
-          <p>Durante a formação você aprenderá a:</p>
+          <div class="gatofilia-learning-head">
+            <span>Aplicação prática</span>
+            <p>Durante a jornada você aprenderá a:</p>
+          </div>
           <div class="gatofilia-learning-window" aria-label="Tópicos da formação">
             <div class="gatofilia-learning-track">
               <% [
@@ -184,8 +221,8 @@
                 ["Planejar cruzamentos com critérios técnicos.", "Construir um gatil saudável e organizado."]
               ].forEach(function(pair) { %>
                 <div class="gatofilia-learning-pair">
-                  <span>✔ <%= pair[0] %></span>
-                  <span>✔ <%= pair[1] %></span>
+                  <span><strong>✓</strong><%= pair[0] %></span>
+                  <span><strong>✓</strong><%= pair[1] %></span>
                 </div>
               <% }) %>
             </div>
@@ -193,26 +230,29 @@
         </div>
         <div class="gatofilia-timeline">
           <% [
-            ["Fundamentos da Felinocultura", ["História e evolução da criação felina", "Ética e responsabilidade do criador", "Estrutura de um gatil profissional"]],
-            ["Genética Aplicada", ["Leitura e interpretação de pedigrees", "Planejamento genético", "Seleção de reprodutores"]],
-            ["Saúde Felina", ["Medicina preventiva", "Exames essenciais", "Principais doenças da criação"]],
-            ["Nutrição", ["Alimentação por fase da vida", "Suplementação", "Manejo nutricional"]],
-            ["Reprodução", ["Seleção de matrizes e reprodutores", "Gestação e parto", "Desenvolvimento neonatal"]],
-            ["Manejo do Gatil", ["Higiene e biossegurança", "Organização dos ambientes", "Protocolos operacionais"]],
-            ["Bem-estar Animal", ["Comportamento felino", "Socialização", "Enriquecimento ambiental"]],
-            ["Gestão Profissional", ["Controle financeiro", "Indicadores", "Documentação", "Gestão de equipes"]],
-            ["Marketing e Posicionamento", ["Marca do gatil", "Redes sociais", "Relacionamento com clientes"]],
-            ["Federações, Clubes e Estrutura da Felinocultura", ["Federações e entidades internacionais", "Clubes, registros e pedigrees", "Regulamentos, títulos e exposições"]],
-            ["Exposições Felinas", ["Preparação dos gatos", "Regras e regulamentos", "Estratégias de campanha"]],
-            ["Exportação Internacional", ["Documentação", "Logística", "Protocolos sanitários"]],
-            ["Planejamento Estratégico", ["Crescimento sustentável", "Melhoramento genético", "Planejamento de longo prazo"]],
-            ["Certificação", ["Conclusão da formação e emissão do certificado."]]
+            ["✦", "Fundamentos da Felinocultura", ["História e evolução da criação felina", "Ética e responsabilidade do criador", "Estrutura de um gatil profissional"]],
+            ["◇", "Genética Aplicada", ["Leitura e interpretação de pedigrees", "Planejamento genético", "Seleção de reprodutores"]],
+            ["✚", "Saúde Felina", ["Medicina preventiva", "Exames essenciais", "Principais doenças da criação"]],
+            ["◐", "Nutrição", ["Alimentação por fase da vida", "Suplementação", "Manejo nutricional"]],
+            ["◆", "Reprodução", ["Seleção de matrizes e reprodutores", "Gestação e parto", "Desenvolvimento neonatal"]],
+            ["▣", "Manejo do Gatil", ["Higiene e biossegurança", "Organização dos ambientes", "Protocolos operacionais"]],
+            ["○", "Bem-estar Animal", ["Comportamento felino", "Socialização", "Enriquecimento ambiental"]],
+            ["◈", "Gestão Profissional", ["Controle financeiro", "Indicadores", "Documentação", "Gestão de equipes"]],
+            ["✦", "Marketing e Posicionamento", ["Marca do gatil", "Redes sociais", "Relacionamento com clientes"]],
+            ["◎", "Federações, Clubes e Estrutura da Felinocultura", ["Federações e entidades internacionais", "Clubes, registros e pedigrees", "Regulamentos, títulos e exposições"]],
+            ["★", "Exposições Felinas", ["Preparação dos gatos", "Regras e regulamentos", "Estratégias de campanha"]],
+            ["↗", "Exportação Internacional", ["Documentação", "Logística", "Protocolos sanitários"]],
+            ["⌁", "Planejamento Estratégico", ["Crescimento sustentável", "Melhoramento genético", "Planejamento de longo prazo"]],
+            ["✓", "Certificação", ["Conclusão da formação e emissão do certificado."]]
           ].forEach(function(step, index) { %>
-            <article>
-              <span><%= String(index + 1).padStart(2, "0") %></span>
-              <h3><%= step[0] %></h3>
+            <article class="<%= [1, 4, 7, 10, 12].includes(index) ? 'is-highlighted' : '' %>">
+              <div class="gatofilia-timeline-top">
+                <span><%= String(index + 1).padStart(2, "0") %></span>
+                <i aria-hidden="true"><%= step[0] %></i>
+              </div>
+              <h3><%= step[1] %></h3>
               <ul>
-                <% step[1].forEach(function(topic) { %>
+                <% step[2].forEach(function(topic) { %>
                   <li><%= topic %></li>
                 <% }) %>
               </ul>
@@ -224,20 +264,36 @@
       <section id="programa" class="gatofilia-section gatofilia-creator-flow reveal-on-scroll">
         <div class="gatofilia-section-heading centered compact">
           <p class="gatofilia-eyebrow">Método Gatofilia</p>
-          <h2>Uma jornada que transforma conhecimento em reconhecimento.</h2>
+          <h2>Conhecimento que se transforma em resultados.</h2>
+          <p>
+            Uma metodologia que integra conhecimento, planejamento, gestão e evolução contínua,
+            conectando a trilha de aprendizado à prática diária por meio de uma plataforma
+            profissional de gestão de gatil.
+          </p>
         </div>
-        <div class="gatofilia-flow-diagram" aria-label="Fluxograma da jornada do criador">
-          <div class="gatofilia-flow-node node-knowledge">Conhecimento</div>
-          <div class="gatofilia-flow-node node-experience">Experiência</div>
-          <div class="gatofilia-flow-center">Criador</div>
-          <div class="gatofilia-flow-node node-excellence">Excelência</div>
-          <div class="gatofilia-flow-node node-recognition">Reconhecimento</div>
+        <div class="gatofilia-flow-diagram" aria-label="Fluxograma do Método Gatofilia">
+          <% [
+            ["01", "Conhecimento", "Aprenda os fundamentos da criação responsável."],
+            ["02", "Planejamento", "Estruture seu programa de criação."],
+            ["03", "Gestão", "Utilize a plataforma para controlar seu gatil."],
+            ["04", "Evolução", "Acompanhe indicadores e aperfeiçoe continuamente seu trabalho."],
+            ["05", "Excelência", "Alcance resultados consistentes e reconhecimento."]
+          ].forEach(function(step) { %>
+            <article class="gatofilia-flow-card <%= step[1] === 'Gestão' ? 'is-featured' : '' %>">
+              <span><%= step[0] %></span>
+              <h3><%= step[1] %></h3>
+              <p><%= step[2] %></p>
+            </article>
+          <% }) %>
         </div>
+        <p class="gatofilia-flow-closing">
+          Você aprende, planeja, aplica na gestão do gatil, acompanha sua evolução e constrói excelência.
+        </p>
       </section>
 
       <section id="beneficios" class="gatofilia-section gatofilia-benefits reveal-on-scroll">
         <div class="gatofilia-section-heading centered compact">
-          <p class="gatofilia-eyebrow">Benefícios Extras</p>
+          <p class="gatofilia-eyebrow">O que acompanha sua jornada</p>
           <h2>Muito mais do que apenas um "curso": somos uma estrutura completa para apoiar sua evolução como criador.</h2>
         </div>
         <div class="gatofilia-benefit-grid">
@@ -288,6 +344,7 @@
             ["Qual é a carga horária?", "A formação possui aproximadamente 16 horas de conteúdo, distribuídas entre 8 encontros online ao vivo, aulas gravadas, materiais complementares, estudos práticos e acesso contínuo à plataforma Gatofilia."],
             ["Durante os encontros haverá interação?", "Sim. Os encontros foram planejados para serem participativos. Durante as aulas ao vivo, os mediadores responderão dúvidas e perguntas relacionadas ao conteúdo que estiver sendo abordado naquele momento."],
             ["As vagas são limitadas?", "Sim. Cada turma terá no máximo 10 participantes, garantindo um acompanhamento mais próximo, maior interação e uma experiência de aprendizagem mais personalizada."],
+            ["Existe processo de seleção?", "Sim. Buscamos formar turmas comprometidas com a criação responsável e com os princípios éticos da Gatofilia."],
             ["Quando começa a próxima turma?", "As turmas são abertas periodicamente e possuem vagas limitadas. Ao realizar a pré-inscrição, você será um dos primeiros a receber informações sobre datas, cronograma e abertura das matrículas."]
           ].forEach(function(item) { %>
             <details>
@@ -346,7 +403,7 @@
             <input name="city" required disabled />
           </label>
 
-          <label>Possui gatil?
+          <label class="full gatofilia-cattery-question">Possui gatil?
             <select name="hasCattery" required data-has-cattery>
               <option value="">Selecione</option>
               <option value="Sim">Sim</option>
@@ -354,10 +411,10 @@
             </select>
           </label>
 
-          <label data-cattery-only hidden>Nome do gatil<input name="catteryName" required disabled /></label>
-          <label data-cattery-only hidden>Raça principal criada<input name="breed" required disabled /></label>
-          <label data-cattery-only hidden>Há quanto tempo cria?<input name="breedingTime" required disabled /></label>
-          <label data-no-cattery-only hidden>Raça que pretende criar<input name="wantsStart" required disabled /></label>
+          <label class="gatofilia-conditional-field" data-cattery-only hidden>Nome do gatil<input name="catteryName" required disabled /></label>
+          <label class="gatofilia-conditional-field" data-cattery-only hidden>Raça principal criada<input name="breed" required disabled /></label>
+          <label class="gatofilia-conditional-field" data-cattery-only hidden>Há quanto tempo cria?<input name="breedingTime" required disabled /></label>
+          <label class="full gatofilia-conditional-field" data-no-cattery-only hidden>Raça que pretende criar<input name="wantsStart" required disabled /></label>
 
           <label>Como conheceu a Gatofilia?
             <select name="referralSource" required>
@@ -383,8 +440,11 @@
 
     <footer id="contato" class="gatofilia-footer">
       <div>
-        <img src="/uploads/academy/gatofilia-logo-320.png" alt="Gatofilia" />
-        <strong>Gatofilia</strong>
+        <img
+          src="/uploads/academy/gatofilia-main-logo-360.png"
+          srcset="/uploads/academy/gatofilia-main-logo-360.png 1x, /uploads/academy/gatofilia-main-logo-620.png 2x"
+          alt="Gatofilia"
+        />
       </div>
       <nav>
         <a class="gatofilia-instagram" href="https://www.instagram.com/gatofilia.oficial" target="_blank" rel="noopener" aria-label="Instagram Gatofilia">
@@ -397,6 +457,7 @@
         </a>
       </nav>
       <p>
+        Desenvolvendo a próxima geração de criadores de excelência.<br />
         E-mail: contato@gatofilia.com.br<br />
         © 2026 Gatofilia. Todos os direitos reservados.
       </p>
