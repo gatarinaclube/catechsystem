@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><%= pageTitle %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-[#f8faf7] text-[#1f2933]">
+    <main class="mx-auto max-w-7xl px-5 py-8">
+      <nav class="flex flex-wrap items-center justify-between gap-3">
+        <a href="/academy/admin" class="font-black">← Admin Academy</a>
+        <div class="flex flex-wrap gap-3">
+          <a href="/academy" class="text-sm font-bold text-[#31513d]">Página pública</a>
+          <a href="/dashboard" class="text-sm font-bold text-[#31513d]">CaTech</a>
+        </div>
+      </nav>
+
+      <section class="mt-8 overflow-hidden rounded-[2rem] bg-[#111] text-white shadow-sm">
+        <div class="grid gap-6 p-8 md:grid-cols-[minmax(0,1fr)_320px] md:items-end">
+          <div>
+            <div class="text-xs font-black uppercase tracking-[0.24em] text-[#d6a84f]">Gatofilia</div>
+            <h1 class="mt-3 text-4xl font-black md:text-5xl">Manifestações de interesse</h1>
+            <p class="mt-4 max-w-2xl text-sm leading-7 text-stone-300">
+              Lista dos interessados que preencheram o formulário público da Gatofilia, com informações para contato e análise de perfil.
+            </p>
+          </div>
+          <form method="get" action="/academy/admin/interesses" class="rounded-3xl border border-white/10 bg-white/5 p-4">
+            <label class="text-xs font-black uppercase tracking-widest text-stone-400">Buscar</label>
+            <div class="mt-2 flex gap-2">
+              <input name="q" value="<%= q || '' %>" placeholder="Nome, e-mail, cidade, raça..." class="min-w-0 flex-1 rounded-2xl border border-white/10 bg-white px-4 py-3 text-sm text-slate-900" />
+              <button class="rounded-2xl bg-[#d6a84f] px-4 py-3 text-sm font-black text-[#111]">Filtrar</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <div class="mt-6 grid gap-4 md:grid-cols-3">
+        <div class="rounded-3xl bg-white p-5 shadow-sm">
+          <div class="text-xs font-black uppercase tracking-widest text-slate-400">Registros exibidos</div>
+          <div class="mt-2 text-3xl font-black"><%= leads.length %></div>
+        </div>
+        <div class="rounded-3xl bg-white p-5 shadow-sm">
+          <div class="text-xs font-black uppercase tracking-widest text-slate-400">Com gatil</div>
+          <div class="mt-2 text-3xl font-black"><%= leads.filter(function(lead) { return lead.hasCattery === 'Sim'; }).length %></div>
+        </div>
+        <div class="rounded-3xl bg-white p-5 shadow-sm">
+          <div class="text-xs font-black uppercase tracking-widest text-slate-400">Pretendem iniciar</div>
+          <div class="mt-2 text-3xl font-black"><%= leads.filter(function(lead) { return lead.hasCattery === 'Não'; }).length %></div>
+        </div>
+      </div>
+
+      <section class="mt-8 grid gap-4">
+        <% if (!leads.length) { %>
+          <div class="rounded-3xl bg-white p-8 text-center text-slate-500 shadow-sm">Nenhuma manifestação encontrada.</div>
+        <% } %>
+
+        <% leads.forEach(function(lead) { %>
+          <% const fullName = [lead.firstName, lead.lastName].filter(Boolean).join(' '); %>
+          <% const whatsappDigits = String(lead.whatsapp || '').replace(/\D/g, ''); %>
+          <article class="overflow-hidden rounded-[1.75rem] bg-white shadow-sm ring-1 ring-slate-100">
+            <div class="grid gap-5 border-b border-slate-100 p-5 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
+              <div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="rounded-full bg-[#f3ead8] px-3 py-1 text-xs font-black uppercase tracking-widest text-[#8c651f]"><%= lead.hasCattery === 'Sim' ? 'Criador com gatil' : 'Futuro criador' %></span>
+                  <span class="text-xs font-bold text-slate-400"><%= lead.createdAt.toLocaleString('pt-BR') %></span>
+                </div>
+                <h2 class="mt-3 text-2xl font-black"><%= fullName %></h2>
+                <p class="mt-1 text-sm font-bold text-slate-500"><%= [lead.city, lead.state, lead.country].filter(Boolean).join(' / ') %></p>
+              </div>
+              <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+                <a href="mailto:<%= lead.email %>" class="rounded-2xl bg-[#31513d] px-4 py-3 text-center text-sm font-black text-white"><%= lead.email %></a>
+                <% if (whatsappDigits) { %>
+                  <a href="https://wa.me/<%= whatsappDigits %>" target="_blank" rel="noopener" class="rounded-2xl border border-[#31513d] px-4 py-3 text-center text-sm font-black text-[#31513d]">WhatsApp <%= lead.whatsapp %></a>
+                <% } %>
+              </div>
+            </div>
+
+            <div class="grid gap-4 p-5 md:grid-cols-2 lg:grid-cols-4">
+              <div class="rounded-2xl bg-slate-50 p-4">
+                <div class="text-xs font-black uppercase tracking-widest text-slate-400">Gatil</div>
+                <div class="mt-2 font-bold"><%= lead.catteryName || 'Ainda não possui' %></div>
+              </div>
+              <div class="rounded-2xl bg-slate-50 p-4">
+                <div class="text-xs font-black uppercase tracking-widest text-slate-400">Raça</div>
+                <div class="mt-2 font-bold"><%= lead.hasCattery === 'Sim' ? (lead.breed || '-') : (lead.wantsStart || '-') %></div>
+              </div>
+              <div class="rounded-2xl bg-slate-50 p-4">
+                <div class="text-xs font-black uppercase tracking-widest text-slate-400">Tempo de criação</div>
+                <div class="mt-2 font-bold"><%= lead.breedingTime || '-' %></div>
+              </div>
+              <div class="rounded-2xl bg-slate-50 p-4">
+                <div class="text-xs font-black uppercase tracking-widest text-slate-400">Origem</div>
+                <div class="mt-2 font-bold"><%= lead.referralSource || '-' %></div>
+              </div>
+            </div>
+
+            <details class="border-t border-slate-100">
+              <summary class="cursor-pointer px-5 py-4 text-sm font-black text-[#31513d]">Ver mensagem e dados completos</summary>
+              <div class="grid gap-4 px-5 pb-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+                <div class="rounded-2xl bg-[#111] p-5 text-stone-100">
+                  <div class="text-xs font-black uppercase tracking-widest text-[#d6a84f]">Mensagem</div>
+                  <p class="mt-3 whitespace-pre-line text-sm leading-7"><%= lead.message || '-' %></p>
+                </div>
+                <dl class="grid gap-2 rounded-2xl bg-slate-50 p-5 text-sm">
+                  <div><dt class="font-black text-slate-500">Nome</dt><dd><%= fullName %></dd></div>
+                  <div><dt class="font-black text-slate-500">E-mail</dt><dd><%= lead.email %></dd></div>
+                  <div><dt class="font-black text-slate-500">WhatsApp</dt><dd><%= lead.whatsapp || '-' %></dd></div>
+                  <div><dt class="font-black text-slate-500">Deseja atualizações</dt><dd><%= lead.wantsUpdates ? 'Sim' : 'Não' %></dd></div>
+                </dl>
+              </div>
+            </details>
+          </article>
+        <% }) %>
+      </section>
+    </main>
+  </body>
+</html>

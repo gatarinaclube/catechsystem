@@ -50,9 +50,9 @@ async function notifyGatofiliaLead(lead) {
         <p><strong>Cidade/Estado/País:</strong> ${escapeHtml([lead.city, lead.state, lead.country].filter(Boolean).join(" / ") || "-")}</p>
         <p><strong>Possui gatil:</strong> ${escapeHtml(lead.hasCattery || "-")}</p>
         <p><strong>Gatil:</strong> ${escapeHtml(lead.catteryName || "-")}</p>
-        <p><strong>Raça:</strong> ${escapeHtml(lead.breed || "-")}</p>
+        <p><strong>Raça principal criada:</strong> ${escapeHtml(lead.breed || "-")}</p>
+        <p><strong>Raça que pretende criar:</strong> ${escapeHtml(lead.wantsStart || "-")}</p>
         <p><strong>Tempo de criação:</strong> ${escapeHtml(lead.breedingTime || "-")}</p>
-        <p><strong>Pretende iniciar:</strong> ${escapeHtml(lead.wantsStart || "-")}</p>
         <p><strong>Como conheceu:</strong> ${escapeHtml(lead.referralSource || "-")}</p>
         <p><strong>Mensagem:</strong><br>${escapeHtml(lead.message || "-").replace(/\n/g, "<br>")}</p>
       `,
@@ -114,7 +114,28 @@ module.exports = (prisma) => ({
       wantsUpdates: Boolean(req.body.wantsUpdates),
     };
 
-    if (!leadData.firstName || !leadData.email || !leadData.whatsapp) {
+    const requiredFields = [
+      leadData.firstName,
+      leadData.lastName,
+      leadData.email,
+      leadData.whatsapp,
+      leadData.country,
+      leadData.state,
+      leadData.city,
+      leadData.hasCattery,
+      leadData.referralSource,
+      leadData.message,
+    ];
+
+    if (leadData.hasCattery === "Sim") {
+      requiredFields.push(leadData.catteryName, leadData.breed, leadData.breedingTime);
+    } else if (leadData.hasCattery === "Não") {
+      requiredFields.push(leadData.wantsStart);
+    } else {
+      requiredFields.push("");
+    }
+
+    if (requiredFields.some((field) => !field)) {
       return res.redirect(`${basePath}?interesse=erro#pre-inscricao`);
     }
 

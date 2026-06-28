@@ -241,26 +241,17 @@
         </p>
       </section>
 
-      <section id="programa" class="gatofilia-section gatofilia-gallery reveal-on-scroll">
-        <div>
-          <p class="gatofilia-eyebrow">Conhecimento na prática</p>
-          <h2>Um espaço vivo para fotos, aulas, exposições e experiências internacionais.</h2>
+      <section id="programa" class="gatofilia-section gatofilia-creator-flow reveal-on-scroll">
+        <div class="gatofilia-section-heading centered compact">
+          <p class="gatofilia-eyebrow">Método Gatofilia</p>
+          <h2>Uma jornada que transforma conhecimento em reconhecimento.</h2>
         </div>
-        <div class="gatofilia-gallery-grid">
-          <div>Gatil</div>
-          <div>Aulas</div>
-          <div>Exposições</div>
-          <div>Alunos</div>
-          <div>Internacional</div>
-        </div>
-      </section>
-
-      <section class="gatofilia-method reveal-on-scroll">
-        <p class="gatofilia-eyebrow">Metodologia</p>
-        <div class="gatofilia-method-flow">
-          <% ["Paixão", "Conhecimento", "Experiência", "Excelência", "Reconhecimento"].forEach(function(item) { %>
-            <span><%= item %></span>
-          <% }) %>
+        <div class="gatofilia-flow-diagram" aria-label="Fluxograma da jornada do criador">
+          <div class="gatofilia-flow-node node-knowledge">Conhecimento</div>
+          <div class="gatofilia-flow-node node-experience">Experiência</div>
+          <div class="gatofilia-flow-center">Criador</div>
+          <div class="gatofilia-flow-node node-excellence">Excelência</div>
+          <div class="gatofilia-flow-node node-recognition">Reconhecimento</div>
         </div>
       </section>
 
@@ -297,7 +288,7 @@
       </section>
 
       <section id="pre-inscricao" class="gatofilia-interest reveal-on-scroll">
-        <div>
+        <div class="gatofilia-interest-copy">
           <p class="gatofilia-eyebrow">Manifestação de interesse</p>
           <h2>Seja um dos primeiros alunos da Gatofilia.</h2>
           <p>
@@ -310,33 +301,66 @@
           <% } %>
         </div>
 
-        <form method="post" action="<%= currentPublicPath === '/gatofilia' ? '/gatofilia/interesse' : '/academy/interesse' %>" class="gatofilia-form">
-          <label>Nome<input name="firstName" required /></label>
-          <label>Sobrenome<input name="lastName" /></label>
-          <label>E-mail<input name="email" type="email" required /></label>
-          <label>WhatsApp<input name="whatsapp" required /></label>
-          <label>Cidade<input name="city" /></label>
-          <label>Estado<input name="state" /></label>
-          <label>País<input name="country" value="Brasil" /></label>
+        <form method="post" action="<%= currentPublicPath === '/gatofilia' ? '/gatofilia/interesse' : '/academy/interesse' %>" class="gatofilia-form gatofilia-interest-form" data-gatofilia-interest-form>
+          <div class="gatofilia-form-intro">
+            <span>Pré-inscrição</span>
+            <strong>Conte um pouco sobre você e sua criação.</strong>
+          </div>
+
+          <label>Nome<input name="firstName" required autocomplete="given-name" /></label>
+          <label>Sobrenome<input name="lastName" required autocomplete="family-name" /></label>
+          <label>E-mail<input name="email" type="email" required autocomplete="email" /></label>
+          <label>WhatsApp<input name="whatsapp" required autocomplete="tel" /></label>
+
+          <label>País
+            <input name="country" value="Brasil" list="gatofiliaCountryList" required autocomplete="country-name" data-country-input />
+            <datalist id="gatofiliaCountryList"></datalist>
+          </label>
+
+          <label data-brazil-state-field>Estado
+            <select name="state" required data-brazil-state-select>
+              <option value="">Selecione</option>
+            </select>
+          </label>
+          <label data-other-state-field hidden>Estado
+            <input name="state" required disabled />
+          </label>
+
+          <label data-brazil-city-field>Cidade
+            <select name="city" required data-brazil-city-select>
+              <option value="">Selecione o estado primeiro</option>
+            </select>
+          </label>
+          <label data-other-city-field hidden>Cidade
+            <input name="city" required disabled />
+          </label>
+
           <label>Possui gatil?
-            <select name="hasCattery">
+            <select name="hasCattery" required data-has-cattery>
               <option value="">Selecione</option>
               <option value="Sim">Sim</option>
               <option value="Não">Não</option>
             </select>
           </label>
-          <label>Nome do gatil<input name="catteryName" /></label>
-          <label>Raça criada<input name="breed" /></label>
-          <label>Há quanto tempo cria?<input name="breedingTime" /></label>
-          <label>Pretende iniciar um gatil?
-            <select name="wantsStart">
+
+          <label data-cattery-only hidden>Nome do gatil<input name="catteryName" required disabled /></label>
+          <label data-cattery-only hidden>Raça principal criada<input name="breed" required disabled /></label>
+          <label data-cattery-only hidden>Há quanto tempo cria?<input name="breedingTime" required disabled /></label>
+          <label data-no-cattery-only hidden>Raça que pretende criar<input name="wantsStart" required disabled /></label>
+
+          <label>Como conheceu a Gatofilia?
+            <select name="referralSource" required>
               <option value="">Selecione</option>
-              <option value="Sim">Sim</option>
-              <option value="Não">Não</option>
+              <option value="Indicação">Indicação</option>
+              <option value="Pesquisa Google">Pesquisa Google</option>
+              <option value="Anúncio">Anúncio</option>
+              <option value="Grupo de WhatsApp">Grupo de WhatsApp</option>
             </select>
           </label>
-          <label>Como conheceu a Gatofilia?<input name="referralSource" /></label>
-          <label class="full">Mensagem<textarea name="message" rows="4"></textarea></label>
+
+          <label class="full">Mensagem
+            <textarea name="message" rows="5" required placeholder="Conte sua história, necessidades ou dificuldades encontradas na criação."></textarea>
+          </label>
           <label class="full gatofilia-checkbox">
             <input name="wantsUpdates" type="checkbox" value="1" checked />
             <span>Desejo receber informações sobre abertura das próximas turmas.</span>
@@ -367,6 +391,7 @@
       </p>
     </footer>
 
+    <script src="/js/academy-interest.js"></script>
     <script>
       document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
         anchor.addEventListener("click", (event) => {

@@ -109,6 +109,40 @@ module.exports = (prisma) => ({
     });
   },
 
+  interests: async (req, res) => {
+    const q = String(req.query.q || "").trim();
+    const where = q
+      ? {
+          OR: [
+            { firstName: { contains: q, mode: "insensitive" } },
+            { lastName: { contains: q, mode: "insensitive" } },
+            { email: { contains: q, mode: "insensitive" } },
+            { whatsapp: { contains: q, mode: "insensitive" } },
+            { city: { contains: q, mode: "insensitive" } },
+            { state: { contains: q, mode: "insensitive" } },
+            { country: { contains: q, mode: "insensitive" } },
+            { catteryName: { contains: q, mode: "insensitive" } },
+            { breed: { contains: q, mode: "insensitive" } },
+            { wantsStart: { contains: q, mode: "insensitive" } },
+          ],
+        }
+      : {};
+
+    const leads = await prisma.gatofiliaLead.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: 250,
+    });
+
+    res.render("academy/admin/interests", {
+      pageTitle: "Interesses Gatofilia - Admin Academy",
+      user: req.user,
+      academy: await getAcademyContext(prisma, req),
+      leads,
+      q,
+    });
+  },
+
   uploadMedia: async (req, res) => {
     if (!req.file) {
       return res.redirect(req.get("Referer") || "/academy/admin/midia");

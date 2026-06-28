@@ -58,6 +58,7 @@ module.exports = (prisma) => {
 
   router.get("/academy/admin", academySession, academyAdmin, adminController.dashboard);
   router.post("/academy/admin/seed", academySession, academyAdmin, adminController.seedFoundation);
+  router.get("/academy/admin/interesses", academySession, academyAdmin, adminController.interests);
   router.get("/academy/admin/midia", academySession, academyAdmin, adminController.mediaLibrary);
   router.post("/academy/admin/midia", academySession, academyAdmin, academyUpload.single("file"), adminController.uploadMedia);
   router.post("/academy/admin/midia/:id", academySession, academyAdmin, adminController.updateMedia);
