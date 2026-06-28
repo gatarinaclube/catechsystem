@@ -126,16 +126,14 @@ body {
 
 .gatofilia-hero {
   position: relative;
-  display: grid;
+  display: flex;
   min-height: 100vh;
-  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.1fr);
   align-items: center;
-  gap: clamp(34px, 5vw, 78px);
   overflow: hidden;
   padding: 120px clamp(22px, 6vw, 96px) 80px;
   background:
-    radial-gradient(circle at 35% 35%, rgba(200, 163, 90, 0.14), transparent 32%),
-    linear-gradient(135deg, #111111 0%, #1b1b1b 58%, #0b0b0b 100%);
+    radial-gradient(circle at 20% 30%, rgba(200, 163, 90, 0.16), transparent 32%),
+    linear-gradient(135deg, #0c0c0c 0%, #171717 52%, #070707 100%);
 }
 
 .gatofilia-hero::after {
@@ -143,7 +141,9 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(90deg, rgba(17, 17, 17, 0.94), rgba(17, 17, 17, 0.5), rgba(17, 17, 17, 0.9));
+  background:
+    linear-gradient(90deg, rgba(10, 10, 10, 0.96) 0%, rgba(10, 10, 10, 0.86) 38%, rgba(10, 10, 10, 0.28) 68%, rgba(10, 10, 10, 0.82) 100%),
+    linear-gradient(180deg, rgba(10, 10, 10, 0.28), rgba(10, 10, 10, 0.84));
 }
 
 .gatofilia-hero-media,
@@ -153,17 +153,24 @@ body {
 }
 
 .gatofilia-hero-media {
-  display: grid;
-  place-items: center;
+  position: absolute;
+  inset: 0 0 0 auto;
+  z-index: 0;
+  width: min(64vw, 980px);
 }
 
 .gatofilia-hero-media img {
-  width: min(560px, 44vw);
-  aspect-ratio: 3 / 2;
-  border-radius: 4px;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  box-shadow: 0 38px 90px rgba(0, 0, 0, 0.48);
-  opacity: 0.94;
+  object-position: center;
+  filter: saturate(0.96) contrast(1.08);
+  opacity: 0.82;
+}
+
+.gatofilia-hero-content {
+  width: min(760px, 100%);
+  padding: clamp(22px, 4vw, 48px) 0;
 }
 
 .gatofilia-eyebrow {
@@ -188,9 +195,10 @@ body {
 }
 
 .gatofilia-hero h1 {
-  max-width: min(760px, 100%);
-  font-size: clamp(46px, 6.4vw, 96px);
-  line-height: 1.01;
+  max-width: 740px;
+  font-size: clamp(42px, 5.15vw, 78px);
+  line-height: 1.03;
+  letter-spacing: 0.018em;
 }
 
 .gatofilia-hero p:not(.gatofilia-eyebrow),
@@ -204,8 +212,11 @@ body {
 }
 
 .gatofilia-hero p:not(.gatofilia-eyebrow) {
-  max-width: 620px;
-  margin: 28px 0 0;
+  max-width: 600px;
+  margin: 24px 0 0;
+  color: #ece7da;
+  font-size: clamp(16px, 1.25vw, 19px);
+  line-height: 1.76;
 }
 
 .gatofilia-actions {
@@ -262,15 +273,24 @@ body {
 }
 
 .gatofilia-intro {
-  display: grid;
-  grid-template-columns: minmax(260px, 0.68fr) minmax(0, 1.32fr);
-  gap: clamp(32px, 6vw, 90px);
+  display: block;
   background: #f8f8f8;
   color: #111111;
 }
 
 .gatofilia-intro h2 {
+  max-width: 1060px;
   color: #111111;
+  font-size: clamp(40px, 4.7vw, 76px);
+  line-height: 1.03;
+}
+
+.gatofilia-intro-heading {
+  margin-bottom: clamp(34px, 5vw, 70px);
+}
+
+.gatofilia-intro-copy {
+  max-width: 1180px;
 }
 
 .gatofilia-intro-copy p {
@@ -279,6 +299,7 @@ body {
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   font-size: clamp(15px, 1.16vw, 18px);
   line-height: 1.82;
+  max-width: 920px;
 }
 
 .gatofilia-intro-copy > p:first-child {
@@ -290,7 +311,8 @@ body {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
-  margin: 32px 0 44px;
+  margin: 40px 0 32px;
+  max-width: 1180px;
 }
 
 .gatofilia-achievements div {
@@ -321,11 +343,12 @@ body {
 
 .gatofilia-credential-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
-  margin: 0 0 44px;
+  margin: 0 0 54px;
   padding: 0;
   list-style: none;
+  max-width: 1180px;
 }
 
 .gatofilia-credential-list li {
@@ -341,10 +364,11 @@ body {
 
 .gatofilia-founders {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
-  align-items: start;
+  grid-template-columns: minmax(0, 0.92fr) minmax(280px, 0.48fr);
+  align-items: stretch;
   gap: clamp(24px, 4vw, 54px);
-  margin-top: 18px;
+  margin-top: 22px;
+  max-width: 1180px;
 }
 
 .gatofilia-founders h3 {
@@ -370,6 +394,8 @@ body {
 }
 
 .gatofilia-founders img {
+  height: 100%;
+  min-height: 460px;
   aspect-ratio: 4 / 5;
 }
 
@@ -377,7 +403,8 @@ body {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
-  margin-top: 34px;
+  margin-top: 28px;
+  max-width: 1180px;
 }
 
 .gatofilia-proof-grid img {
@@ -444,13 +471,95 @@ body {
   box-shadow: 0 0 24px rgba(200, 163, 90, 0.55);
 }
 
+.gatofilia-reason-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 38px;
+}
+
+.gatofilia-reason-grid article {
+  min-height: 188px;
+  border: 1px solid rgba(218, 218, 218, 0.14);
+  padding: 22px;
+  background: linear-gradient(145deg, rgba(248, 248, 248, 0.06), rgba(248, 248, 248, 0.02));
+}
+
+.gatofilia-reason-grid span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(200, 163, 90, 0.44);
+  border-radius: 999px;
+  background: rgba(200, 163, 90, 0.08);
+  font-size: 18px;
+}
+
+.gatofilia-reason-grid h3 {
+  margin: 18px 0 10px;
+  color: #f8f8f8;
+  font-size: clamp(22px, 2vw, 30px);
+  font-weight: 500;
+  line-height: 1.08;
+}
+
+.gatofilia-reason-grid p {
+  margin: 0;
+  color: #d4d4d4;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.68;
+}
+
+.gatofilia-reason-closing {
+  margin: 28px 0 0;
+  color: #c8a35a;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
 .gatofilia-timeline {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1px;
-  margin-top: 48px;
+  margin-top: 34px;
   background: rgba(200, 163, 90, 0.22);
   border: 1px solid rgba(200, 163, 90, 0.22);
+}
+
+.gatofilia-learning-strip {
+  margin-top: 38px;
+  border: 1px solid rgba(200, 163, 90, 0.26);
+  padding: clamp(22px, 3vw, 34px);
+  background: linear-gradient(145deg, rgba(200, 163, 90, 0.12), rgba(248, 248, 248, 0.03));
+}
+
+.gatofilia-learning-strip p {
+  margin: 0 0 18px;
+  color: #f8f8f8;
+  font-size: clamp(24px, 2.3vw, 36px);
+  font-weight: 500;
+  line-height: 1.12;
+}
+
+.gatofilia-learning-strip div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.gatofilia-learning-strip span {
+  color: #dfd8c9;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 760;
+  line-height: 1.5;
 }
 
 .gatofilia-timeline article,
@@ -461,8 +570,8 @@ body {
 }
 
 .gatofilia-timeline article {
-  min-height: 210px;
-  padding: 26px;
+  min-height: 270px;
+  padding: 24px;
 }
 
 .gatofilia-timeline span {
@@ -483,6 +592,7 @@ body {
 }
 
 .gatofilia-timeline p,
+.gatofilia-timeline li,
 .gatofilia-card p,
 .gatofilia-testimonials p,
 .gatofilia-testimonials blockquote,
@@ -491,6 +601,30 @@ body {
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.7;
+}
+
+.gatofilia-timeline ul {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gatofilia-timeline li {
+  position: relative;
+  padding-left: 15px;
+}
+
+.gatofilia-timeline li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.72em;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #c8a35a;
 }
 
 .gatofilia-card-grid,
@@ -730,7 +864,6 @@ body {
     padding-bottom: 4px;
   }
 
-  .gatofilia-hero,
   .gatofilia-intro,
   .gatofilia-split,
   .gatofilia-interest {
@@ -739,12 +872,23 @@ body {
 
   .gatofilia-timeline,
   .gatofilia-card-grid,
-  .gatofilia-achievements {
+  .gatofilia-achievements,
+  .gatofilia-credential-list,
+  .gatofilia-learning-strip div {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .gatofilia-hero-media {
+    width: 100%;
+  }
+
   .gatofilia-hero-media img {
-    width: min(620px, 100%);
+    opacity: 0.62;
+    object-position: 58% center;
+  }
+
+  .gatofilia-hero-content {
+    width: min(720px, 100%);
   }
 }
 
@@ -760,22 +904,30 @@ body {
   }
 
   .gatofilia-hero {
-    padding-top: 104px;
+    min-height: 92vh;
+    padding-top: 118px;
   }
 
   .gatofilia-hero-media {
-    order: 2;
+    width: 100%;
   }
 
   .gatofilia-hero h1 {
     font-size: clamp(40px, 12vw, 62px);
   }
 
+  .gatofilia-hero p:not(.gatofilia-eyebrow) {
+    font-size: 15px;
+    line-height: 1.68;
+  }
+
   .gatofilia-check-grid,
+  .gatofilia-reason-grid,
   .gatofilia-timeline,
   .gatofilia-card-grid,
   .gatofilia-achievements,
   .gatofilia-credential-list,
+  .gatofilia-learning-strip div,
   .gatofilia-founders,
   .gatofilia-proof-grid,
   .gatofilia-testimonials,

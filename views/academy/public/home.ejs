@@ -140,38 +140,70 @@
         </div>
         <div class="reveal-on-scroll">
           <p class="gatofilia-eyebrow">Excelência aplicada</p>
-          <h2>Por que fazer parte da Gatofilia?</h2>
-          <div class="gatofilia-check-grid">
-            <% ["Conhecimento técnico", "Experiência prática", "Networking", "Comunidade", "Atualização constante", "Metodologia exclusiva"].forEach(function(item) { %>
-              <div><span></span><%= item %></div>
+          <h2>Por que escolher a Gatofilia?</h2>
+          <div class="gatofilia-reason-grid">
+            <% [
+              ["🏆", "Autoridade reconhecida internacionalmente", "Aprenda com criadores que conquistaram o topo da criação."],
+              ["🌎", "Experiência internacional", "Conhecimento adquirido em competições, exportações, julgamentos e relacionamento com criadores de diversos países."],
+              ["🧬", "Metodologia baseada em experiência real", "Cada conteúdo é fundamentado em situações vividas na rotina de um gatil profissional, e não apenas em conceitos teóricos."],
+              ["🐱", "Jornada de Conhecimento Completa", "Da genética à gestão, você aprenderá todos os pilares necessários para construir um programa de criação sólido e sustentável."],
+              ["🤝", "Comunidade de criadores", "Faça parte de uma rede de profissionais comprometidos com a evolução da felinocultura e compartilhe experiências ao longo da sua jornada."],
+              ["📈", "Atualização contínua", "A felinocultura está em constante evolução, e nossa trilha de conhecimento acompanha as melhores práticas e tendências do cenário internacional."]
+            ].forEach(function(item) { %>
+              <article>
+                <span aria-hidden="true"><%= item[0] %></span>
+                <h3><%= item[1] %></h3>
+                <p><%= item[2] %></p>
+              </article>
             <% }) %>
           </div>
+          <p class="gatofilia-reason-closing">Conhecimento construído por quem vive a felinocultura todos os dias.</p>
         </div>
       </section>
 
       <section id="formacao" class="gatofilia-section reveal-on-scroll">
-        <p class="gatofilia-eyebrow">A formação</p>
-        <h2>Uma jornada completa para formar criadores mais preparados.</h2>
+        <p class="gatofilia-eyebrow">O que você irá dominar</p>
+        <h2>Uma jornada estruturada para desenvolver todas as competências necessárias à criação felina profissional.</h2>
+        <div class="gatofilia-learning-strip">
+          <p>Durante a formação você aprenderá a:</p>
+          <div>
+            <% [
+              "Planejar cruzamentos com critérios técnicos.",
+              "Construir um gatil saudável e organizado.",
+              "Criar uma marca reconhecida.",
+              "Participar de exposições nacionais e internacionais.",
+              "Exportar gatos com segurança.",
+              "Desenvolver um programa de criação sustentável."
+            ].forEach(function(item) { %>
+              <span>✔ <%= item %></span>
+            <% }) %>
+          </div>
+        </div>
         <div class="gatofilia-timeline">
           <% [
-            ["Introdução", "Fundamentos da criação responsável e visão profissional do gatil."],
-            ["Genética", "Bases para leitura de pedigrees, seleção e planejamento."],
-            ["Saúde", "Rotina sanitária, prevenção, exames e protocolos de acompanhamento."],
-            ["Nutrição", "Critérios práticos para alimentação em diferentes fases."],
-            ["Reprodução", "Ciclos, acasalamentos, gestação, parto e cuidados neonatais."],
-            ["Manejo", "Organização do ambiente, higiene, registros e rotina operacional."],
-            ["Bem-estar", "Comportamento, socialização, enriquecimento ambiental e segurança."],
-            ["Gestão do gatil", "Processos, controles, documentos e indicadores."],
-            ["Marketing", "Posicionamento, comunicação e apresentação profissional."],
-            ["Exposições", "Preparação, leitura de padrão e experiência em pista."],
-            ["Exportação", "Noções sobre documentação, logística e responsabilidade internacional."],
-            ["Planejamento", "Estratégia de longo prazo e sustentabilidade da criação."],
-            ["Certificação", "Conclusão da jornada e reconhecimento da formação."]
+            ["Fundamentos da Felinocultura", ["História e evolução da criação felina", "Ética e responsabilidade do criador", "Estrutura de um gatil profissional"]],
+            ["Genética Aplicada", ["Leitura e interpretação de pedigrees", "Planejamento genético", "Seleção de reprodutores"]],
+            ["Saúde Felina", ["Medicina preventiva", "Exames essenciais", "Principais doenças da criação"]],
+            ["Nutrição", ["Alimentação por fase da vida", "Suplementação", "Manejo nutricional"]],
+            ["Reprodução", ["Seleção de matrizes e reprodutores", "Gestação e parto", "Desenvolvimento neonatal"]],
+            ["Manejo do Gatil", ["Higiene e biossegurança", "Organização dos ambientes", "Protocolos operacionais"]],
+            ["Bem-estar Animal", ["Comportamento felino", "Socialização", "Enriquecimento ambiental"]],
+            ["Gestão Profissional", ["Controle financeiro", "Indicadores", "Documentação", "Gestão de equipes"]],
+            ["Marketing e Posicionamento", ["Marca do gatil", "Redes sociais", "Relacionamento com clientes"]],
+            ["Federações, Clubes e Estrutura da Felinocultura", ["Federações e entidades internacionais", "Clubes, registros e pedigrees", "Regulamentos, títulos e exposições"]],
+            ["Exposições Felinas", ["Preparação dos gatos", "Regras e regulamentos", "Estratégias de campanha"]],
+            ["Exportação Internacional", ["Documentação", "Logística", "Protocolos sanitários"]],
+            ["Planejamento Estratégico", ["Crescimento sustentável", "Melhoramento genético", "Planejamento de longo prazo"]],
+            ["Certificação", ["Conclusão da formação e emissão do certificado."]]
           ].forEach(function(step, index) { %>
             <article>
               <span><%= String(index + 1).padStart(2, "0") %></span>
               <h3><%= step[0] %></h3>
-              <p><%= step[1] %></p>
+              <ul>
+                <% step[1].forEach(function(topic) { %>
+                  <li><%= topic %></li>
+                <% }) %>
+              </ul>
             </article>
           <% }) %>
         </div>
