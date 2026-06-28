@@ -132,6 +132,9 @@
           <p class="gatofilia-eyebrow">Excelência aplicada</p>
           <h2>Por que escolher a Gatofilia?</h2>
           <p>Uma formação criada por quem vive a felinocultura por dentro: criação, pista, gestão, exportação e desenvolvimento de raça.</p>
+          <figure class="gatofilia-reason-brand">
+            <img src="/uploads/academy/gatofilia-logo.png" alt="Gatofilia" loading="lazy" />
+          </figure>
         </div>
         <div class="reveal-on-scroll">
           <div class="gatofilia-reason-grid">
@@ -261,31 +264,29 @@
         </div>
       </section>
 
-      <section class="gatofilia-section reveal-on-scroll">
-        <p class="gatofilia-eyebrow">Depoimentos</p>
-        <h2>Histórias que serão construídas com a primeira turma.</h2>
-        <div class="gatofilia-testimonials">
-          <% [1, 2, 3].forEach(function(index) { %>
-            <article>
-              <div class="gatofilia-avatar"></div>
-              <h3>Aluno Gatofilia</h3>
-              <p>Cidade · País</p>
-              <blockquote>Espaço reservado para depoimentos dos participantes.</blockquote>
-            </article>
-          <% }) %>
-        </div>
-      </section>
-
       <section id="faq" class="gatofilia-section reveal-on-scroll">
-        <p class="gatofilia-eyebrow">Perguntas frequentes</p>
-        <h2>Dúvidas comuns antes de iniciar.</h2>
+        <div class="gatofilia-section-heading centered compact">
+          <p class="gatofilia-eyebrow">Perguntas frequentes</p>
+          <h2>Informações importantes para iniciar sua jornada com segurança.</h2>
+        </div>
         <div class="gatofilia-faq">
           <% [
-            ["Preciso já possuir um gatil?", "Não. A formação também é indicada para quem deseja iniciar com mais segurança e planejamento."],
-            ["As aulas ficam gravadas?", "A estrutura está preparada para conteúdos gravados e materiais de consulta na plataforma."],
-            ["Receberei certificado?", "Sim. A conclusão da jornada gera certificado de participação/conclusão."],
-            ["Posso participar sendo de outro país?", "Sim. A proposta foi pensada para criadores e futuros criadores de diferentes regiões."],
-            ["Como funciona a visita técnica?", "A visita técnica será uma possibilidade opcional, conforme agenda, regras e disponibilidade."]
+            ["Preciso já possuir um gatil?", "Não. A trilha de conhecimento foi desenvolvida tanto para quem deseja iniciar da forma correta quanto para criadores que já possuem um gatil e desejam evoluir seus programas de criação."],
+            ["A formação é indicada para criadores de todas as raças?", "Sim. Os conhecimentos abordados são aplicáveis à criação responsável de qualquer raça felina. Quando houver conteúdos específicos, eles serão identificados durante a formação."],
+            ["As aulas ficam gravadas?", "Sim. Todo o conteúdo estará disponível na plataforma para que você possa estudar no seu ritmo durante o período de acesso."],
+            ["Receberei certificado?", "Sim. Ao concluir a formação, você receberá um certificado de conclusão emitido pela Gatofilia."],
+            ["Como funciona a visita técnica?", "A visita ao Gatil TomiFerr Bengal é um benefício opcional e poderá ser realizada conforme disponibilidade, agenda e critérios previamente definidos."],
+            ["Quanto tempo terei acesso à plataforma?", "Você terá acesso à plataforma Gatofilia por 1 ano, além de acesso e utilização Premium ao sistema de gestão de gatil."],
+            ["A formação possui suporte?", "Sim. Além do conteúdo da plataforma, os alunos terão acesso à comunidade exclusiva para troca de experiências e atualização contínua."],
+            ["Preciso ter conhecimentos prévios sobre felinocultura?", "Não. A trilha foi estruturada para acompanhar desde quem está iniciando até criadores experientes que desejam aperfeiçoar seus conhecimentos."],
+            ["A trilha ensina apenas teoria?", "Não. Todo o conteúdo é baseado na experiência prática adquirida ao longo de mais de 13 anos de criação, competições internacionais, exportações e gestão de um gatil profissional."],
+            ["O conteúdo é voltado apenas para exposições?", "Não. Embora a trilha aborde exposições felinas e os padrões internacionais, o foco principal é desenvolver criadores completos, preparados para construir programas de criação responsáveis, sustentáveis e de excelência."],
+            ["Quanto custa?", "O investimento será divulgado aos interessados durante o processo de pré-inscrição. Dessa forma, conseguimos apresentar todas as informações sobre a formação, esclarecer dúvidas e orientar cada participante conforme seu momento e objetivos."],
+            ["Quantos encontros ao vivo acontecerão?", "A formação contará com 8 encontros online e ao vivo, permitindo maior interação entre alunos e mediadores. Todos os encontros serão gravados e disponibilizados na plataforma para que você possa assistir posteriormente, caso não consiga participar ao vivo."],
+            ["Qual é a carga horária?", "A formação possui aproximadamente 16 horas de conteúdo, distribuídas entre 8 encontros online ao vivo, aulas gravadas, materiais complementares, estudos práticos e acesso contínuo à plataforma Gatofilia."],
+            ["Durante os encontros haverá interação?", "Sim. Os encontros foram planejados para serem participativos. Durante as aulas ao vivo, os mediadores responderão dúvidas e perguntas relacionadas ao conteúdo que estiver sendo abordado naquele momento."],
+            ["As vagas são limitadas?", "Sim. Cada turma terá no máximo 10 participantes, garantindo um acompanhamento mais próximo, maior interação e uma experiência de aprendizagem mais personalizada."],
+            ["Quando começa a próxima turma?", "As turmas são abertas periodicamente e possuem vagas limitadas. Ao realizar a pré-inscrição, você será um dos primeiros a receber informações sobre datas, cronograma e abertura das matrículas."]
           ].forEach(function(item) { %>
             <details>
               <summary><%= item[0] %></summary>
