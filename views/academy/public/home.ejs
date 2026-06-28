@@ -439,6 +439,39 @@
       </section>
     </main>
 
+    <% if (typeof academyCountdown !== "undefined" && academyCountdown && academyCountdown.enabled) { %>
+      <section class="gatofilia-countdown reveal-on-scroll" aria-label="Prazos da próxima jornada Gatofilia">
+        <div class="gatofilia-countdown-copy">
+          <span>Próxima turma</span>
+          <h2><%= academyCountdown.title %></h2>
+          <p>
+            As vagas são limitadas para manter uma experiência próxima, estratégica e aplicada à realidade de cada criador.
+          </p>
+        </div>
+
+        <div class="gatofilia-countdown-grid">
+          <% academyCountdown.items.forEach(function(item) { %>
+            <article>
+              <p><%= item.isPast ? item.pastLabel : item.label %></p>
+              <div>
+                <% if (item.isPast) { %>
+                  <strong>encerrado</strong>
+                <% } else if (item.isToday) { %>
+                  <strong>hoje</strong>
+                <% } else { %>
+                  <strong><%= item.days %></strong>
+                  <small><%= item.days === 1 ? "dia" : "dias" %></small>
+                <% } %>
+              </div>
+              <em><%= item.date %></em>
+            </article>
+          <% }) %>
+        </div>
+
+        <a href="#pre-inscricao">Garantir pré-inscrição</a>
+      </section>
+    <% } %>
+
     <footer id="contato" class="gatofilia-footer">
       <div>
         <img

@@ -75,6 +75,7 @@
             "Gestão de Microchip": "Área administrativa para localizar cadastros públicos de microchip, conferir dados do tutor e registrar contatos sobre animais encontrados.",
             "Financeiro técnico": "Configuração administrativa dos valores comerciais, associação e APIs Asaas de produção e teste.",
             "Limites por Perfil": "Configuração administrativa dos limites e permissões dos planos Básico, Master e Premium. As tabelas públicas e Meu Cadastro usam estas regras automaticamente.",
+            "Academy Pública": "Configuração administrativa da página pública da Academy/Gatofilia, incluindo contador de prazo para a próxima jornada.",
             "Financeiro": "Área administrativa do gatil com receitas, despesas, contas, clientes, fornecedores e produtos/serviços.",
             "Reprodutores": "Cadastro e gestão de padreadores, matrizes e gatos reprodutores do gatil.",
             "Ninhadas": "Registro operacional das ninhadas, estatísticas de parto, filhotes e acompanhamento da reprodução.",
@@ -141,6 +142,7 @@
           { href: "/admin/microchips", match: "/admin/microchips", icon: "🔎", label: "Gestão de Microchip", allowed: access && access.canManageMicrochips, hideWhenDenied: true, preferenceKey: "microchips" },
           { href: "/admin/financeiro", match: "/admin/financeiro", icon: "💳", label: "Financeiro técnico", allowed: access && access.canManageFinanceSettings, hideWhenDenied: true, preferenceKey: "financeSettings" },
           { href: "/admin/perfis-limites", match: "/admin/perfis-limites", icon: "🧩", label: "Limites por Perfil", allowed: access && access.canManageProfileRules, hideWhenDenied: true },
+          { href: "/academy/admin/configuracoes", match: "/academy/admin/configuracoes", icon: "🎓", label: "Academy Pública", allowed: access && access.isAdmin && access.canAccessAcademy, hideWhenDenied: true },
         ];
       %>
       <% if (access && access.isAdmin && adminItems.some((item) => item.allowed !== false)) { %>

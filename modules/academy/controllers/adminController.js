@@ -12,6 +12,11 @@ const {
   toBool,
 } = require("../services/academyService");
 const { seedAcademyFoundation } = require("../services/academySeed");
+const {
+  getAcademyPublicSettings,
+  saveAcademyPublicSettings,
+  buildAcademyCountdown,
+} = require("../services/publicSettings");
 
 function cleanSlug(title, slug) {
   return slugify(slug || title);
@@ -141,6 +146,30 @@ module.exports = (prisma) => ({
       leads,
       q,
     });
+  },
+
+  publicSettings: async (req, res) => {
+    const settings = await getAcademyPublicSettings(prisma);
+
+    res.render("academy/admin/public-settings", {
+      pageTitle: "Academy Pública - Admin",
+      user: req.user,
+      academy: await getAcademyContext(prisma, req),
+      settings,
+      countdown: buildAcademyCountdown(settings),
+      saved: req.query.salvo === "1",
+    });
+  },
+
+  updatePublicSettings: async (req, res) => {
+    await saveAcademyPublicSettings(prisma, {
+      countdownEnabled: toBool(req.body.countdownEnabled),
+      countdownTitle: req.body.countdownTitle,
+      nextJourneyStartDate: req.body.nextJourneyStartDate,
+      registrationEndsDate: req.body.registrationEndsDate,
+    });
+
+    res.redirect("/academy/admin/configuracoes?salvo=1");
   },
 
   uploadMedia: async (req, res) => {

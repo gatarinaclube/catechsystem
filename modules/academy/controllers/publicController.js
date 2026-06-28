@@ -13,6 +13,7 @@ const {
   userHasAcademyAccess,
 } = require("../services/academyService");
 const { academySeo, absoluteUrl, sitemapUrl } = require("../services/academySeo");
+const { getAcademyPublicSettings, buildAcademyCountdown } = require("../services/publicSettings");
 
 function escapeHtml(value) {
   return String(value || "")
@@ -79,11 +80,15 @@ async function notifyGatofiliaLead(lead) {
 
 module.exports = (prisma) => ({
   home: async (req, res) => {
-    const academy = await getAcademyContext(prisma, req);
+    const [academy, publicSettings] = await Promise.all([
+      getAcademyContext(prisma, req),
+      getAcademyPublicSettings(prisma),
+    ]);
     const catalog = await getPublishedCatalog(prisma, academy.level);
     renderPublic(req, res, "home", {
       academy,
       catalog,
+      academyCountdown: buildAcademyCountdown(publicSettings),
       leadStatus: req.query.interesse || null,
       seo: {
         path: req.path === "/gatofilia" ? "/gatofilia" : "/academy",
