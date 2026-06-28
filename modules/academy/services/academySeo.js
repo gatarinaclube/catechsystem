@@ -5,10 +5,10 @@ function absoluteUrl(req, path = "/academy") {
 }
 
 function academySeo(req, options = {}) {
-  const title = options.title || "Gatofilia | Instituto de Formação em Felinocultura";
+  const title = options.title || "Gatofilia | Formação para Criadores de Gatos";
   const description =
     options.description ||
-    "Formação premium para criadores e novos criadores que buscam conhecimento, responsabilidade e excelência em felinocultura.";
+    "Capacitação premium para criadores e novos criadores que buscam conhecimento, responsabilidade, gestão profissional e excelência em felinocultura.";
   const path = options.path || req.originalUrl || "/academy";
   const image = options.image || "/uploads/academy/gatofilia-logo.png";
 

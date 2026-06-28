@@ -52,13 +52,20 @@ body {
   right: 0;
   z-index: 20;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 24px;
-  padding: 18px clamp(18px, 4vw, 56px);
+  gap: clamp(14px, 2vw, 34px);
+  padding: 16px clamp(18px, 4vw, 56px);
   border-bottom: 1px solid rgba(200, 163, 90, 0.18);
   background: rgba(17, 17, 17, 0.86);
   backdrop-filter: blur(18px);
+  transform: translateY(0);
+  transition: transform 280ms ease, background 280ms ease, border-color 280ms ease;
+}
+
+.gatofilia-nav.is-away:not(.is-scrolling):not(:hover):not(:focus-within) {
+  transform: translateY(calc(-100% + 7px));
+  border-color: rgba(200, 163, 90, 0.34);
 }
 
 .gatofilia-brand,
@@ -85,15 +92,17 @@ body {
 .gatofilia-footer nav {
   display: flex;
   justify-content: center;
-  gap: clamp(12px, 2vw, 28px);
+  gap: clamp(8px, 1.25vw, 22px);
   color: #dadada;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  font-size: 12px;
+  font-size: clamp(10px, 0.78vw, 12px);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
+  min-width: 0;
 }
 
 .gatofilia-nav nav a {
+  white-space: nowrap;
   opacity: 0.78;
   transition: color 260ms ease, opacity 260ms ease;
 }
@@ -119,9 +128,9 @@ body {
   position: relative;
   display: grid;
   min-height: 100vh;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.1fr);
   align-items: center;
-  gap: 48px;
+  gap: clamp(34px, 5vw, 78px);
   overflow: hidden;
   padding: 120px clamp(22px, 6vw, 96px) 80px;
   background:
@@ -149,9 +158,9 @@ body {
 }
 
 .gatofilia-hero-media img {
-  width: min(520px, 82vw);
-  aspect-ratio: 1;
-  border-radius: 36px;
+  width: min(560px, 44vw);
+  aspect-ratio: 3 / 2;
+  border-radius: 4px;
   object-fit: cover;
   box-shadow: 0 38px 90px rgba(0, 0, 0, 0.48);
   opacity: 0.94;
@@ -179,8 +188,9 @@ body {
 }
 
 .gatofilia-hero h1 {
-  max-width: 760px;
-  font-size: clamp(54px, 8vw, 118px);
+  max-width: min(760px, 100%);
+  font-size: clamp(46px, 6.4vw, 96px);
+  line-height: 1.01;
 }
 
 .gatofilia-hero p:not(.gatofilia-eyebrow),
@@ -253,7 +263,7 @@ body {
 
 .gatofilia-intro {
   display: grid;
-  grid-template-columns: 0.8fr 1.2fr;
+  grid-template-columns: minmax(260px, 0.68fr) minmax(0, 1.32fr);
   gap: clamp(32px, 6vw, 90px);
   background: #f8f8f8;
   color: #111111;
@@ -263,9 +273,125 @@ body {
   color: #111111;
 }
 
-.gatofilia-intro > p {
+.gatofilia-intro-copy p {
   color: #3a3a3a;
+  margin: 0 0 1.2rem;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(15px, 1.16vw, 18px);
+  line-height: 1.82;
+}
+
+.gatofilia-intro-copy > p:first-child {
+  color: #111111;
+  font-weight: 900;
+}
+
+.gatofilia-achievements {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 32px 0 44px;
+}
+
+.gatofilia-achievements div {
+  min-height: 140px;
+  border: 1px solid rgba(17, 17, 17, 0.1);
+  padding: 20px;
+  background: linear-gradient(145deg, #ffffff, #f0ede6);
+}
+
+.gatofilia-achievements strong {
+  display: block;
+  color: #916d22;
+  font-size: clamp(28px, 3vw, 42px);
+  line-height: 1;
+}
+
+.gatofilia-achievements span {
+  display: block;
+  margin-top: 12px;
+  color: #303030;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.45;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.gatofilia-credential-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 44px;
+  padding: 0;
+  list-style: none;
+}
+
+.gatofilia-credential-list li {
+  border-left: 3px solid #c8a35a;
+  padding: 12px 14px;
+  color: #222222;
+  background: rgba(200, 163, 90, 0.08);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 760;
+  line-height: 1.45;
+}
+
+.gatofilia-founders {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
+  align-items: start;
+  gap: clamp(24px, 4vw, 54px);
+  margin-top: 18px;
+}
+
+.gatofilia-founders h3 {
+  margin: 0 0 18px;
+  color: #111111;
+  font-size: clamp(30px, 3vw, 46px);
+  font-weight: 500;
+  line-height: 1.08;
+}
+
+.gatofilia-founders figure,
+.gatofilia-proof-grid figure {
   margin: 0;
+}
+
+.gatofilia-founders img,
+.gatofilia-proof-grid img {
+  display: block;
+  width: 100%;
+  border: 1px solid rgba(17, 17, 17, 0.1);
+  object-fit: cover;
+  box-shadow: 0 24px 60px rgba(17, 17, 17, 0.14);
+}
+
+.gatofilia-founders img {
+  aspect-ratio: 4 / 5;
+}
+
+.gatofilia-proof-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 34px;
+}
+
+.gatofilia-proof-grid img {
+  aspect-ratio: 16 / 10;
+}
+
+.gatofilia-proof-grid figcaption {
+  margin-top: 10px;
+  color: #4a4a4a;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .gatofilia-split {
@@ -599,7 +725,9 @@ body {
   }
 
   .gatofilia-nav nav {
-    display: none;
+    justify-content: flex-end;
+    overflow-x: auto;
+    padding-bottom: 4px;
   }
 
   .gatofilia-hero,
@@ -610,12 +738,27 @@ body {
   }
 
   .gatofilia-timeline,
-  .gatofilia-card-grid {
+  .gatofilia-card-grid,
+  .gatofilia-achievements {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gatofilia-hero-media img {
+    width: min(620px, 100%);
   }
 }
 
 @media (max-width: 720px) {
+  .gatofilia-nav {
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+  }
+
+  .gatofilia-brand span {
+    display: none;
+  }
+
   .gatofilia-hero {
     padding-top: 104px;
   }
@@ -625,12 +768,16 @@ body {
   }
 
   .gatofilia-hero h1 {
-    font-size: clamp(46px, 15vw, 70px);
+    font-size: clamp(40px, 12vw, 62px);
   }
 
   .gatofilia-check-grid,
   .gatofilia-timeline,
   .gatofilia-card-grid,
+  .gatofilia-achievements,
+  .gatofilia-credential-list,
+  .gatofilia-founders,
+  .gatofilia-proof-grid,
   .gatofilia-testimonials,
   .gatofilia-form,
   .gatofilia-gallery-grid,

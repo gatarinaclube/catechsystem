@@ -68,7 +68,7 @@ async function notifyGatofiliaLead(lead) {
       html: `
         <h2>Recebemos sua manifestação de interesse</h2>
         <p>Olá, ${escapeHtml(lead.firstName)}.</p>
-        <p>Seu contato foi registrado para a próxima turma da Gatofilia - Instituto de Formação em Felinocultura.</p>
+        <p>Seu contato foi registrado para a próxima turma da Gatofilia.</p>
         <p>Assim que houver novidades sobre abertura de vagas, nossa equipe entrará em contato.</p>
       `,
     });
@@ -87,9 +87,9 @@ module.exports = (prisma) => ({
       leadStatus: req.query.interesse || null,
       seo: {
         path: req.path === "/gatofilia" ? "/gatofilia" : "/academy",
-        title: "Gatofilia | Instituto de Formação em Felinocultura",
-        description: "Formação premium para criadores e novos criadores que buscam conhecimento, responsabilidade e excelência em felinocultura.",
-        image: "/uploads/academy/gatofilia-logo.png",
+        title: "Gatofilia | Formação para Criadores de Gatos",
+        description: "Da genética à gestão do gatil: capacitação para criadores responsáveis, preparados para competir internacionalmente e construir um gatil de excelência.",
+        image: "/uploads/academy/gatofilia-hero-01.png",
       },
     });
   },
