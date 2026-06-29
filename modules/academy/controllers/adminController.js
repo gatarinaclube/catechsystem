@@ -149,7 +149,13 @@ module.exports = (prisma) => ({
   },
 
   publicSettings: async (req, res) => {
-    const settings = await getAcademyPublicSettings(prisma);
+    const [settings, leads] = await Promise.all([
+      getAcademyPublicSettings(prisma),
+      prisma.gatofiliaLead.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 100,
+      }),
+    ]);
 
     res.render("academy/admin/public-settings", {
       pageTitle: "Academy Pública - Admin",
@@ -157,6 +163,7 @@ module.exports = (prisma) => ({
       academy: await getAcademyContext(prisma, req),
       settings,
       countdown: buildAcademyCountdown(settings),
+      leads,
       saved: req.query.salvo === "1",
     });
   },
