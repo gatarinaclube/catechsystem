@@ -114,13 +114,14 @@ module.exports = (prisma) => ({
       getAcademyPublicSettings(prisma),
     ]);
     const catalog = await getPublishedCatalog(prisma, academy.level);
+    const homePath = "/";
     renderPublic(req, res, "home", {
       academy,
       catalog,
       academyCountdown: buildAcademyCountdown(publicSettings),
       leadStatus: req.query.interesse || null,
       seo: {
-        path: "/academy",
+        path: homePath,
         title: "Gatofilia | Como Criar Gatos e Ter um Gatil Profissional",
         description: "Jornada para criadores e futuros criadores de gatos: genética, reprodução, saúde, manejo, raças, exposições, gestão de gatil e criação responsável.",
         image: "/uploads/academy/gatofilia-hero-01-1200.jpg",
@@ -149,7 +150,7 @@ module.exports = (prisma) => ({
             "@context": "https://schema.org",
             "@type": "EducationalOrganization",
             name: "Gatofilia",
-            url: absoluteUrl(req, "/academy"),
+            url: absoluteUrl(req, homePath),
             logo: absoluteUrl(req, "/uploads/academy/gatofilia-main-logo-360.png"),
             sameAs: ["https://www.instagram.com/gatofilia.oficial"],
             description: "Educação em felinocultura para criadores e futuros criadores de gatos, com foco em criação responsável, gestão de gatil, genética, saúde, reprodução e exposições felinas.",
@@ -162,7 +163,7 @@ module.exports = (prisma) => ({
             provider: {
               "@type": "EducationalOrganization",
               name: "Gatofilia",
-              sameAs: absoluteUrl(req, "/academy"),
+              sameAs: absoluteUrl(req, homePath),
             },
             educationalLevel: "Professional",
             teaches: [
@@ -439,8 +440,7 @@ module.exports = (prisma) => ({
     ]);
 
     const urls = [
-      sitemapUrl(absoluteUrl(req, "/academy"), null, "1.0"),
-      sitemapUrl(absoluteUrl(req, "/gatofilia"), null, "1.0"),
+      sitemapUrl(absoluteUrl(req, "/"), null, "1.0"),
       sitemapUrl(absoluteUrl(req, "/academy/sobre"), null, "0.7"),
       sitemapUrl(absoluteUrl(req, "/academy/planos"), null, "0.8"),
       sitemapUrl(absoluteUrl(req, "/academy/conteudos"), categories[0]?.updatedAt, "0.9"),

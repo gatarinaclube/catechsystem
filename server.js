@@ -79,6 +79,7 @@ const crmRouterFactory = require("./modules/crm");
 const tacticalPanelRouterFactory = require("./modules/tactical-panel");
 const administrativeRouterFactory = require("./modules/administrative");
 const academyRouterFactory = require("./modules/academy");
+const academyPublicControllerFactory = require("./modules/academy/controllers/publicController");
 const profileRulesAdminRouterFactory = require("./modules/profile-rules-admin");
 const kittenShowcaseRouterFactory = require("./modules/kitten-showcase");
 const documentsRouterFactory = require("./modules/documents");
@@ -107,6 +108,7 @@ console.log(">>> Iniciando PetGus COMPLETO (modularizado)");
 
 const app = express();
 const prisma = new PrismaClient();
+const academyPublicController = academyPublicControllerFactory(prisma);
 const appVersion = getAppVersion();
 console.log("Versão PetGus:", appVersion);
 
@@ -949,7 +951,7 @@ app.use(async (req, res, next) => {
 app.get("/", (req, res) => {
   const host = req.hostname;
   if (gatofiliaHostMatches(host)) {
-    return res.redirect("/academy");
+    return academyPublicController.home(req, res);
   }
 
   res.render("public-home", {
@@ -1020,8 +1022,7 @@ app.get("/sitemap.xml", async (req, res, next) => {
         take: 100,
       });
       const gatofiliaUrls = [
-        { loc: "/academy", priority: "1.0", lastmod: new Date() },
-        { loc: "/gatofilia", priority: "1.0", lastmod: new Date() },
+        { loc: "/", priority: "1.0", lastmod: new Date() },
         { loc: "/academy/sobre", priority: "0.7", lastmod: new Date() },
         { loc: "/academy/planos", priority: "0.8", lastmod: new Date() },
         { loc: "/academy/conteudos", priority: "0.9", lastmod: categories[0]?.updatedAt || new Date() },
