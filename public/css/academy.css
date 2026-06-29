@@ -532,6 +532,19 @@ body {
   border-top: 1px solid rgba(17, 17, 17, 0.1);
 }
 
+.gatofilia-partner-logos a {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  text-decoration: none;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.gatofilia-partner-logos a:hover {
+  opacity: 0.84;
+  transform: translateY(-1px);
+}
+
 .gatofilia-partner-logos img {
   display: block;
   width: auto;
@@ -540,12 +553,15 @@ body {
   object-fit: contain;
 }
 
-.gatofilia-partner-logos img:first-child {
+.gatofilia-partner-logos a:first-child img {
   object-position: left center;
 }
 
-.gatofilia-partner-logos img:last-child {
+.gatofilia-partner-logos a:last-child {
   justify-self: end;
+}
+
+.gatofilia-partner-logos a:last-child img {
   height: clamp(86px, 8.5vw, 126px);
   transform: scale(1.28);
   transform-origin: right center;
@@ -2002,13 +2018,13 @@ body {
     overflow: hidden;
   }
 
-  .gatofilia-partner-logos img:first-child {
+  .gatofilia-partner-logos a:first-child img {
     width: auto;
     max-width: 100%;
     height: clamp(38px, 10vw, 52px);
   }
 
-  .gatofilia-partner-logos img:last-child {
+  .gatofilia-partner-logos a:last-child img {
     justify-self: end;
     width: auto;
     max-width: 100%;
@@ -2170,11 +2186,11 @@ body {
     padding-right: 10px;
   }
 
-  .gatofilia-partner-logos img:first-child {
+  .gatofilia-partner-logos a:first-child img {
     height: clamp(34px, 9.5vw, 44px);
   }
 
-  .gatofilia-partner-logos img:last-child {
+  .gatofilia-partner-logos a:last-child img {
     height: clamp(54px, 15vw, 70px);
     transform: scale(1.6);
   }

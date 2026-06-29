@@ -953,7 +953,7 @@ app.get("/", (req, res) => {
     .map((domain) => domain.trim().toLowerCase())
     .filter(Boolean);
   if (host.includes("gatofilia") || gatofiliaDomains.some((domain) => host === domain || host === `www.${domain}`)) {
-    return res.redirect("/gatofilia");
+    return res.redirect("/academy");
   }
 
   res.render("public-home", {

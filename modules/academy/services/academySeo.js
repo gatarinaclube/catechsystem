@@ -1,5 +1,5 @@
 function absoluteUrl(req, path = "/academy") {
-  const baseUrl = (process.env.APP_URL || "").replace(/\/$/, "");
+  const baseUrl = (process.env.GATOFILIA_PUBLIC_URL || "https://www.gatofilia.com.br").replace(/\/$/, "");
   if (baseUrl) return `${baseUrl}${path}`;
   return `${req.protocol}://${req.get("host")}${path}`;
 }

@@ -3,17 +3,23 @@
   --public-muted: #5c6b7d;
   --public-blue: #006fa8;
   --public-blue-dark: #004d78;
+  --public-cyan: #00a4df;
   --public-orange: #f26a1b;
   --public-orange-dark: #b84018;
   --public-orange-soft: #fff2e8;
   --public-cream: #fff8ef;
   --public-line: rgba(184, 64, 24, 0.16);
+  --public-night: #071523;
+  --public-night-soft: #10283b;
   display: block;
   align-items: initial;
   justify-content: initial;
   min-width: 320px;
   overflow-x: hidden;
-  background: linear-gradient(180deg, #fff8ef 0%, #f7efe5 48%, #fffaf2 100%);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(242, 106, 27, 0.12), transparent 26rem),
+    radial-gradient(circle at 88% 12%, rgba(0, 164, 223, 0.14), transparent 28rem),
+    linear-gradient(180deg, #fff8ef 0%, #f7efe5 48%, #fffaf2 100%);
   color: var(--public-ink);
   font-family: "Plus Jakarta Sans", Avenir, "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
 }
@@ -44,11 +50,13 @@
   justify-content: space-between;
   gap: 24px;
   width: 100%;
-  padding: 12px max(24px, calc((100vw - 1180px) / 2));
-  border-bottom: 1px solid rgba(127, 45, 37, 0.12);
-  background: rgba(255, 250, 242, 0.94);
-  box-shadow: 0 14px 32px rgba(184, 64, 24, 0.08);
-  backdrop-filter: blur(14px);
+  padding: 10px max(24px, calc((100vw - 1180px) / 2));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(90deg, rgba(7, 21, 35, 0.96), rgba(11, 39, 59, 0.94)),
+    var(--public-night);
+  box-shadow: 0 18px 38px rgba(7, 21, 35, 0.22);
+  backdrop-filter: blur(16px);
 }
 
 .public-site-brand {
@@ -59,7 +67,7 @@
 
 .public-site-brand img {
   display: block;
-  width: 164px;
+  width: 176px;
   max-width: 36vw;
   height: auto;
 }
@@ -78,7 +86,7 @@
   justify-content: center;
   min-height: 38px;
   border-radius: 999px;
-  color: var(--public-muted);
+  color: rgba(255, 255, 255, 0.78);
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.02em;
@@ -87,25 +95,49 @@
 }
 
 .public-site-nav a:hover {
-  background: rgba(242, 106, 27, 0.12);
-  color: var(--public-orange-dark);
+  background: rgba(242, 106, 27, 0.16);
+  color: #fff;
 }
 
 .public-hero {
+  position: relative;
+  overflow: hidden;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 380px;
   gap: 48px;
   align-items: center;
-  min-height: auto;
-  padding: 76px max(24px, calc((100vw - 1180px) / 2)) 70px;
+  min-height: calc(100vh - 74px);
+  padding: 86px max(24px, calc((100vw - 1180px) / 2)) 78px;
   background:
-    radial-gradient(circle at 82% 18%, rgba(0, 111, 168, 0.16), transparent 28%),
-    radial-gradient(circle at 18% 10%, rgba(242, 106, 27, 0.18), transparent 30%),
-    linear-gradient(135deg, #fffaf2 0%, #f4e4d3 100%);
+    radial-gradient(circle at 86% 20%, rgba(0, 164, 223, 0.28), transparent 24rem),
+    radial-gradient(circle at 15% 14%, rgba(242, 106, 27, 0.24), transparent 24rem),
+    linear-gradient(135deg, #071523 0%, #10283b 52%, #071523 100%);
+}
+
+.public-hero::before,
+.public-hero::after {
+  position: absolute;
+  pointer-events: none;
+  content: "";
+}
+
+.public-hero::before {
+  inset: 0;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 84px 84px;
+  mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.16));
 }
 
 .public-hero::after {
-  display: none;
+  right: -110px;
+  bottom: -150px;
+  width: 420px;
+  height: 420px;
+  border: 1px solid rgba(0, 164, 223, 0.16);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 78px rgba(242, 106, 27, 0.035);
 }
 
 .public-hero-copy,
@@ -121,7 +153,7 @@
 .public-eyebrow,
 .public-panel-kicker,
 .public-form-kicker {
-  color: var(--public-blue);
+  color: var(--public-cyan);
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.16em;
@@ -131,9 +163,9 @@
 .public-hero-copy h1 {
   max-width: 720px;
   margin: 14px 0 0;
-  color: var(--public-ink);
+  color: #fff;
   font-family: "Playfair Display", Georgia, "Times New Roman", serif;
-  font-size: clamp(44px, 5.2vw, 74px);
+  font-size: clamp(46px, 5.6vw, 82px);
   font-weight: 700;
   line-height: 0.98;
   letter-spacing: 0;
@@ -143,7 +175,7 @@
 .public-hero-copy p {
   max-width: 680px;
   margin: 22px 0 0;
-  color: var(--public-muted);
+  color: rgba(233, 242, 249, 0.82);
   font-size: 18px;
   line-height: 1.68;
 }
@@ -174,26 +206,31 @@
 .public-plan-card a {
   background: linear-gradient(135deg, var(--public-orange), var(--public-orange-dark));
   color: #fff;
-  box-shadow: 0 16px 32px rgba(242, 106, 27, 0.26);
+  box-shadow: 0 18px 38px rgba(242, 106, 27, 0.34);
 }
 
 .public-secondary-button {
-  border: 1px solid rgba(242, 106, 27, 0.3);
-  background: rgba(255, 255, 255, 0.72);
-  color: var(--public-orange-dark);
+  border: 1px solid rgba(0, 164, 223, 0.34);
+  background: rgba(255, 255, 255, 0.08);
+  color: #dff5ff;
+  backdrop-filter: blur(10px);
 }
 
 .public-hero-panel {
+  position: relative;
+  z-index: 1;
   display: grid;
   gap: 18px;
   width: 100%;
   max-width: 380px;
   justify-self: end;
-  border: 1px solid rgba(242, 106, 27, 0.18);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 28px 68px rgba(64, 43, 28, 0.13);
-  padding: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(238, 247, 251, 0.9)),
+    #fff;
+  box-shadow: 0 34px 82px rgba(0, 0, 0, 0.34);
+  padding: 24px;
 }
 
 .public-hero-logo {
@@ -201,17 +238,19 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 132px;
-  border: 1px solid rgba(0, 111, 168, 0.14);
-  border-radius: 8px;
-  background: #fff;
+  min-height: 154px;
+  border: 1px solid rgba(0, 164, 223, 0.18);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 72% 22%, rgba(0, 164, 223, 0.12), transparent 40%),
+    linear-gradient(145deg, #fff, #f5fbff);
   overflow: hidden;
   padding: 14px;
 }
 
 .public-hero-logo img {
   display: block;
-  width: min(100%, 250px);
+  width: min(100%, 285px);
   height: auto;
   margin: 0 auto;
 }
@@ -220,7 +259,7 @@
   margin: 6px 0 0;
   color: var(--public-ink);
   font-family: "Playfair Display", Georgia, "Times New Roman", serif;
-  font-size: 26px;
+  font-size: 29px;
   font-weight: 700;
   line-height: 1.16;
 }
@@ -238,9 +277,9 @@
 }
 
 .public-panel-metrics span {
-  border: 1px solid rgba(242, 106, 27, 0.18);
-  border-radius: 6px;
-  background: var(--public-orange-soft);
+  border: 1px solid rgba(242, 106, 27, 0.2);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255, 242, 232, 0.98), rgba(238, 247, 251, 0.98));
   color: var(--public-orange-dark);
   font-size: 12px;
   font-weight: 900;
@@ -251,15 +290,17 @@
 .public-system-section,
 .public-plans-section,
 .public-contact-section {
-  padding: 70px max(24px, calc((100vw - 1180px) / 2));
+  padding: 82px max(24px, calc((100vw - 1180px) / 2));
 }
 
 .public-system-section {
-  background: #fffaf2;
+  background:
+    radial-gradient(circle at 92% 6%, rgba(0, 164, 223, 0.12), transparent 24rem),
+    linear-gradient(180deg, #fffaf2, #fff);
 }
 
 .public-section-heading {
-  max-width: 780px;
+  max-width: 820px;
 }
 
 .public-section-heading h1,
@@ -268,7 +309,7 @@
   margin: 10px 0;
   color: var(--public-ink);
   font-family: "Playfair Display", Georgia, "Times New Roman", serif;
-  font-size: clamp(30px, 4vw, 48px);
+  font-size: clamp(34px, 4.2vw, 56px);
   font-weight: 700;
   line-height: 1.02;
   letter-spacing: 0;
@@ -302,22 +343,44 @@
 .public-feature-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  gap: 16px;
   max-width: none;
   margin-top: 30px;
 }
 
 .public-feature-item {
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 14px;
   min-width: 0;
   min-height: 78px;
-  border: 1px solid var(--public-line);
-  border-radius: 8px;
-  background: linear-gradient(135deg, #fff, #fff7ed);
+  border: 1px solid rgba(0, 111, 168, 0.12);
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 247, 237, 0.92)),
+    #fff;
   padding: 16px;
-  box-shadow: 0 14px 30px rgba(184, 64, 24, 0.06);
+  box-shadow: 0 18px 38px rgba(23, 33, 47, 0.06);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.public-feature-item::after {
+  position: absolute;
+  right: -22px;
+  bottom: -28px;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: rgba(0, 164, 223, 0.08);
+  content: "";
+}
+
+.public-feature-item:hover {
+  border-color: rgba(242, 106, 27, 0.28);
+  box-shadow: 0 24px 48px rgba(23, 33, 47, 0.1);
+  transform: translateY(-2px);
 }
 
 .public-feature-icon {
@@ -327,9 +390,9 @@
   width: 42px;
   height: 42px;
   flex: 0 0 42px;
-  border: 1px solid rgba(0, 111, 168, 0.16);
-  border-radius: 8px;
-  background: linear-gradient(135deg, rgba(0, 111, 168, 0.12), rgba(242, 106, 27, 0.14));
+  border: 1px solid rgba(0, 164, 223, 0.16);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(0, 164, 223, 0.12), rgba(242, 106, 27, 0.14));
   color: var(--public-blue);
 }
 
@@ -351,16 +414,86 @@
   line-height: 1.35;
 }
 
+.public-gatofilia-band {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) auto;
+  gap: 26px;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(circle at 16% 20%, rgba(242, 106, 27, 0.2), transparent 20rem),
+    radial-gradient(circle at 86% 28%, rgba(0, 164, 223, 0.16), transparent 22rem),
+    linear-gradient(135deg, #0a1018, #132538 58%, #071523);
+  color: #fff;
+  padding: 26px max(24px, calc((100vw - 1180px) / 2));
+}
+
+.public-gatofilia-band-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 134px;
+  height: 86px;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  padding-right: 22px;
+}
+
+.public-gatofilia-band-logo img {
+  display: block;
+  width: 92px;
+  max-width: 100%;
+  height: auto;
+  transition: transform 160ms ease;
+}
+
+.public-gatofilia-band-logo:hover img {
+  transform: translateY(-2px) scale(1.03);
+}
+
+.public-gatofilia-band h2 {
+  margin: 4px 0 0;
+  font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+  font-size: clamp(26px, 3vw, 40px);
+  line-height: 1;
+}
+
+.public-gatofilia-band p {
+  max-width: 680px;
+  margin: 8px 0 0;
+  color: rgba(233, 242, 249, 0.78);
+  line-height: 1.6;
+}
+
+.public-gatofilia-band-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 1px solid rgba(242, 106, 27, 0.46);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(242, 106, 27, 0.96), rgba(184, 64, 24, 0.96));
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+  padding: 12px 18px;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 16px 30px rgba(242, 106, 27, 0.22);
+}
+
 .public-feature-band {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  border-top: 1px solid var(--public-line);
-  border-bottom: 1px solid var(--public-line);
-  background: linear-gradient(135deg, #fff2e8, #eef7fb);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(circle at 12% 12%, rgba(242, 106, 27, 0.2), transparent 24rem),
+    linear-gradient(135deg, #071523, #12324b);
 }
 
 .public-feature-band div {
-  border-right: 1px solid rgba(184, 64, 24, 0.14);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
   padding: 30px max(24px, calc((100vw - 1180px) / 2));
 }
 
@@ -378,13 +511,13 @@
 }
 
 .public-feature-band strong {
-  color: var(--public-ink);
+  color: #fff;
   font-size: 18px;
 }
 
 .public-feature-band span {
   margin-top: 8px;
-  color: var(--public-muted);
+  color: rgba(233, 242, 249, 0.78);
   line-height: 1.55;
 }
 
@@ -747,8 +880,9 @@
 
 .public-contact-section {
   background:
-    radial-gradient(circle at 18% 18%, rgba(242, 106, 27, 0.22), transparent 26%),
-    linear-gradient(135deg, #152131, #0d1724);
+    radial-gradient(circle at 18% 18%, rgba(242, 106, 27, 0.24), transparent 28rem),
+    radial-gradient(circle at 84% 30%, rgba(0, 164, 223, 0.18), transparent 26rem),
+    linear-gradient(135deg, #071523, #0d1724 55%, #12324b);
 }
 
 .public-contact-layout {
@@ -781,11 +915,13 @@
   display: grid;
   gap: 14px;
   width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.98);
-  padding: 24px;
-  box-shadow: 0 24px 58px rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 251, 255, 0.98)),
+    #fff;
+  padding: 26px;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.28);
 }
 
 .public-contact-form h3,
@@ -809,7 +945,7 @@
 .public-contact-form input {
   width: 100%;
   border: 1px solid #d5dde8;
-  border-radius: 8px;
+  border-radius: 12px;
   background: #fff;
   color: #1f2933;
   font-size: 15px;
@@ -832,6 +968,7 @@
   font-size: 15px;
   font-weight: 900;
   padding: 12px 18px;
+  box-shadow: 0 16px 30px rgba(242, 106, 27, 0.24);
 }
 
 .public-form-alert {
@@ -855,7 +992,7 @@
 .public-help-dialog {
   width: min(92vw, 430px);
   border: 0;
-  border-radius: 8px;
+  border-radius: 18px;
   padding: 0;
   background: transparent;
 }
@@ -869,7 +1006,7 @@
   display: grid;
   gap: 12px;
   border: 1px solid rgba(242, 106, 27, 0.2);
-  border-radius: 8px;
+  border-radius: 18px;
   background: #fffdf8;
   color: #334155;
   padding: 26px;
@@ -913,7 +1050,9 @@
   justify-content: space-between;
   gap: 12px 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
-  background: #0d1724;
+  background:
+    linear-gradient(90deg, #071523, #10283b),
+    #0d1724;
   color: #d9e1ec;
   padding: 22px max(24px, calc((100vw - 1180px) / 2));
   font-size: 13px;
@@ -943,6 +1082,15 @@
   .public-hero,
   .public-contact-layout {
     grid-template-columns: 1fr;
+  }
+
+  .public-gatofilia-band {
+    grid-template-columns: 110px minmax(0, 1fr);
+  }
+
+  .public-gatofilia-band-button {
+    grid-column: 2;
+    justify-self: start;
   }
 
   .public-hero-panel {
@@ -999,6 +1147,36 @@
   .public-plans-section,
   .public-contact-section {
     padding: 44px 18px;
+  }
+
+  .public-gatofilia-band {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 28px 18px;
+    text-align: center;
+  }
+
+  .public-gatofilia-band-logo {
+    width: 100%;
+    height: auto;
+    border-right: 0;
+    padding-right: 0;
+  }
+
+  .public-gatofilia-band-logo img {
+    width: 104px;
+  }
+
+  .public-gatofilia-band p {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .public-gatofilia-band-button {
+    grid-column: auto;
+    justify-self: center;
+    width: 100%;
+    max-width: 300px;
   }
 
   .public-hero-copy h1 {
