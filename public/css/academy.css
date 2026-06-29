@@ -1148,13 +1148,14 @@ body {
   line-height: 1.7;
 }
 
-.gatofilia-benefit-note {
+.gatofilia-benefits .gatofilia-benefit-note {
   max-width: 1180px;
-  margin: 12px auto 0;
-  color: rgba(218, 218, 218, 0.32);
+  margin: 8px auto 0;
+  color: rgba(218, 218, 218, 0.22);
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  font-size: clamp(5.5px, 0.46vw, 6.8px);
-  line-height: 1.25;
+  font-size: clamp(4.5px, 0.34vw, 5.8px);
+  font-weight: 400;
+  line-height: 1.2;
   text-align: left;
 }
 
