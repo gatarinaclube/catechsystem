@@ -76,11 +76,23 @@
               <span class="report-card-sub">Faturas por fechamento, vencimento e pagamentos por transferência.</span>
               <span class="report-card-action">Abrir relatório</span>
             </a>
+            <a class="report-card is-blue" href="/reports/planejamento-financeiro">
+              <span class="report-card-icon">PF</span>
+              <span class="report-card-title">Planejamento Financeiro</span>
+              <span class="report-card-sub">Planilha editável com previsão de receitas, despesas, liquidez e saldos.</span>
+              <span class="report-card-action">Abrir planejamento</span>
+            </a>
           <% } else { %>
             <div class="report-card is-yellow is-disabled">
               <span class="report-card-icon">CC</span>
               <span class="report-card-title">Cartões de Crédito</span>
               <span class="report-card-sub">Relatório avançado disponível no plano Premium.</span>
+              <span class="report-card-action">Premium</span>
+            </div>
+            <div class="report-card is-blue is-disabled">
+              <span class="report-card-icon">PF</span>
+              <span class="report-card-title">Planejamento Financeiro</span>
+              <span class="report-card-sub">Planejamento financeiro disponível no plano Premium.</span>
               <span class="report-card-action">Premium</span>
             </div>
           <% } %>

@@ -13,6 +13,8 @@
   const hasCatterySelect = form.querySelector("[data-has-cattery]");
   const catteryFields = Array.from(form.querySelectorAll("[data-cattery-only]"));
   const noCatteryFields = Array.from(form.querySelectorAll("[data-no-cattery-only]"));
+  const submitButton = form.querySelector('button[type="submit"]');
+  const submitStatus = form.querySelector("[data-submit-status]");
 
   const countryCodes = [
     "AF", "ZA", "AL", "DE", "AD", "AO", "AI", "AQ", "AG", "SA", "DZ", "AR", "AM", "AW", "AU", "AT", "AZ",
@@ -116,9 +118,22 @@
     noCatteryFields.forEach((field) => setFieldEnabled(field, noCattery));
   }
 
+  function setSubmitStatus(message, type) {
+    if (!submitStatus) return;
+    submitStatus.textContent = message || "";
+    submitStatus.classList.toggle("success", type === "success");
+    submitStatus.classList.toggle("error", type === "error");
+  }
+
   fillCountries();
   syncLocationFields();
   syncCatteryFields();
+
+  if (form.dataset.leadStatus === "ok") {
+    setSubmitStatus("Formulário enviado. Nossa equipe entrará em contato.", "success");
+  } else if (form.dataset.leadStatus === "erro") {
+    setSubmitStatus("Não foi possível enviar agora. Confira nome, e-mail e WhatsApp.", "error");
+  }
 
   countryInput?.addEventListener("change", syncLocationFields);
   countryInput?.addEventListener("input", syncLocationFields);
@@ -126,5 +141,14 @@
   stateSelect?.addEventListener("change", () => {
     const option = stateSelect.selectedOptions[0];
     if (option?.dataset.uf) loadBrazilCities(option.dataset.uf);
+  });
+
+  form.addEventListener("submit", () => {
+    setSubmitStatus("Enviando...", "");
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.dataset.originalText = submitButton.textContent;
+      submitButton.textContent = "Enviando...";
+    }
   });
 })();

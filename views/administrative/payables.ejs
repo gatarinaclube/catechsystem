@@ -6,6 +6,21 @@
     <link rel="stylesheet" href="/css/theme.css" />
     <link rel="stylesheet" href="/css/layout.css" />
     <link rel="stylesheet" href="/css/cattery-admin.css" />
+    <style>
+      .supplier-lookup-status {
+        min-height: 18px;
+        margin-top: 6px;
+        font-size: 0.82rem;
+      }
+
+      .supplier-lookup-status.is-success {
+        color: #047857;
+      }
+
+      .supplier-lookup-status.is-error {
+        color: #b91c1c;
+      }
+    </style>
   </head>
   <body>
     <div class="shell">
@@ -113,17 +128,102 @@
     </div>
 
     <script>
-      const supplierDefaults = <%- JSON.stringify((suppliers || []).reduce(function(map, supplier) {
-        map[supplier.commercialName] = supplier.defaultCategory || "";
-        return map;
-      }, {})) %>;
+      const registeredSuppliers = <%- JSON.stringify((suppliers || []).map(function(supplier) {
+        return {
+          commercialName: supplier.commercialName || "",
+          tradeName: supplier.tradeName || "",
+          cnpj: supplier.cnpj || "",
+          defaultCategory: supplier.defaultCategory || ""
+        };
+      })) %>;
+
+      function onlyDigits(value) {
+        return String(value || "").replace(/\D/g, "");
+      }
+
+      function formatCnpj(value) {
+        const cnpj = onlyDigits(value);
+        if (cnpj.length !== 14) return value || "";
+        return `${cnpj.slice(0, 2)}.${cnpj.slice(2, 5)}.${cnpj.slice(5, 8)}/${cnpj.slice(8, 12)}-${cnpj.slice(12)}`;
+      }
+
+      function findSupplierByCnpj(cnpj) {
+        const normalized = onlyDigits(cnpj);
+        return registeredSuppliers.find((supplier) => onlyDigits(supplier.cnpj) === normalized);
+      }
+
+      function findSupplierByName(name) {
+        const normalized = String(name || "").trim().toLowerCase();
+        return registeredSuppliers.find((supplier) => (
+          String(supplier.commercialName || "").trim().toLowerCase() === normalized
+          || String(supplier.tradeName || "").trim().toLowerCase() === normalized
+        ));
+      }
+
+      function setSupplierLookupStatus(form, message, type) {
+        const status = form.querySelector("[data-supplier-lookup-status]");
+        if (!status) return;
+        status.textContent = message || "";
+        status.classList.toggle("is-error", type === "error");
+        status.classList.toggle("is-success", type === "success");
+      }
 
       document.querySelectorAll(".supplier-form").forEach((form) => {
         const supplier = form.querySelector('[name="supplier"]');
         const category = form.querySelector('[name="category"]');
-        supplier?.addEventListener("change", () => {
-          const defaultCategory = supplierDefaults[supplier.value] || "";
-          if (defaultCategory && category) category.value = defaultCategory;
+        let cnpjLookupTimer = null;
+        let lastLookedUpCnpj = "";
+
+        function refreshCategoryFromSupplier() {
+          const selected = findSupplierByName(supplier.value);
+          if (selected?.defaultCategory && category) {
+            category.value = selected.defaultCategory;
+          }
+        }
+
+        async function lookupSupplierByCnpj() {
+          const typedSupplier = String(supplier.value || "").trim();
+          const cnpj = onlyDigits(typedSupplier);
+          if (cnpj.length !== 14 || /[A-Za-zÀ-ÿ]/.test(typedSupplier)) return;
+          if (cnpj === lastLookedUpCnpj) return;
+          lastLookedUpCnpj = cnpj;
+
+          const registered = findSupplierByCnpj(cnpj);
+          if (registered) {
+            supplier.value = registered.commercialName;
+            if (registered.defaultCategory && category) {
+              category.value = registered.defaultCategory;
+            }
+            setSupplierLookupStatus(form, "Fornecedor cadastrado encontrado pelo CNPJ.", "success");
+            return;
+          }
+
+          setSupplierLookupStatus(form, "Buscando dados do CNPJ...", "");
+          try {
+            const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+            if (!response.ok) throw new Error("Consulta indisponível");
+            const data = await response.json();
+            const name = data.razao_social || data.nome_fantasia || "";
+            supplier.value = name ? `${name} - CNPJ ${formatCnpj(cnpj)}` : `CNPJ ${formatCnpj(cnpj)}`;
+            setSupplierLookupStatus(form, "Fornecedor identificado pelo CNPJ sem criar cadastro fixo.", "success");
+          } catch {
+            supplier.value = `CNPJ ${formatCnpj(cnpj)}`;
+            setSupplierLookupStatus(form, "Não foi possível buscar a empresa. A conta será salva apenas com o CNPJ.", "error");
+          }
+        }
+
+        supplier?.addEventListener("change", refreshCategoryFromSupplier);
+        supplier?.addEventListener("blur", lookupSupplierByCnpj);
+        supplier?.addEventListener("input", () => {
+          refreshCategoryFromSupplier();
+          const cnpj = onlyDigits(supplier.value);
+          if (cnpj.length !== 14) {
+            setSupplierLookupStatus(form, "", "");
+            lastLookedUpCnpj = "";
+            return;
+          }
+          window.clearTimeout(cnpjLookupTimer);
+          cnpjLookupTimer = window.setTimeout(lookupSupplierByCnpj, 350);
         });
       });
     </script>

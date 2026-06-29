@@ -1,12 +1,26 @@
 <div class="form-grid">
   <div class="field">
     <label class="field-label" for="<%= prefix %>-supplier">Fornecedor</label>
-    <select id="<%= prefix %>-supplier" name="supplier" required>
-      <option value="">Selecione...</option>
+    <input
+      id="<%= prefix %>-supplier"
+      name="supplier"
+      list="<%= prefix %>-supplier-options"
+      value="<%= payable.supplier || '' %>"
+      placeholder="Digite o nome ou CNPJ"
+      autocomplete="off"
+      required
+    />
+    <datalist id="<%= prefix %>-supplier-options">
       <% (suppliers || []).forEach(function(supplier) { %>
-        <option value="<%= supplier.commercialName %>" <%= payable.supplier === supplier.commercialName ? 'selected' : '' %>><%= supplier.commercialName %></option>
+        <option
+          value="<%= supplier.commercialName %>"
+          data-cnpj="<%= supplier.cnpj || '' %>"
+          data-category="<%= supplier.defaultCategory || '' %>"
+          label="<%= [supplier.tradeName, supplier.cnpj].filter(Boolean).join(' · ') %>"
+        ></option>
       <% }) %>
-    </select>
+    </datalist>
+    <div class="content-sub supplier-lookup-status" data-supplier-lookup-status aria-live="polite"></div>
   </div>
   <div class="field">
     <label class="field-label" for="<%= prefix %>-category">Categoria</label>

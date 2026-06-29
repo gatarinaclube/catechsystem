@@ -87,6 +87,7 @@ model User {
   financialAccountSettings  FinancialAccountSetting[]
   creditCardInvoiceSettings CreditCardInvoiceSetting[]
   financialTransfers        FinancialTransfer[]
+  financialPlanningRows     FinancialPlanningRow[]
   treatmentMedications      TreatmentMedication[]
   catTreatments             CatTreatment[]
   expenseSuppliers          ExpenseSupplier[]
@@ -1291,6 +1292,23 @@ model ReservationPaymentKitten {
 
   @@unique([summaryId, litterKittenId])
   @@index([litterKittenId])
+}
+
+model FinancialPlanningRow {
+  id          Int      @id @default(autoincrement())
+  ownerId     Int?
+  planningKey String   @default("default")
+  section     String
+  label       String
+  color       String   @default("white")
+  sortOrder   Int      @default(0)
+  valuesJson  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner User? @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId, planningKey])
 }
 
 model MatingPlan {

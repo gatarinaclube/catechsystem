@@ -373,14 +373,9 @@
           <p>
             As vagas são limitadas para garantir acompanhamento próximo de cada participante.
           </p>
-          <% if (leadStatus === "ok") { %>
-            <div class="gatofilia-alert success">Interesse registrado com sucesso. Nossa equipe entrará em contato.</div>
-          <% } else if (leadStatus === "erro") { %>
-            <div class="gatofilia-alert error">Não foi possível registrar agora. Confira nome, e-mail e WhatsApp.</div>
-          <% } %>
         </div>
 
-        <form method="post" action="<%= currentPublicPath === '/gatofilia' ? '/gatofilia/interesse' : '/academy/interesse' %>" class="gatofilia-form gatofilia-interest-form" data-gatofilia-interest-form>
+        <form method="post" action="<%= currentPublicPath === '/gatofilia' ? '/gatofilia/interesse' : '/academy/interesse' %>" class="gatofilia-form gatofilia-interest-form" data-gatofilia-interest-form data-lead-status="<%= leadStatus || '' %>">
           <div class="gatofilia-form-intro">
             <span>Pré-inscrição</span>
             <strong class="gatofilia-form-intro-copy">Preencha sua pré-inscrição sem compromisso. Entraremos em contato para apresentar todos os detalhes da jornada, investimento, cronograma e esclarecer suas dúvidas.</strong>
@@ -445,6 +440,13 @@
             <span>Desejo receber informações sobre abertura das próximas turmas.</span>
           </label>
           <button type="submit">Quero fazer parte da próxima turma</button>
+          <div class="gatofilia-submit-status <%= leadStatus === 'ok' ? 'success' : (leadStatus === 'erro' ? 'error' : '') %>" data-submit-status aria-live="polite">
+            <% if (leadStatus === "ok") { %>
+              Formulário enviado. Nossa equipe entrará em contato.
+            <% } else if (leadStatus === "erro") { %>
+              Não foi possível enviar agora. Confira nome, e-mail e WhatsApp.
+            <% } %>
+          </div>
         </form>
       </section>
     </main>

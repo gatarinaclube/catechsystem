@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Planejamento Financeiro - CaTech</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+    <style>
+      .shell { max-width: 100vw; }
+      .main {
+        min-width: 0;
+        max-width: calc(100vw - 260px);
+        overflow: hidden;
+      }
+      .planning-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: end;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+      .planning-toolbar form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: end;
+      }
+      .planning-card {
+        min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
+        background: #ed9c4b;
+        border-color: #d97706;
+      }
+      .planning-table-shell {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow: hidden;
+      }
+      .planning-table-wrap {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow-x: auto;
+        overflow-y: visible;
+        border: 2px solid #111827;
+        background: #ffffff;
+      }
+      .planning-table {
+        width: max-content;
+        min-width: 100%;
+        max-width: none;
+        border-collapse: collapse;
+        font-size: 12px;
+        line-height: 1.18;
+      }
+      .planning-table th,
+      .planning-table td {
+        border: 1px solid #111827;
+        padding: 0;
+        white-space: nowrap;
+        vertical-align: middle;
+      }
+      .planning-table th {
+        background: #d9d9d9;
+        color: #000;
+        font-weight: 900;
+        text-align: center;
+        padding: 4px 6px;
+      }
+      .planning-section-title {
+        min-width: 172px;
+        width: 172px;
+        padding: 7px 8px !important;
+        color: #fff;
+        font-weight: 900;
+        text-align: center;
+        text-transform: uppercase;
+      }
+      .planning-section-title.is-orange { background: #f4a049; }
+      .planning-section-title.is-red { background: #ff0000; }
+      .planning-section-title.is-green { background: #4caf5d; }
+      .planning-label-cell {
+        min-width: 172px;
+        width: 172px;
+        background: #d9d9d9;
+      }
+      .planning-label-input {
+        width: 100%;
+        min-width: 170px;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        font-weight: 800;
+        padding: 5px 6px;
+      }
+      .planning-color-select {
+        width: 74px;
+        border: 0;
+        border-left: 1px solid #111827;
+        background: rgba(255,255,255,0.55);
+        font-size: 10px;
+        padding: 4px 2px;
+      }
+      .planning-row-tools {
+        display: grid;
+        grid-template-columns: 1fr 76px 26px;
+        align-items: stretch;
+      }
+      .planning-value-input {
+        width: 92px;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+        padding: 5px 5px;
+      }
+      .planning-value-input:focus,
+      .planning-label-input:focus,
+      .planning-color-select:focus {
+        outline: 2px solid #2563eb;
+        background: #ffffff;
+      }
+      .planning-remove-row {
+        border: 0;
+        border-left: 1px solid #111827;
+        background: rgba(255,255,255,0.55);
+        color: #7f1d1d;
+        cursor: pointer;
+        font-weight: 900;
+      }
+      .planning-row-color-white td:not(.planning-label-cell) { background: #ffffff; }
+      .planning-row-color-blue td,
+      .planning-row-color-blue .planning-label-cell { background: #dbe5f1; color: #ff0000; }
+      .planning-row-color-green td,
+      .planning-row-color-green .planning-label-cell { background: #c6e0b4; }
+      .planning-row-color-orange td,
+      .planning-row-color-orange .planning-label-cell { background: #f9d5a7; color: #ff0000; }
+      .planning-row-color-pink td,
+      .planning-row-color-pink .planning-label-cell { background: #ead1dc; color: #ff0000; }
+      .planning-row-color-gray td,
+      .planning-row-color-gray .planning-label-cell { background: #d9d9d9; }
+      .planning-row-color-red td,
+      .planning-row-color-red .planning-label-cell { background: #f44336; color: #000; font-weight: 900; }
+      .planning-total-row th,
+      .planning-total-row td {
+        background: #d9d9d9;
+        font-weight: 900;
+        padding: 5px 6px;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      .planning-total-row .planning-section-title {
+        text-align: center;
+      }
+      .planning-spacer td {
+        height: 24px;
+        background: #ffffff;
+      }
+      .planning-negative {
+        color: #dc2626;
+      }
+      .planning-add-row {
+        border: 1px solid #111827;
+        background: #fff7ed;
+        color: #9a3412;
+        border-radius: 999px;
+        padding: 5px 9px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 900;
+      }
+      .planning-scrollbar {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        height: 18px;
+        margin-top: 8px;
+        border: 1px solid #111827;
+        border-radius: 999px;
+        background: #f8fafc;
+        position: sticky;
+        bottom: 0;
+        z-index: 3;
+      }
+      .planning-scrollbar-inner {
+        height: 1px;
+        min-width: 100%;
+      }
+      @media (max-width: 900px) {
+        .main { max-width: 100vw; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Planejamento Financeiro</h2>
+            <div class="welcome-sub">Planilha editável para previsão de receitas, despesas, liquidez e saldo mês a mês.</div>
+          </div>
+          <div class="actions">
+            <a href="/reports" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <% if (success) { %>
+          <div class="content-card" style="border-left:4px solid #16a34a; margin-bottom:18px;">
+            <div class="content-sub">Planejamento salvo com sucesso.</div>
+          </div>
+        <% } %>
+
+        <% if (error) { %>
+          <div class="content-card" style="border-left:4px solid #b91c1c; margin-bottom:18px;">
+            <div class="content-sub"><%= error %></div>
+          </div>
+        <% } %>
+
+        <section class="content-card module-panel">
+          <div class="planning-toolbar">
+            <form method="get" action="/reports/planejamento-financeiro">
+              <div class="field">
+                <label class="field-label" for="startMonth">Mês inicial</label>
+                <input id="startMonth" name="startMonth" type="month" value="<%= planning.planningKey %>" />
+              </div>
+              <button class="btn" type="submit">Atualizar meses</button>
+            </form>
+            <div class="content-sub">Use ponto ou vírgula nos valores. Ex.: 1.250,00</div>
+          </div>
+        </section>
+
+        <form method="post" action="/reports/planejamento-financeiro/save" id="planningForm">
+          <input type="hidden" name="startMonth" value="<%= planning.planningKey %>" />
+          <section class="content-card planning-card">
+            <div class="report-summary" style="margin-bottom:12px;">
+              <div>
+                <div class="content-title" style="color:#111827;">Planilha</div>
+                <div class="content-sub" style="color:#374151;">Os totais são recalculados na tela e ao salvar.</div>
+              </div>
+              <button class="btn btn-primary" type="submit">Salvar planejamento</button>
+            </div>
+
+            <div class="planning-table-shell">
+              <div class="planning-table-wrap" id="planningTableWrap">
+                <table class="planning-table" id="planningTable">
+                  <thead>
+                    <tr>
+                      <th>Grupo / Conta</th>
+                      <% planning.months.forEach(function(month) { %>
+                        <th><%= month.label %></th>
+                      <% }) %>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="planning-total-row" data-total-row="forecast">
+                      <th class="planning-section-title is-orange">Previsão de Filhotes</th>
+                      <% planning.months.forEach(function(month) { %>
+                        <td data-total-cell="forecast:<%= month.key %>"><%= planning.formatPlanningMoney(planning.totals.forecast[month.key], false) %></td>
+                      <% }) %>
+                    </tr>
+                    <% planning.sections.forEach(function(section) { %>
+                      <% if (section.key !== 'forecast') { %>
+                        <tr class="planning-spacer"><td colspan="<%= planning.months.length + 1 %>"></td></tr>
+                        <tr class="planning-total-row" data-total-row="<%= section.key %>">
+                          <th class="planning-section-title is-<%= section.color %>"><%= section.title %></th>
+                          <% planning.months.forEach(function(month) { %>
+                            <td data-total-cell="<%= section.key %>:<%= month.key %>"><%= planning.formatPlanningMoney(planning.totals[section.key][month.key], false) %></td>
+                          <% }) %>
+                        </tr>
+                      <% } %>
+
+                      <% section.rows.forEach(function(row) { %>
+                        <tr class="planning-data-row planning-row-color-<%= row.color %>" data-section="<%= section.key %>">
+                          <td class="planning-label-cell">
+                            <input type="hidden" name="rowKeys[]" value="<%= row.id %>" />
+                            <input type="hidden" name="row_<%= row.id %>_section" value="<%= section.key %>" />
+                            <div class="planning-row-tools">
+                              <input class="planning-label-input" name="row_<%= row.id %>_label" value="<%= row.label %>" />
+                              <select class="planning-color-select" name="row_<%= row.id %>_color" aria-label="Cor da linha">
+                                <% planning.colorOptions.forEach(function(option) { %>
+                                  <option value="<%= option.value %>" <%= row.color === option.value ? 'selected' : '' %>><%= option.label %></option>
+                                <% }) %>
+                              </select>
+                              <button class="planning-remove-row" type="button" title="Remover linha">×</button>
+                            </div>
+                          </td>
+                          <% planning.months.forEach(function(month) { %>
+                            <td>
+                              <input
+                                class="planning-value-input"
+                                name="row_<%= row.id %>_<%= month.key %>"
+                                value="<%= planning.formatPlanningMoney(row.values[month.key]) %>"
+                                inputmode="decimal"
+                                data-section="<%= section.key %>"
+                                data-month="<%= month.key %>"
+                              />
+                            </td>
+                          <% }) %>
+                        </tr>
+                      <% }) %>
+                      <tr class="planning-add-row-line" data-add-row-anchor="<%= section.key %>">
+                        <td colspan="<%= planning.months.length + 1 %>">
+                          <button class="planning-add-row" type="button" data-add-row="<%= section.key %>">+ Adicionar linha em <%= section.title %></button>
+                        </td>
+                      </tr>
+                    <% }) %>
+
+                    <tr class="planning-spacer"><td colspan="<%= planning.months.length + 1 %>"></td></tr>
+                    <tr class="planning-total-row" data-total-row="monthlyBalance">
+                      <th class="planning-section-title is-green">Saldo Mensal</th>
+                      <% planning.months.forEach(function(month) { %>
+                        <td data-total-cell="monthlyBalance:<%= month.key %>"><%= planning.formatPlanningMoney(planning.totals.monthlyBalance[month.key], false) %></td>
+                      <% }) %>
+                    </tr>
+                    <tr class="planning-total-row" data-total-row="projectedBalance">
+                      <th class="planning-section-title is-green">Saldo Previsto</th>
+                      <% planning.months.forEach(function(month) { %>
+                        <td data-total-cell="projectedBalance:<%= month.key %>"><%= planning.formatPlanningMoney(planning.totals.projectedBalance[month.key], false) %></td>
+                      <% }) %>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="planning-scrollbar" id="planningScrollbar" aria-label="Rolagem horizontal da tabela">
+                <div class="planning-scrollbar-inner" id="planningScrollbarInner"></div>
+              </div>
+            </div>
+
+            <div class="actions" style="justify-content:flex-end; margin-top:14px;">
+              <button class="btn btn-primary" type="submit">Salvar planejamento</button>
+            </div>
+          </section>
+        </form>
+      </main>
+    </div>
+
+    <script>
+      const planningMonths = <%- JSON.stringify(planning.months.map((month) => month.key)) %>;
+      const colorOptions = <%- JSON.stringify(planning.colorOptions) %>;
+      let newPlanningRowCounter = 0;
+
+      function parsePlanningMoney(value) {
+        const text = String(value || "").trim();
+        if (!text) return 0;
+        const normalized = text.replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", ".");
+        const amount = Number.parseFloat(normalized);
+        return Number.isFinite(amount) ? Math.round(amount * 100) : 0;
+      }
+
+      function formatPlanningMoney(cents) {
+        return (Number(cents || 0) / 100).toLocaleString("pt-BR", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+      }
+
+      function setTotalCell(key, month, cents) {
+        const cell = document.querySelector(`[data-total-cell="${key}:${month}"]`);
+        if (!cell) return;
+        cell.textContent = formatPlanningMoney(cents);
+        cell.classList.toggle("planning-negative", Number(cents || 0) < 0);
+      }
+
+      function calculateSection(section, month) {
+        return Array.from(document.querySelectorAll(`.planning-value-input[data-section="${section}"][data-month="${month}"]`))
+          .reduce((sum, input) => sum + parsePlanningMoney(input.value), 0);
+      }
+
+      function recalculatePlanning() {
+        let cumulative = 0;
+        planningMonths.forEach((month) => {
+          const forecast = calculateSection("forecast", month);
+          const expenses = calculateSection("expenses", month);
+          const liquidity = calculateSection("liquidity", month);
+          const revenues = calculateSection("revenues", month);
+          const monthlyBalance = revenues - expenses;
+          cumulative += monthlyBalance;
+
+          setTotalCell("forecast", month, forecast);
+          setTotalCell("expenses", month, expenses);
+          setTotalCell("liquidity", month, liquidity);
+          setTotalCell("revenues", month, revenues);
+          setTotalCell("monthlyBalance", month, monthlyBalance);
+          setTotalCell("projectedBalance", month, cumulative);
+        });
+      }
+
+      function refreshRowColor(row, color) {
+        row.className = row.className.replace(/\bplanning-row-color-\S+/g, "").trim();
+        row.classList.add(`planning-row-color-${color || "white"}`);
+      }
+
+      function buildColorOptions(selected) {
+        return colorOptions.map((option) => (
+          `<option value="${option.value}" ${option.value === selected ? "selected" : ""}>${option.label}</option>`
+        )).join("");
+      }
+
+      function addPlanningRow(section) {
+        const key = `new-${Date.now()}-${newPlanningRowCounter++}`;
+        const anchor = document.querySelector(`[data-add-row-anchor="${section}"]`);
+        if (!anchor) return;
+        const defaultColor = section === "expenses" ? "pink" : "white";
+        const row = document.createElement("tr");
+        row.className = `planning-data-row planning-row-color-${defaultColor}`;
+        row.dataset.section = section;
+        row.innerHTML = `
+          <td class="planning-label-cell">
+            <input type="hidden" name="rowKeys[]" value="${key}" />
+            <input type="hidden" name="row_${key}_section" value="${section}" />
+            <div class="planning-row-tools">
+              <input class="planning-label-input" name="row_${key}_label" value="" placeholder="Nova linha" />
+              <select class="planning-color-select" name="row_${key}_color" aria-label="Cor da linha">
+                ${buildColorOptions(defaultColor)}
+              </select>
+              <button class="planning-remove-row" type="button" title="Remover linha">×</button>
+            </div>
+          </td>
+          ${planningMonths.map((month) => `
+            <td>
+              <input class="planning-value-input" name="row_${key}_${month}" value="" inputmode="decimal" data-section="${section}" data-month="${month}" />
+            </td>
+          `).join("")}
+        `;
+        anchor.parentNode.insertBefore(row, anchor);
+        row.querySelector(".planning-label-input")?.focus();
+        syncPlanningScrollbar();
+      }
+
+      document.addEventListener("input", (event) => {
+        if (event.target.matches(".planning-value-input")) {
+          recalculatePlanning();
+        }
+      });
+
+      document.addEventListener("change", (event) => {
+        if (event.target.matches(".planning-color-select")) {
+          refreshRowColor(event.target.closest("tr"), event.target.value);
+        }
+      });
+
+      document.addEventListener("click", (event) => {
+        const addButton = event.target.closest("[data-add-row]");
+        if (addButton) {
+          addPlanningRow(addButton.dataset.addRow);
+          return;
+        }
+
+        const removeButton = event.target.closest(".planning-remove-row");
+        if (removeButton) {
+          removeButton.closest("tr")?.remove();
+          recalculatePlanning();
+          syncPlanningScrollbar();
+        }
+      });
+
+      const tableWrap = document.getElementById("planningTableWrap");
+      const bottomScrollbar = document.getElementById("planningScrollbar");
+      const bottomScrollbarInner = document.getElementById("planningScrollbarInner");
+
+      function syncPlanningScrollbar() {
+        if (!tableWrap || !bottomScrollbar || !bottomScrollbarInner) return;
+        const table = tableWrap.querySelector(".planning-table");
+        const scrollWidth = Math.max(table?.scrollWidth || 0, tableWrap.scrollWidth, tableWrap.clientWidth);
+        bottomScrollbarInner.style.width = `${scrollWidth}px`;
+        bottomScrollbar.style.display = scrollWidth > tableWrap.clientWidth ? "block" : "none";
+        bottomScrollbar.scrollLeft = tableWrap.scrollLeft;
+      }
+
+      if (tableWrap && bottomScrollbar && bottomScrollbarInner) {
+        let syncingFromTable = false;
+        let syncingFromBar = false;
+        tableWrap.addEventListener("scroll", () => {
+          if (syncingFromBar) return;
+          syncingFromTable = true;
+          bottomScrollbar.scrollLeft = tableWrap.scrollLeft;
+          syncingFromTable = false;
+        });
+        bottomScrollbar.addEventListener("scroll", () => {
+          if (syncingFromTable) return;
+          syncingFromBar = true;
+          tableWrap.scrollLeft = bottomScrollbar.scrollLeft;
+          syncingFromBar = false;
+        });
+        requestAnimationFrame(syncPlanningScrollbar);
+        window.addEventListener("resize", syncPlanningScrollbar);
+        window.addEventListener("load", syncPlanningScrollbar);
+        if ("ResizeObserver" in window) {
+          const resizeObserver = new ResizeObserver(syncPlanningScrollbar);
+          resizeObserver.observe(tableWrap);
+          resizeObserver.observe(document.getElementById("planningTable"));
+        }
+      }
+
+      recalculatePlanning();
+    </script>
+  </body>
+</html>

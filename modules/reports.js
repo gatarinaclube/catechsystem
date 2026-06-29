@@ -138,6 +138,250 @@ function buildCreditCardFilters(query) {
   };
 }
 
+const PLANNING_SECTIONS = [
+  {
+    key: "forecast",
+    title: "Previsão de Filhotes",
+    color: "orange",
+    defaultRows: [
+      "Vendidos",
+      "Disponíveis para Venda",
+      "Previstos a Nascer",
+      "Previstos a Vender",
+    ],
+  },
+  {
+    key: "expenses",
+    title: "Despesas",
+    color: "red",
+    defaultRows: [
+      "Cartão",
+      "Casa/Terreno",
+      "Financiamento",
+      "INSS",
+      "Nutrição/Outros",
+      "Funcionário",
+      "Encargos Funcionário",
+      "Castração/Exames",
+      "Areia Sanitária",
+      "Farmácia",
+      "Laboratório",
+      "Competições FIFe",
+      "Simples Nacional",
+      "Google ADS/Meta",
+      "Luz",
+      "Água",
+      "Internet + Telefone",
+      "Combustível",
+      "Contabilidade",
+    ],
+  },
+  {
+    key: "liquidity",
+    title: "Liquidez",
+    color: "green",
+    defaultRows: [
+      "Disponível",
+      "Conta Principal",
+      "Conta Cartão",
+      "Cofre",
+      "Limite",
+    ],
+  },
+  {
+    key: "revenues",
+    title: "Receitas",
+    color: "green",
+    defaultRows: [
+      "Filhotes à Vender",
+      "Receitas de Vendas",
+      "Serviços",
+      "Outras Receitas",
+    ],
+  },
+];
+
+const PLANNING_MONTH_LABELS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+function normalizePlanningMonth(value) {
+  return /^\d{4}-\d{2}$/.test(value || "") ? value : currentMonthInput();
+}
+
+function addMonthsToPlanningKey(month, offset) {
+  const [year, monthNumber] = month.split("-").map(Number);
+  const date = new Date(Date.UTC(year, monthNumber - 1 + offset, 1));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+function buildPlanningMonths(startMonth) {
+  return Array.from({ length: 12 }, (_, index) => {
+    const key = addMonthsToPlanningKey(startMonth, index);
+    const [, monthText] = key.split("-");
+    return {
+      key,
+      label: PLANNING_MONTH_LABELS[Number(monthText) - 1],
+    };
+  });
+}
+
+function parseMoneyToCents(value) {
+  const text = String(value || "").trim();
+  if (!text) return 0;
+  const normalized = text
+    .replace(/[^\d,.-]/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".");
+  const amount = Number.parseFloat(normalized);
+  return Number.isFinite(amount) ? Math.round(amount * 100) : 0;
+}
+
+function formatPlanningMoney(cents, blankZero = true) {
+  const value = Number(cents || 0);
+  if (blankZero && value === 0) return "";
+  return (value / 100).toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function normalizePlanningColor(value, fallback = "white") {
+  return ["white", "blue", "green", "orange", "pink", "gray", "red"].includes(value)
+    ? value
+    : fallback;
+}
+
+function defaultPlanningRows(months) {
+  const rows = [];
+  PLANNING_SECTIONS.forEach((section) => {
+    section.defaultRows.forEach((label, index) => {
+      rows.push({
+        id: `default-${section.key}-${index}`,
+        section: section.key,
+        label,
+        color: section.key === "expenses" ? "pink" : "white",
+        sortOrder: index,
+        values: Object.fromEntries(months.map((month) => [month.key, 0])),
+        isDefault: true,
+      });
+    });
+  });
+  return rows;
+}
+
+function mapPlanningRow(row, months) {
+  const values = safeJsonParse(row.valuesJson, {});
+  return {
+    id: row.id,
+    section: row.section,
+    label: row.label,
+    color: normalizePlanningColor(row.color),
+    sortOrder: row.sortOrder,
+    values: Object.fromEntries(months.map((month) => [month.key, Number(values[month.key] || 0)])),
+  };
+}
+
+async function loadFinancialPlanning(prisma, req, startMonth) {
+  const planningKey = normalizePlanningMonth(startMonth);
+  const months = buildPlanningMonths(planningKey);
+  const ownerId = req.session.userId;
+  const savedRows = await prisma.financialPlanningRow.findMany({
+    where: { ownerId, planningKey },
+    orderBy: [{ section: "asc" }, { sortOrder: "asc" }, { id: "asc" }],
+  });
+  const rows = savedRows.length
+    ? savedRows.map((row) => mapPlanningRow(row, months))
+    : defaultPlanningRows(months);
+  return buildFinancialPlanningViewModel(planningKey, months, rows);
+}
+
+function sectionRows(rows, section) {
+  return rows
+    .filter((row) => row.section === section)
+    .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
+}
+
+function sumRowsByMonth(rows, months) {
+  return Object.fromEntries(months.map((month) => [
+    month.key,
+    rows.reduce((sum, row) => sum + Number(row.values?.[month.key] || 0), 0),
+  ]));
+}
+
+function cumulativeByMonth(monthlyValues, months) {
+  let running = 0;
+  return Object.fromEntries(months.map((month) => {
+    running += Number(monthlyValues[month.key] || 0);
+    return [month.key, running];
+  }));
+}
+
+function buildFinancialPlanningViewModel(planningKey, months, rows) {
+  const groupedSections = PLANNING_SECTIONS.map((section) => ({
+    ...section,
+    rows: sectionRows(rows, section.key),
+  }));
+  const expenseTotals = sumRowsByMonth(sectionRows(rows, "expenses"), months);
+  const revenueTotals = sumRowsByMonth(sectionRows(rows, "revenues"), months);
+  const forecastTotals = sumRowsByMonth(sectionRows(rows, "forecast"), months);
+  const liquidityTotals = sumRowsByMonth(sectionRows(rows, "liquidity"), months);
+  const monthlyBalance = Object.fromEntries(months.map((month) => [
+    month.key,
+    Number(revenueTotals[month.key] || 0) - Number(expenseTotals[month.key] || 0),
+  ]));
+  const projectedBalance = cumulativeByMonth(monthlyBalance, months);
+
+  return {
+    planningKey,
+    months,
+    sections: groupedSections,
+    totals: {
+      expenses: expenseTotals,
+      revenues: revenueTotals,
+      forecast: forecastTotals,
+      liquidity: liquidityTotals,
+      monthlyBalance,
+      projectedBalance,
+    },
+    formatPlanningMoney,
+    colorOptions: [
+      { value: "white", label: "Branco" },
+      { value: "blue", label: "Azul" },
+      { value: "green", label: "Verde" },
+      { value: "orange", label: "Laranja" },
+      { value: "pink", label: "Rosa" },
+      { value: "gray", label: "Cinza" },
+      { value: "red", label: "Vermelho" },
+    ],
+  };
+}
+
+function normalizeFinancialPlanningPayload(body, months) {
+  const rowKeys = Array.isArray(body.rowKeys) ? body.rowKeys : (body.rowKeys ? [body.rowKeys] : []);
+  const rows = [];
+  rowKeys.forEach((key, index) => {
+    const section = String(body[`row_${key}_section`] || "").trim();
+    const sectionExists = PLANNING_SECTIONS.some((item) => item.key === section);
+    if (!sectionExists) return;
+
+    const label = String(body[`row_${key}_label`] || "").trim();
+    const values = Object.fromEntries(months.map((month) => [
+      month.key,
+      parseMoneyToCents(body[`row_${key}_${month.key}`]),
+    ]));
+    const hasValues = Object.values(values).some((value) => value !== 0);
+    if (!label && !hasValues) return;
+
+    rows.push({
+      section,
+      label: label || "Nova linha",
+      color: normalizePlanningColor(body[`row_${key}_color`], section === "expenses" ? "pink" : "white"),
+      sortOrder: index,
+      values,
+    });
+  });
+  return rows;
+}
+
 function buildRevenueFilters(query) {
   return buildExpenseFilters(query);
 }
@@ -1834,6 +2078,63 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         airReservationOptions: ["Sim", "Não", "Solicitado"],
         manualOptions: ["Enviado", "Não Enviado"],
       });
+    }
+  );
+
+  router.get(
+    "/reports/planejamento-financeiro",
+    requireAuth,
+    requirePermission("admin.reports"),
+    requirePermission("admin.reportsAdvanced"),
+    async (req, res) => {
+      const planning = await loadFinancialPlanning(prisma, req, req.query.startMonth);
+      res.render("reports/financial-planning", {
+        user: req.user,
+        currentPath: "/reports",
+        planning,
+        success: req.query.ok === "1",
+        error: req.query.error || "",
+      });
+    }
+  );
+
+  router.post(
+    "/reports/planejamento-financeiro/save",
+    requireAuth,
+    requirePermission("admin.reports"),
+    requirePermission("admin.reportsAdvanced"),
+    async (req, res) => {
+      const planningKey = normalizePlanningMonth(req.body.startMonth);
+      try {
+        const months = buildPlanningMonths(planningKey);
+        const rows = normalizeFinancialPlanningPayload(req.body, months);
+        const ownerId = req.session.userId;
+
+        await prisma.$transaction(async (tx) => {
+          await tx.financialPlanningRow.deleteMany({
+            where: { ownerId, planningKey },
+          });
+
+          if (rows.length) {
+            await tx.financialPlanningRow.createMany({
+              data: rows.map((row) => ({
+                ownerId,
+                planningKey,
+                section: row.section,
+                label: row.label,
+                color: row.color,
+                sortOrder: row.sortOrder,
+                valuesJson: JSON.stringify(row.values),
+              })),
+            });
+          }
+        });
+
+        res.redirect(`/reports/planejamento-financeiro?startMonth=${encodeURIComponent(planningKey)}&ok=1`);
+      } catch (err) {
+        console.error("Erro ao salvar planejamento financeiro:", err);
+        res.redirect(`/reports/planejamento-financeiro?startMonth=${encodeURIComponent(planningKey)}&error=${encodeURIComponent("Erro ao salvar planejamento financeiro.")}`);
+      }
     }
   );
 

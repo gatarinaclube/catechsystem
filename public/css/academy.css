@@ -1463,6 +1463,26 @@ body {
   grid-column: 1 / -1;
 }
 
+.gatofilia-submit-status {
+  grid-column: 1 / -1;
+  min-height: 22px;
+  margin-top: -4px;
+  color: #64748b;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.gatofilia-submit-status.success {
+  color: #166534;
+}
+
+.gatofilia-submit-status.error {
+  color: #b91c1c;
+}
+
 .gatofilia-cattery-question {
   margin-top: 4px;
   border: 1px solid rgba(200, 163, 90, 0.26);
