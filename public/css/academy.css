@@ -519,7 +519,7 @@ body {
 
 .gatofilia-partner-logos {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
   align-items: center;
   gap: clamp(16px, 2.4vw, 28px);
   margin-top: clamp(8px, 1vw, 12px);
@@ -541,7 +541,7 @@ body {
 
 .gatofilia-partner-logos img:last-child {
   justify-self: end;
-  height: clamp(68px, 6.8vw, 98px);
+  height: clamp(86px, 8.5vw, 126px);
 }
 
 .gatofilia-story-card h3 {
@@ -1970,7 +1970,7 @@ body {
     justify-self: end;
     width: auto;
     max-width: 100%;
-    height: clamp(48px, 12vw, 62px);
+    height: clamp(56px, 15vw, 76px);
   }
 
   .gatofilia-for-you-copy {
