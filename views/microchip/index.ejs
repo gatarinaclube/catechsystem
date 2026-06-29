@@ -9,16 +9,16 @@
       content="<%= seo?.description || 'Cadastro público de microchip para cães, gatos e outros animais. Busque um microchip cadastrado, registre um animal com microchip e facilite o contato em caso de perda ou localização.' %>"
     />
     <% if (seo?.keywords) { %><meta name="keywords" content="<%= seo.keywords %>" /><% } %>
-    <link rel="canonical" href="<%= seo?.canonicalUrl || 'https://catechsystem.com.br/microchip' %>" />
+    <link rel="canonical" href="<%= seo?.canonicalUrl || 'https://www.petgus.com.br/microchip' %>" />
     <meta property="og:type" content="<%= seo?.type || 'website' %>" />
     <meta property="og:title" content="<%= seo?.title || title %>" />
     <meta property="og:description" content="<%= seo?.description || '' %>" />
-    <meta property="og:url" content="<%= seo?.canonicalUrl || 'https://catechsystem.com.br/microchip' %>" />
-    <meta property="og:image" content="<%= seo?.imageUrl || 'https://catechsystem.com.br/logos/catech-icon.png' %>" />
+    <meta property="og:url" content="<%= seo?.canonicalUrl || 'https://www.petgus.com.br/microchip' %>" />
+    <meta property="og:image" content="<%= seo?.imageUrl || 'https://www.petgus.com.br/logos/petgus-icon.png' %>" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="<%= seo?.title || title %>" />
     <meta name="twitter:description" content="<%= seo?.description || '' %>" />
-    <meta name="twitter:image" content="<%= seo?.imageUrl || 'https://catechsystem.com.br/logos/catech-icon.png' %>" />
+    <meta name="twitter:image" content="<%= seo?.imageUrl || 'https://www.petgus.com.br/logos/petgus-icon.png' %>" />
     <% if (typeof structuredData !== 'undefined' && structuredData) { %>
       <script type="application/ld+json"><%- JSON.stringify(structuredData) %></script>
     <% } %>
@@ -28,8 +28,8 @@
   <body class="microchip-public-body">
     <header class="microchip-header">
       <a class="microchip-logo" href="/">
-        <img src="/logos/catech-icon.png" alt="CaTech System" />
-        <span>CaTech Microchip</span>
+        <img src="/logos/petgus-icon.png" alt="PetGus" />
+        <span>PetGus Microchip</span>
       </a>
       <nav>
         <a href="/">Inicial</a>

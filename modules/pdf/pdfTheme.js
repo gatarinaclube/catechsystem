@@ -44,7 +44,7 @@ function formatDateTimeBR(date) {
 
 function setPdfMetadata(doc, title) {
   doc.info.Title = title;
-  doc.info.Creator = "CaTech System / Gatarina Clube";
+  doc.info.Creator = "PetGus / Gatarina Clube";
 }
 
 function drawPageChrome(doc) {
@@ -108,7 +108,7 @@ function drawDocumentHeader(doc, title, subtitle) {
   doc.font("Helvetica")
     .fontSize(8.5)
     .fillColor(COLORS.muted)
-    .text(subtitle || "Sistema CaTech / Gatarina Clube", left + 82, top + 18, {
+    .text(subtitle || "Sistema PetGus / Gatarina Clube", left + 82, top + 18, {
       width: width - 170,
       align: "center",
       lineGap: 0,

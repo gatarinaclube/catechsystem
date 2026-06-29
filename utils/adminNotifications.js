@@ -63,7 +63,7 @@ async function sendUserNotification({ to, subject, html }) {
 
 async function notifyNewUser(prisma, user) {
   return notifyAdmins(prisma, {
-    subject: "CaTech - Novo usuário cadastrado",
+    subject: "PetGus - Novo usuário cadastrado",
     html: `
       <h2>Novo usuário cadastrado</h2>
       <p><strong>Nome:</strong> ${escapeHtml(user.name)}</p>
@@ -78,11 +78,11 @@ async function notifyNewUser(prisma, user) {
 async function notifyUserRegistrationConfirmation(user) {
   return sendUserNotification({
     to: user.email,
-    subject: "CaTech - Cadastro recebido",
+    subject: "PetGus - Cadastro recebido",
     html: `
       <h2>Cadastro recebido</h2>
       <p>Olá, ${escapeHtml(user.name)}.</p>
-      <p>Recebemos seu cadastro no CaTech System.</p>
+      <p>Recebemos seu cadastro no PetGus.</p>
       <p><strong>E-mail:</strong> ${escapeHtml(user.email)}</p>
       <p><strong>Telefone:</strong> ${escapeHtml(user.phones || "-")}</p>
       <p><strong>Gatil FIFe:</strong> ${escapeHtml(user.hasFifeCattery === "YES" ? (user.fifeCatteryName || "Sim") : "Não")}</p>
@@ -93,7 +93,7 @@ async function notifyUserRegistrationConfirmation(user) {
 
 async function notifyNewCat(prisma, cat, owner = null) {
   return notifyAdmins(prisma, {
-    subject: "CaTech - Novo gato cadastrado",
+    subject: "PetGus - Novo gato cadastrado",
     html: `
       <h2>Novo gato cadastrado</h2>
       <p><strong>Nome:</strong> ${escapeHtml(cat.name)}</p>
@@ -109,7 +109,7 @@ async function notifyNewCat(prisma, cat, owner = null) {
 async function notifyUserCatConfirmation(cat, owner = null) {
   return sendUserNotification({
     to: owner?.email,
-    subject: "CaTech - Gato cadastrado",
+    subject: "PetGus - Gato cadastrado",
     html: `
       <h2>Gato cadastrado com sucesso</h2>
       <p>Olá, ${escapeHtml(owner?.name || "")}.</p>
@@ -132,7 +132,7 @@ async function notifyNewService(prisma, service) {
   });
 
   return notifyAdmins(prisma, {
-    subject: `CaTech - Novo serviço: ${service.type}`,
+    subject: `PetGus - Novo serviço: ${service.type}`,
     html: `
       <h2>Novo serviço registrado</h2>
       <p><strong>Serviço:</strong> ${escapeHtml(service.type)}</p>
@@ -152,7 +152,7 @@ async function notifyUserServiceConfirmation(prisma, service) {
 
   return sendUserNotification({
     to: user?.email,
-    subject: `CaTech - Solicitação recebida: ${service.type}`,
+    subject: `PetGus - Solicitação recebida: ${service.type}`,
     html: `
       <h2>Solicitação recebida</h2>
       <p>Olá, ${escapeHtml(user?.name || "")}.</p>

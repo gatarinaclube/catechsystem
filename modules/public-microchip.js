@@ -126,10 +126,10 @@ function readPhones(body) {
 
 function publicViewPayload(req, extra = {}) {
   const seo = baseSeo({
-    title: "Cadastro e Busca de Microchip para Animais - CaTech System",
+    title: "Cadastro e Busca de Microchip para Animais - PetGus",
     description: "Consulte microchips cadastrados e registre cães, gatos e outros animais com identificação permanente. Dados do tutor ficam protegidos e o contato é intermediado pelo administrador.",
     path: "/microchip",
-    image: "/logos/catech-icon.png",
+    image: "/logos/petgus-icon.png",
     keywords: [
       "cadastro de microchip",
       "buscar microchip",
@@ -148,7 +148,7 @@ function publicViewPayload(req, extra = {}) {
       {
         "@context": "https://schema.org",
         "@type": "WebApplication",
-        name: "Cadastro Público de Microchip CaTech",
+        name: "Cadastro Público de Microchip PetGus",
         url: seo.canonicalUrl,
         applicationCategory: "PetCareApplication",
         description: seo.description,
@@ -329,7 +329,7 @@ async function sendRegistrationEmail(registration, plainPassword) {
     html: `
       <div style="font-family:Arial,sans-serif;color:#1f2933;line-height:1.6">
         <h2>Cadastro de microchip confirmado</h2>
-        <p>Recebemos o cadastro do animal no sistema público de microchip do CaTech System.</p>
+        <p>Recebemos o cadastro do animal no sistema público de microchip do PetGus.</p>
         <h3>Dados do animal</h3>
         <p><strong>Nome:</strong> ${escapeHtml(registration.animalName)}</p>
         <p><strong>Microchip:</strong> ${formatMicrochip(registration.microchip)}</p>
@@ -356,7 +356,7 @@ async function sendRegistrationEmail(registration, plainPassword) {
         ].filter(Boolean).join(", "))}</p>
         <p><strong>Fotos cadastradas:</strong> ${photos.length}</p>
         <h3>Acesso para edição</h3>
-        <p>Entre em <a href="${escapeHtml(process.env.APP_URL || "https://catechsystem.com.br")}/microchip">Cadastro de Microchip</a> com:</p>
+        <p>Entre em <a href="${escapeHtml(process.env.APP_URL || "https://www.petgus.com.br")}/microchip">Cadastro de Microchip</a> com:</p>
         <p><strong>Login:</strong> ${escapeHtml(registration.ownerEmail)}</p>
         <p><strong>Senha cadastrada:</strong> ${escapeHtml(plainPassword)}</p>
       </div>

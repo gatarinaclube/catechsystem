@@ -204,7 +204,7 @@ async function compactPdfWithPdfLib(inputBuffer) {
 function padPdfToTarget(buffer, targetBytes) {
   if (buffer.length >= targetBytes) return buffer;
   const paddingSize = targetBytes - buffer.length;
-  const prefix = Buffer.from("\n% CaTechSystem PDF size padding\n");
+  const prefix = Buffer.from("\n% PetGus PDF size padding\n");
   if (paddingSize <= prefix.length) {
     return Buffer.concat([buffer, prefix.subarray(0, paddingSize)]);
   }

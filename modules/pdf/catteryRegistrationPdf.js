@@ -21,7 +21,7 @@ async function generateCatteryRegistrationPDF(service, catteryRegistration, user
   const width = doc.page.width - doc.page.margins.left - doc.page.margins.right;
   let y = doc.y;
 
-  drawDocumentHeader(doc, "REGISTRO DE GATIL - FIFe", "Sistema CaTech / Gatarina Clube");
+  drawDocumentHeader(doc, "REGISTRO DE GATIL - FIFe", "Sistema PetGus / Gatarina Clube");
   y = doc.y;
 
   y = drawKeyValueBox(doc, "DADOS DO SERVICO", [

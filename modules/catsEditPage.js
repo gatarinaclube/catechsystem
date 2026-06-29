@@ -14,7 +14,7 @@ function renderEditCatPage({
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Editar Gato - CaTech System</title>
+  <title>Editar Gato - PetGus</title>
   <style>
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;

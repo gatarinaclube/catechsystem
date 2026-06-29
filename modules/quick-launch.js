@@ -876,7 +876,7 @@ module.exports = (prisma) => {
     if (!user) return res.status(404).send("Link de lançamento não encontrado.");
 
     res.type("application/manifest+json").send({
-      name: "Lançar Despesas - CaTech",
+      name: "Lançar Despesas - PetGus",
       short_name: "Despesas",
       description: "Lançamento rápido de despesas do gatil.",
       start_url: `/despesas/u/${req.params.token}`,
@@ -886,13 +886,13 @@ module.exports = (prisma) => {
       theme_color: "#f39c12",
       icons: [
         {
-          src: "/logos/catech-icon.png",
+          src: "/logos/petgus-icon.png",
           sizes: "192x192",
           type: "image/png",
           purpose: "any maskable",
         },
         {
-          src: "/logos/catech-icon.png",
+          src: "/logos/petgus-icon.png",
           sizes: "512x512",
           type: "image/png",
           purpose: "any maskable",

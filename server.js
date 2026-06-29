@@ -103,12 +103,12 @@ const { generateSecondCopyPDF } = require("./modules/pdf/secondCopyPdf");
 
 console.log("DATABASE_URL em uso:", process.env.DATABASE_URL);
 
-console.log(">>> Iniciando CaTech COMPLETO (modularizado)");
+console.log(">>> Iniciando PetGus COMPLETO (modularizado)");
 
 const app = express();
 const prisma = new PrismaClient();
 const appVersion = getAppVersion();
-console.log("Versão CaTech:", appVersion);
+console.log("Versão PetGus:", appVersion);
 
 loadAsaasRuntimeConfig(prisma).catch((err) => {
   console.error("Erro ao carregar configurações Asaas:", err);
@@ -183,7 +183,7 @@ app.use(express.json());
 // arquivos estáticos (CSS, JS, imagens, uploads etc.)
 app.use(express.static(path.join(__dirname, "public")));
 app.get("/favicon.ico", (req, res) => {
-  res.type("image/png").sendFile(path.join(__dirname, "public", "logos", "catech-icon.png"));
+  res.type("image/png").sendFile(path.join(__dirname, "public", "logos", "petgus-icon.png"));
 });
 
 // -------------------------------
@@ -605,7 +605,7 @@ function loginViewOptions(kind, extra = {}) {
   const isGatarina = kind === "gatarina";
   return {
     error: null,
-    title: isGatarina ? "Login Gatarina" : "Login CaTech System",
+    title: isGatarina ? "Login Gatarina" : "Login PetGus",
     subtitle: isGatarina
       ? "Acesso para associados ativos da Associação Catarinense de Felinos"
       : "Acesso para usuários dos planos Básico, Master e Premium",
@@ -961,10 +961,10 @@ app.get("/", (req, res) => {
     plans: commercialPlanList(),
     contactStatus: req.query.contato || null,
     seo: baseSeo({
-      title: "CaTech System - Gestão Completa para Gatil",
+      title: "PetGus - Gestão Completa para Gatil",
       description: "Sistema completo para gestão de gatil com cadastro de reprodutores, ninhadas, filhotes, vacinas, tratamentos, exames, vitrine pública, CRM, financeiro, relatórios e documentos.",
       path: "/",
-      image: "/logos/catech-system-wide.png",
+      image: "/logos/petgus-wide.png",
       keywords: [
         "sistema para gatil",
         "gestão de gatil",
@@ -987,7 +987,7 @@ app.get("/planos", (req, res) => {
 });
 
 app.get("/robots.txt", (req, res) => {
-  const base = (process.env.APP_URL || "https://catechsystem.com.br").replace(/\/$/, "");
+  const base = (process.env.APP_URL || "https://www.petgus.com.br").replace(/\/$/, "");
   res.type("text/plain").send([
     "User-agent: *",
     "Allow: /",
@@ -1003,7 +1003,7 @@ app.get("/robots.txt", (req, res) => {
 
 app.get("/sitemap.xml", async (req, res, next) => {
   try {
-    const base = (process.env.APP_URL || "https://catechsystem.com.br").replace(/\/$/, "");
+    const base = (process.env.APP_URL || "https://www.petgus.com.br").replace(/\/$/, "");
     const showcases = await prisma.catteryKittenShowcase.findMany({
       where: { published: true },
       select: { slug: true, updatedAt: true },
@@ -1067,11 +1067,11 @@ app.post("/contato", async (req, res) => {
   try {
     await sendStatusEmail({
       to: "contato@gatarina.com.br",
-      subject: "Novo contato pelo site CaTech System",
+      subject: "Novo contato pelo site PetGus",
       html: `
         <div style="font-family:Arial,sans-serif;color:#1f2933;line-height:1.6">
           <h2>Novo pedido de informações</h2>
-          <p>Uma pessoa preencheu o formulário de contato da página pública do CaTech System.</p>
+          <p>Uma pessoa preencheu o formulário de contato da página pública do PetGus.</p>
           <p><strong>Nome:</strong> ${escapePublicContactValue(name)}</p>
           <p><strong>E-mail:</strong> ${escapePublicContactValue(email)}</p>
           <p><strong>Telefone:</strong> ${escapePublicContactValue(phone)}</p>
@@ -1140,10 +1140,10 @@ app.post("/forgot-password", async (req, res) => {
 
       await sendStatusEmail({
         to: user.email,
-        subject: "Redefinição de senha - CaTech System",
+        subject: "Redefinição de senha - PetGus",
         html: `
           <p>Olá, ${escapeHtml(user.name || "associado")}.</p>
-          <p>Recebemos uma solicitação para redefinir sua senha no CaTech System.</p>
+          <p>Recebemos uma solicitação para redefinir sua senha no PetGus.</p>
           <p><a href="${resetUrl}">Clique aqui para criar uma nova senha</a>.</p>
           <p>Este link é válido por 1 hora. Se você não solicitou a redefinição, ignore este e-mail.</p>
         `,

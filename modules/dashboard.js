@@ -14,7 +14,7 @@ router.get("/home", requireAuth, async (req, res) => {
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>CaTech System -Painel Principal</title>
+  <title>PetGus -Painel Principal</title>
   <style>
     body {
       margin: 0;
@@ -160,7 +160,7 @@ router.get("/home", requireAuth, async (req, res) => {
 <body>
   <div class="layout">
     <aside class="sidebar">
-      <h2>CaTech System</h2>
+      <h2>PetGus</h2>
       <small>Gatarina Cat Club</small>
 
       <a href="/home" class="nav-link active">🏠 Painel Principal</a>
@@ -171,7 +171,7 @@ router.get("/home", requireAuth, async (req, res) => {
       <a href="/settings" class="nav-link">⚙️ Settings</a>
 
       <div class="sidebar-footer">
-        v0.1 · CaTech System
+        v0.1 · PetGus
       </div>
     </aside>
 
@@ -187,7 +187,7 @@ router.get("/home", requireAuth, async (req, res) => {
       <main class="content">
         <h1>Welcome, ${user.name.split(" ")[0]}!</h1>
         <p>
-          This is the main panel of <strong>CaTech System</strong>. Here you will manage
+          This is the main panel of <strong>PetGus</strong>. Here you will manage
           cats, breeders, events and reports for Gatarina Cat Club.
         </p>
 
@@ -205,7 +205,7 @@ router.get("/home", requireAuth, async (req, res) => {
           <div class="card">
             <div class="card-title">Upcoming events</div>
             <div class="card-value">–</div>
-            <div class="card-sub">Connect CaTech with Gatarina shows.</div>
+            <div class="card-sub">Connect PetGus with Gatarina shows.</div>
           </div>
         </div>
 

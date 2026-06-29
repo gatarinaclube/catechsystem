@@ -59,7 +59,7 @@ function generateLitterAuthorizationPDF() {
 
   doc.moveDown(0.8);
 
-  doc.fontSize(11).text("Sistema CaTech / Gatarina Clube", {
+  doc.fontSize(11).text("Sistema PetGus / Gatarina Clube", {
     align: "center",
   });
 

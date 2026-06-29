@@ -1175,8 +1175,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       await sendStatusEmail({
         to: settings.marketingFromEmail,
-        subject: "Teste de envio - CaTechSystem",
-        html: "<p>Este é um teste de envio do e-mail marketing do CaTechSystem.</p>",
+        subject: "Teste de envio - PetGus",
+        html: "<p>Este é um teste de envio do e-mail marketing do PetGus.</p>",
         smtpConfig,
         from: smtpConfig.from,
       });

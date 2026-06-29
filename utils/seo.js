@@ -1,5 +1,5 @@
 function absoluteUrl(pathValue = "/") {
-  const base = (process.env.APP_URL || "https://catechsystem.com.br").replace(/\/$/, "");
+  const base = (process.env.APP_URL || "https://www.petgus.com.br").replace(/\/$/, "");
   const path = String(pathValue || "/");
   if (/^https?:\/\//i.test(path)) return path;
   return `${base}${path.startsWith("/") ? path : `/${path}`}`;
@@ -15,7 +15,7 @@ function cleanText(value, max = 160) {
 }
 
 function imageUrl(pathValue) {
-  if (!pathValue) return absoluteUrl("/logos/catech-icon.png");
+  if (!pathValue) return absoluteUrl("/logos/petgus-icon.png");
   return absoluteUrl(pathValue);
 }
 
@@ -23,12 +23,12 @@ function baseSeo({
   title,
   description,
   path = "/",
-  image = "/logos/catech-icon.png",
+  image = "/logos/petgus-icon.png",
   type = "website",
   keywords = [],
 } = {}) {
   return {
-    title: cleanText(title || "CaTech System", 70),
+    title: cleanText(title || "PetGus", 70),
     description: cleanText(description || "Sistema de gestão para gatil, criação felina, microchip e vitrine pública de filhotes.", 170),
     canonicalUrl: absoluteUrl(path),
     imageUrl: imageUrl(image),
@@ -41,9 +41,9 @@ function organizationSchema() {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "CaTech System",
+    name: "PetGus",
     url: absoluteUrl("/"),
-    logo: absoluteUrl("/logos/catech-system-wide.png"),
+    logo: absoluteUrl("/logos/petgus-wide.png"),
   };
 }
 

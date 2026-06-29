@@ -145,7 +145,7 @@ function firstShowcaseImage(showcase, litters) {
       if (photo?.url) return photo.url;
     }
   }
-  return "/logos/catech-icon.png";
+  return "/logos/petgus-icon.png";
 }
 
 function buildShowcaseSeo(showcase, settings, litters) {

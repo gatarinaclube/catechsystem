@@ -1,4 +1,4 @@
-# CaTechSystem - Documentacao de API para Integracao
+# PetGus - Documentacao de API para Integracao
 
 Versao: 1.0  
 Data: 2026-05-31  
@@ -6,7 +6,7 @@ Status: contrato tecnico proposto para integracao entre sistemas
 
 ## Objetivo
 
-Esta documentacao descreve uma API para permitir que sistemas externos consultem, mediante autorizacao do usuario, informacoes cadastradas no CaTechSystem.
+Esta documentacao descreve uma API para permitir que sistemas externos consultem, mediante autorizacao do usuario, informacoes cadastradas no PetGus.
 
 O foco inicial da integracao e permitir acesso aos dados de:
 
@@ -24,13 +24,13 @@ Esta API deve ser usada apenas por sistemas autorizados, com consentimento do us
 Producao:
 
 ```text
-https://catechsystem.com.br/api/v1
+https://www.petgus.com.br/api/v1
 ```
 
 Homologacao, se disponibilizada:
 
 ```text
-https://homolog.catechsystem.com.br/api/v1
+https://homolog.petgus.com.br/api/v1
 ```
 
 ## Autenticacao Recomendada
@@ -39,10 +39,10 @@ O modelo recomendado e OAuth 2.0 Authorization Code.
 
 Fluxo esperado:
 
-1. O sistema externo redireciona o usuario para o CaTechSystem.
-2. O usuario faz login no CaTechSystem.
+1. O sistema externo redireciona o usuario para o PetGus.
+2. O usuario faz login no PetGus.
 3. O usuario autoriza o compartilhamento dos dados.
-4. O CaTechSystem retorna um `authorization_code`.
+4. O PetGus retorna um `authorization_code`.
 5. O sistema externo troca o codigo por um `access_token`.
 6. O sistema externo usa o `access_token` para consultar a API.
 
@@ -171,7 +171,7 @@ Resposta:
     "settings": {
       "catteryName": "Nome do Gatil",
       "catteryEmail": "gatil@exemplo.com",
-      "logoUrl": "https://catechsystem.com.br/uploads/logo.png",
+      "logoUrl": "https://www.petgus.com.br/uploads/logo.png",
       "memberships": ["FFB", "FIFe"],
       "breeds": ["Maine Coon", "Persa"]
     }
@@ -252,7 +252,7 @@ Resposta:
         "breed": "Maine Coon",
         "emsCode": "MCO f"
       },
-      "photoUrl": "https://catechsystem.com.br/uploads/cats/foto.jpg",
+      "photoUrl": "https://www.petgus.com.br/uploads/cats/foto.jpg",
       "kittenNumber": null,
       "sold": false,
       "delivered": false,
@@ -300,12 +300,12 @@ Resposta:
     "pedigreeType": "LO",
     "pedigreeNumber": "FFB LO 000000",
     "documents": {
-      "pedigreeUrl": "https://catechsystem.com.br/uploads/cats/pedigree.pdf",
-      "reproductionAuthorizationUrl": "https://catechsystem.com.br/uploads/cats/reproducao.pdf",
-      "otherDocsUrl": "https://catechsystem.com.br/uploads/cats/outros.pdf",
+      "pedigreeUrl": "https://www.petgus.com.br/uploads/cats/pedigree.pdf",
+      "reproductionAuthorizationUrl": "https://www.petgus.com.br/uploads/cats/reproducao.pdf",
+      "otherDocsUrl": "https://www.petgus.com.br/uploads/cats/outros.pdf",
       "examDocs": {
-        "pkdef": "https://catechsystem.com.br/uploads/cats/pkdef.pdf",
-        "hcm": "https://catechsystem.com.br/uploads/cats/hcm.pdf"
+        "pkdef": "https://www.petgus.com.br/uploads/cats/pkdef.pdf",
+        "hcm": "https://www.petgus.com.br/uploads/cats/hcm.pdf"
       }
     },
     "father": {
@@ -429,10 +429,10 @@ Resposta:
 {
   "data": {
     "slug": "nome-do-gatil",
-    "publicUrl": "https://catechsystem.com.br/vitrine/nome-do-gatil",
+    "publicUrl": "https://www.petgus.com.br/vitrine/nome-do-gatil",
     "title": "Filhotes Disponiveis",
     "intro": "Texto de apresentacao",
-    "logoUrl": "https://catechsystem.com.br/uploads/logo.png",
+    "logoUrl": "https://www.petgus.com.br/uploads/logo.png",
     "theme": {
       "backgroundColor": "#f5f7f3",
       "cardColor": "#ffffff",
@@ -461,7 +461,7 @@ Resposta:
           "color": "MCO n",
           "note": "Observacao do pai",
           "photos": [
-            "https://catechsystem.com.br/uploads/father-1.jpg"
+            "https://www.petgus.com.br/uploads/father-1.jpg"
           ],
           "exams": {
             "pkdef": "N/N",
@@ -474,7 +474,7 @@ Resposta:
           "color": "MCO f",
           "note": "Observacao da mae",
           "photos": [
-            "https://catechsystem.com.br/uploads/mother-1.jpg"
+            "https://www.petgus.com.br/uploads/mother-1.jpg"
           ],
           "exams": {
             "pkdef": "N/N",
@@ -491,7 +491,7 @@ Resposta:
             "note": "Observacao do filhote",
             "available": true,
             "photos": [
-              "https://catechsystem.com.br/uploads/kitten-1.jpg"
+              "https://www.petgus.com.br/uploads/kitten-1.jpg"
             ]
           }
         ]
@@ -510,7 +510,7 @@ Exemplo:
 
 ```json
 {
-  "pedigreeUrl": "https://catechsystem.com.br/api/v1/files/signed/abc123"
+  "pedigreeUrl": "https://www.petgus.com.br/api/v1/files/signed/abc123"
 }
 ```
 
@@ -564,13 +564,13 @@ Para evitar duplicidade entre sistemas, usar esta ordem de prioridade:
 
 1. `microchip`;
 2. `pedigreeNumber`;
-3. `id` do CaTechSystem;
+3. `id` do PetGus;
 4. combinacao de `name`, `birthDate`, `gender` e `ownerId`.
 
 ## Observacoes de Seguranca
 
-- O CaTechSystem nao deve compartilhar senha do usuario com terceiros.
-- O sistema externo nao deve solicitar login e senha do CaTechSystem fora da tela oficial do CaTechSystem.
+- O PetGus nao deve compartilhar senha do usuario com terceiros.
+- O sistema externo nao deve solicitar login e senha do PetGus fora da tela oficial do PetGus.
 - O usuario deve conseguir revogar a autorizacao.
 - Tokens devem ser armazenados criptografados.
 - Documentos privados devem exigir scope especifico.
@@ -595,7 +595,7 @@ Para liberar a integracao, o sistema externo deve informar:
 
 ```http
 GET /api/v1/cats HTTP/1.1
-Host: catechsystem.com.br
+Host: www.petgus.com.br
 Authorization: Bearer ACCESS_TOKEN
 Accept: application/json
 ```

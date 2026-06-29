@@ -56,7 +56,7 @@ function generateTransferAuthorizationPDF() {
 
   doc.moveDown(0.8);
 
-  doc.fontSize(11).text("Sistema CaTech / Gatarina Clube", { align: "center" });
+  doc.fontSize(11).text("Sistema PetGus / Gatarina Clube", { align: "center" });
 
   doc.moveDown(1);
 

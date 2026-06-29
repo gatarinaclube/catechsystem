@@ -6,16 +6,16 @@
     <title><%= seo?.title || showcase.title || settings?.catteryName || 'Filhotes disponíveis' %></title>
     <meta name="description" content="<%= seo?.description || 'Vitrine pública de filhotes disponíveis.' %>" />
     <% if (seo?.keywords) { %><meta name="keywords" content="<%= seo.keywords %>" /><% } %>
-    <link rel="canonical" href="<%= seo?.canonicalUrl || ('https://catechsystem.com.br/vitrine/' + showcase.slug) %>" />
+    <link rel="canonical" href="<%= seo?.canonicalUrl || ('https://www.petgus.com.br/vitrine/' + showcase.slug) %>" />
     <meta property="og:type" content="<%= seo?.type || 'website' %>" />
     <meta property="og:title" content="<%= seo?.title || showcase.title || settings?.catteryName || 'Filhotes disponíveis' %>" />
     <meta property="og:description" content="<%= seo?.description || 'Vitrine pública de filhotes disponíveis.' %>" />
-    <meta property="og:url" content="<%= seo?.canonicalUrl || ('https://catechsystem.com.br/vitrine/' + showcase.slug) %>" />
-    <meta property="og:image" content="<%= seo?.imageUrl || 'https://catechsystem.com.br/logos/catech-icon.png' %>" />
+    <meta property="og:url" content="<%= seo?.canonicalUrl || ('https://www.petgus.com.br/vitrine/' + showcase.slug) %>" />
+    <meta property="og:image" content="<%= seo?.imageUrl || 'https://www.petgus.com.br/logos/petgus-icon.png' %>" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="<%= seo?.title || showcase.title || settings?.catteryName || 'Filhotes disponíveis' %>" />
     <meta name="twitter:description" content="<%= seo?.description || 'Vitrine pública de filhotes disponíveis.' %>" />
-    <meta name="twitter:image" content="<%= seo?.imageUrl || 'https://catechsystem.com.br/logos/catech-icon.png' %>" />
+    <meta name="twitter:image" content="<%= seo?.imageUrl || 'https://www.petgus.com.br/logos/petgus-icon.png' %>" />
     <% if (typeof structuredData !== 'undefined' && structuredData) { %>
       <script type="application/ld+json"><%- JSON.stringify(structuredData) %></script>
     <% } %>

@@ -4,7 +4,7 @@ function renderNewCatPage({ countryOptions, breedOptions, motherOptions, fatherO
     <html lang="pt-BR">
     <head>
       <meta charset="UTF-8" />
-      <title>Add New Cat - CaTech System</title>
+      <title>Add New Cat - PetGus</title>
       <style>
         body {
           font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;

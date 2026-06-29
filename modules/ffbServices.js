@@ -23,7 +23,7 @@ function cleanText(value) {
 }
 
 function appUrl(route = "") {
-  const baseUrl = (process.env.APP_URL || "https://catechsystem.com.br").replace(/\/$/, "");
+  const baseUrl = (process.env.APP_URL || "https://www.petgus.com.br").replace(/\/$/, "");
   return `${baseUrl}${route}`;
 }
 
@@ -253,7 +253,7 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
 
       await sendStatusEmail({
         to: service.user.email,
-        subject: `CaTech: atualização no seu serviço #${service.id}`,
+        subject: `PetGus: atualização no seu serviço #${service.id}`,
         html: `
           <div style="font-family: Arial, sans-serif; line-height:1.4;">
             <h2>Atualização do Serviço</h2>
@@ -261,7 +261,7 @@ module.exports = (prisma, requireAuth, requireAdmin) => {
             <p><strong>Tipo:</strong> ${escapeHtml(service.type || "-")}</p>
             <p><strong>Novo status:</strong> ${escapeHtml(serviceStatusLabel(newStatus))}</p>
             ${pendenciaHtml}
-            <p><a href="${appUrl(correctionRoute)}">Abrir serviço no CaTech</a></p>
+            <p><a href="${appUrl(correctionRoute)}">Abrir serviço no PetGus</a></p>
           </div>
         `,
       });
@@ -1246,7 +1246,7 @@ router.post(
             ENVIADO_ASSOCIADO: "Enviado para Associado",
           }[newStatus] || newStatus;
 
-          const subject = `CaTech: atualização no seu serviço #${serviceId}`;
+          const subject = `PetGus: atualização no seu serviço #${serviceId}`;
 
           const pendenciaHtml =
             newStatus === "COM_PENDENCIA"

@@ -75,7 +75,7 @@ function defaultBillingConfigFromEnv() {
 
   return {
     apiMode: inferredMode,
-    userAgent: String(process.env.ASAAS_USER_AGENT || "CaTechSystem/1.0").trim(),
+    userAgent: String(process.env.ASAAS_USER_AGENT || "PetGus/1.0").trim(),
     production: {
       apiKey: inferredMode === "PRODUCTION" ? apiKey : "",
       baseUrl: inferredMode === "PRODUCTION" && configuredBaseUrl ? configuredBaseUrl : ASAAS_PRODUCTION_URL,
@@ -134,7 +134,7 @@ function normalizeBillingConfig(input = {}) {
 
   return {
     apiMode: normalizeApiMode(input.apiMode || fallback.apiMode),
-    userAgent: String(input.userAgent || fallback.userAgent || "CaTechSystem/1.0").trim(),
+    userAgent: String(input.userAgent || fallback.userAgent || "PetGus/1.0").trim(),
     production: {
       apiKey: String(input.production?.apiKey ?? fallback.production.apiKey ?? "").trim(),
       baseUrl: normalizeBaseUrl(input.production?.baseUrl, fallback.production.baseUrl || ASAAS_PRODUCTION_URL),
@@ -298,7 +298,7 @@ async function asaasRequest(path, options = {}) {
     method: options.method || "GET",
     headers: {
       "Content-Type": "application/json",
-      "User-Agent": config.userAgent || "CaTechSystem/1.0",
+      "User-Agent": config.userAgent || "PetGus/1.0",
       access_token: apiKey,
       ...(options.headers || {}),
     },
@@ -411,7 +411,7 @@ async function createPlanSubscription(user, plan) {
       value,
       nextDueDate,
       cycle: "MONTHLY",
-      description: `Assinatura CaTech System - Plano ${plan.title}`,
+      description: `Assinatura PetGus - Plano ${plan.title}`,
       externalReference: externalReference(user.id, planKey, "MONTHLY"),
     },
   });
@@ -446,7 +446,7 @@ async function createAnnualPlanPayment(user, plan, mode) {
   const common = {
     customer: customerId,
     dueDate: formatDateInput(new Date()),
-    description: `Plano anual CaTech System - ${plan.title}`,
+    description: `Plano anual PetGus - ${plan.title}`,
     externalReference: externalReference(user.id, planKey, billingMode),
   };
 
@@ -490,7 +490,7 @@ async function createSingleMonthPixPayment(user, plan) {
       billingType: "PIX",
       value,
       dueDate: formatDateInput(new Date()),
-      description: `Plano mensal CaTech System - ${plan.title}`,
+      description: `Plano mensal PetGus - ${plan.title}`,
       externalReference: externalReference(user.id, planKey, "MONTHLY_PIX"),
     },
   });

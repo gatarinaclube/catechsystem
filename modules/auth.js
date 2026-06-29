@@ -8,7 +8,7 @@ const router = express.Router();
 // Página de cadastro
 router.get("/register", (req, res) => {
   res.send(`
-    <h1>CaTech System - Cadastro</h1>
+    <h1>PetGus - Cadastro</h1>
     <form method="POST" action="/register">
       <label>Nome:</label><br/>
       <input type="text" name="name" required /><br/><br/>
@@ -58,7 +58,7 @@ router.post("/register", async (req, res) => {
 // Página de login
 router.get("/login", (req, res) => {
   res.send(`
-    <h1>CaTech System - Login</h1>
+    <h1>PetGus - Login</h1>
     <form method="POST" action="/login">
       <label>E-mail:</label><br/>
       <input type="email" name="email" required /><br/><br/>

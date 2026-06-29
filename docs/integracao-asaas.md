@@ -1,4 +1,4 @@
-# Integração Asaas - CaTech System
+# Integração Asaas - PetGus
 
 ## Variáveis de ambiente
 
@@ -6,7 +6,7 @@ Configure no Render ou no servidor, sem gravar a chave no código:
 
 ```text
 ASAAS_API_KEY=chave_api_asaas
-ASAAS_USER_AGENT=CaTechSystem/1.0
+ASAAS_USER_AGENT=PetGus/1.0
 ASAAS_WEBHOOK_TOKEN=token_secreto_criado_para_o_webhook
 ASAAS_PLAN_BASIC_CENTS=valor_em_centavos
 ASAAS_PLAN_MASTER_CENTS=valor_em_centavos
@@ -45,7 +45,7 @@ ASAAS_BASE_URL=https://api-sandbox.asaas.com/v3
 Configure no painel Asaas o webhook de cobranças apontando para:
 
 ```text
-https://catechsystem.com.br/webhooks/asaas
+https://www.petgus.com.br/webhooks/asaas
 ```
 
 Ao configurar o token de autenticação do webhook no Asaas, use o mesmo valor de:

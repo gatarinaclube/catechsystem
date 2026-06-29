@@ -279,7 +279,7 @@ module.exports = (prisma) => ({
       seo: {
         path: "/academy/sobre",
         title: "Sobre | CatBreeder Pro",
-        description: "Conheça a Academy integrada ao CaTech System para elevar o padrão da criação felina.",
+        description: "Conheça a Academy integrada ao PetGus para elevar o padrão da criação felina.",
       },
     });
   },
