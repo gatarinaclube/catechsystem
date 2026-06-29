@@ -2097,7 +2097,7 @@ body {
 
   .gatofilia-footer,
   .gatofilia-footer p {
-    text-align: left;
+    text-align: center;
   }
 
   .gatofilia-countdown {
@@ -2115,7 +2115,19 @@ body {
   }
 
   .gatofilia-footer {
+    justify-items: center;
     gap: 18px;
+  }
+
+  .gatofilia-footer div,
+  .gatofilia-footer nav,
+  .gatofilia-footer p {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .gatofilia-footer .gatofilia-instagram {
+    justify-content: center;
   }
 }
 
