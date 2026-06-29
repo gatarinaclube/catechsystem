@@ -528,6 +528,7 @@ body {
   gap: clamp(16px, 2.4vw, 28px);
   margin-top: clamp(8px, 1vw, 12px);
   padding-top: clamp(10px, 1.2vw, 14px);
+  overflow: visible;
   border-top: 1px solid rgba(17, 17, 17, 0.1);
 }
 
@@ -546,6 +547,8 @@ body {
 .gatofilia-partner-logos img:last-child {
   justify-self: end;
   height: clamp(86px, 8.5vw, 126px);
+  transform: scale(1.28);
+  transform-origin: right center;
 }
 
 .gatofilia-story-card h3 {
@@ -779,9 +782,9 @@ body {
 .gatofilia-reason-brand img {
   display: block;
   width: 100%;
-  aspect-ratio: 1;
-  border-radius: 999px;
-  object-fit: cover;
+  height: auto;
+  border-radius: 0;
+  object-fit: contain;
   filter: drop-shadow(0 22px 38px rgba(0, 0, 0, 0.36));
 }
 
@@ -1972,22 +1975,26 @@ body {
   }
 
   .gatofilia-partner-logos {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
     align-items: center;
-    gap: 12px;
+    gap: 8px;
+    padding-right: 8px;
+    overflow: hidden;
   }
 
   .gatofilia-partner-logos img:first-child {
     width: auto;
     max-width: 100%;
-    height: clamp(36px, 10vw, 50px);
+    height: clamp(38px, 10vw, 52px);
   }
 
   .gatofilia-partner-logos img:last-child {
     justify-self: end;
     width: auto;
     max-width: 100%;
-    height: clamp(46px, 13vw, 64px);
+    height: clamp(58px, 16vw, 82px);
+    transform: scale(1.55);
+    transform-origin: right center;
   }
 
   .gatofilia-for-you-copy {
@@ -2041,18 +2048,29 @@ body {
     width: 100%;
     height: auto;
     min-height: 0;
-    max-height: none;
+    max-height: 72svh;
     aspect-ratio: 4 / 5;
+    object-fit: contain;
+    background: #111111;
   }
 
   .gatofilia-proof-grid img {
     width: 100%;
-    aspect-ratio: 4 / 3;
+    height: auto;
+    max-height: 72svh;
+    aspect-ratio: auto;
+    object-fit: contain;
+    background: #111111;
   }
 
   .gatofilia-reason-brand {
-    width: min(210px, 62vw);
+    width: min(220px, 58vw);
     margin-inline: auto;
+  }
+
+  .gatofilia-reason-brand img {
+    max-height: 48svh;
+    object-fit: contain;
   }
 
   .gatofilia-learning-strip {
@@ -2117,13 +2135,15 @@ body {
 
   .gatofilia-partner-logos {
     gap: 8px;
+    padding-right: 10px;
   }
 
   .gatofilia-partner-logos img:first-child {
-    height: clamp(32px, 9vw, 42px);
+    height: clamp(34px, 9.5vw, 44px);
   }
 
   .gatofilia-partner-logos img:last-child {
-    height: clamp(42px, 12vw, 56px);
+    height: clamp(54px, 15vw, 70px);
+    transform: scale(1.6);
   }
 }
