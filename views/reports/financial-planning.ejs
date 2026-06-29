@@ -164,6 +164,78 @@
         height: 24px;
         background: #ffffff;
       }
+      .planning-reference-heading th,
+      .planning-reference-heading td {
+        background: #111827;
+        color: #ffffff;
+        font-weight: 900;
+        padding: 8px 10px;
+        text-align: left;
+      }
+      .planning-reference-heading td {
+        text-align: center;
+        color: #cbd5e1;
+        font-size: 11px;
+      }
+      .planning-reference-row td {
+        padding: 5px 6px;
+        font-variant-numeric: tabular-nums;
+      }
+      .planning-reference-label {
+        min-width: 260px;
+        width: 260px;
+        white-space: normal !important;
+        line-height: 1.25;
+      }
+      .planning-reference-label strong {
+        display: block;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+      }
+      .planning-reference-label span {
+        display: block;
+        font-weight: 700;
+      }
+      .planning-reference-label small {
+        display: block;
+        color: #475569;
+        font-weight: 700;
+        margin-top: 2px;
+      }
+      .planning-reference-row.is-receivable td {
+        background: #dcfce7;
+        color: #14532d;
+      }
+      .planning-reference-row.is-payable td {
+        background: #ffedd5;
+        color: #7c2d12;
+      }
+      .planning-reference-row.is-kitten-forecast td {
+        background: #dbeafe;
+        color: #1e3a8a;
+      }
+      .planning-reference-row .planning-reference-amount {
+        min-width: 92px;
+        text-align: right;
+        font-weight: 900;
+      }
+      .planning-config-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(180px, 1fr));
+        gap: 12px;
+      }
+      @media (max-width: 720px) {
+        .planning-config-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .planning-reference-empty td {
+        background: #f8fafc;
+        color: #64748b;
+        font-weight: 800;
+        padding: 10px;
+      }
       .planning-negative {
         color: #dc2626;
       }
@@ -242,6 +314,38 @@
 
         <form method="post" action="/reports/planejamento-financeiro/save" id="planningForm">
           <input type="hidden" name="startMonth" value="<%= planning.planningKey %>" />
+          <section class="content-card module-panel">
+            <div class="report-summary" style="margin-bottom:12px;">
+              <div>
+                <div class="content-title">Projeção de filhotes a nascer</div>
+                <div class="content-sub">Usada no demonstrativo automático com base nas gatas do módulo Acasalamentos.</div>
+              </div>
+            </div>
+            <div class="planning-config-grid">
+              <div class="field">
+                <label class="field-label" for="financialPlanningKittensPerLitter">Média de filhotes por ninhada</label>
+                <input
+                  id="financialPlanningKittensPerLitter"
+                  name="financialPlanningKittensPerLitter"
+                  type="text"
+                  inputmode="decimal"
+                  placeholder="Ex.: 3"
+                  value="<%= planning.config.kittensPerLitterInput %>"
+                />
+              </div>
+              <div class="field">
+                <label class="field-label" for="financialPlanningKittenValue">Valor médio por filhote</label>
+                <input
+                  id="financialPlanningKittenValue"
+                  name="financialPlanningKittenValue"
+                  type="text"
+                  inputmode="decimal"
+                  placeholder="Ex.: 8.000,00"
+                  value="<%= planning.config.kittenValueInput %>"
+                />
+              </div>
+            </div>
+          </section>
           <section class="content-card planning-card">
             <div class="report-summary" style="margin-bottom:12px;">
               <div>
@@ -329,6 +433,30 @@
                         <td data-total-cell="projectedBalance:<%= month.key %>"><%= planning.formatPlanningMoney(planning.totals.projectedBalance[month.key], false) %></td>
                       <% }) %>
                     </tr>
+                    <tr class="planning-spacer"><td colspan="<%= planning.months.length + 1 %>"></td></tr>
+                    <tr class="planning-reference-heading">
+                      <th>Demonstrativo automático</th>
+                      <% planning.months.forEach(function(month) { %>
+                        <td><%= month.label %></td>
+                      <% }) %>
+                    </tr>
+                    <% if (!planning.referenceRows.length) { %>
+                      <tr class="planning-reference-empty">
+                        <td colspan="<%= planning.months.length + 1 %>">Nenhuma conta a receber de filhote ou conta a pagar pendente encontrada para estes meses.</td>
+                      </tr>
+                    <% } %>
+                    <% planning.referenceRows.forEach(function(row) { %>
+                      <tr class="planning-reference-row is-<%= row.type %>">
+                        <td class="planning-reference-label">
+                          <strong><%= row.typeLabel %></strong>
+                          <span><%= row.description %></span>
+                          <small>Vencimento: <%= row.dateLabel %></small>
+                        </td>
+                        <% planning.months.forEach(function(month) { %>
+                          <td class="planning-reference-amount"><%= planning.formatPlanningMoney(row.values[month.key]) %></td>
+                        <% }) %>
+                      </tr>
+                    <% }) %>
                   </tbody>
                 </table>
               </div>

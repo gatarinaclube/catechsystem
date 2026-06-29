@@ -11,7 +11,6 @@ const {
 const { ROLES, normalizeRole } = require("../utils/access");
 const { absoluteUrl, baseSeo, cleanText, organizationSchema } = require("../utils/seo");
 
-const SHOWCASE_UPLOAD_LIMIT = getFileUploadLimit("ADMIN");
 const DEFAULT_SHOWCASE_THEME = {
   backgroundColor: "#f5f7f3",
   cardColor: "#ffffff",
@@ -48,10 +47,11 @@ const ASSOCIATED_SHOWCASE_ROLES = new Set([
   ROLES.ASSOCIADO_PREMIUM,
 ]);
 
-function createUpload() {
+function createUpload(role) {
   const uploadsRoot =
     process.env.UPLOADS_DIR || path.join(__dirname, "..", "public", "uploads");
   const uploadDir = path.join(uploadsRoot, "showcase");
+  const uploadLimit = getFileUploadLimit(role);
 
   if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
@@ -65,7 +65,7 @@ function createUpload() {
         cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
       },
     }),
-    limits: { fileSize: SHOWCASE_UPLOAD_LIMIT.bytes, files: 80 },
+    limits: { fileSize: uploadLimit.bytes, files: 80 },
     fileFilter: (req, file, cb) => {
       const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
       const isAboutPdf = file.fieldname === "aboutPdf" && file.mimetype === "application/pdf";
@@ -705,7 +705,6 @@ function publicRouter(prisma) {
 
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
-  const upload = createUpload();
 
   async function getSettings(userId) {
     return prisma.userSettings.findUnique({ where: { userId } });
@@ -916,6 +915,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   }
 
   function uploadShowcaseFiles(req, res, next) {
+    const uploadLimit = getFileUploadLimit(req.session?.userRole);
+    const upload = createUpload(req.session?.userRole);
     upload.any()(req, res, async (err) => {
       if (!err) return next();
 
@@ -923,7 +924,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         try {
           return renderAdmin(req, res, {
             status: 413,
-            error: `Uma das imagens ultrapassa ${SHOWCASE_UPLOAD_LIMIT.label}. Reduza o tamanho da foto e tente novamente.`,
+            error: `Uma das imagens ultrapassa ${uploadLimit.label}. Reduza o tamanho da foto e tente novamente.`,
           });
         } catch (renderErr) {
           return next(renderErr);

@@ -1,6 +1,14 @@
 const express = require("express");
 const PDFDocument = require("pdfkit");
 const { canViewAllData, userCan } = require("../utils/access");
+const {
+  addMonths: addCatteryMonths,
+  ageInMonths,
+  buildDisplayName,
+  classifyOperationalCat,
+  isRoutineModuleCatVisible,
+  parseDate: parseCatteryDate,
+} = require("../utils/cattery-admin");
 
 function todayParts() {
   const today = new Date().toLocaleDateString("en-CA", {
@@ -235,6 +243,14 @@ function parseMoneyToCents(value) {
   return Number.isFinite(amount) ? Math.round(amount * 100) : 0;
 }
 
+function parseDecimalInput(value, fallback = 0) {
+  const text = String(value || "").trim();
+  if (!text) return fallback;
+  const normalized = text.replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", ".");
+  const number = Number.parseFloat(normalized);
+  return Number.isFinite(number) && number >= 0 ? number : fallback;
+}
+
 function formatPlanningMoney(cents, blankZero = true) {
   const value = Number(cents || 0);
   if (blankZero && value === 0) return "";
@@ -280,18 +296,342 @@ function mapPlanningRow(row, months) {
   };
 }
 
+function mapFinancialPlanningConfig(settings) {
+  const kittensPerLitter = Number(settings?.financialPlanningKittensPerLitter || 0);
+  const kittenValueCents = Number(settings?.financialPlanningKittenValueCents || 0);
+  return {
+    kittensPerLitter: Number.isFinite(kittensPerLitter) && kittensPerLitter > 0 ? kittensPerLitter : 0,
+    kittensPerLitterInput: Number.isFinite(kittensPerLitter) && kittensPerLitter > 0
+      ? String(kittensPerLitter).replace(".", ",")
+      : "",
+    kittenValueCents: Number.isFinite(kittenValueCents) && kittenValueCents > 0 ? kittenValueCents : 0,
+    kittenValueInput: kittenValueCents > 0 ? formatPlanningMoney(kittenValueCents, false) : "",
+  };
+}
+
 async function loadFinancialPlanning(prisma, req, startMonth) {
   const planningKey = normalizePlanningMonth(startMonth);
   const months = buildPlanningMonths(planningKey);
   const ownerId = req.session.userId;
-  const savedRows = await prisma.financialPlanningRow.findMany({
-    where: { ownerId, planningKey },
-    orderBy: [{ section: "asc" }, { sortOrder: "asc" }, { id: "asc" }],
-  });
+  const [savedRows, settings] = await Promise.all([
+    prisma.financialPlanningRow.findMany({
+      where: { ownerId, planningKey },
+      orderBy: [{ section: "asc" }, { sortOrder: "asc" }, { id: "asc" }],
+    }),
+    prisma.userSettings.findUnique({
+      where: { userId: ownerId },
+      select: {
+        financialPlanningKittensPerLitter: true,
+        financialPlanningKittenValueCents: true,
+      },
+    }),
+  ]);
+  const config = mapFinancialPlanningConfig(settings);
   const rows = savedRows.length
     ? savedRows.map((row) => mapPlanningRow(row, months))
     : defaultPlanningRows(months);
-  return buildFinancialPlanningViewModel(planningKey, months, rows);
+  const referenceRows = await loadFinancialPlanningReferenceRows(prisma, req, months, config);
+  return buildFinancialPlanningViewModel(planningKey, months, rows, referenceRows, config);
+}
+
+function planningMonthsDateRange(months) {
+  const first = months[0]?.key || normalizePlanningMonth();
+  const last = months[months.length - 1]?.key || first;
+  const [startYear, startMonth] = first.split("-").map(Number);
+  const [endYear, endMonth] = last.split("-").map(Number);
+  return {
+    startDate: new Date(Date.UTC(startYear, startMonth - 1, 1)),
+    endDate: new Date(Date.UTC(endYear, endMonth, 1)),
+  };
+}
+
+function planningMonthKeyFromDate(date) {
+  if (!date) return "";
+  const parsed = date instanceof Date ? date : parseDateInput(date, null);
+  if (!parsed) return "";
+  const year = parsed.getUTCFullYear();
+  const month = String(parsed.getUTCMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
+
+function parsePlanningDate(value) {
+  const parsed = parseCatteryDate(value);
+  if (!parsed) return null;
+  return new Date(Date.UTC(parsed.getFullYear(), parsed.getMonth(), parsed.getDate()));
+}
+
+function addPlanningMonthsAndDays(date, months, days = 0) {
+  const parsed = parsePlanningDate(date);
+  if (!parsed) return null;
+  const shifted = addCatteryMonths(parsed, months);
+  shifted.setDate(shifted.getDate() + days);
+  return new Date(Date.UTC(shifted.getFullYear(), shifted.getMonth(), shifted.getDate()));
+}
+
+function laterPlanningDate(a, b) {
+  if (!a) return b;
+  if (!b) return a;
+  return a > b ? a : b;
+}
+
+function computePlanningNextCrossDate(femaleBirthDate, litterHistoryDates) {
+  const dates = litterHistoryDates
+    .map(parsePlanningDate)
+    .filter(Boolean)
+    .sort((a, b) => a - b);
+
+  if (!dates.length) {
+    return addPlanningMonthsAndDays(femaleBirthDate, 10, 15);
+  }
+
+  if (dates.length === 1) {
+    return addPlanningMonthsAndDays(dates[0], 4);
+  }
+
+  const recent = dates.slice(-3);
+  if (recent.length === 2) {
+    const [first, second] = recent;
+    return laterPlanningDate(
+      addPlanningMonthsAndDays(second, 4),
+      addPlanningMonthsAndDays(first, 10)
+    );
+  }
+
+  const [first, , third] = recent;
+  return laterPlanningDate(
+    addPlanningMonthsAndDays(third, 4),
+    addPlanningMonthsAndDays(first, 22)
+  );
+}
+
+function computePlanningReferenceMatingDate(startDate, endDate) {
+  const start = parsePlanningDate(startDate);
+  const end = parsePlanningDate(endDate);
+  if (!start) return null;
+  if (!end || end <= start) return start;
+
+  const diffDays = Math.round((end - start) / 86400000);
+  if (diffDays <= 1) return end;
+  if (diffDays === 2) return addDays(start, 1);
+  return addDays(start, Math.ceil(diffDays / 2));
+}
+
+function emptyPlanningReferenceValues(months) {
+  return Object.fromEntries(months.map((month) => [month.key, 0]));
+}
+
+function kittenReferenceLabel(revenue) {
+  const kittenName = revenue.kitten?.name || revenue.kittenLabel || "";
+  if (kittenName) return kittenName;
+  if (revenue.kitten?.microchip) return `Microchip ${revenue.kitten.microchip}`;
+  return "Filhote";
+}
+
+function makePlanningReferenceRow({ key, type, typeLabel, description, date, amountCents, months }) {
+  const values = emptyPlanningReferenceValues(months);
+  const monthKey = planningMonthKeyFromDate(date);
+  if (monthKey && Object.prototype.hasOwnProperty.call(values, monthKey)) {
+    values[monthKey] = Number(amountCents || 0);
+  }
+  return {
+    key,
+    type,
+    typeLabel,
+    description,
+    dateLabel: formatDateOnlyLabel(date),
+    dateTime: date ? new Date(date).getTime() : 0,
+    values,
+  };
+}
+
+function hasPlanningOtherOwner(cat) {
+  return (
+    cat?.ownershipType === "CO-OWNERSHIP" ||
+    cat?.ownershipType === "OTHER" ||
+    Boolean(cat?.currentOwnerClientId) ||
+    (Boolean(cat?.currentOwnerId) && cat.currentOwnerId !== cat.ownerId)
+  );
+}
+
+function isPlanningKittenRecord(cat) {
+  return Boolean(cat?.kittenNumber || cat?.litterKitten);
+}
+
+function isPlanningAdultOtherOwner(cat) {
+  return !isPlanningKittenRecord(cat) && hasPlanningOtherOwner(cat);
+}
+
+function isFemaleAvailableForPlanningMating(female) {
+  if (!isRoutineModuleCatVisible(female)) return false;
+  if (isPlanningAdultOtherOwner(female)) return false;
+  if (female.deceased === true || female.neutered === true) return false;
+  if (female.delivered === true) return false;
+  if (female.kittenAvailabilityStatus === "DELIVERED") return false;
+  if ((female.kittenNumber || female.litterKitten) && female.breedingProspect !== true) return false;
+  return female.gender === "F";
+}
+
+function isPlanningDevelopingFemale(female) {
+  return ageInMonths(female.birthDate) < 10;
+}
+
+function statusLabelForPlanning(value) {
+  const labels = {
+    CONFIRMADO: "Confirmado",
+    NAO_CONFIRMADO: "Não Confirmado",
+    PARA_ACASALAR: "Para Acasalar",
+    PAUSA_REPRODUTIVA: "Pausa Reprodutiva",
+    COM_PROBLEMA: "Com Problema",
+    EM_DESENVOLVIMENTO: "Em Desenvolvimento",
+  };
+  return labels[value] || "Para Acasalar";
+}
+
+function sortPlanningReferenceRows(rows) {
+  return rows.sort((a, b) => {
+    const dateCompare = Number(a.dateTime || 0) - Number(b.dateTime || 0);
+    return dateCompare || a.description.localeCompare(b.description);
+  });
+}
+
+async function loadFinancialPlanningKittenForecastRows(prisma, req, months, config) {
+  const amountCents = Math.round(Number(config.kittensPerLitter || 0) * Number(config.kittenValueCents || 0));
+  if (!amountCents) return [];
+
+  const females = await prisma.cat.findMany({
+    where: {
+      ...ownerScope(req),
+      gender: "F",
+    },
+    orderBy: { name: "asc" },
+    include: {
+      litterKitten: { include: { litter: true } },
+      owner: { select: { fifeCatteryName: true } },
+    },
+  });
+
+  const visibleFemales = females.filter((female) =>
+    isFemaleAvailableForPlanningMating(female) &&
+    (classifyOperationalCat(female) === "dams" || isPlanningDevelopingFemale(female))
+  );
+
+  if (!visibleFemales.length) return [];
+
+  const plans = await prisma.matingPlan.findMany({
+    where: {
+      femaleCatId: { in: visibleFemales.map((female) => female.id) },
+    },
+  });
+  const planMap = new Map(plans.map((plan) => [plan.femaleCatId, plan]));
+  const monthKeys = new Set(months.map((month) => month.key));
+
+  return visibleFemales.flatMap((female) => {
+    const plan = planMap.get(female.id);
+    const litterHistory = safeJsonParse(plan?.litterHistoryJson, []);
+    const nextCrossDate = computePlanningNextCrossDate(female.birthDate, litterHistory);
+    const matingDate = computePlanningReferenceMatingDate(plan?.matingStartDate, plan?.matingEndDate) || nextCrossDate;
+    const receivingDate = addPlanningMonthsAndDays(matingDate, 6, 15);
+    const monthKey = planningMonthKeyFromDate(receivingDate);
+    if (!receivingDate || !monthKeys.has(monthKey)) return [];
+
+    const status = isPlanningDevelopingFemale(female)
+      ? "EM_DESENVOLVIMENTO"
+      : plan?.status || "PARA_ACASALAR";
+
+    return [makePlanningReferenceRow({
+      key: `kitten-forecast-${female.id}`,
+      type: "kitten-forecast",
+      typeLabel: "Filhotes a nascer",
+      description: [
+        buildDisplayName(female) || female.name || "Gata sem nome",
+        statusLabelForPlanning(status),
+        `base ${formatDateOnlyLabel(matingDate)}`,
+        `${config.kittensPerLitter} filhotes x ${formatCurrency(config.kittenValueCents)}`,
+      ].filter(Boolean).join(" · "),
+      date: receivingDate,
+      amountCents,
+      months,
+    })];
+  });
+}
+
+async function loadFinancialPlanningReferenceRows(prisma, req, months, config) {
+  const { startDate, endDate } = planningMonthsDateRange(months);
+  const monthKeys = new Set(months.map((month) => month.key));
+  const [revenues, payables, kittenForecastRows] = await Promise.all([
+    prisma.revenueEntry.findMany({
+      where: {
+        ...ownerScope(req),
+        kittenId: { not: null },
+      },
+      include: {
+        client: true,
+        kitten: {
+          select: {
+            id: true,
+            name: true,
+            microchip: true,
+          },
+        },
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    }),
+    prisma.accountPayable.findMany({
+      where: {
+        ...ownerScope(req),
+        status: "PENDING",
+        dueDate: {
+          gte: startDate,
+          lt: endDate,
+        },
+      },
+      orderBy: [{ dueDate: "asc" }, { id: "asc" }],
+    }),
+    loadFinancialPlanningKittenForecastRows(prisma, req, months, config),
+  ]);
+
+  const receivableRows = [];
+  revenues.forEach((revenue) => {
+    parseParcelData(revenue.parcelDataJson).forEach((parcel) => {
+      if (parcel.paid || parcel.canceled || !parcel.date || !parcel.amountCents) return;
+      const dueDate = parseDateInput(parcel.date, null);
+      const monthKey = planningMonthKeyFromDate(dueDate);
+      if (!dueDate || !monthKeys.has(monthKey)) return;
+      receivableRows.push(makePlanningReferenceRow({
+        key: `receivable-${revenue.id}-${parcel.number || receivableRows.length}`,
+        type: "receivable",
+        typeLabel: "Contas a receber",
+        description: [
+          kittenReferenceLabel(revenue),
+          revenue.client?.fullName || "Cliente desconhecido",
+          `Parcela ${parcel.number || "-"} / ${revenue.installments || "-"}`,
+        ].filter(Boolean).join(" · "),
+        date: dueDate,
+        amountCents: parcel.amountCents,
+        months,
+      }));
+    });
+  });
+
+  const payableRows = payables.map((payable) => makePlanningReferenceRow({
+    key: `payable-${payable.id}`,
+    type: "payable",
+    typeLabel: "Contas a pagar",
+    description: [
+      payable.description || payable.category || "Conta a pagar",
+      payable.supplier,
+      payable.category && payable.description ? payable.category : "",
+    ].filter(Boolean).join(" · "),
+    date: payable.dueDate,
+    amountCents: payable.amountCents,
+    months,
+  }));
+
+  return [
+    ...sortPlanningReferenceRows(receivableRows),
+    ...sortPlanningReferenceRows(payableRows),
+    ...sortPlanningReferenceRows(kittenForecastRows),
+  ];
 }
 
 function sectionRows(rows, section) {
@@ -315,7 +655,7 @@ function cumulativeByMonth(monthlyValues, months) {
   }));
 }
 
-function buildFinancialPlanningViewModel(planningKey, months, rows) {
+function buildFinancialPlanningViewModel(planningKey, months, rows, referenceRows = [], config = {}) {
   const groupedSections = PLANNING_SECTIONS.map((section) => ({
     ...section,
     rows: sectionRows(rows, section.key),
@@ -342,6 +682,8 @@ function buildFinancialPlanningViewModel(planningKey, months, rows) {
       monthlyBalance,
       projectedBalance,
     },
+    referenceRows,
+    config,
     formatPlanningMoney,
     colorOptions: [
       { value: "white", label: "Branco" },
@@ -2109,6 +2451,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         const months = buildPlanningMonths(planningKey);
         const rows = normalizeFinancialPlanningPayload(req.body, months);
         const ownerId = req.session.userId;
+        const financialPlanningKittensPerLitter = parseDecimalInput(req.body.financialPlanningKittensPerLitter, 0);
+        const financialPlanningKittenValueCents = parseMoneyToCents(req.body.financialPlanningKittenValue);
 
         await prisma.$transaction(async (tx) => {
           await tx.financialPlanningRow.deleteMany({
@@ -2128,6 +2472,19 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               })),
             });
           }
+
+          await tx.userSettings.upsert({
+            where: { userId: ownerId },
+            update: {
+              financialPlanningKittensPerLitter,
+              financialPlanningKittenValueCents,
+            },
+            create: {
+              userId: ownerId,
+              financialPlanningKittensPerLitter,
+              financialPlanningKittenValueCents,
+            },
+          });
         });
 
         res.redirect(`/reports/planejamento-financeiro?startMonth=${encodeURIComponent(planningKey)}&ok=1`);
