@@ -65,7 +65,6 @@
             <p>Quer tomar decisões com mais segurança e embasamento?</p>
             <p>Busca reconhecimento sem abrir mão da ética e do bem-estar animal?</p>
           </div>
-          <strong>Se respondeu "sim" para uma dessas perguntas, a Gatofilia foi criada para você.</strong>
         </div>
 
         <div class="gatofilia-for-you-grid" aria-label="Perfil dos criadores que podem participar da Gatofilia">
@@ -85,6 +84,7 @@
             </article>
           <% }) %>
         </div>
+        <strong class="gatofilia-for-you-closing">Se respondeu "sim" para uma dessas perguntas, a Gatofilia foi criada para você.</strong>
       </section>
 
       <section id="instituto" class="gatofilia-section gatofilia-intro reveal-on-scroll">
@@ -509,11 +509,24 @@
       const nav = document.getElementById("gatofiliaNav");
       const menuToggle = document.querySelector(".gatofilia-menu-toggle");
       const menu = document.getElementById("gatofiliaMenu");
+      const menuLinks = Array.from(document.querySelectorAll('#gatofiliaMenu a[href^="#"]'));
 
       function closeMobileMenu() {
         if (!menu || !menuToggle) return;
         menu.classList.remove("is-open");
         menuToggle.setAttribute("aria-expanded", "false");
+      }
+
+      function setActiveMenuLink(hash) {
+        menuLinks.forEach((link) => {
+          const isActive = link.getAttribute("href") === hash;
+          link.classList.toggle("is-active", isActive);
+          if (isActive) {
+            link.setAttribute("aria-current", "true");
+          } else {
+            link.removeAttribute("aria-current");
+          }
+        });
       }
 
       if (menuToggle && menu) {
@@ -533,9 +546,30 @@
           if (!target) return;
           event.preventDefault();
           closeMobileMenu();
+          setActiveMenuLink(anchor.getAttribute("href"));
           target.scrollIntoView({ behavior: "smooth", block: "start" });
         });
       });
+
+      const menuSections = menuLinks
+        .map((link) => document.querySelector(link.getAttribute("href")))
+        .filter(Boolean);
+
+      if ("IntersectionObserver" in window && menuSections.length) {
+        const sectionObserver = new IntersectionObserver((entries) => {
+          const visible = entries
+            .filter((entry) => entry.isIntersecting)
+            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+          if (visible && visible.target.id) setActiveMenuLink(`#${visible.target.id}`);
+        }, {
+          rootMargin: "-32% 0px -52% 0px",
+          threshold: [0.08, 0.18, 0.32, 0.5],
+        });
+
+        menuSections.forEach((section) => sectionObserver.observe(section));
+      } else {
+        setActiveMenuLink("#inicio");
+      }
 
       const observer = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {

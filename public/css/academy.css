@@ -124,7 +124,8 @@ body {
   transition: color 260ms ease, opacity 260ms ease;
 }
 
-.gatofilia-nav nav a:hover {
+.gatofilia-nav nav a:hover,
+.gatofilia-nav nav a.is-active {
   color: #c8a35a;
   opacity: 1;
 }
@@ -389,15 +390,18 @@ body {
   line-height: 1.65;
 }
 
-.gatofilia-for-you-copy strong {
+.gatofilia-for-you-closing {
+  grid-column: 1 / -1;
   display: block;
-  margin-top: 28px;
+  max-width: 980px;
+  margin: clamp(26px, 3vw, 42px) auto 0;
   color: #c8a35a;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  font-size: clamp(13px, 1.16vw, 16px);
+  font-size: clamp(13px, 1.12vw, 16px);
   font-weight: 900;
-  letter-spacing: 0.09em;
-  line-height: 1.65;
+  letter-spacing: 0.12em;
+  line-height: 1.6;
+  text-align: center;
   text-transform: uppercase;
 }
 
