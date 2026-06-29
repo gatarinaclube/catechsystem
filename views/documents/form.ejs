@@ -265,7 +265,7 @@
             <div class="history-section-head" style="margin-bottom:12px;">
               <div>
                 <div class="content-title">Enviar por e-mail</div>
-                <div class="content-sub">Usa o SMTP configurado em Configurações.</div>
+                <div class="content-sub">Usa o SMTP próprio quando configurado; caso contrário, envia pelo PetGus.</div>
               </div>
               <span class="status-pill <%= smtpSettings.isComplete ? 'is-green' : 'is-yellow' %>">
                 <%= smtpSettings.isComplete ? 'SMTP configurado' : 'SMTP pendente' %>
@@ -273,7 +273,7 @@
             </div>
             <% if (!smtpSettings.isComplete) { %>
               <div class="section-note">
-                Configure o e-mail do usuário em Configurações antes de enviar este manual.
+                Sem SMTP próprio, este manual será enviado pelo remetente PetGus. Configure o e-mail do usuário em Configurações para usar seu próprio domínio.
                 <a href="/settings">Abrir Configurações</a>
               </div>
             <% } %>

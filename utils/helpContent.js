@@ -169,7 +169,7 @@ const HELP_SECTIONS = [
         title: "E-mail marketing",
         tags: ["SMTP", "campanha", "descadastro", "teste"],
         content:
-          "Configure remetente, layout, imagem, textos, botões e destinatários. Sem SMTP próprio, o usuário não envia e-mail marketing. Notificações gerais do sistema continuam funcionando separadamente.",
+          "Configure remetente, layout, imagem, textos, botões e destinatários. Sem SMTP próprio, o usuário não envia e-mail marketing. Notificações e documentos automáticos usam o remetente PetGus quando não houver SMTP próprio.",
       },
       {
         title: "Painel",
@@ -247,7 +247,7 @@ const HELP_SECTIONS = [
         title: "Contato de suporte",
         tags: ["suporte", "ajuda", "whatsapp"],
         content:
-          "Para suporte, entre em contato pelo e-mail contato@gatarina.com.br ou WhatsApp +55 49 93381-6900.",
+          "Para suporte do PetGus, entre em contato pelo e-mail petgus@gatofilia.com.br ou WhatsApp +55 49 93381-6900.",
       },
     ],
   },

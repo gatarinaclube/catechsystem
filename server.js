@@ -947,12 +947,8 @@ app.use(async (req, res, next) => {
 
 // ---------- ROTAS BÁSICAS ----------
 app.get("/", (req, res) => {
-  const host = String(req.get("host") || "").toLowerCase();
-  const gatofiliaDomains = String(process.env.GATOFILIA_DOMAINS || "")
-    .split(",")
-    .map((domain) => domain.trim().toLowerCase())
-    .filter(Boolean);
-  if (host.includes("gatofilia") || gatofiliaDomains.some((domain) => host === domain || host === `www.${domain}`)) {
+  const host = req.hostname;
+  if (gatofiliaHostMatches(host)) {
     return res.redirect("/academy");
   }
 
@@ -987,6 +983,19 @@ app.get("/planos", (req, res) => {
 });
 
 app.get("/robots.txt", (req, res) => {
+  if (gatofiliaHostMatches(req.hostname)) {
+    const base = gatofiliaBaseUrl();
+    return res.type("text/plain").send([
+      "User-agent: *",
+      "Allow: /",
+      "Disallow: /academy/app",
+      "Disallow: /academy/admin",
+      "Disallow: /academy/especialista",
+      `Sitemap: ${base}/sitemap.xml`,
+      "",
+    ].join("\n"));
+  }
+
   const base = (process.env.APP_URL || "https://www.petgus.com.br").replace(/\/$/, "");
   res.type("text/plain").send([
     "User-agent: *",
@@ -1003,6 +1012,36 @@ app.get("/robots.txt", (req, res) => {
 
 app.get("/sitemap.xml", async (req, res, next) => {
   try {
+    if (gatofiliaHostMatches(req.hostname)) {
+      const base = gatofiliaBaseUrl();
+      const categories = await prisma.academyCategory.findMany({
+        where: { published: true },
+        orderBy: { updatedAt: "desc" },
+        take: 100,
+      });
+      const gatofiliaUrls = [
+        { loc: "/academy", priority: "1.0", lastmod: new Date() },
+        { loc: "/gatofilia", priority: "1.0", lastmod: new Date() },
+        { loc: "/academy/sobre", priority: "0.7", lastmod: new Date() },
+        { loc: "/academy/planos", priority: "0.8", lastmod: new Date() },
+        { loc: "/academy/conteudos", priority: "0.9", lastmod: categories[0]?.updatedAt || new Date() },
+        { loc: "/academy/faq", priority: "0.5", lastmod: new Date() },
+      ];
+      const xml = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+        ...gatofiliaUrls.map((item) => [
+          "  <url>",
+          `    <loc>${base}${item.loc}</loc>`,
+          `    <lastmod>${new Date(item.lastmod).toISOString().slice(0, 10)}</lastmod>`,
+          `    <priority>${item.priority}</priority>`,
+          "  </url>",
+        ].join("\n")),
+        "</urlset>",
+      ].join("\n");
+      return res.type("application/xml").send(xml);
+    }
+
     const base = (process.env.APP_URL || "https://www.petgus.com.br").replace(/\/$/, "");
     const showcases = await prisma.catteryKittenShowcase.findMany({
       where: { published: true },
@@ -1055,10 +1094,30 @@ function billingDocumentDigits(value) {
   return String(value || "").replace(/\D/g, "");
 }
 
+function gatofiliaHostMatches(host) {
+  const normalizedHost = String(host || "").toLowerCase().replace(/:\d+$/, "");
+  const gatofiliaDomains = String(process.env.GATOFILIA_DOMAINS || "")
+    .split(",")
+    .map((domain) => domain.trim().toLowerCase())
+    .filter(Boolean);
+  return (
+    normalizedHost === "gatofilia.com.br" ||
+    normalizedHost === "www.gatofilia.com.br" ||
+    gatofiliaDomains.some((domain) => (
+      normalizedHost === domain || normalizedHost === `www.${domain}`
+    ))
+  );
+}
+
+function gatofiliaBaseUrl() {
+  return (process.env.GATOFILIA_PUBLIC_URL || "https://www.gatofilia.com.br").replace(/\/$/, "");
+}
+
 app.post("/contato", async (req, res) => {
   const name = String(req.body.name || "").trim();
   const email = String(req.body.email || "").trim();
   const phone = formatPhone(req.body.phone);
+  const petgusContactEmail = process.env.PETGUS_CONTACT_EMAIL || "petgus@gatofilia.com.br";
 
   if (!name || !email || !phone) {
     return res.redirect("/?contato=erro#contato");
@@ -1066,7 +1125,7 @@ app.post("/contato", async (req, res) => {
 
   try {
     await sendStatusEmail({
-      to: "contato@gatarina.com.br",
+      to: petgusContactEmail,
       subject: "Novo contato pelo site PetGus",
       html: `
         <div style="font-family:Arial,sans-serif;color:#1f2933;line-height:1.6">
@@ -1077,6 +1136,7 @@ app.post("/contato", async (req, res) => {
           <p><strong>Telefone:</strong> ${escapePublicContactValue(phone)}</p>
         </div>
       `,
+      replyTo: email,
     });
 
     return res.redirect("/?contato=ok#contato");

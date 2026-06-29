@@ -10,7 +10,7 @@ const PDFDocument = require("pdfkit");
 const { PDFDocument: EditablePdfDocument, rgb, StandardFonts } = require("pdf-lib");
 const { buildDisplayName, formatDate, formatDateInput, parseDate } = require("../utils/cattery-admin");
 const { sendStatusEmail } = require("../utils/mailer");
-const { buildUserSmtpConfig, shapeSmtpSettings } = require("../utils/userSmtp");
+const { buildNotificationEmailOptions, shapeSmtpSettings } = require("../utils/userSmtp");
 const { ROLES, normalizeRole } = require("../utils/access");
 const { getLimitValueForRole } = require("../utils/profileRules");
 const { formatCpfCnpj, formatPhone } = require("../utils/format");
@@ -1204,7 +1204,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       user,
     });
     const documentHash = hashBuffer(pdfBuffer);
-    const smtpConfig = buildUserSmtpConfig(settings);
+    const emailOptions = buildNotificationEmailOptions(settings);
 
     for (const request of requests) {
       await prisma.documentSignatureRequest.update({
@@ -1212,7 +1212,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         data: { documentHash },
       });
       await logSignatureEvent(request.id, "CONTRACT_UPDATED", req, "Contrato retificado pelo usuário antes da assinatura.");
-      if (smtpConfig && request.signerEmail) {
+      if (request.signerEmail) {
         const signUrl = `${publicBaseUrl(req)}/assinatura/${request.token}`;
         await sendStatusEmail({
           to: request.signerEmail,
@@ -1224,8 +1224,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             <p><a href="${signUrl}" style="display:inline-block;padding:12px 18px;background:#8a3328;color:#fff;text-decoration:none;border-radius:6px;">Abrir contrato retificado</a></p>
             <p>Se o botão não abrir, copie este link: ${signUrl}</p>
           `,
-          smtpConfig,
-          from: smtpConfig.from,
+          ...emailOptions,
         });
         await logSignatureEvent(request.id, "EMAIL_SENT", req, "E-mail de retificação aceito pelo SMTP.");
       }
@@ -1289,8 +1288,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   }
 
   async function sendSignatureEmail({ req, document, signatureRequest, settings }) {
-    const smtpConfig = buildUserSmtpConfig(settings);
-    if (!signatureRequest.signerEmail || !smtpConfig) return false;
+    const emailOptions = buildNotificationEmailOptions(settings);
+    if (!signatureRequest.signerEmail) return false;
 
     const signUrl = `${publicBaseUrl(req)}/assinatura/${signatureRequest.token}`;
     const pixelUrl = `${publicBaseUrl(req)}/assinatura/${signatureRequest.token}/pixel.png`;
@@ -1305,8 +1304,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         <p>Se o botão não abrir, copie este link: ${signUrl}</p>
         <img src="${pixelUrl}" width="1" height="1" alt="" />
       `,
-      smtpConfig,
-      from: smtpConfig.from,
+      ...emailOptions,
     });
     await logSignatureEvent(signatureRequest.id, "EMAIL_SENT", req, "E-mail aceito pelo SMTP.");
     await prisma.documentSignatureRequest.update({
@@ -1798,7 +1796,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       }
 
       const settings = await prisma.userSettings.findUnique({ where: { userId: req.session.userId } });
-      const smtpConfig = buildUserSmtpConfig(settings);
+      const emailOptions = buildNotificationEmailOptions(settings);
       const signerEmail = compact(req.body.signerEmail || document.client?.email);
       const signerName = compact(req.body.signerName || document.client?.fullName);
       const signerDocument = formatCpfCnpj(compact(req.body.signerDocument || document.client?.document));
@@ -1830,7 +1828,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       const signUrl = `${publicBaseUrl(req)}/assinatura/${token}`;
       const pixelUrl = `${publicBaseUrl(req)}/assinatura/${token}/pixel.png`;
-      if (signerEmail && smtpConfig) {
+      if (signerEmail) {
         await sendStatusEmail({
           to: signerEmail,
           subject: `Assinatura eletrônica - ${document.title || "Contrato"}`,
@@ -1841,8 +1839,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             <p>Se o botão não abrir, copie este link: ${signUrl}</p>
             <img src="${pixelUrl}" width="1" height="1" alt="" />
           `,
-          smtpConfig,
-          from: smtpConfig.from,
+          ...emailOptions,
         });
         await logSignatureEvent(signatureRequest.id, "EMAIL_SENT", req, "E-mail aceito pelo SMTP.");
         await prisma.documentSignatureRequest.update({
@@ -1937,13 +1934,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     if (!document || document.type !== "CARE_MANUAL") return res.redirect("/documentos?error=Manual não encontrado.");
 
     const settings = await prisma.userSettings.findUnique({ where: { userId: req.session.userId } });
-    const smtpConfig = buildUserSmtpConfig(settings);
+    const emailOptions = buildNotificationEmailOptions(settings);
     const recipientEmail = compact(req.body.recipientEmail);
     const recipientName = compact(req.body.recipientName);
 
-    if (!smtpConfig) {
-      return res.redirect(`/documentos/${document.id}/editar?error=Configure o SMTP próprio em Configurações antes de enviar.`);
-    }
     if (!recipientEmail) {
       return res.redirect(`/documentos/${document.id}/editar?error=Informe um e-mail para envio.`);
     }
@@ -1971,8 +1965,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         to: recipientEmail,
         subject: document.title || "Manual de Cuidados Básicos",
         html: `<p>Olá${recipientName ? `, ${recipientName}` : ""}.</p><p>Segue em anexo o manual de cuidados básicos enviado pelo gatil.</p>`,
-        smtpConfig,
-        from: smtpConfig.from,
+        ...emailOptions,
         attachments,
       });
       await prisma.documentEmailLog.create({
@@ -2107,10 +2100,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         return res.redirect(`/assinatura/${req.params.token}?error=Informe nome, documento e e-mail para receber o código.`);
       }
       const settings = signatureRequest.document.owner?.settings;
-      const smtpConfig = buildUserSmtpConfig(settings);
-      if (!smtpConfig) {
-        return res.redirect(`/assinatura/${req.params.token}?error=O remetente ainda não possui SMTP configurado.`);
-      }
+      const emailOptions = buildNotificationEmailOptions(settings);
       const otp = generateOtp();
       await prisma.documentSignatureRequest.update({
         where: { id: signatureRequest.id },
@@ -2127,8 +2117,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         to: signerEmail,
         subject: "Código de assinatura eletrônica",
         html: `<p>Seu código de assinatura eletrônica é:</p><p style="font-size:24px;font-weight:bold;letter-spacing:4px;">${otp}</p><p>Este código expira em 10 minutos.</p>`,
-        smtpConfig,
-        from: smtpConfig.from,
+        ...emailOptions,
       });
       await logSignatureEvent(signatureRequest.id, "OTP_SENT", req, "Código OTP enviado por e-mail.");
       res.redirect(`/assinatura/${req.params.token}?otp=1`);

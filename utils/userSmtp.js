@@ -66,6 +66,12 @@ function buildUserSmtpConfig(settings) {
   };
 }
 
+function buildNotificationEmailOptions(settings) {
+  const smtpConfig = buildUserSmtpConfig(settings);
+  if (!smtpConfig) return {};
+  return { smtpConfig, from: smtpConfig.from };
+}
+
 function shapeSmtpSettings(settings) {
   return {
     fromName: settings?.marketingFromName || "",
@@ -84,5 +90,6 @@ module.exports = {
   decryptSecret,
   buildSender,
   buildUserSmtpConfig,
+  buildNotificationEmailOptions,
   shapeSmtpSettings,
 };

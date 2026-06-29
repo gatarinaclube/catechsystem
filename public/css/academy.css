@@ -562,8 +562,7 @@ body {
 }
 
 .gatofilia-partner-logos a:last-child img {
-  height: clamp(86px, 8.5vw, 126px);
-  transform: scale(1.28);
+  height: clamp(66px, 6.4vw, 92px);
   transform-origin: right center;
 }
 
@@ -2028,8 +2027,7 @@ body {
     justify-self: end;
     width: auto;
     max-width: 100%;
-    height: clamp(58px, 16vw, 82px);
-    transform: scale(1.55);
+    height: clamp(42px, 11vw, 58px);
     transform-origin: right center;
   }
 
@@ -2191,7 +2189,6 @@ body {
   }
 
   .gatofilia-partner-logos a:last-child img {
-    height: clamp(54px, 15vw, 70px);
-    transform: scale(1.6);
+    height: clamp(38px, 10vw, 52px);
   }
 }

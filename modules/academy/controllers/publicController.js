@@ -28,6 +28,28 @@ function cleanText(value, limit = 1000) {
   return String(value || "").trim().slice(0, limit);
 }
 
+function gatofiliaEmailAddress() {
+  return process.env.GATOFILIA_CONTACT_EMAIL || "contato@gatofilia.com.br";
+}
+
+function gatofiliaMailFrom() {
+  return process.env.GATOFILIA_MAIL_FROM || process.env.GATOFILIA_CONTACT_EMAIL || "contato@gatofilia.com.br";
+}
+
+function gatofiliaSmtpConfig() {
+  if (!process.env.GATOFILIA_SMTP_HOST && !process.env.GATOFILIA_SMTP_USER && !process.env.GATOFILIA_SMTP_PASS) {
+    return null;
+  }
+
+  return {
+    host: process.env.GATOFILIA_SMTP_HOST,
+    port: process.env.GATOFILIA_SMTP_PORT || process.env.SMTP_PORT || 587,
+    user: process.env.GATOFILIA_SMTP_USER,
+    pass: process.env.GATOFILIA_SMTP_PASS,
+    from: gatofiliaMailFrom(),
+  };
+}
+
 function renderPublic(req, res, view, locals = {}) {
   return res.render(`academy/public/${view}`, {
     pageTitle: "Gatofilia",
@@ -38,11 +60,16 @@ function renderPublic(req, res, view, locals = {}) {
 }
 
 async function notifyGatofiliaLead(lead) {
-  const adminTo = process.env.GATOFILIA_CONTACT_EMAIL || "contato@gatarina.com.br";
+  const adminTo = gatofiliaEmailAddress();
+  const smtpConfig = gatofiliaSmtpConfig();
+  const from = gatofiliaMailFrom();
   try {
     await sendStatusEmail({
       to: adminTo,
       subject: "Gatofilia - Nova manifestação de interesse",
+      smtpConfig,
+      from,
+      replyTo: lead.email || null,
       html: `
         <h2>Nova manifestação de interesse</h2>
         <p><strong>Nome:</strong> ${escapeHtml([lead.firstName, lead.lastName].filter(Boolean).join(" "))}</p>
@@ -66,6 +93,8 @@ async function notifyGatofiliaLead(lead) {
     await sendStatusEmail({
       to: lead.email,
       subject: "Gatofilia - Interesse recebido",
+      smtpConfig,
+      from,
       html: `
         <h2>Recebemos sua manifestação de interesse</h2>
         <p>Olá, ${escapeHtml(lead.firstName)}.</p>

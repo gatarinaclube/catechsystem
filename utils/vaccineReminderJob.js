@@ -1,6 +1,7 @@
 const { sendStatusEmail } = require("./mailer");
 const { buildDisplayName, classifyOperationalCat, formatDate, parseDate } = require("./cattery-admin");
 const { buildVaccineDueItems } = require("./vaccines");
+const { buildNotificationEmailOptions } = require("./userSmtp");
 
 const REMINDER_GROUPS = {
   SIRES: "Padreadores",
@@ -181,6 +182,7 @@ async function runVaccineReminderJob(prisma, options = {}) {
         to: user.email,
         subject: "Vacina a Vencer",
         html: reminderEmailHtml(user, dueItems),
+        ...buildNotificationEmailOptions(user.settings),
       });
 
       await prisma.vaccineReminderEmailLog.createMany({
