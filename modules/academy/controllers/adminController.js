@@ -77,7 +77,7 @@ module.exports = (prisma) => ({
     const enrolledUserIds = new Set(enrollments.map((item) => item.userId));
 
     res.render("academy/admin/dashboard", {
-      pageTitle: "Admin Academy - CatBreeder Pro",
+      pageTitle: "Admin Gatofilia",
       user: req.user,
       academy: await getAcademyContext(prisma, req),
       overview,
@@ -107,7 +107,7 @@ module.exports = (prisma) => ({
     });
 
     res.render("academy/admin/media-library", {
-      pageTitle: "Mídia Academy - CatBreeder Pro",
+      pageTitle: "Mídia Gatofilia",
       user: req.user,
       academy: await getAcademyContext(prisma, req),
       media,
@@ -140,7 +140,7 @@ module.exports = (prisma) => ({
     });
 
     res.render("academy/admin/interests", {
-      pageTitle: "Interesses Gatofilia - Admin Academy",
+      pageTitle: "Interesses Gatofilia - Admin",
       user: req.user,
       academy: await getAcademyContext(prisma, req),
       leads,
@@ -158,7 +158,7 @@ module.exports = (prisma) => ({
     ]);
 
     res.render("academy/admin/public-settings", {
-      pageTitle: "Academy Pública - Admin",
+      pageTitle: "Gatofilia Pública - Admin",
       user: req.user,
       academy: await getAcademyContext(prisma, req),
       settings,

@@ -1,0 +1,3 @@
+ALTER TABLE "User"
+ADD COLUMN IF NOT EXISTS "gatofiliaAccess" BOOLEAN NOT NULL DEFAULT false;
+

@@ -216,6 +216,22 @@
                     <% }) %>
                   </select>
                 </div>
+
+                <div class="field">
+                  <label class="field-label" for="gatofiliaAccess">Gatofilia</label>
+                  <label style="display:flex; align-items:center; gap:8px; min-height:38px;">
+                    <input
+                      id="gatofiliaAccess"
+                      type="checkbox"
+                      name="gatofiliaAccess"
+                      <%= userDetail.gatofiliaAccess ? "checked" : "" %>
+                    />
+                    <span>Liberar acesso aos conteúdos e aulas</span>
+                  </label>
+                  <small style="font-size:11px; color:var(--text-muted);">
+                    Quando ativo, o usuário verá o atalho Gatofilia no menu e poderá acessar a área interna.
+                  </small>
+                </div>
               </div>
 
               <% if (userDetail.createdAt) { %>

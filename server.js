@@ -185,6 +185,12 @@ app.use(express.json());
 // arquivos estáticos (CSS, JS, imagens, uploads etc.)
 app.use(express.static(path.join(__dirname, "public")));
 app.get("/favicon.ico", (req, res) => {
+  if (gatofiliaHostMatches(req.hostname)) {
+    return res
+      .type("image/png")
+      .sendFile(path.join(__dirname, "public", "uploads", "academy", "gatofilia-logo-emblem-420-transparent.png"));
+  }
+
   res.type("image/png").sendFile(path.join(__dirname, "public", "logos", "petgus-icon.png"));
 });
 
@@ -605,19 +611,23 @@ function addDaysDate(date, days) {
 
 function loginViewOptions(kind, extra = {}) {
   const isGatarina = kind === "gatarina";
+  const isGatofilia = kind === "gatofilia";
   return {
     error: null,
-    title: isGatarina ? "Login Gatarina" : "Login PetGus",
-    subtitle: isGatarina
+    title: isGatofilia ? "Login Gatofilia" : (isGatarina ? "Login Gatarina" : "Login PetGus"),
+    brandTitle: isGatofilia ? "Gatofilia" : "PetGus",
+    subtitle: isGatofilia
+      ? "Acesse com o mesmo e-mail e senha cadastrados no PetGus"
+      : isGatarina
       ? "Acesso para associados ativos da Associação Catarinense de Felinos"
       : "Acesso para usuários dos planos Básico, Master e Premium",
-    formAction: isGatarina ? "/login-gatarina" : "/login",
+    formAction: isGatofilia ? "/gatofilia/login" : (isGatarina ? "/login-gatarina" : "/login"),
     showRegisterLink: isGatarina,
     registerText: "Ainda não é associado?",
     registerHref: "/register",
     registerLabel: "Solicitar associação",
-    alternateLoginHref: isGatarina ? "/login" : "/login-gatarina",
-    alternateLoginLabel: isGatarina ? "Login para planos não associados" : "Login para associados Gatarina",
+    alternateLoginHref: null,
+    alternateLoginLabel: "",
     ...extra,
   };
 }
@@ -869,6 +879,7 @@ app.use(async (req, res, next) => {
 
     const normalizedRole = normalizeRole(currentUser.role || sessionRole);
     const userAccess = buildAccessContext(normalizedRole);
+    userAccess.canAccessAcademy = userAccess.canAccessAcademy || Boolean(currentUser.gatofiliaAccess);
     req.session.userRole = normalizedRole;
 
     req.user = {
@@ -1152,6 +1163,9 @@ app.use(publicMicrochipRouterFactory(prisma, requireAuth, requirePermission));
 
 // ---------- LOGIN ----------
 app.get("/login", (req, res) => {
+  if (gatofiliaHostMatches(req.hostname)) {
+    return res.render("login", loginViewOptions("gatofilia"));
+  }
   res.render("login", loginViewOptions("commercial"));
 });
 
@@ -1159,7 +1173,14 @@ app.get("/login-gatarina", (req, res) => {
   res.render("login", loginViewOptions("gatarina"));
 });
 
+app.get("/gatofilia/login", (req, res) => {
+  res.render("login", loginViewOptions("gatofilia"));
+});
+
 app.post("/login", async (req, res) => {
+  if (gatofiliaHostMatches(req.hostname)) {
+    return handleSystemLogin(req, res, "gatofilia");
+  }
   return handleSystemLogin(req, res, "commercial");
 });
 
@@ -1167,8 +1188,15 @@ app.post("/login-gatarina", async (req, res) => {
   return handleSystemLogin(req, res, "gatarina");
 });
 
+app.post("/gatofilia/login", async (req, res) => {
+  return handleSystemLogin(req, res, "gatofilia");
+});
+
 app.get("/forgot-password", (req, res) => {
+  const brandTitle = gatofiliaHostMatches(req.hostname) ? "Gatofilia" : "PetGus";
   res.render("forgot-password", {
+    brandTitle,
+    loginHref: "/login",
     error: null,
     success: null,
   });
@@ -1176,6 +1204,7 @@ app.get("/forgot-password", (req, res) => {
 
 app.post("/forgot-password", async (req, res) => {
   const email = String(req.body.email || "").trim().toLowerCase();
+  const brandTitle = gatofiliaHostMatches(req.hostname) ? "Gatofilia" : "PetGus";
   const genericSuccess =
     "Se este e-mail estiver cadastrado, enviaremos um link para redefinir sua senha.";
 
@@ -1201,10 +1230,10 @@ app.post("/forgot-password", async (req, res) => {
 
       await sendStatusEmail({
         to: user.email,
-        subject: "Redefinição de senha - PetGus",
+        subject: `Redefinição de senha - ${brandTitle}`,
         html: `
           <p>Olá, ${escapeHtml(user.name || "associado")}.</p>
-          <p>Recebemos uma solicitação para redefinir sua senha no PetGus.</p>
+          <p>Recebemos uma solicitação para redefinir sua senha no ${brandTitle}.</p>
           <p><a href="${resetUrl}">Clique aqui para criar uma nova senha</a>.</p>
           <p>Este link é válido por 1 hora. Se você não solicitou a redefinição, ignore este e-mail.</p>
         `,
@@ -1212,12 +1241,16 @@ app.post("/forgot-password", async (req, res) => {
     }
 
     return res.render("forgot-password", {
+      brandTitle,
+      loginHref: "/login",
       error: null,
       success: genericSuccess,
     });
   } catch (err) {
     console.error("Erro ao solicitar redefinição de senha:", err);
     return res.status(500).render("forgot-password", {
+      brandTitle,
+      loginHref: "/login",
       error: "Não foi possível enviar o e-mail de redefinição agora.",
       success: null,
     });
@@ -1226,6 +1259,7 @@ app.post("/forgot-password", async (req, res) => {
 
 app.get("/reset-password/:token", async (req, res) => {
   const tokenHash = hashResetToken(req.params.token || "");
+  const brandTitle = gatofiliaHostMatches(req.hostname) ? "Gatofilia" : "PetGus";
 
   try {
     const resetToken = await prisma.passwordResetToken.findUnique({
@@ -1234,6 +1268,8 @@ app.get("/reset-password/:token", async (req, res) => {
 
     if (!resetToken || resetToken.usedAt || resetToken.expiresAt < new Date()) {
       return res.status(400).render("reset-password", {
+        brandTitle,
+        loginHref: "/login",
         token: null,
         error: "Este link expirou ou já foi utilizado.",
         success: null,
@@ -1241,6 +1277,8 @@ app.get("/reset-password/:token", async (req, res) => {
     }
 
     return res.render("reset-password", {
+      brandTitle,
+      loginHref: "/login",
       token: req.params.token,
       error: null,
       success: null,
@@ -1254,10 +1292,13 @@ app.get("/reset-password/:token", async (req, res) => {
 app.post("/reset-password/:token", async (req, res) => {
   const { password, confirmPassword } = req.body;
   const tokenHash = hashResetToken(req.params.token || "");
+  const brandTitle = gatofiliaHostMatches(req.hostname) ? "Gatofilia" : "PetGus";
 
   try {
     if (!password || password.length < 6) {
       return res.status(400).render("reset-password", {
+        brandTitle,
+        loginHref: "/login",
         token: req.params.token,
         error: "Informe uma senha com pelo menos 6 caracteres.",
         success: null,
@@ -1266,6 +1307,8 @@ app.post("/reset-password/:token", async (req, res) => {
 
     if (password !== confirmPassword) {
       return res.status(400).render("reset-password", {
+        brandTitle,
+        loginHref: "/login",
         token: req.params.token,
         error: "As senhas não conferem.",
         success: null,
@@ -1278,6 +1321,8 @@ app.post("/reset-password/:token", async (req, res) => {
 
     if (!resetToken || resetToken.usedAt || resetToken.expiresAt < new Date()) {
       return res.status(400).render("reset-password", {
+        brandTitle,
+        loginHref: "/login",
         token: null,
         error: "Este link expirou ou já foi utilizado.",
         success: null,
@@ -1305,6 +1350,8 @@ app.post("/reset-password/:token", async (req, res) => {
     ]);
 
     return res.render("reset-password", {
+      brandTitle,
+      loginHref: "/login",
       token: null,
       error: null,
       success: "Senha redefinida com sucesso. Você já pode entrar com a nova senha.",
@@ -1312,6 +1359,8 @@ app.post("/reset-password/:token", async (req, res) => {
   } catch (err) {
     console.error("Erro ao redefinir senha:", err);
     return res.status(500).render("reset-password", {
+      brandTitle,
+      loginHref: "/login",
       token: req.params.token,
       error: "Não foi possível redefinir a senha agora.",
       success: null,
@@ -1848,9 +1897,6 @@ app.get("/dashboard", requireAuth, async (req, res) => {
    
    
     const user = req.user;
-    if (user?.role === ROLES.CATBREED) {
-      return res.redirect(res.locals.access?.canAccessAcademy ? "/academy/app" : "/academy/planos");
-    }
 
     if (associationPaymentStatus(user)) {
       return res.redirect("/associacao/pagamento");

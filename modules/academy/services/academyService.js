@@ -110,12 +110,13 @@ function isAcademyActiveSubscription(subscription) {
 
 function userHasAcademyAccess(user, enrollment, subscription = null) {
   const role = String(user?.role || "").toUpperCase();
-  return role === "ADMIN";
+  return role === "ADMIN" || Boolean(user?.gatofiliaAccess);
 }
 
 function resolveAcademyLevel(user, enrollment, subscription) {
   const role = String(user?.role || "").toUpperCase();
   if (role === "ADMIN") return ACADEMY_LEVELS.ADMIN;
+  if (user?.gatofiliaAccess) return ACADEMY_LEVELS.PREMIUM;
   if (role === "PREMIUM") return ACADEMY_LEVELS.PREMIUM;
   return (
     subscription?.plan?.accessLevel ||

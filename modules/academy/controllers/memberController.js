@@ -33,7 +33,7 @@ module.exports = (prisma) => ({
     const certificates = await listUserCertificates(prisma, req.user.id);
 
     res.render("academy/member/dashboard", {
-      pageTitle: "Área do Aluno - CatBreeder Pro",
+      pageTitle: "Área do Aluno - Gatofilia",
       user: req.user,
       academy,
       dashboard,
@@ -46,7 +46,7 @@ module.exports = (prisma) => ({
     const certificates = await listUserCertificates(prisma, req.user.id);
 
     res.render("academy/member/certificates", {
-      pageTitle: "Certificados - CatBreeder Pro",
+      pageTitle: "Certificados - Gatofilia",
       user: req.user,
       academy,
       certificates,
@@ -58,7 +58,7 @@ module.exports = (prisma) => ({
     const hub = getAcademyFutureHub();
 
     res.render("academy/member/premium", {
-      pageTitle: "Premium Lab - CatBreeder Pro",
+      pageTitle: "Premium Lab - Gatofilia",
       user: req.user,
       academy,
       hub,
@@ -70,7 +70,7 @@ module.exports = (prisma) => ({
     const paths = await getLearningPaths(prisma, req.user.id, academy.level);
 
     res.render("academy/member/paths", {
-      pageTitle: "Trilhas - CatBreeder Pro",
+      pageTitle: "Trilhas - Gatofilia",
       user: req.user,
       academy,
       paths,
@@ -87,7 +87,7 @@ module.exports = (prisma) => ({
     }
 
     res.render("academy/member/path-detail", {
-      pageTitle: `${path.title} - CatBreeder Pro`,
+      pageTitle: `${path.title} - Gatofilia`,
       user: req.user,
       academy,
       path,
@@ -111,7 +111,7 @@ module.exports = (prisma) => ({
     );
 
     res.render("academy/member/library", {
-      pageTitle: "Biblioteca - CatBreeder Pro",
+      pageTitle: "Biblioteca - Gatofilia",
       user: req.user,
       academy,
       lessons,
@@ -139,7 +139,7 @@ module.exports = (prisma) => ({
       .filter((lesson) => lesson.published && isPublishedStatus(lesson.status, lesson.published) && canAccessLevel(academy.level, lesson.level));
 
     res.render("academy/member/favorites", {
-      pageTitle: "Favoritos - CatBreeder Pro",
+      pageTitle: "Favoritos - Gatofilia",
       user: req.user,
       academy,
       lessons,
@@ -177,11 +177,11 @@ module.exports = (prisma) => ({
     ]);
 
     res.render("academy/member/lesson", {
-      pageTitle: `${lesson.title} - CatBreeder Pro`,
+      pageTitle: `${lesson.title} - Gatofilia`,
       seo: academySeo(req, {
         path: `/academy/app/aulas/${lesson.slug}`,
-        title: lesson.metaTitle || `${lesson.title} | CatBreeder Pro`,
-        description: lesson.metaDescription || lesson.summary || "Aula CatBreeder Pro para criadores felinos.",
+        title: lesson.metaTitle || `${lesson.title} | Gatofilia`,
+        description: lesson.metaDescription || lesson.summary || "Aula Gatofilia para criadores felinos.",
         image: lesson.ogImageUrl || lesson.imageUrl || undefined,
         type: "article",
         robots: "noindex,nofollow",

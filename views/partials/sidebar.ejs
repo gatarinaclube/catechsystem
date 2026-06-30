@@ -75,7 +75,7 @@
             "Gestão de Microchip": "Área administrativa para localizar cadastros públicos de microchip, conferir dados do tutor e registrar contatos sobre animais encontrados.",
             "Financeiro técnico": "Configuração administrativa dos valores comerciais, associação e APIs Asaas de produção e teste.",
             "Limites por Perfil": "Configuração administrativa dos limites e permissões dos planos Básico, Master e Premium. As tabelas públicas e Meu Cadastro usam estas regras automaticamente.",
-            "Academy Pública": "Configuração administrativa da página pública da Academy/Gatofilia, incluindo contador de prazo para a próxima jornada.",
+            "Gatofilia Pública": "Configuração administrativa da página pública da Gatofilia, incluindo contador de prazo para a próxima jornada.",
             "Financeiro": "Área administrativa do gatil com receitas, despesas, contas, clientes, fornecedores e produtos/serviços.",
             "Reprodutores": "Cadastro e gestão de padreadores, matrizes e gatos reprodutores do gatil.",
             "Ninhadas": "Registro operacional das ninhadas, estatísticas de parto, filhotes e acompanhamento da reprodução.",
@@ -93,8 +93,8 @@
             "Documentos": "Criação e arquivo de contratos de venda, atestados de saúde e manuais de cuidados com geração de PDF e envio por e-mail.",
             "Relatórios": "Relatórios financeiros, fluxo de caixa, despesas, receitas e acompanhamento estratégico.",
             "Administrativo": "Área financeira e administrativa com contas, receitas, despesas, clientes, fornecedores e contas a pagar/receber.",
-            "CatBreeder Pro": "Área de cursos e conteúdos da plataforma Academy vinculada ao sistema.",
-            "Academy": "Área de conteúdos, treinamentos e materiais da plataforma.",
+            "Gatofilia": "Área de conteúdos, aulas e materiais da jornada Gatofilia liberada pelo administrador.",
+            "Gatofilia": "Área de conteúdos, aulas e materiais da jornada Gatofilia liberada pelo administrador.",
             "Upgrade de Plano": "Compare as opções e ative um plano com mais recursos, como CRM, relatórios, administrativo financeiro e vitrine completa.",
           };
           return item.help || helpByLabel[item.label] || `Abre o módulo ${item.label}.`;
@@ -142,7 +142,7 @@
           { href: "/admin/microchips", match: "/admin/microchips", icon: "🔎", label: "Gestão de Microchip", allowed: access && access.canManageMicrochips, hideWhenDenied: true, preferenceKey: "microchips" },
           { href: "/admin/financeiro", match: "/admin/financeiro", icon: "💳", label: "Financeiro técnico", allowed: access && access.canManageFinanceSettings, hideWhenDenied: true, preferenceKey: "financeSettings" },
           { href: "/admin/perfis-limites", match: "/admin/perfis-limites", icon: "🧩", label: "Limites por Perfil", allowed: access && access.canManageProfileRules, hideWhenDenied: true },
-          { href: "/academy/admin/configuracoes", match: "/academy/admin/configuracoes", icon: "🎓", label: "Academy Pública", allowed: access && access.isAdmin && access.canAccessAcademy, hideWhenDenied: true },
+          { href: "/academy/admin/configuracoes", match: "/academy/admin/configuracoes", icon: "🎓", label: "Gatofilia Pública", allowed: access && access.isAdmin && access.canAccessAcademy, hideWhenDenied: true },
         ];
       %>
       <% if (access && access.isAdmin && adminItems.some((item) => item.allowed !== false)) { %>
@@ -203,11 +203,11 @@
           color: #d6a84f;
         "
       >
-        Academy
+        Gatofilia
       </div>
 
       <% [
-        { href: "/academy", match: "/academy", icon: "🎓", label: "CatBreeder Pro", allowed: access && access.isAdmin && access.canAccessAcademy, preferenceKey: "academy" },
+        { href: "/academy/app", match: "/academy", icon: "🎓", label: "Gatofilia", allowed: access && access.canAccessAcademy },
       ].forEach(renderMenuItem); %>
     </nav>
   </div>

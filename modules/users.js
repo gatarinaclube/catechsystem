@@ -12,7 +12,6 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     { value: ROLES.ASSOCIADO_A, label: getRoleLabel(ROLES.ASSOCIADO_A) },
     { value: ROLES.BASIC, label: getRoleLabel(ROLES.BASIC) },
     { value: ROLES.ASSOCIADO_B, label: getRoleLabel(ROLES.ASSOCIADO_B) },
-    { value: ROLES.CATBREED, label: getRoleLabel(ROLES.CATBREED) },
     { value: ROLES.ADMIN, label: getRoleLabel(ROLES.ADMIN) },
   ];
   const approvalOptions = [
@@ -53,7 +52,6 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         { key: "associado_a", title: getRoleLabel(ROLES.ASSOCIADO_A), users: [] },
         { key: "basic", title: getRoleLabel(ROLES.BASIC), users: [] },
         { key: "associado_b", title: getRoleLabel(ROLES.ASSOCIADO_B), users: [] },
-        { key: "catbreed", title: getRoleLabel(ROLES.CATBREED), users: [] },
         { key: "inactive", title: "Inativo", users: [] },
       ];
       const groupByRole = new Map(
@@ -210,6 +208,7 @@ router.post("/users/:id", requireAuth, requirePermission("admin.users"), async (
       selectedPlan,
       subscriptionStatus,
       trialEndsAt,
+      gatofiliaAccess,
 
       // 🔹 CAMPOS DO GATIL FIFe
       hasFifeCattery,
@@ -262,6 +261,7 @@ router.post("/users/:id", requireAuth, requirePermission("admin.users"), async (
         subscriptionStatus: isAdmin ? subscriptionStatus || null : undefined,
         trialEndsAt: isAdmin && trialEndsAt ? new Date(`${trialEndsAt}T23:59:59`) : isAdmin ? null : undefined,
         planActivatedAt: isAdmin && subscriptionStatus === "ACTIVE" ? new Date() : undefined,
+        gatofiliaAccess: isAdmin ? gatofiliaAccess === "on" || gatofiliaAccess === "true" : undefined,
 
         // 🔹 SALVANDO GATIL
         hasFifeCattery: hasFifeCattery || "NO",
@@ -328,6 +328,7 @@ router.post(
         data: {
           role: nextRole,
           approvalStatus: finalStatus,
+          gatofiliaAccess: req.body.gatofiliaAccess === "on" || req.body.gatofiliaAccess === "true",
         },
       });
 

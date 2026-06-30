@@ -10,7 +10,7 @@
   <body class="bg-[#f8faf7] text-[#1f2933]">
     <main class="mx-auto max-w-7xl px-5 py-8">
       <nav class="flex flex-wrap items-center justify-between gap-3">
-        <a href="/academy/app/trilhas" class="text-xl font-black">CatBreeder <span class="text-[#b9892e]">Pro</span></a>
+        <a href="/academy/app/trilhas" class="text-xl font-black">Gatofilia</a>
         <div class="flex flex-wrap gap-3 text-sm font-bold">
           <a href="/academy/app">Dashboard</a>
           <a href="/academy/app/trilhas">Trilhas</a>
@@ -74,7 +74,7 @@
                   <div class="flex h-10 w-10 items-center justify-center rounded-xl <%= lesson.completed ? 'bg-[#31513d] text-white' : 'bg-slate-100 text-slate-500' %> font-black"><%= lesson.completed ? '✓' : lessonIndex + 1 %></div>
                   <div>
                     <div class="font-black"><%= lesson.title %></div>
-                    <div class="mt-1 text-sm text-slate-500"><%= lesson.summary || 'Aula CatBreeder Pro.' %></div>
+                    <div class="mt-1 text-sm text-slate-500"><%= lesson.summary || 'Aula Gatofilia.' %></div>
                   </div>
                   <div class="text-sm font-black <%= lesson.completed ? 'text-[#31513d]' : blocked ? 'text-slate-400' : 'text-[#b9892e]' %>"><%= lesson.completed ? 'Concluída' : blocked ? 'Bloqueada' : 'Abrir' %></div>
                 </a>

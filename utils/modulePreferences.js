@@ -23,7 +23,7 @@ const MODULE_PREFERENCES = [
   { key: "users", label: "Usuários", group: "Administrador", permission: "admin.users", adminOnly: true },
   { key: "microchips", label: "Gestão de Microchip", group: "Administrador", permission: "admin.microchips", adminOnly: true },
   { key: "financeSettings", label: "Financeiro técnico", group: "Administrador", permission: "admin.financeSettings", adminOnly: true },
-  { key: "academy", label: "CatBreeder Pro", group: "Academy", permission: "academy.access" },
+  { key: "academy", label: "Gatofilia", group: "Gatofilia", permission: "academy.access" },
 ];
 
 function parsePreferenceJson(value) {

@@ -10,7 +10,7 @@
   </head>
   <body class="auth-body">
     <div class="auth-card">
-      <div class="auth-logo">PetGus</div>
+      <div class="auth-logo"><%= typeof brandTitle !== "undefined" ? brandTitle : "PetGus" %></div>
       <h1 class="auth-title"><%= typeof title !== "undefined" ? title : "Bem-vindo" %></h1>
       <div class="auth-subtitle"><%= typeof subtitle !== "undefined" ? subtitle : "Faça login para acessar o painel" %></div>
 

@@ -67,6 +67,7 @@ model User {
   asaasPaymentId      String?
   asaasPaymentUrl     String?
   asaasLastEvent      String?
+  gatofiliaAccess     Boolean  @default(false)
 
   createdAt DateTime @default(now())
 

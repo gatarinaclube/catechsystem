@@ -318,8 +318,8 @@ module.exports = (prisma) => ({
       academy: await getAcademyContext(prisma, req),
       seo: {
         path: "/academy/sobre",
-        title: "Sobre | CatBreeder Pro",
-        description: "Conheça a Academy integrada ao PetGus para elevar o padrão da criação felina.",
+        title: "Sobre | Gatofilia",
+        description: "Conheça a Gatofilia integrada ao PetGus para elevar o padrão da criação felina.",
       },
     });
   },
@@ -334,8 +334,8 @@ module.exports = (prisma) => ({
       plans,
       seo: {
         path: "/academy/planos",
-        title: "Planos | CatBreeder Pro",
-        description: "Planos CatBreeder Pro para formação premium de criadores felinos.",
+        title: "Planos | Gatofilia",
+        description: "Planos Gatofilia para criadores felinos.",
       },
     });
   },
@@ -348,7 +348,7 @@ module.exports = (prisma) => ({
       catalog,
       seo: {
         path: "/academy/conteudos",
-        title: "Conteúdos | CatBreeder Pro",
+        title: "Conteúdos | Gatofilia",
         description: "Explore trilhas de criação responsável, associações, genética, manejo, saúde e gestão.",
       },
     });
@@ -359,14 +359,14 @@ module.exports = (prisma) => ({
       academy: await getAcademyContext(prisma, req),
       seo: {
         path: "/academy/faq",
-        title: "FAQ | CatBreeder Pro",
-        description: "Perguntas frequentes sobre acesso, planos e funcionamento da Academy CatBreeder Pro.",
+        title: "FAQ | Gatofilia",
+        description: "Perguntas frequentes sobre acesso e funcionamento da Gatofilia.",
       },
     });
   },
 
   loginForm: (req, res) => {
-    renderPublic(req, res, "login", { error: null, seo: { path: "/academy/login", title: "Login | CatBreeder Pro", robots: "noindex,nofollow" } });
+    renderPublic(req, res, "login", { error: null, seo: { path: "/academy/login", title: "Login | Gatofilia", robots: "noindex,nofollow" } });
   },
 
   login: async (req, res) => {
@@ -375,7 +375,7 @@ module.exports = (prisma) => ({
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return renderPublic(req, res, "login", { error: "E-mail ou senha inválidos.", seo: { path: "/academy/login", title: "Login | CatBreeder Pro", robots: "noindex,nofollow" } });
+      return renderPublic(req, res, "login", { error: "E-mail ou senha inválidos.", seo: { path: "/academy/login", title: "Login | Gatofilia", robots: "noindex,nofollow" } });
     }
 
     const [enrollment, subscription] = await Promise.all([
@@ -386,8 +386,8 @@ module.exports = (prisma) => ({
     const canContribute = Boolean(author?.active) || user.role === "ADMIN";
     if (!userHasAcademyAccess(user, enrollment, subscription) && !canContribute) {
       return renderPublic(req, res, "login", {
-        error: "Seu acesso à Academy ainda não está ativo. Entre com um usuário Premium ou solicite a liberação de um plano Academy.",
-        seo: { path: "/academy/login", title: "Login | CatBreeder Pro", robots: "noindex,nofollow" },
+        error: "Seu acesso à Gatofilia ainda não está ativo. Solicite a liberação ao administrador.",
+        seo: { path: "/academy/login", title: "Login | Gatofilia", robots: "noindex,nofollow" },
       });
     }
 
@@ -400,7 +400,7 @@ module.exports = (prisma) => ({
   },
 
   registerForm: (req, res) => {
-    renderPublic(req, res, "register", { error: null, seo: { path: "/academy/cadastro", title: "Cadastro | CatBreeder Pro", robots: "noindex,nofollow" } });
+    renderPublic(req, res, "register", { error: null, seo: { path: "/academy/cadastro", title: "Cadastro | Gatofilia", robots: "noindex,nofollow" } });
   },
 
   register: async (req, res) => {
@@ -411,7 +411,7 @@ module.exports = (prisma) => ({
     if (!name || !email || password.length < 6) {
       return renderPublic(req, res, "register", {
         error: "Informe nome, e-mail e uma senha com pelo menos 6 caracteres.",
-        seo: { path: "/academy/cadastro", title: "Cadastro | CatBreeder Pro", robots: "noindex,nofollow" },
+        seo: { path: "/academy/cadastro", title: "Cadastro | Gatofilia", robots: "noindex,nofollow" },
       });
     }
 
@@ -433,7 +433,7 @@ module.exports = (prisma) => ({
     } catch (err) {
       return renderPublic(req, res, "register", {
         error: "Não foi possível criar o cadastro. Verifique se o e-mail já está em uso.",
-        seo: { path: "/academy/cadastro", title: "Cadastro | CatBreeder Pro", robots: "noindex,nofollow" },
+        seo: { path: "/academy/cadastro", title: "Cadastro | Gatofilia", robots: "noindex,nofollow" },
       });
     }
   },

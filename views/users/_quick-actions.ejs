@@ -25,6 +25,19 @@
     <% }) %>
   </select>
 
+  <label
+    title="Liberar acesso interno à Gatofilia"
+    style="display:inline-flex; align-items:center; gap:5px; min-width:86px; font-size:12px; color:var(--text-muted);"
+  >
+    <input
+      type="checkbox"
+      name="gatofiliaAccess"
+      <%= u.gatofiliaAccess ? "checked" : "" %>
+      style="width:14px; height:14px;"
+    />
+    Gatofilia
+  </label>
+
   <button type="submit" class="btn btn-primary">Salvar</button>
   <a href="/users/<%= u.id %>" class="btn">Detalhes</a>
 </form>

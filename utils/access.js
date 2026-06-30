@@ -43,7 +43,7 @@ const ROLE_LABELS = {
   [ROLES.ASSOCIADO_A]: "Associado Master",
   [ROLES.ASSOCIADO_B]: "Associado Básico",
   [ROLES.BASIC]: "Básico",
-  [ROLES.CATBREED]: "Catbreed",
+  [ROLES.CATBREED]: "Gatofilia",
 };
 
 const BASIC_LEVEL_ROLES = [

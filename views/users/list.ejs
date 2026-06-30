@@ -93,6 +93,9 @@
                           <% if (u.createdAt && status === "INDEFERIDO") { %>
                             • Cadastro: <%= new Date(u.createdAt).toLocaleString('pt-BR') %>
                           <% } %>
+                          <% if (u.gatofiliaAccess) { %>
+                            • Gatofilia liberado
+                          <% } %>
                         </div>
                       </div>
                       <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;">

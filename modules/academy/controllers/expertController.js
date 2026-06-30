@@ -77,7 +77,7 @@ module.exports = (prisma) => ({
     ]);
 
     res.render("academy/expert/dashboard", {
-      pageTitle: "Especialista - CatBreeder Pro",
+      pageTitle: "Especialista - Gatofilia",
       user: req.user,
       academy,
       author,

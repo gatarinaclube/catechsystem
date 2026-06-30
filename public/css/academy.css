@@ -660,6 +660,9 @@ body {
 
 .gatofilia-proof-grid img {
   aspect-ratio: 16 / 10;
+  height: clamp(260px, 32vw, 430px);
+  object-fit: contain;
+  background: #111111;
 }
 
 .gatofilia-proof-grid figcaption {
