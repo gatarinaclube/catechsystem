@@ -897,7 +897,7 @@
                       </div>
                     </form>
                   <% }) %>
-                  <div class="mating-section-scrollbar" data-mating-scrollbar data-section-scrollbar aria-label="Rolagem horizontal da seção <%= group.label %>">
+                  <div class="mating-section-scrollbar" data-mating-scrollbar data-section-scrollbar data-status-scrollbar="<%= group.key %>" aria-label="Rolagem horizontal da seção <%= group.label %>">
                     <div class="mating-section-scrollbar-inner" data-mating-scrollbar-inner></div>
                   </div>
                 <% }) %>
@@ -1027,6 +1027,11 @@
 
           document.querySelectorAll("[data-mating-row]").forEach((row) => {
             row.style.order = String(rowOrder(row));
+          });
+
+          document.querySelectorAll("[data-status-scrollbar]").forEach((scrollbar) => {
+            const groupIndex = statusOrder.get(scrollbar.dataset.statusScrollbar) ?? statusGroups.length;
+            scrollbar.style.order = String(groupIndex * 10000 + 9999);
           });
 
           updateStatusCounters();
