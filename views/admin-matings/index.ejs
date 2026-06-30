@@ -152,6 +152,20 @@
         font-size: 11px;
         opacity: 0.86;
       }
+      .mating-section-scrollbar {
+        height: 12px;
+        min-width: 1237px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        border-left: 1px solid #94a3b8;
+        border-right: 1px solid #94a3b8;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.72);
+        background: rgba(241, 245, 249, 0.96);
+      }
+      .mating-section-scrollbar-inner {
+        height: 1px;
+        min-width: 100%;
+      }
       .mating-status-divider[data-status="CONFIRMADO"] {
         background: #15803d;
       }
@@ -551,6 +565,9 @@
           min-width: 1116px;
           grid-template-columns: 190px 1fr;
         }
+        .mating-section-scrollbar {
+          min-width: 1116px;
+        }
         .mating-list {
           min-width: 1116px;
         }
@@ -738,6 +755,9 @@
                   <div class="mating-status-divider" data-status="<%= group.key %>" data-status-divider="<%= group.key %>" data-group-index="<%= groupIndex %>">
                     <span><%= group.label %></span>
                     <small data-status-count="<%= group.key %>"><%= items.length %></small>
+                  </div>
+                  <div class="mating-section-scrollbar" data-mating-scrollbar data-section-scrollbar aria-label="Rolagem horizontal da seção <%= group.label %>">
+                    <div class="mating-section-scrollbar-inner" data-mating-scrollbar-inner></div>
                   </div>
                   <% items.forEach(function(row, index) { %>
                     <% const globalOrder = (groupIndex * 1000) + index; %>
@@ -1284,16 +1304,18 @@
 
         document.querySelectorAll("[data-mating-sheet-wrap]").forEach((wrap) => {
           const shell = wrap.closest(".mating-sheet-shell");
-          const scrollbar = shell?.querySelector("[data-mating-scrollbar]");
-          const scrollbarInner = shell?.querySelector("[data-mating-scrollbar-inner]");
+          const scrollbars = Array.from(shell?.querySelectorAll("[data-mating-scrollbar]") || []);
           const table = wrap.querySelector(".mating-table");
-          if (!scrollbar || !scrollbarInner || !table) return;
+          if (!scrollbars.length || !table) return;
 
           function refreshMatingScrollbar() {
             const scrollWidth = Math.max(table.scrollWidth, wrap.scrollWidth, wrap.clientWidth);
-            scrollbarInner.style.width = `${scrollWidth}px`;
-            scrollbar.style.display = scrollWidth > wrap.clientWidth ? "block" : "none";
-            scrollbar.scrollLeft = wrap.scrollLeft;
+            scrollbars.forEach((scrollbar) => {
+              const inner = scrollbar.querySelector("[data-mating-scrollbar-inner]");
+              if (inner) inner.style.width = `${scrollWidth}px`;
+              scrollbar.style.display = scrollWidth > wrap.clientWidth ? "block" : "none";
+              scrollbar.scrollLeft = wrap.scrollLeft;
+            });
           }
 
           let syncingFromTable = false;
@@ -1301,15 +1323,22 @@
           wrap.addEventListener("scroll", () => {
             if (syncingFromBar) return;
             syncingFromTable = true;
-            scrollbar.scrollLeft = wrap.scrollLeft;
+            scrollbars.forEach((scrollbar) => {
+              scrollbar.scrollLeft = wrap.scrollLeft;
+            });
             syncingFromTable = false;
           });
 
-          scrollbar.addEventListener("scroll", () => {
-            if (syncingFromTable) return;
-            syncingFromBar = true;
-            wrap.scrollLeft = scrollbar.scrollLeft;
-            syncingFromBar = false;
+          scrollbars.forEach((scrollbar) => {
+            scrollbar.addEventListener("scroll", () => {
+              if (syncingFromTable) return;
+              syncingFromBar = true;
+              wrap.scrollLeft = scrollbar.scrollLeft;
+              scrollbars.forEach((otherScrollbar) => {
+                if (otherScrollbar !== scrollbar) otherScrollbar.scrollLeft = scrollbar.scrollLeft;
+              });
+              syncingFromBar = false;
+            });
           });
 
           requestAnimationFrame(refreshMatingScrollbar);

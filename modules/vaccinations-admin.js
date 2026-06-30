@@ -67,6 +67,13 @@ function buildVaccinationSummary(nextAntirabic, nextFeline, vaccinationState) {
   return "Em dia";
 }
 
+function isPastDate(date) {
+  if (!date) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return date < today;
+}
+
 function buildNextActions(grouped) {
   return Object.values(grouped)
     .flat()
@@ -159,6 +166,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           : "is-green",
       nextAntirabicLabel: nextAntirabic ? formatDate(nextAntirabic) : "-",
       nextFelineLabel: nextFeline ? formatDate(nextFeline) : "-",
+      nextAntirabicOverdue: isPastDate(nextAntirabic),
+      nextFelineOverdue: isPastDate(nextFeline),
     };
   }
 
@@ -204,6 +213,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
         grouped[category].push({
           cat,
+          cleanName: cat.name || buildDisplayName(cat),
           displayName: buildDisplayName(cat),
           motherName: cat.mother?.name || cat.motherName || "-",
           birthDateLabel: formatDate(cat.birthDate) || "-",
@@ -277,11 +287,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         },
       });
 
-      if (req.get("X-Autosave") === "true") {
-        return res.sendStatus(204);
-      }
-
-      if (req.get("X-Manual-Update") === "true" || req.accepts("json")) {
+      if (req.get("X-Autosave") === "true" || req.get("X-Manual-Update") === "true" || req.accepts("json")) {
         return res.json(await vaccinationResponseData(req, catId, antirabicHistory, felineHistory));
       }
 

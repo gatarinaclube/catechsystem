@@ -7,139 +7,320 @@
     <link rel="stylesheet" href="/css/layout.css" />
     <link rel="stylesheet" href="/css/cattery-admin.css" />
     <style>
-      .vaccination-grid {
-        display: grid;
-        grid-template-columns: 260px 220px 300px 220px;
-        gap: 10px;
-        align-items: start;
+      .shell {
+        max-width: 100vw;
       }
-      .vaccination-header {
-        font-size: 12px;
-        font-weight: 600;
-        color: var(--text-muted);
-      }
-      .vaccination-row {
-        padding: 12px;
-        border: 1px solid var(--border-soft);
-        border-radius: 14px;
-        margin-bottom: 12px;
-      }
-      .vaccination-row.is-overdue {
-        border-left: 5px solid #dc2626;
-      }
-      .vaccination-row.is-upcoming {
-        border-left: 5px solid #f59e0b;
-      }
-      .vaccination-row.is-vaccinated {
-        border-left: 5px solid #16a34a;
-      }
-      .vaccination-cat-list {
-        display: grid;
-        gap: 10px;
-        margin-top: 12px;
-      }
-      .vaccination-cat-card {
-        border: 1px solid var(--border-soft);
-        border-radius: 14px;
-        background: #fff;
+
+      .main {
+        min-width: 0;
+        max-width: calc(100vw - 260px);
         overflow: hidden;
       }
-      .vaccination-cat-card > summary {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 12px 14px;
-        cursor: pointer;
-        list-style: none;
-      }
-      .vaccination-cat-card > summary::-webkit-details-marker {
-        display: none;
-      }
-      .vaccination-cat-card.is-overdue {
-        border-left: 5px solid #dc2626;
-      }
-      .vaccination-cat-card.is-upcoming {
-        border-left: 5px solid #f59e0b;
-      }
-      .vaccination-cat-card.is-vaccinated {
-        border-left: 5px solid #16a34a;
-      }
-      .vaccination-cat-summary-main {
+
+      .module-panel {
         min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
       }
-      .vaccination-cat-summary-main strong {
-        display: block;
-        color: var(--text-main);
-        font-size: 14px;
-      }
-      .vaccination-cat-summary-main span {
-        display: block;
-        margin-top: 3px;
-        color: var(--text-muted);
-        font-size: 12px;
-      }
-      .vaccination-cat-summary-meta {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-      }
-      .vaccination-cat-card .vaccination-row {
-        border: 0;
-        border-top: 1px solid var(--border-soft);
-        border-radius: 0;
-        margin-bottom: 0;
-      }
-      .vaccination-cat-card[open] > summary .module-accordion-icon {
-        transform: rotate(180deg);
-      }
+
       .vaccination-search-card {
         margin-bottom: 18px;
       }
+
       .vaccination-search-grid {
         display: grid;
         grid-template-columns: minmax(240px, 1fr) auto;
         gap: 12px;
         align-items: end;
       }
-      .vaccination-cat-card.search-match {
-        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.28);
+
+      .vaccination-sheet-shell {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        margin-top: 14px;
+        overflow: hidden;
       }
-      .vaccination-save-row {
+
+      .vaccination-sheet-wrap {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow-x: auto;
+        overflow-y: visible;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: #f8fafc;
+      }
+
+      .vaccination-table {
+        display: flex;
+        min-width: 980px;
+        flex-direction: column;
+      }
+
+      .vaccination-grid-row {
+        display: grid;
+        grid-template-columns: 220px 175px 275px 155px 155px;
+        min-width: 980px;
+      }
+
+      .vaccination-head-cell,
+      .vaccination-cell {
+        border-right: 1px solid #cbd5e1;
+        border-bottom: 1px solid #cbd5e1;
+        min-width: 0;
+      }
+
+      .vaccination-head-cell:last-child,
+      .vaccination-cell:last-child {
+        border-right: 0;
+      }
+
+      .vaccination-head-cell {
+        background: #e2e8f0;
+        color: #0f172a;
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.03em;
+        padding: 8px 10px;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      .vaccination-cell {
+        background: #fff;
+        padding: 7px 8px;
+        font-size: 12px;
+      }
+
+      .vaccination-data-row.is-overdue .vaccination-cell {
+        background: #fff7f7;
+      }
+
+      .vaccination-data-row.is-upcoming .vaccination-cell {
+        background: #fffbeb;
+      }
+
+      .vaccination-data-row.is-vaccinated .vaccination-cell {
+        background: #f7fff8;
+      }
+
+      .vaccination-data-row.search-match .vaccination-cell {
+        box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.36);
+      }
+
+      .vaccination-section-row {
+        min-width: 980px;
+        border-bottom: 1px solid #94a3b8;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.04em;
+        padding: 7px 10px;
+        text-transform: uppercase;
+      }
+
+      .vaccination-section-scrollbar {
+        height: 12px;
+        min-width: 980px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.72);
+        background: rgba(241, 245, 249, 0.96);
+      }
+
+      .vaccination-section-scrollbar-inner {
+        height: 1px;
+        min-width: 100%;
+      }
+
+      .vaccination-scrollbar {
+        width: 100%;
+        max-width: 100%;
+        height: 18px;
+        margin-top: 8px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        border: 1px solid var(--border-soft);
+        border-radius: 999px;
+        background: #f8fafc;
+        position: sticky;
+        bottom: 0;
+        z-index: 3;
+      }
+
+      .vaccination-scrollbar-inner {
+        height: 1px;
+        min-width: 100%;
+      }
+
+      .vaccination-cat-cell {
+        position: sticky;
+        left: 0;
+        z-index: 2;
+        border-right: 2px solid #94a3b8;
+      }
+
+      .vaccination-cat-details {
+        margin: 0;
+      }
+
+      .vaccination-cat-details > summary {
+        cursor: pointer;
+        list-style: none;
+      }
+
+      .vaccination-cat-details > summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .vaccination-cat-name {
+        display: block;
+        color: #0f172a;
+        font-size: 12px;
+        font-weight: 900;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .vaccination-data-row.is-overdue .vaccination-cat-name {
+        color: #dc2626;
+      }
+
+      .vaccination-cat-extra {
+        display: grid;
+        gap: 2px;
+        margin-top: 8px;
+        color: #475569;
+        font-size: 11px;
+        line-height: 1.35;
+      }
+
+      .vaccination-history-box {
+        display: grid;
+        gap: 4px;
+      }
+
+      .vaccination-history-more {
+        margin: 0;
+      }
+
+      .vaccination-history-more > summary {
+        color: #b45309;
+        cursor: pointer;
+        font-size: 10px;
+        font-weight: 900;
+        list-style: none;
+        margin-bottom: 2px;
+        text-transform: uppercase;
+      }
+
+      .vaccination-history-more > summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .vaccination-history-rows {
+        display: grid;
+        gap: 4px;
+        margin-bottom: 4px;
+      }
+
+      .vaccination-history-line {
         display: flex;
         align-items: center;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 10px;
+        gap: 4px;
+        min-width: 0;
       }
-      .vaccination-save-status {
-        color: var(--text-muted);
+
+      .vaccination-date-display,
+      .vaccination-type-select {
+        height: 28px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background: #fff;
+        color: #0f172a;
         font-size: 12px;
         font-weight: 800;
+        padding: 4px 6px;
       }
+
+      .vaccination-date-display {
+        width: 92px;
+        text-align: center;
+      }
+
+      .vaccination-type-select {
+        width: 118px;
+      }
+
+      .vaccination-icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border: 1px solid #cbd5e1;
+        border-radius: 999px;
+        background: #fff;
+        color: #475569;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 900;
+        line-height: 1;
+        padding: 0;
+      }
+
+      .vaccination-icon-button:hover {
+        border-color: #f59e0b;
+        color: #b45309;
+      }
+
+      .vaccination-icon-button.is-danger:hover {
+        border-color: #dc2626;
+        color: #dc2626;
+      }
+
+      .vaccination-next-date {
+        display: inline-block;
+        color: #15803d;
+        font-size: 13px;
+        font-weight: 900;
+        line-height: 1.25;
+        white-space: nowrap;
+      }
+
+      .vaccination-next-date.is-danger {
+        color: #dc2626;
+      }
+
+      .vaccination-save-status {
+        display: inline-block;
+        min-height: 14px;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 900;
+        line-height: 1.2;
+        margin-top: 3px;
+        text-transform: uppercase;
+      }
+
       .vaccination-save-status.is-success {
         color: #16a34a;
       }
+
       .vaccination-save-status.is-error {
         color: #dc2626;
       }
-      @media (max-width: 1300px) {
-        .vaccination-grid {
-          grid-template-columns: 1fr;
-        }
-        .vaccination-header {
-          display: none;
-        }
-        .vaccination-cat-card > summary {
-          align-items: flex-start;
-          flex-direction: column;
-        }
-        .vaccination-cat-summary-meta {
-          justify-content: flex-start;
+
+      @media (max-width: 900px) {
+        .main {
+          max-width: 100vw;
         }
       }
+
       @media (max-width: 700px) {
         .vaccination-search-grid {
           grid-template-columns: 1fr;
@@ -148,6 +329,80 @@
     </style>
   </head>
   <body>
+    <%
+      function isoDate(value) {
+        const text = String(value || "");
+        if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) return "";
+        const year = parsed.getFullYear();
+        const month = String(parsed.getMonth() + 1).padStart(2, "0");
+        const day = String(parsed.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      }
+
+      function visibleDate(value) {
+        const iso = isoDate(value);
+        return iso ? formatDate(iso) : "";
+      }
+
+      function isOverdue(value) {
+        const iso = isoDate(value);
+        if (!iso) return false;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const parsed = new Date(`${iso}T00:00:00`);
+        return parsed < today;
+      }
+
+      function filledAntirabic(history) {
+        const filled = (history || []).filter(function(item) { return item && item.date; });
+        return filled.length ? filled : [{ date: "" }];
+      }
+
+      function filledFeline(history) {
+        const filled = (history || []).filter(function(item) { return item && (item.date || item.type); });
+        return filled.length ? filled : [{ date: "", type: "" }];
+      }
+
+      function renderAntirabicLine(item) {
+    %>
+        <div class="vaccination-history-line" data-antirabic-row>
+          <input type="hidden" name="antirabicDates" value="<%= isoDate(item.date) %>" data-vaccine-date-value />
+          <input
+            class="vaccination-date-display"
+            type="text"
+            inputmode="numeric"
+            placeholder="dd/mm/aaaa"
+            value="<%= visibleDate(item.date) %>"
+            data-vaccine-date-display
+          />
+        </div>
+    <%
+      }
+
+      function renderFelineLine(item) {
+    %>
+        <div class="vaccination-history-line" data-feline-row>
+          <input type="hidden" name="felineDates" value="<%= isoDate(item.date) %>" data-vaccine-date-value />
+          <input
+            class="vaccination-date-display"
+            type="text"
+            inputmode="numeric"
+            placeholder="dd/mm/aaaa"
+            value="<%= visibleDate(item.date) %>"
+            data-vaccine-date-display
+          />
+          <select name="felineTypes" class="vaccination-type-select">
+            <option value="">Tipo</option>
+            <% felineTypes.forEach(function(type) { %>
+              <option value="<%= type %>" <%= item.type === type ? "selected" : "" %>><%= type %></option>
+            <% }) %>
+          </select>
+        </div>
+    <%
+      }
+    %>
     <div class="shell">
       <%- include('../partials/sidebar', { user, currentPath }) %>
       <main class="main">
@@ -166,7 +421,7 @@
             <div class="field">
               <label class="field-label" for="vaccinationSearch">Pesquisar gato</label>
               <input id="vaccinationSearch" type="search" placeholder="Digite o nome do gato..." autocomplete="off" />
-              <div class="section-note">Ao pesquisar, os gatos encontrados sobem para o topo da categoria.</div>
+              <div class="section-note">Ao pesquisar, o gato encontrado é destacado e levado para visualização.</div>
             </div>
             <button class="btn" type="button" id="clearVaccinationSearch">Limpar</button>
           </div>
@@ -199,116 +454,130 @@
           <% } %>
         </div>
 
-        <% categories.forEach(function(category) { %>
-          <% const items = grouped[category.key] || []; %>
-          <details class="content-card module-panel module-accordion" style="border-left: 5px solid <%= category.color %>;">
-            <summary>
-              <div class="module-accordion-summary">
-                <span class="module-accordion-icon">⌄</span>
-                <span class="module-accordion-title"><%= category.label %></span>
-              </div>
-              <span class="module-accordion-count"><%= items.length %></span>
-            </summary>
-            <div class="module-accordion-body">
-              <% if (!items.length) { %>
-                <div class="empty" style="margin-top:12px;">Nenhum gato nesta categoria.</div>
-              <% } else { %>
-                <div class="vaccination-cat-list">
-                  <% items.forEach(function(row, index) { %>
-                    <details
-                      class="vaccination-cat-card is-<%= row.vaccinationState %>"
-                      data-vaccination-card
-                      data-original-order="<%= index %>"
-                      data-search="<%= String(row.displayName || '').toLowerCase() %>"
-                    >
-                      <summary>
-                        <div class="vaccination-cat-summary-main">
-                          <strong><%= row.displayName %></strong>
+        <div class="content-card module-panel">
+          <div class="history-section-head">
+            <div>
+              <div class="content-title">Planilha de vacinação</div>
+              <div class="content-sub">Histórico, próximas doses e salvamento automático.</div>
+            </div>
+          </div>
+
+          <div class="vaccination-sheet-shell">
+            <div class="vaccination-sheet-wrap" data-vaccination-sheet-wrap>
+              <div class="vaccination-table">
+                <div class="vaccination-grid-row">
+                  <div class="vaccination-head-cell vaccination-cat-cell">Gato</div>
+                  <div class="vaccination-head-cell">Histórico antirrábica</div>
+                  <div class="vaccination-head-cell">Histórico feline</div>
+                  <div class="vaccination-head-cell">Próxima antirrábica</div>
+                  <div class="vaccination-head-cell">Próxima feline</div>
+                </div>
+
+                <% categories.forEach(function(category) { %>
+                  <% const items = grouped[category.key] || []; %>
+                  <div class="vaccination-section-row" style="background:<%= category.color %>;">
+                    <%= category.label %> · <%= items.length %>
+                  </div>
+                  <div class="vaccination-section-scrollbar" data-vaccination-scrollbar>
+                    <div class="vaccination-section-scrollbar-inner" data-vaccination-scrollbar-inner></div>
+                  </div>
+                  <% if (!items.length) { %>
+                    <div class="vaccination-grid-row">
+                      <div class="vaccination-cell vaccination-cat-cell">Nenhum gato nesta categoria.</div>
+                      <div class="vaccination-cell"></div>
+                      <div class="vaccination-cell"></div>
+                      <div class="vaccination-cell"></div>
+                      <div class="vaccination-cell"></div>
+                    </div>
+                  <% } else { %>
+                    <% items.forEach(function(row, index) { %>
+                      <% const antiHistory = filledAntirabic(row.antirabicHistory); %>
+                      <% const antiPrior = antiHistory.slice(0, -1); %>
+                      <% const antiLast = antiHistory[antiHistory.length - 1] || { date: "" }; %>
+                      <% const felineHistory = filledFeline(row.felineHistory); %>
+                      <% const felinePrior = felineHistory.slice(0, -1); %>
+                      <% const felineLast = felineHistory[felineHistory.length - 1] || { date: "", type: "" }; %>
+                      <form
+                        method="post"
+                        action="/admin/vaccinations/<%= row.cat.id %>"
+                        class="vaccination-grid-row vaccination-data-row is-<%= row.vaccinationState %>"
+                        data-vaccination-row
+                        data-original-order="<%= index %>"
+                        data-search="<%= String(row.cleanName || row.displayName || '').toLowerCase() %>"
+                      >
+                        <div class="vaccination-cell vaccination-cat-cell">
+                          <details class="vaccination-cat-details">
+                            <summary>
+                              <span class="vaccination-cat-name"><%= row.cleanName || row.displayName %></span>
+                            </summary>
+                            <div class="vaccination-cat-extra">
+                              <span>Nascimento: <%= row.birthDateLabel %></span>
+                              <span>Mãe: <%= row.motherName %></span>
+                              <span data-vaccination-summary><%= row.vaccinationSummary || "Em dia" %></span>
+                            </div>
+                          </details>
                         </div>
-                        <div class="vaccination-cat-summary-meta">
-                          <span
-                            class="status-pill <%= row.vaccinationState === 'overdue' ? 'is-red' : row.vaccinationState === 'upcoming' ? 'is-yellow' : 'is-green' %>"
-                            data-summary-status
-                          >
-                            <%= row.vaccinationSummary || (row.vaccinationState === 'overdue' ? 'Vencida' : row.vaccinationState === 'upcoming' ? 'Próxima' : 'Em dia') %>
-                          </span>
-                          <span class="module-accordion-icon">⌄</span>
+
+                        <div class="vaccination-cell">
+                          <div class="vaccination-history-box" data-antirabic-box>
+                            <% if (antiPrior.length) { %>
+                              <details class="vaccination-history-more">
+                                <summary>Ver mais datas</summary>
+                                <div class="vaccination-history-rows">
+                                  <% antiPrior.forEach(function(item) { renderAntirabicLine(item); }) %>
+                                </div>
+                              </details>
+                            <% } %>
+                            <% renderAntirabicLine(antiLast); %>
+                            <div class="vaccination-history-line">
+                              <button type="button" class="vaccination-icon-button add-antirabic" title="Adicionar antirrábica" aria-label="Adicionar antirrábica">+</button>
+                            </div>
+                            <span class="vaccination-save-status" data-save-status></span>
+                          </div>
                         </div>
-                      </summary>
-                      <form method="post" action="/admin/vaccinations/<%= row.cat.id %>" class="vaccination-row is-<%= row.vaccinationState %>">
-                        <div class="vaccination-grid">
-                          <div>
-                            <div class="item-title" style="color:<%= row.vaccinationState === 'overdue' ? '#dc2626' : row.vaccinationState === 'upcoming' ? '#f59e0b' : '#16a34a' %>;">
-                              <%= row.displayName %>
-                            </div>
-                            <div class="cat-subline">Nascimento: <%= row.birthDateLabel %></div>
-                            <div class="cat-subline">Mãe: <%= row.motherName %></div>
-                            <div style="margin-top:8px;">
-                              <span
-                                class="status-pill <%= row.vaccinationState === 'overdue' ? 'is-red' : row.vaccinationState === 'upcoming' ? 'is-yellow' : 'is-green' %>"
-                                data-detail-status
-                              >
-                                <%= row.vaccinationState === 'overdue' ? 'Vencida' : row.vaccinationState === 'upcoming' ? 'Próxima' : 'Em dia' %>
-                              </span>
-                            </div>
-                          </div>
 
-                          <div class="mini-stack" data-antirabic-box>
-                            <div class="content-sub">Histórico Antirrábica</div>
-                            <% const lastAntirabicIndex = row.antirabicHistory.reduce(function(last, item, index) { return item.date ? index : last; }, -1); %>
-                            <% row.antirabicHistory.forEach(function(item, index) { %>
-                              <div class="inline-plus" data-antirabic-row>
-                                <input type="date" name="antirabicDates" value="<%= item.date || '' %>" />
-                                <% if (item.date && index === lastAntirabicIndex) { %>
-                                  <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
-                                <% } %>
-                              </div>
-                            <% }) %>
-                            <div class="history-add-row">
-                              <button type="button" class="btn add-antirabic">+</button>
+                        <div class="vaccination-cell">
+                          <div class="vaccination-history-box" data-feline-box>
+                            <% if (felinePrior.length) { %>
+                              <details class="vaccination-history-more">
+                                <summary>Ver mais datas</summary>
+                                <div class="vaccination-history-rows">
+                                  <% felinePrior.forEach(function(item) { renderFelineLine(item); }) %>
+                                </div>
+                              </details>
+                            <% } %>
+                            <% renderFelineLine(felineLast); %>
+                            <div class="vaccination-history-line">
+                              <button type="button" class="vaccination-icon-button add-feline" title="Adicionar feline" aria-label="Adicionar feline">+</button>
                             </div>
+                            <span class="vaccination-save-status" data-save-status></span>
                           </div>
+                        </div>
 
-                          <div class="mini-stack" data-feline-box>
-                            <div class="content-sub">Histórico Feline</div>
-                            <% const lastFelineIndex = row.felineHistory.reduce(function(last, item, index) { return (item.date || item.type) ? index : last; }, -1); %>
-                            <% row.felineHistory.forEach(function(item, index) { %>
-                              <div class="inline-plus" data-feline-row>
-                                <input type="date" name="felineDates" value="<%= item.date || '' %>" />
-                                <select name="felineTypes" style="width:120px;">
-                                  <option value="">Tipo</option>
-                                  <% felineTypes.forEach(function(type) { %>
-                                    <option value="<%= type %>" <%= item.type === type ? "selected" : "" %>><%= type %></option>
-                                  <% }) %>
-                                </select>
-                                <% if ((item.date || item.type) && index === lastFelineIndex) { %>
-                                  <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
-                                <% } %>
-                              </div>
-                            <% }) %>
-                            <div class="history-add-row">
-                              <button type="button" class="btn add-feline">+</button>
-                            </div>
-                          </div>
+                        <div class="vaccination-cell">
+                          <strong
+                            class="vaccination-next-date <%= isOverdue(row.nextAntirabic) ? 'is-danger' : '' %>"
+                            data-next-antirabic
+                          ><%= row.nextAntirabic ? formatDate(row.nextAntirabic) : "-" %></strong>
+                        </div>
 
-                          <div class="mini-stack">
-                            <div class="content-sub">Próxima vacinação</div>
-                            <div>Antirrábica: <strong data-next-antirabic><%= row.nextAntirabic ? formatDate(row.nextAntirabic) : "-" %></strong></div>
-                            <div>Feline: <strong data-next-feline><%= row.nextFeline ? formatDate(row.nextFeline) : "-" %></strong></div>
-                            <div class="vaccination-save-row">
-                              <button class="btn vaccination-update-button" type="button">Atualizar</button>
-                              <span class="vaccination-save-status" data-save-status></span>
-                            </div>
-                          </div>
+                        <div class="vaccination-cell">
+                          <strong
+                            class="vaccination-next-date <%= isOverdue(row.nextFeline) ? 'is-danger' : '' %>"
+                            data-next-feline
+                          ><%= row.nextFeline ? formatDate(row.nextFeline) : "-" %></strong>
                         </div>
                       </form>
-                    </details>
-                  <% }) %>
-                </div>
-              <% } %>
+                    <% }) %>
+                  <% } %>
+                <% }) %>
+              </div>
             </div>
-          </details>
-        <% }) %>
+            <div class="vaccination-scrollbar" data-vaccination-scrollbar>
+              <div class="vaccination-scrollbar-inner" data-vaccination-scrollbar-inner></div>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
 
@@ -316,14 +585,53 @@
       (function () {
         const felineTypes = <%- JSON.stringify(felineTypes) %>;
 
-        function isCompleteDate(value) {
-          if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) return false;
-          const [year, month, day] = value.split("-").map(Number);
-          if (year < 1900 || year > 2200) return false;
+        function normalizeSearch(value) {
+          return String(value || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .trim();
+        }
+
+        function maskBrazilianDate(value) {
+          const digits = String(value || "").replace(/\D/g, "").slice(0, 8);
+          if (digits.length <= 2) return digits;
+          if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+          return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+        }
+
+        function displayToIso(value) {
+          const match = String(value || "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+          if (!match) return "";
+          const day = Number(match[1]);
+          const month = Number(match[2]);
+          const year = Number(match[3]);
+          if (year < 1900 || year > 2200) return "";
           const parsed = new Date(Date.UTC(year, month - 1, day));
-          return parsed.getUTCFullYear() === year &&
-            parsed.getUTCMonth() === month - 1 &&
-            parsed.getUTCDate() === day;
+          if (
+            parsed.getUTCFullYear() !== year ||
+            parsed.getUTCMonth() !== month - 1 ||
+            parsed.getUTCDate() !== day
+          ) {
+            return "";
+          }
+          return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        }
+
+        function isCompleteDisplayDate(value) {
+          return Boolean(displayToIso(value));
+        }
+
+        function isCompleteIsoDate(value) {
+          return /^\d{4}-\d{2}-\d{2}$/.test(String(value || ""));
+        }
+
+        function isDisplayDatePast(value) {
+          const iso = displayToIso(value);
+          if (!iso) return false;
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          return new Date(`${iso}T00:00:00`) < today;
         }
 
         function felineTypeOptions() {
@@ -331,6 +639,27 @@
             '<option value="">Tipo</option>',
             ...felineTypes.map((type) => `<option value="${type}">${type}</option>`),
           ].join("");
+        }
+
+        function setStatusText(form, text, type = "") {
+          const statuses = form?.querySelectorAll("[data-save-status]") || [];
+          statuses.forEach((statusElement) => {
+            statusElement.textContent = text || "";
+            statusElement.classList.toggle("is-success", type === "success");
+            statusElement.classList.toggle("is-error", type === "error");
+          });
+        }
+
+        function applyRowState(row, state) {
+          if (!row) return;
+          row.classList.remove("is-overdue", "is-upcoming", "is-vaccinated");
+          row.classList.add(`is-${state || "vaccinated"}`);
+        }
+
+        function applyNextDate(element, label, overdue) {
+          if (!element) return;
+          element.textContent = label || "-";
+          element.classList.toggle("is-danger", Boolean(overdue));
         }
 
         async function autosave(form) {
@@ -342,63 +671,7 @@
 
           form.dataset.submitting = "true";
           form.dataset.pendingSave = "false";
-
-          try {
-            const response = await fetch(form.action, {
-              method: "POST",
-              body: new URLSearchParams(new FormData(form)),
-              credentials: "same-origin",
-              headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-                "X-Autosave": "true",
-              },
-            });
-
-            if (!response.ok) {
-              throw new Error("Erro ao salvar vacinação");
-            }
-          } catch (error) {
-            console.error(error);
-          } finally {
-            form.dataset.submitting = "false";
-            if (form.dataset.pendingSave === "true") {
-              autosave(form);
-            }
-          }
-        }
-
-        function setStatusText(statusElement, text, type = "") {
-          if (!statusElement) return;
-          statusElement.textContent = text || "";
-          statusElement.classList.toggle("is-success", type === "success");
-          statusElement.classList.toggle("is-error", type === "error");
-        }
-
-        function applyPillClass(element, pillClass) {
-          if (!element) return;
-          element.classList.remove("is-red", "is-yellow", "is-green");
-          if (pillClass) element.classList.add(pillClass);
-        }
-
-        function applyCardState(card, state) {
-          if (!card) return;
-          card.classList.remove("is-overdue", "is-upcoming", "is-vaccinated");
-          card.classList.add(`is-${state || "vaccinated"}`);
-          const row = card.querySelector(".vaccination-row");
-          if (row) {
-            row.classList.remove("is-overdue", "is-upcoming", "is-vaccinated");
-            row.classList.add(`is-${state || "vaccinated"}`);
-          }
-        }
-
-        async function manualUpdate(form) {
-          if (!form) return;
-          const card = form.closest("[data-vaccination-card]");
-          const saveStatus = form.querySelector("[data-save-status]");
-          const button = form.querySelector(".vaccination-update-button");
-
-          setStatusText(saveStatus, "Salvando...");
-          if (button) button.disabled = true;
+          setStatusText(form, "Salvando...");
 
           try {
             const response = await fetch(form.action, {
@@ -408,60 +681,32 @@
               headers: {
                 "Content-Type": "application/x-www-form-urlencoded",
                 "Accept": "application/json",
-                "X-Manual-Update": "true",
+                "X-Autosave": "true",
               },
             });
 
-            if (!response.ok) throw new Error("Não foi possível salvar.");
+            if (!response.ok) throw new Error("Erro ao salvar vacinação");
             const data = await response.json();
-            applyCardState(card, data.vaccinationState);
-            card?.querySelectorAll("[data-summary-status]").forEach((item) => {
+            applyRowState(form, data.vaccinationState);
+            form.querySelectorAll("[data-vaccination-summary]").forEach((item) => {
               item.textContent = data.vaccinationSummary || data.stateLabel || "Em dia";
-              applyPillClass(item, data.pillClass);
             });
-            form.querySelectorAll("[data-detail-status]").forEach((item) => {
-              item.textContent = data.stateLabel || "Em dia";
-              applyPillClass(item, data.pillClass);
-            });
-            const nextAntirabic = form.querySelector("[data-next-antirabic]");
-            const nextFeline = form.querySelector("[data-next-feline]");
-            if (nextAntirabic) nextAntirabic.textContent = data.nextAntirabicLabel || "-";
-            if (nextFeline) nextFeline.textContent = data.nextFelineLabel || "-";
-            setStatusText(saveStatus, "Salvo.", "success");
+            applyNextDate(form.querySelector("[data-next-antirabic]"), data.nextAntirabicLabel, data.nextAntirabicOverdue);
+            applyNextDate(form.querySelector("[data-next-feline]"), data.nextFelineLabel, data.nextFelineOverdue);
+            setStatusText(form, "Salvo.", "success");
           } catch (error) {
             console.error(error);
-            setStatusText(saveStatus, error.message || "Erro ao salvar.", "error");
+            setStatusText(form, error.message || "Erro ao salvar.", "error");
           } finally {
-            if (button) button.disabled = false;
+            form.dataset.submitting = "false";
+            if (form.dataset.pendingSave === "true") {
+              autosave(form);
+            }
           }
         }
 
-        document.querySelectorAll(".add-antirabic").forEach((button) => {
-          button.addEventListener("click", () => {
-            const box = button.closest("[data-antirabic-box]");
-            const row = document.createElement("div");
-            row.className = "inline-plus";
-            row.dataset.antirabicRow = "";
-            row.innerHTML = '<input type="date" name="antirabicDates" value="" />';
-            box.insertBefore(row, button.closest(".history-add-row"));
-            bindAntirabicRow(row);
-          });
-        });
-
-        document.querySelectorAll(".add-feline").forEach((button) => {
-          button.addEventListener("click", () => {
-            const box = button.closest("[data-feline-box]");
-            const row = document.createElement("div");
-            row.className = "inline-plus";
-            row.dataset.felineRow = "";
-            row.innerHTML = `<input type="date" name="felineDates" value="" /><select name="felineTypes" style="width:120px;">${felineTypeOptions()}</select>`;
-            box.insertBefore(row, button.closest(".history-add-row"));
-            bindFelineRow(row);
-          });
-        });
-
-        function removeHistoryRow(row) {
-          row.remove();
+        function deleteButtonHtml() {
+          return '<button type="button" class="vaccination-icon-button is-danger delete-history-date" title="Remover última vacina" aria-label="Remover última vacina">&#128465;</button>';
         }
 
         function bindDelete(button) {
@@ -469,15 +714,11 @@
             const form = button.closest("form");
             const antirabicBox = button.closest("[data-antirabic-box]");
             const felineBox = button.closest("[data-feline-box]");
-            removeHistoryRow(button.closest(".inline-plus"));
+            button.closest(".vaccination-history-line")?.remove();
             if (antirabicBox) refreshAntirabicDeleteButton(antirabicBox);
             if (felineBox) refreshFelineDeleteButton(felineBox);
             autosave(form);
           });
-        }
-
-        function deleteButtonHtml() {
-          return '<button type="button" class="btn delete-history-date" title="Remover última vacina" aria-label="Remover última vacina">&#128465;</button>';
         }
 
         function resetDeleteButton(row) {
@@ -485,99 +726,154 @@
         }
 
         function ensureDeleteButton(row) {
-          if (!row.querySelector(".delete-history-date")) {
-            row.insertAdjacentHTML("beforeend", deleteButtonHtml());
-            bindDelete(row.querySelector(".delete-history-date"));
-          }
+          if (!row || row.querySelector(".delete-history-date")) return;
+          row.insertAdjacentHTML("beforeend", deleteButtonHtml());
+          bindDelete(row.querySelector(".delete-history-date"));
         }
 
         function refreshAntirabicDeleteButton(box) {
           const rows = Array.from(box.querySelectorAll("[data-antirabic-row]"));
           rows.forEach(resetDeleteButton);
-          const savedRows = rows.filter((row) => isCompleteDate(row.querySelector('input[type="date"]')?.value));
-          const last = savedRows[savedRows.length - 1];
-          if (last) ensureDeleteButton(last);
+          const savedRows = rows.filter((row) => isCompleteIsoDate(row.querySelector("[data-vaccine-date-value]")?.value));
+          ensureDeleteButton(savedRows[savedRows.length - 1]);
         }
 
         function refreshFelineDeleteButton(box) {
           const rows = Array.from(box.querySelectorAll("[data-feline-row]"));
           rows.forEach(resetDeleteButton);
           const savedRows = rows.filter((row) => {
-            const input = row.querySelector('input[type="date"]');
-            const select = row.querySelector("select");
-            return isCompleteDate(input?.value) && Boolean(select?.value);
+            const date = row.querySelector("[data-vaccine-date-value]")?.value;
+            const type = row.querySelector("select")?.value;
+            return isCompleteIsoDate(date) && Boolean(type);
           });
-          const last = savedRows[savedRows.length - 1];
-          if (last) ensureDeleteButton(last);
+          ensureDeleteButton(savedRows[savedRows.length - 1]);
+        }
+
+        function bindDateField(row, options = {}) {
+          const display = row.querySelector("[data-vaccine-date-display]");
+          const hidden = row.querySelector("[data-vaccine-date-value]");
+          if (!display || !hidden) return;
+
+          let lastSaved = hidden.value || "";
+
+          function commitIfComplete() {
+            const iso = displayToIso(display.value);
+            if (!iso) return false;
+            hidden.value = iso;
+            if (iso !== lastSaved || options.forceSave?.()) {
+              lastSaved = iso;
+              return true;
+            }
+            return false;
+          }
+
+          display.addEventListener("input", () => {
+            const masked = maskBrazilianDate(display.value);
+            display.value = masked;
+            if (!isCompleteDisplayDate(masked)) return;
+            if (!commitIfComplete()) return;
+            options.onComplete?.();
+          });
+
+          display.addEventListener("blur", () => {
+            const masked = maskBrazilianDate(display.value);
+            display.value = masked;
+            if (!isCompleteDisplayDate(masked)) return;
+            if (!commitIfComplete()) return;
+            options.onComplete?.();
+          });
+        }
+
+        function antirabicLineHtml() {
+          return `
+            <div class="vaccination-history-line" data-antirabic-row>
+              <input type="hidden" name="antirabicDates" value="" data-vaccine-date-value />
+              <input class="vaccination-date-display" type="text" inputmode="numeric" placeholder="dd/mm/aaaa" value="" data-vaccine-date-display />
+            </div>
+          `;
+        }
+
+        function felineLineHtml() {
+          return `
+            <div class="vaccination-history-line" data-feline-row>
+              <input type="hidden" name="felineDates" value="" data-vaccine-date-value />
+              <input class="vaccination-date-display" type="text" inputmode="numeric" placeholder="dd/mm/aaaa" value="" data-vaccine-date-display />
+              <select name="felineTypes" class="vaccination-type-select">${felineTypeOptions()}</select>
+            </div>
+          `;
         }
 
         function bindAntirabicRow(row) {
-          const input = row.querySelector('input[type="date"]');
-          if (input) {
-            input.addEventListener("change", () => {
-              if (!isCompleteDate(input.value)) return;
-              refreshAntirabicDeleteButton(row.closest("[data-antirabic-box]"));
+          bindDateField(row, {
+            onComplete: () => {
+              const box = row.closest("[data-antirabic-box]");
+              refreshAntirabicDeleteButton(box);
               autosave(row.closest("form"));
-            });
-          }
-
+            },
+          });
           const deleteButton = row.querySelector(".delete-history-date");
           if (deleteButton) bindDelete(deleteButton);
         }
 
         function bindFelineRow(row) {
-          const input = row.querySelector('input[type="date"]');
           const select = row.querySelector("select");
-
-          function maybeSave() {
-            if (!isCompleteDate(input?.value) || !select?.value) return;
-            refreshFelineDeleteButton(row.closest("[data-feline-box]"));
+          const maybeSave = () => {
+            const date = row.querySelector("[data-vaccine-date-value]")?.value;
+            if (!isCompleteIsoDate(date) || !select?.value) return;
+            const box = row.closest("[data-feline-box]");
+            refreshFelineDeleteButton(box);
             autosave(row.closest("form"));
-          }
+          };
 
-          if (input) input.addEventListener("change", maybeSave);
+          bindDateField(row, { onComplete: maybeSave });
           if (select) select.addEventListener("change", maybeSave);
-
           const deleteButton = row.querySelector(".delete-history-date");
           if (deleteButton) bindDelete(deleteButton);
         }
+
+        document.querySelectorAll(".add-antirabic").forEach((button) => {
+          button.addEventListener("click", () => {
+            const box = button.closest("[data-antirabic-box]");
+            const addLine = button.closest(".vaccination-history-line");
+            addLine.insertAdjacentHTML("beforebegin", antirabicLineHtml());
+            bindAntirabicRow(addLine.previousElementSibling);
+            addLine.previousElementSibling?.querySelector("[data-vaccine-date-display]")?.focus();
+            refreshAntirabicDeleteButton(box);
+          });
+        });
+
+        document.querySelectorAll(".add-feline").forEach((button) => {
+          button.addEventListener("click", () => {
+            const box = button.closest("[data-feline-box]");
+            const addLine = button.closest(".vaccination-history-line");
+            addLine.insertAdjacentHTML("beforebegin", felineLineHtml());
+            bindFelineRow(addLine.previousElementSibling);
+            addLine.previousElementSibling?.querySelector("[data-vaccine-date-display]")?.focus();
+            refreshFelineDeleteButton(box);
+          });
+        });
 
         document.querySelectorAll("[data-antirabic-row]").forEach(bindAntirabicRow);
         document.querySelectorAll("[data-feline-row]").forEach(bindFelineRow);
         document.querySelectorAll("[data-antirabic-box]").forEach(refreshAntirabicDeleteButton);
         document.querySelectorAll("[data-feline-box]").forEach(refreshFelineDeleteButton);
-        document.querySelectorAll(".vaccination-update-button").forEach((button) => {
-          button.addEventListener("click", () => manualUpdate(button.closest("form")));
-        });
 
         const searchInput = document.getElementById("vaccinationSearch");
         const clearSearch = document.getElementById("clearVaccinationSearch");
-        const cards = Array.from(document.querySelectorAll("[data-vaccination-card]"));
-
-        function normalizeSearch(value) {
-          return String(value || "")
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .toLowerCase()
-            .trim();
-        }
+        const rows = Array.from(document.querySelectorAll("[data-vaccination-row]"));
 
         function applySearch() {
           const query = normalizeSearch(searchInput?.value);
           let firstMatch = null;
 
-          cards.forEach((card) => {
-            const searchable = normalizeSearch(card.dataset.search);
+          rows.forEach((row) => {
+            const searchable = normalizeSearch(row.dataset.search);
             const matched = Boolean(query) && searchable.includes(query);
-            card.classList.toggle("search-match", matched);
-            card.style.order = matched ? "-1" : card.dataset.originalOrder || "0";
-            if (matched && !firstMatch) firstMatch = card;
+            row.classList.toggle("search-match", matched);
+            if (matched && !firstMatch) firstMatch = row;
           });
 
           if (query && firstMatch) {
-            const category = firstMatch.closest(".module-accordion");
-            if (category) category.open = true;
-            if (!firstMatch.open) firstMatch.open = true;
             firstMatch.scrollIntoView({ behavior: "smooth", block: "center" });
           }
         }
@@ -585,11 +881,58 @@
         searchInput?.addEventListener("input", applySearch);
         clearSearch?.addEventListener("click", () => {
           if (searchInput) searchInput.value = "";
-          cards.forEach((card) => {
-            card.classList.remove("search-match");
-            card.style.order = card.dataset.originalOrder || "0";
-          });
+          rows.forEach((row) => row.classList.remove("search-match"));
           searchInput?.focus();
+        });
+
+        document.querySelectorAll("[data-vaccination-sheet-wrap]").forEach((wrap) => {
+          const shell = wrap.closest(".vaccination-sheet-shell");
+          const scrollbars = Array.from(shell?.querySelectorAll("[data-vaccination-scrollbar]") || []);
+          const table = wrap.querySelector(".vaccination-table");
+          if (!scrollbars.length || !table) return;
+
+          function refreshVaccinationScrollbar() {
+            const scrollWidth = Math.max(table.scrollWidth, wrap.scrollWidth, wrap.clientWidth);
+            scrollbars.forEach((scrollbar) => {
+              const inner = scrollbar.querySelector("[data-vaccination-scrollbar-inner]");
+              if (inner) inner.style.width = `${scrollWidth}px`;
+              scrollbar.style.display = scrollWidth > wrap.clientWidth ? "block" : "none";
+              scrollbar.scrollLeft = wrap.scrollLeft;
+            });
+          }
+
+          let syncingFromTable = false;
+          let syncingFromBar = false;
+
+          wrap.addEventListener("scroll", () => {
+            if (syncingFromBar) return;
+            syncingFromTable = true;
+            scrollbars.forEach((scrollbar) => {
+              scrollbar.scrollLeft = wrap.scrollLeft;
+            });
+            syncingFromTable = false;
+          });
+
+          scrollbars.forEach((scrollbar) => {
+            scrollbar.addEventListener("scroll", () => {
+              if (syncingFromTable) return;
+              syncingFromBar = true;
+              wrap.scrollLeft = scrollbar.scrollLeft;
+              scrollbars.forEach((other) => {
+                if (other !== scrollbar) other.scrollLeft = scrollbar.scrollLeft;
+              });
+              syncingFromBar = false;
+            });
+          });
+
+          requestAnimationFrame(refreshVaccinationScrollbar);
+          window.addEventListener("resize", refreshVaccinationScrollbar);
+          window.addEventListener("load", refreshVaccinationScrollbar);
+          if ("ResizeObserver" in window) {
+            const observer = new ResizeObserver(refreshVaccinationScrollbar);
+            observer.observe(wrap);
+            observer.observe(table);
+          }
         });
       })();
     </script>
