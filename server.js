@@ -1016,17 +1016,17 @@ app.get("/sitemap.xml", async (req, res, next) => {
   try {
     if (gatofiliaHostMatches(req.hostname)) {
       const base = gatofiliaBaseUrl();
-      const categories = await prisma.academyCategory.findMany({
-        where: { published: true },
-        orderBy: { updatedAt: "desc" },
-        take: 100,
-      });
+      const lastmod = new Date();
       const gatofiliaUrls = [
-        { loc: "/", priority: "1.0", lastmod: new Date() },
-        { loc: "/academy/sobre", priority: "0.7", lastmod: new Date() },
-        { loc: "/academy/planos", priority: "0.8", lastmod: new Date() },
-        { loc: "/academy/conteudos", priority: "0.9", lastmod: categories[0]?.updatedAt || new Date() },
-        { loc: "/academy/faq", priority: "0.5", lastmod: new Date() },
+        { loc: "/", priority: "1.0", lastmod },
+        { loc: "/#inicio", priority: "0.9", lastmod },
+        { loc: "/#quem-somos", priority: "0.8", lastmod },
+        { loc: "/#jornada", priority: "0.8", lastmod },
+        { loc: "/#metodo", priority: "0.8", lastmod },
+        { loc: "/#beneficios", priority: "0.8", lastmod },
+        { loc: "/#faq", priority: "0.7", lastmod },
+        { loc: "/#pre-inscricao", priority: "0.9", lastmod },
+        { loc: "/#contato", priority: "0.6", lastmod },
       ];
       const xml = [
         '<?xml version="1.0" encoding="UTF-8"?>',

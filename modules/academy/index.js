@@ -22,15 +22,29 @@ module.exports = (prisma) => {
   const academyAdmin = requireAcademyAdmin(prisma);
   const academyContributor = requireAcademyContributor(prisma);
   const academyUpload = createAcademyUpload();
+  const publicAnchorRedirect = (anchor) => (req, res) => {
+    const host = String(req.hostname || "").toLowerCase().replace(/:\d+$/, "");
+    const gatofiliaDomains = String(process.env.GATOFILIA_DOMAINS || "")
+      .split(",")
+      .map((domain) => domain.trim().toLowerCase())
+      .filter(Boolean);
+    const isGatofiliaHost = (
+      host === "gatofilia.com.br" ||
+      host === "www.gatofilia.com.br" ||
+      gatofiliaDomains.some((domain) => host === domain || host === `www.${domain}`)
+    );
+    const basePath = isGatofiliaHost ? "/" : "/academy";
+    return res.redirect(301, `${basePath}#${anchor}`);
+  };
 
   router.get("/academy", publicController.home);
   router.get("/gatofilia", publicController.home);
   router.post("/gatofilia/interesse", publicController.interest);
   router.post("/academy/interesse", publicController.interest);
-  router.get("/academy/sobre", publicController.about);
-  router.get("/academy/planos", publicController.plans);
-  router.get("/academy/conteudos", publicController.contents);
-  router.get("/academy/faq", publicController.faq);
+  router.get("/academy/sobre", publicAnchorRedirect("quem-somos"));
+  router.get("/academy/planos", publicAnchorRedirect("beneficios"));
+  router.get("/academy/conteudos", publicAnchorRedirect("jornada"));
+  router.get("/academy/faq", publicAnchorRedirect("faq"));
   router.get("/academy/sitemap.xml", publicController.sitemap);
   router.get("/academy/robots.txt", publicController.robots);
   router.get("/academy/login", publicController.loginForm);

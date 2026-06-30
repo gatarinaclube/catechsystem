@@ -227,7 +227,7 @@ module.exports = (prisma) => ({
                 "@type": "ListItem",
                 position: 1,
                 name: "Gatofilia",
-                item: absoluteUrl(req, "/academy"),
+                item: absoluteUrl(req, homePath),
               },
             ],
           },
@@ -237,7 +237,17 @@ module.exports = (prisma) => ({
   },
 
   interest: async (req, res) => {
-    const basePath = req.path.startsWith("/gatofilia") ? "/gatofilia" : "/academy";
+    const host = String(req.hostname || "").toLowerCase().replace(/:\d+$/, "");
+    const gatofiliaDomains = String(process.env.GATOFILIA_DOMAINS || "")
+      .split(",")
+      .map((domain) => domain.trim().toLowerCase())
+      .filter(Boolean);
+    const isGatofiliaHost = (
+      host === "gatofilia.com.br" ||
+      host === "www.gatofilia.com.br" ||
+      gatofiliaDomains.some((domain) => host === domain || host === `www.${domain}`)
+    );
+    const basePath = isGatofiliaHost ? "/" : (req.path.startsWith("/gatofilia") ? "/gatofilia" : "/academy");
     const leadData = {
       firstName: cleanText(req.body.firstName, 120),
       lastName: cleanText(req.body.lastName, 120),
@@ -429,23 +439,17 @@ module.exports = (prisma) => ({
   },
 
   sitemap: async (req, res) => {
-    const [categories, lessons] = await Promise.all([
-      prisma.academyCategory.findMany({ where: { published: true }, orderBy: { updatedAt: "desc" }, take: 100 }),
-      prisma.academyLesson.findMany({
-        where: { published: true, status: "PUBLISHED" },
-        select: { slug: true, updatedAt: true },
-        orderBy: { updatedAt: "desc" },
-        take: 500,
-      }),
-    ]);
-
+    const lastmod = new Date();
     const urls = [
-      sitemapUrl(absoluteUrl(req, "/"), null, "1.0"),
-      sitemapUrl(absoluteUrl(req, "/academy/sobre"), null, "0.7"),
-      sitemapUrl(absoluteUrl(req, "/academy/planos"), null, "0.8"),
-      sitemapUrl(absoluteUrl(req, "/academy/conteudos"), categories[0]?.updatedAt, "0.9"),
-      sitemapUrl(absoluteUrl(req, "/academy/faq"), null, "0.5"),
-      ...lessons.map((lesson) => sitemapUrl(absoluteUrl(req, `/academy/app/aulas/${lesson.slug}`), lesson.updatedAt, "0.6")),
+      sitemapUrl(absoluteUrl(req, "/"), lastmod, "1.0"),
+      sitemapUrl(absoluteUrl(req, "/#inicio"), lastmod, "0.9"),
+      sitemapUrl(absoluteUrl(req, "/#quem-somos"), lastmod, "0.8"),
+      sitemapUrl(absoluteUrl(req, "/#jornada"), lastmod, "0.8"),
+      sitemapUrl(absoluteUrl(req, "/#metodo"), lastmod, "0.8"),
+      sitemapUrl(absoluteUrl(req, "/#beneficios"), lastmod, "0.8"),
+      sitemapUrl(absoluteUrl(req, "/#faq"), lastmod, "0.7"),
+      sitemapUrl(absoluteUrl(req, "/#pre-inscricao"), lastmod, "0.9"),
+      sitemapUrl(absoluteUrl(req, "/#contato"), lastmod, "0.6"),
     ];
 
     res.type("application/xml").send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join("\n")}\n</urlset>`);

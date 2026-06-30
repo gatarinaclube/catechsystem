@@ -414,13 +414,19 @@
   line-height: 1.35;
 }
 
-.public-gatofilia-band {
+.public-partner-bands {
+  display: grid;
+  gap: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: #071523;
+}
+
+.public-partner-band {
   display: grid;
   grid-template-columns: 150px minmax(0, 1fr) auto;
   gap: 26px;
   align-items: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background:
     radial-gradient(circle at 16% 20%, rgba(242, 106, 27, 0.2), transparent 20rem),
     radial-gradient(circle at 86% 28%, rgba(0, 164, 223, 0.16), transparent 22rem),
@@ -429,7 +435,18 @@
   padding: 26px max(24px, calc((100vw - 1180px) / 2));
 }
 
-.public-gatofilia-band-logo {
+.public-partner-band + .public-partner-band {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.public-partner-band-gatarina {
+  background:
+    radial-gradient(circle at 12% 24%, rgba(96, 183, 84, 0.16), transparent 20rem),
+    radial-gradient(circle at 82% 18%, rgba(242, 106, 27, 0.13), transparent 22rem),
+    linear-gradient(135deg, #071523, #10283b 56%, #0b1a28);
+}
+
+.public-partner-band-logo {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -439,7 +456,7 @@
   padding-right: 22px;
 }
 
-.public-gatofilia-band-logo img {
+.public-partner-band-logo img {
   display: block;
   width: 92px;
   max-width: 100%;
@@ -447,25 +464,29 @@
   transition: transform 160ms ease;
 }
 
-.public-gatofilia-band-logo:hover img {
+.public-partner-band-logo-wide img {
+  width: 118px;
+}
+
+.public-partner-band-logo:hover img {
   transform: translateY(-2px) scale(1.03);
 }
 
-.public-gatofilia-band h2 {
+.public-partner-band h2 {
   margin: 4px 0 0;
   font-family: "Playfair Display", Georgia, "Times New Roman", serif;
   font-size: clamp(26px, 3vw, 40px);
   line-height: 1;
 }
 
-.public-gatofilia-band p {
+.public-partner-band p {
   max-width: 680px;
   margin: 8px 0 0;
   color: rgba(233, 242, 249, 0.78);
   line-height: 1.6;
 }
 
-.public-gatofilia-band-button {
+.public-partner-band-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1084,11 +1105,11 @@
     grid-template-columns: 1fr;
   }
 
-  .public-gatofilia-band {
+  .public-partner-band {
     grid-template-columns: 110px minmax(0, 1fr);
   }
 
-  .public-gatofilia-band-button {
+  .public-partner-band-button {
     grid-column: 2;
     justify-self: start;
   }
@@ -1149,30 +1170,34 @@
     padding: 44px 18px;
   }
 
-  .public-gatofilia-band {
+  .public-partner-band {
     grid-template-columns: 1fr;
     gap: 16px;
     padding: 28px 18px;
     text-align: center;
   }
 
-  .public-gatofilia-band-logo {
+  .public-partner-band-logo {
     width: 100%;
     height: auto;
     border-right: 0;
     padding-right: 0;
   }
 
-  .public-gatofilia-band-logo img {
+  .public-partner-band-logo img {
     width: 104px;
   }
 
-  .public-gatofilia-band p {
+  .public-partner-band-logo-wide img {
+    width: min(190px, 70vw);
+  }
+
+  .public-partner-band p {
     margin-left: auto;
     margin-right: auto;
   }
 
-  .public-gatofilia-band-button {
+  .public-partner-band-button {
     grid-column: auto;
     justify-self: center;
     width: 100%;
