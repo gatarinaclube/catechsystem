@@ -55,14 +55,14 @@
 
       .vaccination-table {
         display: flex;
-        min-width: 980px;
+        min-width: 1100px;
         flex-direction: column;
       }
 
       .vaccination-grid-row {
         display: grid;
-        grid-template-columns: 220px 175px 275px 155px 155px;
-        min-width: 980px;
+        grid-template-columns: 220px 210px 310px 190px 170px;
+        min-width: 1100px;
       }
 
       .vaccination-head-cell,
@@ -90,7 +90,7 @@
 
       .vaccination-cell {
         background: #fff;
-        padding: 7px 8px;
+        padding: 5px 7px;
         font-size: 12px;
       }
 
@@ -111,7 +111,7 @@
       }
 
       .vaccination-section-row {
-        min-width: 980px;
+        min-width: 1100px;
         border-bottom: 1px solid #94a3b8;
         color: #fff;
         font-size: 12px;
@@ -123,7 +123,7 @@
 
       .vaccination-section-scrollbar {
         height: 12px;
-        min-width: 980px;
+        min-width: 1100px;
         overflow-x: auto;
         overflow-y: hidden;
         border-bottom: 1px solid rgba(148, 163, 184, 0.72);
@@ -201,7 +201,7 @@
 
       .vaccination-history-box {
         display: grid;
-        gap: 4px;
+        gap: 3px;
       }
 
       .vaccination-history-more {
@@ -233,11 +233,12 @@
         align-items: center;
         gap: 4px;
         min-width: 0;
+        white-space: nowrap;
       }
 
       .vaccination-date-display,
       .vaccination-type-select {
-        height: 28px;
+        height: 27px;
         border: 1px solid #cbd5e1;
         border-radius: 6px;
         background: #fff;
@@ -248,7 +249,7 @@
       }
 
       .vaccination-date-display {
-        width: 92px;
+        width: 118px;
         text-align: center;
       }
 
@@ -260,14 +261,14 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 24px;
-        height: 24px;
+        width: 22px;
+        height: 22px;
         border: 1px solid #cbd5e1;
         border-radius: 999px;
         background: #fff;
         color: #475569;
         cursor: pointer;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 900;
         line-height: 1;
         padding: 0;
@@ -365,7 +366,7 @@
         return filled.length ? filled : [{ date: "", type: "" }];
       }
 
-      function renderAntirabicLine(item) {
+      function renderAntirabicLine(item, includeAddButton) {
     %>
         <div class="vaccination-history-line" data-antirabic-row>
           <input type="hidden" name="antirabicDates" value="<%= isoDate(item.date) %>" data-vaccine-date-value />
@@ -377,11 +378,14 @@
             value="<%= visibleDate(item.date) %>"
             data-vaccine-date-display
           />
+          <% if (includeAddButton) { %>
+            <button type="button" class="vaccination-icon-button add-antirabic" title="Adicionar antirrábica" aria-label="Adicionar antirrábica">+</button>
+          <% } %>
         </div>
     <%
       }
 
-      function renderFelineLine(item) {
+      function renderFelineLine(item, includeAddButton) {
     %>
         <div class="vaccination-history-line" data-feline-row>
           <input type="hidden" name="felineDates" value="<%= isoDate(item.date) %>" data-vaccine-date-value />
@@ -399,6 +403,9 @@
               <option value="<%= type %>" <%= item.type === type ? "selected" : "" %>><%= type %></option>
             <% }) %>
           </select>
+          <% if (includeAddButton) { %>
+            <button type="button" class="vaccination-icon-button add-feline" title="Adicionar feline" aria-label="Adicionar feline">+</button>
+          <% } %>
         </div>
     <%
       }
@@ -478,9 +485,6 @@
                   <div class="vaccination-section-row" style="background:<%= category.color %>;">
                     <%= category.label %> · <%= items.length %>
                   </div>
-                  <div class="vaccination-section-scrollbar" data-vaccination-scrollbar>
-                    <div class="vaccination-section-scrollbar-inner" data-vaccination-scrollbar-inner></div>
-                  </div>
                   <% if (!items.length) { %>
                     <div class="vaccination-grid-row">
                       <div class="vaccination-cell vaccination-cat-cell">Nenhum gato nesta categoria.</div>
@@ -524,14 +528,11 @@
                               <details class="vaccination-history-more">
                                 <summary>Ver mais datas</summary>
                                 <div class="vaccination-history-rows">
-                                  <% antiPrior.forEach(function(item) { renderAntirabicLine(item); }) %>
+                                  <% antiPrior.forEach(function(item) { renderAntirabicLine(item, false); }) %>
                                 </div>
                               </details>
                             <% } %>
-                            <% renderAntirabicLine(antiLast); %>
-                            <div class="vaccination-history-line">
-                              <button type="button" class="vaccination-icon-button add-antirabic" title="Adicionar antirrábica" aria-label="Adicionar antirrábica">+</button>
-                            </div>
+                            <% renderAntirabicLine(antiLast, true); %>
                             <span class="vaccination-save-status" data-save-status></span>
                           </div>
                         </div>
@@ -542,14 +543,11 @@
                               <details class="vaccination-history-more">
                                 <summary>Ver mais datas</summary>
                                 <div class="vaccination-history-rows">
-                                  <% felinePrior.forEach(function(item) { renderFelineLine(item); }) %>
+                                  <% felinePrior.forEach(function(item) { renderFelineLine(item, false); }) %>
                                 </div>
                               </details>
                             <% } %>
-                            <% renderFelineLine(felineLast); %>
-                            <div class="vaccination-history-line">
-                              <button type="button" class="vaccination-icon-button add-feline" title="Adicionar feline" aria-label="Adicionar feline">+</button>
-                            </div>
+                            <% renderFelineLine(felineLast, true); %>
                             <span class="vaccination-save-status" data-save-status></span>
                           </div>
                         </div>
@@ -570,6 +568,9 @@
                       </form>
                     <% }) %>
                   <% } %>
+                  <div class="vaccination-section-scrollbar" data-vaccination-scrollbar>
+                    <div class="vaccination-section-scrollbar-inner" data-vaccination-scrollbar-inner></div>
+                  </div>
                 <% }) %>
               </div>
             </div>
@@ -731,10 +732,24 @@
           bindDelete(row.querySelector(".delete-history-date"));
         }
 
+        function ensureTrailingAddButton(box, rowSelector, buttonClass, label, bindFunction) {
+          if (!box) return;
+          const rows = Array.from(box.querySelectorAll(rowSelector));
+          rows.forEach((row) => row.querySelector(`.${buttonClass}`)?.remove());
+          const last = rows[rows.length - 1];
+          if (!last) return;
+          last.insertAdjacentHTML(
+            "beforeend",
+            `<button type="button" class="vaccination-icon-button ${buttonClass}" title="${label}" aria-label="${label}">+</button>`
+          );
+          bindFunction(last.querySelector(`.${buttonClass}`));
+        }
+
         function refreshAntirabicDeleteButton(box) {
           const rows = Array.from(box.querySelectorAll("[data-antirabic-row]"));
           rows.forEach(resetDeleteButton);
           const savedRows = rows.filter((row) => isCompleteIsoDate(row.querySelector("[data-vaccine-date-value]")?.value));
+          ensureTrailingAddButton(box, "[data-antirabic-row]", "add-antirabic", "Adicionar antirrábica", bindAddAntirabic);
           ensureDeleteButton(savedRows[savedRows.length - 1]);
         }
 
@@ -746,6 +761,7 @@
             const type = row.querySelector("select")?.value;
             return isCompleteIsoDate(date) && Boolean(type);
           });
+          ensureTrailingAddButton(box, "[data-feline-row]", "add-feline", "Adicionar feline", bindAddFeline);
           ensureDeleteButton(savedRows[savedRows.length - 1]);
         }
 
@@ -784,21 +800,23 @@
           });
         }
 
-        function antirabicLineHtml() {
+        function antirabicLineHtml(includeAddButton = false) {
           return `
             <div class="vaccination-history-line" data-antirabic-row>
               <input type="hidden" name="antirabicDates" value="" data-vaccine-date-value />
               <input class="vaccination-date-display" type="text" inputmode="numeric" placeholder="dd/mm/aaaa" value="" data-vaccine-date-display />
+              ${includeAddButton ? '<button type="button" class="vaccination-icon-button add-antirabic" title="Adicionar antirrábica" aria-label="Adicionar antirrábica">+</button>' : ''}
             </div>
           `;
         }
 
-        function felineLineHtml() {
+        function felineLineHtml(includeAddButton = false) {
           return `
             <div class="vaccination-history-line" data-feline-row>
               <input type="hidden" name="felineDates" value="" data-vaccine-date-value />
               <input class="vaccination-date-display" type="text" inputmode="numeric" placeholder="dd/mm/aaaa" value="" data-vaccine-date-display />
               <select name="felineTypes" class="vaccination-type-select">${felineTypeOptions()}</select>
+              ${includeAddButton ? '<button type="button" class="vaccination-icon-button add-feline" title="Adicionar feline" aria-label="Adicionar feline">+</button>' : ''}
             </div>
           `;
         }
@@ -831,27 +849,33 @@
           if (deleteButton) bindDelete(deleteButton);
         }
 
-        document.querySelectorAll(".add-antirabic").forEach((button) => {
+        function bindAddAntirabic(button) {
+          if (!button) return;
           button.addEventListener("click", () => {
             const box = button.closest("[data-antirabic-box]");
-            const addLine = button.closest(".vaccination-history-line");
-            addLine.insertAdjacentHTML("beforebegin", antirabicLineHtml());
-            bindAntirabicRow(addLine.previousElementSibling);
-            addLine.previousElementSibling?.querySelector("[data-vaccine-date-display]")?.focus();
+            const currentLine = button.closest(".vaccination-history-line");
+            button.remove();
+            currentLine.insertAdjacentHTML("afterend", antirabicLineHtml(true));
+            const newLine = currentLine.nextElementSibling;
+            bindAntirabicRow(newLine);
+            newLine.querySelector("[data-vaccine-date-display]")?.focus();
             refreshAntirabicDeleteButton(box);
           });
-        });
+        }
 
-        document.querySelectorAll(".add-feline").forEach((button) => {
+        function bindAddFeline(button) {
+          if (!button) return;
           button.addEventListener("click", () => {
             const box = button.closest("[data-feline-box]");
-            const addLine = button.closest(".vaccination-history-line");
-            addLine.insertAdjacentHTML("beforebegin", felineLineHtml());
-            bindFelineRow(addLine.previousElementSibling);
-            addLine.previousElementSibling?.querySelector("[data-vaccine-date-display]")?.focus();
+            const currentLine = button.closest(".vaccination-history-line");
+            button.remove();
+            currentLine.insertAdjacentHTML("afterend", felineLineHtml(true));
+            const newLine = currentLine.nextElementSibling;
+            bindFelineRow(newLine);
+            newLine.querySelector("[data-vaccine-date-display]")?.focus();
             refreshFelineDeleteButton(box);
           });
-        });
+        }
 
         document.querySelectorAll("[data-antirabic-row]").forEach(bindAntirabicRow);
         document.querySelectorAll("[data-feline-row]").forEach(bindFelineRow);

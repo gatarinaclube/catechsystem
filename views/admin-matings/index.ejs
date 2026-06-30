@@ -756,9 +756,6 @@
                     <span><%= group.label %></span>
                     <small data-status-count="<%= group.key %>"><%= items.length %></small>
                   </div>
-                  <div class="mating-section-scrollbar" data-mating-scrollbar data-section-scrollbar aria-label="Rolagem horizontal da seção <%= group.label %>">
-                    <div class="mating-section-scrollbar-inner" data-mating-scrollbar-inner></div>
-                  </div>
                   <% items.forEach(function(row, index) { %>
                     <% const globalOrder = (groupIndex * 1000) + index; %>
                     <% const nextDateValue = row.nextCrossDate ? new Date(row.nextCrossDate) : null; %>
@@ -900,6 +897,9 @@
                       </div>
                     </form>
                   <% }) %>
+                  <div class="mating-section-scrollbar" data-mating-scrollbar data-section-scrollbar aria-label="Rolagem horizontal da seção <%= group.label %>">
+                    <div class="mating-section-scrollbar-inner" data-mating-scrollbar-inner></div>
+                  </div>
                 <% }) %>
                 </div>
               </div>
