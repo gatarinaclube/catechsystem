@@ -5,6 +5,77 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title><%= pageTitle %></title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .admin-step {
+        border: 1px solid #e5e7eb;
+        border-radius: 28px;
+        background: #fff;
+        box-shadow: 0 12px 36px rgba(31, 41, 51, 0.06);
+        overflow: hidden;
+      }
+      .admin-step > summary {
+        cursor: pointer;
+        list-style: none;
+        display: grid;
+        gap: 16px;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        padding: 22px;
+      }
+      .admin-step > summary::-webkit-details-marker {
+        display: none;
+      }
+      .admin-step-number {
+        width: 44px;
+        height: 44px;
+        border-radius: 16px;
+        display: grid;
+        place-items: center;
+        background: #31513d;
+        color: #fff;
+        font-weight: 900;
+      }
+      .admin-step-chevron {
+        color: #b9892e;
+        font-weight: 900;
+        transition: transform 0.2s ease;
+      }
+      .admin-step[open] .admin-step-chevron {
+        transform: rotate(90deg);
+      }
+      .admin-step-body {
+        border-top: 1px solid #edf2f7;
+        padding: 22px;
+      }
+      .field {
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 12px 14px;
+        width: 100%;
+      }
+      .field:focus {
+        outline: 2px solid rgba(214, 168, 79, 0.28);
+        border-color: #d6a84f;
+      }
+      .nested-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 22px;
+        background: #f8faf7;
+        overflow: hidden;
+      }
+      .nested-card > summary {
+        cursor: pointer;
+        list-style: none;
+        padding: 16px;
+      }
+      .nested-card > summary::-webkit-details-marker {
+        display: none;
+      }
+      .nested-card-body {
+        border-top: 1px solid #e5e7eb;
+        padding: 16px;
+      }
+    </style>
   </head>
   <body class="bg-[#f8faf7] text-[#1f2933]">
     <main class="mx-auto max-w-7xl px-5 py-8">
@@ -17,10 +88,23 @@
           <a href="/dashboard" class="text-sm font-bold text-[#31513d]">PetGus</a>
         </div>
       </nav>
-      <h1 class="mt-8 text-4xl font-black">Admin Gatofilia</h1>
-      <form method="post" action="/academy/admin/seed" class="mt-4">
-        <button class="rounded-full border border-[#d6a84f] px-5 py-2 text-sm font-black text-[#31513d]" onclick="return confirm('Criar categorias, módulos e planos iniciais que ainda não existem?');">Gerar estrutura inicial</button>
-      </form>
+
+      <section class="mt-8 rounded-[32px] bg-[#111814] p-7 text-white shadow-xl">
+        <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <div>
+            <div class="text-xs font-black uppercase tracking-[0.26em] text-[#d6a84f]">Administração da Gatofilia</div>
+            <h1 class="mt-3 text-4xl font-black md:text-5xl">Conteúdos, aulas e acesso dos alunos.</h1>
+            <p class="mt-4 max-w-3xl text-sm leading-6 text-white/70">
+              Fluxo recomendado: gere a estrutura inicial, organize categorias, crie módulos, cadastre aulas e use a biblioteca de mídia para anexar vídeos, PDFs e materiais.
+              O acesso dos alunos é liberado no cadastro de usuários do PetGus pelo botão Gatofilia.
+            </p>
+          </div>
+          <a href="/users" class="inline-flex justify-center rounded-full bg-[#d6a84f] px-5 py-3 text-sm font-black text-[#111814]">
+            Liberar usuários
+          </a>
+        </div>
+      </section>
+
       <div class="mt-6 grid gap-4 md:grid-cols-5">
         <% Object.entries(overview).forEach(function(entry) { %>
           <div class="rounded-3xl bg-white p-5 shadow-sm">
@@ -30,249 +114,324 @@
         <% }) %>
       </div>
 
-      <section class="mt-8 grid gap-6 lg:grid-cols-2">
-        <div class="rounded-3xl bg-white p-6 shadow-sm">
-          <h2 class="text-2xl font-black">Categorias</h2>
-          <form method="post" action="/academy/admin/categorias" class="mt-4 grid gap-3">
-            <input name="title" placeholder="Título" required class="rounded-xl border p-3" />
-            <input name="slug" placeholder="slug opcional" class="rounded-xl border p-3" />
-            <textarea name="description" placeholder="Descrição" class="rounded-xl border p-3"></textarea>
-            <input name="sortOrder" type="number" placeholder="Ordem" class="rounded-xl border p-3" />
-            <label><input type="checkbox" name="published" /> Publicada</label>
-            <button class="rounded-xl bg-[#31513d] p-3 font-black text-white">Criar categoria</button>
-          </form>
-          <div class="mt-5 grid gap-3">
-            <% categories.forEach(function(item) { %>
-              <form method="post" action="/academy/admin/categorias/<%= item.id %>" class="rounded-2xl bg-slate-50 p-4">
-                <input name="title" value="<%= item.title %>" class="w-full rounded-xl border p-2" />
-                <input name="slug" value="<%= item.slug %>" class="mt-2 w-full rounded-xl border p-2" />
-                <textarea name="description" class="mt-2 w-full rounded-xl border p-2"><%= item.description || '' %></textarea>
-                <input name="sortOrder" type="number" value="<%= item.sortOrder %>" class="mt-2 w-full rounded-xl border p-2" />
-                <label class="mt-2 block"><input type="checkbox" name="published" <%= item.published ? 'checked' : '' %> /> Publicada</label>
-                <button class="mt-2 rounded-xl bg-[#31513d] px-4 py-2 font-bold text-white">Salvar</button>
-              </form>
-              <form method="post" action="/academy/admin/categorias/<%= item.id %>/excluir" onsubmit="return confirm('Excluir categoria e seus módulos?');">
-                <button class="mt-2 rounded-xl bg-red-50 px-4 py-2 font-bold text-red-700">Excluir</button>
-              </form>
-            <% }) %>
-          </div>
-        </div>
-
-        <div class="rounded-3xl bg-white p-6 shadow-sm">
-          <h2 class="text-2xl font-black">Módulos</h2>
-          <form method="post" action="/academy/admin/modulos" class="mt-4 grid gap-3">
-            <select name="categoryId" required class="rounded-xl border p-3"><% categories.forEach(function(c) { %><option value="<%= c.id %>"><%= c.title %></option><% }) %></select>
-            <input name="title" placeholder="Título" required class="rounded-xl border p-3" />
-            <input name="slug" placeholder="slug opcional" class="rounded-xl border p-3" />
-            <select name="level" class="rounded-xl border p-3"><% Object.values(levels).forEach(function(level) { %><option value="<%= level %>"><%= levelLabels[level] || level %></option><% }) %></select>
-            <textarea name="description" placeholder="Descrição" class="rounded-xl border p-3"></textarea>
-            <input name="sortOrder" type="number" placeholder="Ordem" class="rounded-xl border p-3" />
-            <label><input type="checkbox" name="published" /> Publicado</label>
-            <button class="rounded-xl bg-[#31513d] p-3 font-black text-white">Criar módulo</button>
-          </form>
-          <div class="mt-5 grid gap-3">
-            <% modules.forEach(function(item) { %>
-              <form method="post" action="/academy/admin/modulos/<%= item.id %>" class="rounded-2xl bg-slate-50 p-4">
-                <div class="font-bold"><%= item.category.title %></div>
-                <input name="title" value="<%= item.title %>" class="mt-2 w-full rounded-xl border p-2" />
-                <input name="slug" value="<%= item.slug %>" class="mt-2 w-full rounded-xl border p-2" />
-                <input type="hidden" name="categoryId" value="<%= item.categoryId %>" />
-                <input type="hidden" name="level" value="<%= item.level %>" />
-                <input name="sortOrder" type="number" value="<%= item.sortOrder %>" class="mt-2 w-full rounded-xl border p-2" />
-                <label class="mt-2 block"><input type="checkbox" name="published" <%= item.published ? 'checked' : '' %> /> Publicado</label>
-                <button class="mt-2 rounded-xl bg-[#31513d] px-4 py-2 font-bold text-white">Salvar</button>
-              </form>
-              <form method="post" action="/academy/admin/modulos/<%= item.id %>/excluir" onsubmit="return confirm('Excluir módulo e suas aulas?');">
-                <button class="mt-2 rounded-xl bg-red-50 px-4 py-2 font-bold text-red-700">Excluir</button>
-              </form>
-            <% }) %>
-          </div>
-        </div>
-      </section>
-
-      <section class="mt-8 rounded-3xl bg-white p-6 shadow-sm">
-        <h2 class="text-2xl font-black">Autores e Especialistas</h2>
-        <form method="post" action="/academy/admin/autores" class="mt-4 grid gap-3 md:grid-cols-2">
-          <select name="userId" class="rounded-xl border p-3">
-            <option value="">Sem usuário vinculado</option>
-            <% availableUsers.concat(enrollments.map(function(item) { return item.user; })).forEach(function(item) { %>
-              <option value="<%= item.id %>"><%= item.name %> - <%= item.email %></option>
-            <% }) %>
-          </select>
-          <input name="name" placeholder="Nome público" required class="rounded-xl border p-3" />
-          <input name="slug" placeholder="slug opcional" class="rounded-xl border p-3" />
-          <input name="photoUrl" placeholder="URL da foto" class="rounded-xl border p-3" />
-          <input name="specialty" placeholder="Especialidade" class="rounded-xl border p-3" />
-          <input name="breedFocus" placeholder="Raça/foco" class="rounded-xl border p-3" />
-          <textarea name="bio" placeholder="Mini bio" class="rounded-xl border p-3 md:col-span-2"></textarea>
-          <textarea name="socialLinksJson" placeholder='Redes sociais JSON {"instagram":"https://..."}' class="rounded-xl border p-3 md:col-span-2"></textarea>
-          <label><input type="checkbox" name="active" checked /> Ativo</label>
-          <button class="rounded-xl bg-[#31513d] p-3 font-black text-white">Criar autor</button>
-        </form>
-        <div class="mt-5 grid gap-3 md:grid-cols-2">
-          <% authors.forEach(function(author) { %>
-            <form method="post" action="/academy/admin/autores/<%= author.id %>" class="rounded-2xl bg-slate-50 p-4">
-              <input name="name" value="<%= author.name %>" class="w-full rounded-xl border p-2" />
-              <input name="slug" value="<%= author.slug %>" class="mt-2 w-full rounded-xl border p-2" />
-              <input name="photoUrl" value="<%= author.photoUrl || '' %>" placeholder="URL da foto" class="mt-2 w-full rounded-xl border p-2" />
-              <input name="specialty" value="<%= author.specialty || '' %>" placeholder="Especialidade" class="mt-2 w-full rounded-xl border p-2" />
-              <input name="breedFocus" value="<%= author.breedFocus || '' %>" placeholder="Raça/foco" class="mt-2 w-full rounded-xl border p-2" />
-              <textarea name="bio" class="mt-2 w-full rounded-xl border p-2"><%= author.bio || '' %></textarea>
-              <textarea name="socialLinksJson" class="mt-2 w-full rounded-xl border p-2"><%= author.socialLinksJson || '' %></textarea>
-              <input type="hidden" name="userId" value="<%= author.userId || '' %>" />
-              <label class="mt-2 block"><input type="checkbox" name="active" <%= author.active ? 'checked' : '' %> /> Ativo</label>
-              <button class="mt-2 rounded-xl bg-[#31513d] px-4 py-2 font-bold text-white">Salvar</button>
-              <button formaction="/academy/admin/autores/<%= author.id %>/excluir" formmethod="post" class="mt-2 rounded-xl bg-red-50 px-4 py-2 font-bold text-red-700" onclick="return confirm('Excluir autor?');">Excluir</button>
-            </form>
-          <% }) %>
-        </div>
-      </section>
-
-      <section class="mt-8 rounded-3xl bg-white p-6 shadow-sm">
-        <h2 class="text-2xl font-black">Aulas</h2>
-        <form method="post" action="/academy/admin/aulas" class="mt-4 grid gap-3 md:grid-cols-2">
-          <select name="moduleId" required class="rounded-xl border p-3"><% modules.forEach(function(m) { %><option value="<%= m.id %>"><%= m.title %></option><% }) %></select>
-          <select name="authorId" class="rounded-xl border p-3"><option value="">Autor/especialista</option><% authors.forEach(function(a) { %><option value="<%= a.id %>"><%= a.name %></option><% }) %></select>
-          <input name="title" placeholder="Título" required class="rounded-xl border p-3" />
-          <input name="slug" placeholder="slug opcional" class="rounded-xl border p-3" />
-          <input name="summary" placeholder="Resumo curto" class="rounded-xl border p-3" />
-          <input name="imageUrl" placeholder="Imagem URL" class="rounded-xl border p-3" />
-          <textarea name="videoEmbed" placeholder="Vídeo embed" class="rounded-xl border p-3 md:col-span-2"></textarea>
-          <textarea name="richText" placeholder="Texto rico HTML" class="rounded-xl border p-3 md:col-span-2"></textarea>
-          <textarea name="contentJson" placeholder='Conteúdo JSON para editor futuro (TipTap/EditorJS)' class="rounded-xl border p-3 md:col-span-2"></textarea>
-          <textarea name="filesJson" placeholder='Arquivos JSON [{"name":"PDF","url":"/uploads/a.pdf"}]' class="rounded-xl border p-3 md:col-span-2"></textarea>
-          <select name="level" class="rounded-xl border p-3"><% Object.values(levels).forEach(function(level) { %><option value="<%= level %>"><%= levelLabels[level] || level %></option><% }) %></select>
-          <select name="status" class="rounded-xl border p-3"><% Object.values(contentStatuses).forEach(function(status) { %><option value="<%= status %>"><%= contentStatusLabels[status] || status %></option><% }) %></select>
-          <input name="durationMinutes" type="number" placeholder="Minutos" class="rounded-xl border p-3" />
-          <input name="estimatedReadingMinutes" type="number" placeholder="Leitura estimada" class="rounded-xl border p-3" />
-          <input name="metaTitle" placeholder="Meta title" class="rounded-xl border p-3" />
-          <input name="metaDescription" placeholder="Meta description" class="rounded-xl border p-3" />
-          <input name="ogImageUrl" placeholder="Open Graph imagem" class="rounded-xl border p-3" />
-          <input name="relatedLessonIdsJson" placeholder="Aulas relacionadas JSON" class="rounded-xl border p-3" />
-          <button class="rounded-xl bg-[#31513d] p-3 font-black text-white">Criar aula</button>
-        </form>
-        <div class="mt-5 grid gap-3 md:grid-cols-2">
-          <% lessons.forEach(function(item) { %>
-            <form method="post" action="/academy/admin/aulas/<%= item.id %>" class="rounded-2xl bg-slate-50 p-4">
-              <div class="text-sm font-bold text-slate-500"><%= item.module.title %></div>
-              <div class="text-xs text-slate-400"><%= item.author ? item.author.name : 'Sem autor' %></div>
-              <input name="title" value="<%= item.title %>" class="mt-2 w-full rounded-xl border p-2" />
-              <input name="slug" value="<%= item.slug %>" class="mt-2 w-full rounded-xl border p-2" />
-              <input type="hidden" name="moduleId" value="<%= item.moduleId %>" />
-              <select name="authorId" class="mt-2 w-full rounded-xl border p-2"><option value="">Sem autor</option><% authors.forEach(function(a) { %><option value="<%= a.id %>" <%= item.authorId === a.id ? 'selected' : '' %>><%= a.name %></option><% }) %></select>
-              <select name="level" class="mt-2 w-full rounded-xl border p-2"><% Object.values(levels).forEach(function(level) { %><option value="<%= level %>" <%= item.level === level ? 'selected' : '' %>><%= levelLabels[level] || level %></option><% }) %></select>
-              <select name="status" class="mt-2 w-full rounded-xl border p-2"><% Object.values(contentStatuses).forEach(function(status) { %><option value="<%= status %>" <%= item.status === status ? 'selected' : '' %>><%= contentStatusLabels[status] || status %></option><% }) %></select>
-              <textarea name="summary" class="mt-2 w-full rounded-xl border p-2"><%= item.summary || '' %></textarea>
-              <textarea name="richText" class="mt-2 w-full rounded-xl border p-2"><%= item.richText || '' %></textarea>
-              <textarea name="contentJson" class="mt-2 w-full rounded-xl border p-2"><%= item.contentJson || '' %></textarea>
-              <input name="imageUrl" value="<%= item.imageUrl || '' %>" placeholder="Imagem URL" class="mt-2 w-full rounded-xl border p-2" />
-              <textarea name="videoEmbed" class="mt-2 w-full rounded-xl border p-2"><%= item.videoEmbed || '' %></textarea>
-              <textarea name="filesJson" class="mt-2 w-full rounded-xl border p-2"><%= item.filesJson || '' %></textarea>
-              <input name="durationMinutes" type="number" value="<%= item.durationMinutes || '' %>" placeholder="Minutos" class="mt-2 w-full rounded-xl border p-2" />
-              <input name="estimatedReadingMinutes" type="number" value="<%= item.estimatedReadingMinutes || '' %>" placeholder="Leitura estimada" class="mt-2 w-full rounded-xl border p-2" />
-              <input name="sortOrder" type="number" value="<%= item.sortOrder %>" class="mt-2 w-full rounded-xl border p-2" />
-              <input name="metaTitle" value="<%= item.metaTitle || '' %>" placeholder="Meta title" class="mt-2 w-full rounded-xl border p-2" />
-              <input name="metaDescription" value="<%= item.metaDescription || '' %>" placeholder="Meta description" class="mt-2 w-full rounded-xl border p-2" />
-              <input name="ogImageUrl" value="<%= item.ogImageUrl || '' %>" placeholder="Open Graph imagem" class="mt-2 w-full rounded-xl border p-2" />
-              <input name="relatedLessonIdsJson" value="<%= item.relatedLessonIdsJson || '' %>" placeholder="Aulas relacionadas JSON" class="mt-2 w-full rounded-xl border p-2" />
-              <a href="/academy/admin/aulas/<%= item.id %>/editor" class="mt-2 inline-block rounded-xl border border-[#d6a84f] px-4 py-2 font-bold text-[#31513d]">Editor CMS</a>
-              <button class="mt-2 rounded-xl bg-[#31513d] px-4 py-2 font-bold text-white">Salvar</button>
-              <button formaction="/academy/admin/aulas/<%= item.id %>/excluir" formmethod="post" class="mt-2 rounded-xl bg-red-50 px-4 py-2 font-bold text-red-700" onclick="return confirm('Excluir aula?');">Excluir</button>
-            </form>
-          <% }) %>
-        </div>
-      </section>
-
-      <section class="mt-8 grid gap-6 lg:grid-cols-2">
-        <div class="rounded-3xl bg-white p-6 shadow-sm">
-          <h2 class="text-2xl font-black">Planos</h2>
-          <form method="post" action="/academy/admin/planos" class="mt-4 grid gap-3">
-            <input name="name" placeholder="Nome" required class="rounded-xl border p-3" />
-            <input name="slug" placeholder="slug opcional" class="rounded-xl border p-3" />
-            <input name="priceCents" type="number" placeholder="Valor em centavos" class="rounded-xl border p-3" />
-            <select name="billingCycle" class="rounded-xl border p-3"><option value="FREE">Gratuito</option><option value="MONTHLY">Mensal</option><option value="YEARLY">Anual</option><option value="PREMIUM">Premium</option></select>
-            <select name="accessLevel" class="rounded-xl border p-3"><% Object.values(levels).forEach(function(level) { %><option value="<%= level %>"><%= levelLabels[level] || level %></option><% }) %></select>
-            <textarea name="description" placeholder="Descrição" class="rounded-xl border p-3"></textarea>
-            <textarea name="featuresJson" placeholder='Benefícios JSON ["Aulas premium","Biblioteca"]' class="rounded-xl border p-3"></textarea>
-            <label><input type="checkbox" name="featured" /> Destaque</label>
-            <label><input type="checkbox" name="active" checked /> Ativo</label>
-            <button class="rounded-xl bg-[#31513d] p-3 font-black text-white">Criar plano</button>
-          </form>
-          <div class="mt-5 grid gap-3">
-            <% plans.forEach(function(plan) { %>
-              <form method="post" action="/academy/admin/planos/<%= plan.id %>" class="rounded-2xl bg-slate-50 p-4">
-                <input name="name" value="<%= plan.name %>" class="w-full rounded-xl border p-2" />
-                <input name="slug" value="<%= plan.slug %>" class="mt-2 w-full rounded-xl border p-2" />
-                <input name="priceCents" type="number" value="<%= plan.priceCents %>" class="mt-2 w-full rounded-xl border p-2" />
-                <select name="billingCycle" class="mt-2 w-full rounded-xl border p-2"><option value="FREE" <%= plan.billingCycle === 'FREE' ? 'selected' : '' %>>Gratuito</option><option value="MONTHLY" <%= plan.billingCycle === 'MONTHLY' ? 'selected' : '' %>>Mensal</option><option value="YEARLY" <%= plan.billingCycle === 'YEARLY' ? 'selected' : '' %>>Anual</option><option value="PREMIUM" <%= plan.billingCycle === 'PREMIUM' ? 'selected' : '' %>>Premium</option></select>
-                <select name="accessLevel" class="mt-2 w-full rounded-xl border p-2"><% Object.values(levels).forEach(function(level) { %><option value="<%= level %>" <%= plan.accessLevel === level ? 'selected' : '' %>><%= levelLabels[level] || level %></option><% }) %></select>
-                <textarea name="description" class="mt-2 w-full rounded-xl border p-2"><%= plan.description || '' %></textarea>
-                <textarea name="featuresJson" class="mt-2 w-full rounded-xl border p-2"><%= plan.featuresJson || '' %></textarea>
-                <label class="mt-2 block"><input type="checkbox" name="featured" <%= plan.featured ? 'checked' : '' %> /> Destaque</label>
-                <label class="mt-2 block"><input type="checkbox" name="active" <%= plan.active ? 'checked' : '' %> /> Ativo</label>
-                <button class="mt-2 rounded-xl bg-[#31513d] px-4 py-2 font-bold text-white">Salvar</button>
-                <button formaction="/academy/admin/planos/<%= plan.id %>/excluir" formmethod="post" class="mt-2 rounded-xl bg-red-50 px-4 py-2 font-bold text-red-700" onclick="return confirm('Excluir plano?');">Excluir</button>
-              </form>
-            <% }) %>
-          </div>
-        </div>
-        <div class="rounded-3xl bg-white p-6 shadow-sm">
-          <h2 class="text-2xl font-black">Usuários Academy</h2>
-          <form method="post" action="/academy/admin/usuarios" class="mt-4 grid gap-3 rounded-2xl border border-slate-200 p-4">
-            <select name="userId" required class="rounded-xl border p-3">
-              <option value="">Vincular usuário existente...</option>
-              <% availableUsers.forEach(function(item) { %>
-                <option value="<%= item.id %>"><%= item.name %> - <%= item.email %></option>
-              <% }) %>
-            </select>
-            <select name="level" class="rounded-xl border p-3"><% Object.values(levels).forEach(function(level) { %><option value="<%= level %>"><%= levelLabels[level] || level %></option><% }) %></select>
-            <select name="planId" class="rounded-xl border p-3"><option value="">Sem plano</option><% plans.forEach(function(plan) { %><option value="<%= plan.id %>"><%= plan.name %></option><% }) %></select>
-            <select name="status" class="rounded-xl border p-3"><option value="ACTIVE">Ativo</option><option value="TRIALING">Teste</option><option value="PENDING">Pendente</option><option value="PAUSED">Pausado</option><option value="CANCELED">Cancelado</option></select>
-            <input name="currentPeriodStart" type="date" class="rounded-xl border p-3" />
-            <input name="currentPeriodEnd" type="date" class="rounded-xl border p-3" />
-            <button class="rounded-xl bg-[#31513d] p-3 font-black text-white">Adicionar usuário Academy</button>
-          </form>
-          <div class="mt-4 grid gap-3">
-            <% enrollments.forEach(function(item) { %>
-              <% const subscription = item.user.academySubscriptions && item.user.academySubscriptions[0]; %>
-              <form method="post" action="/academy/admin/usuarios/<%= item.id %>" class="rounded-2xl bg-slate-50 p-4">
-                <div class="font-black"><%= item.user.name %></div>
-                <div class="text-sm text-slate-500"><%= item.user.email %></div>
-                <select name="level" class="mt-3 w-full rounded-xl border p-2"><% Object.values(levels).forEach(function(level) { %><option value="<%= level %>" <%= item.level === level ? 'selected' : '' %>><%= levelLabels[level] || level %></option><% }) %></select>
-                <select name="planId" class="mt-2 w-full rounded-xl border p-2"><option value="">Sem plano</option><% plans.forEach(function(plan) { %><option value="<%= plan.id %>" <%= item.planId === plan.id ? 'selected' : '' %>><%= plan.name %></option><% }) %></select>
-                <select name="status" class="mt-2 w-full rounded-xl border p-2"><% ['ACTIVE','TRIALING','PENDING','PAUSED','CANCELED'].forEach(function(status) { %><option value="<%= status %>" <%= item.status === status ? 'selected' : '' %>><%= status %></option><% }) %></select>
-                <select name="subscriptionStatus" class="mt-2 w-full rounded-xl border p-2"><% ['ACTIVE','TRIALING','PENDING','PAUSED','CANCELED'].forEach(function(status) { %><option value="<%= status %>" <%= subscription && subscription.status === status ? 'selected' : '' %>><%= status %></option><% }) %></select>
-                <div class="mt-2 grid grid-cols-2 gap-2">
-                  <input name="currentPeriodStart" type="date" value="<%= subscription && subscription.currentPeriodStart ? subscription.currentPeriodStart.toISOString().slice(0,10) : '' %>" class="rounded-xl border p-2" />
-                  <input name="currentPeriodEnd" type="date" value="<%= subscription && subscription.currentPeriodEnd ? subscription.currentPeriodEnd.toISOString().slice(0,10) : '' %>" class="rounded-xl border p-2" />
-                </div>
-                <textarea name="metadataJson" placeholder="Metadados do pagamento futuro" class="mt-2 w-full rounded-xl border p-2"><%= subscription && subscription.metadataJson ? subscription.metadataJson : '' %></textarea>
-                <button class="mt-2 rounded-xl bg-[#31513d] px-4 py-2 font-bold text-white">Salvar</button>
-              </form>
-            <% }) %>
-          </div>
-        </div>
-      </section>
-
-      <section class="mt-8 rounded-3xl bg-white p-6 shadow-sm">
-        <h2 class="text-2xl font-black">Certificados Emitidos</h2>
-        <div class="mt-5 grid gap-3">
-          <% if (!certificates.length) { %>
-            <div class="rounded-2xl bg-slate-50 p-5 text-slate-500">Nenhum certificado emitido ainda.</div>
-          <% } %>
-          <% certificates.forEach(function(certificate) { %>
-            <div class="grid gap-3 rounded-2xl border border-slate-200 p-4 md:grid-cols-[minmax(0,1fr)_180px] md:items-center">
-              <div>
-                <div class="text-xs font-black uppercase tracking-widest text-[#b9892e]"><%= certificate.certificateNumber %></div>
-                <div class="mt-1 font-black"><%= certificate.title %></div>
-                <div class="mt-1 text-sm text-slate-500"><%= certificate.user.name %> · <%= certificate.user.email %></div>
-                <% if (certificate.lesson) { %><div class="mt-1 text-sm text-slate-500">Aula: <%= certificate.lesson.title %></div><% } %>
-              </div>
-              <div class="text-sm font-bold text-slate-500"><%= certificate.issuedAt.toLocaleDateString('pt-BR') %></div>
+      <div class="mt-8 grid gap-5">
+        <details class="admin-step" open>
+          <summary>
+            <div class="admin-step-number">1</div>
+            <div>
+              <h2 class="text-2xl font-black">Estrutura inicial</h2>
+              <p class="mt-1 text-sm text-slate-500">Crie a base de categorias, módulos e planos quando estiver iniciando a Gatofilia.</p>
             </div>
-          <% }) %>
-        </div>
-      </section>
+            <div class="admin-step-chevron">›</div>
+          </summary>
+          <div class="admin-step-body">
+            <form method="post" action="/academy/admin/seed" class="rounded-2xl border border-[#d6a84f]/40 bg-[#fffaf0] p-5">
+              <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                <div>
+                  <div class="font-black text-[#31513d]">Gerar estrutura padrão</div>
+                  <p class="mt-1 text-sm text-slate-600">Use apenas quando precisar criar automaticamente itens básicos que ainda não existem.</p>
+                </div>
+                <button
+                  class="rounded-full border border-[#d6a84f] px-5 py-3 text-sm font-black text-[#31513d]"
+                  onclick="return confirm('Criar categorias, módulos e planos iniciais que ainda não existem?');"
+                >
+                  Gerar estrutura inicial
+                </button>
+              </div>
+            </form>
+          </div>
+        </details>
+
+        <details class="admin-step">
+          <summary>
+            <div class="admin-step-number">2</div>
+            <div>
+              <h2 class="text-2xl font-black">Categorias da jornada</h2>
+              <p class="mt-1 text-sm text-slate-500">Organize os grandes blocos de conhecimento antes de criar os módulos.</p>
+            </div>
+            <div class="admin-step-chevron">›</div>
+          </summary>
+          <div class="admin-step-body">
+            <details class="nested-card" open>
+              <summary>
+                <div class="font-black text-[#31513d]">Criar nova categoria</div>
+                <div class="text-sm text-slate-500">Título, descrição, ordem e publicação.</div>
+              </summary>
+              <div class="nested-card-body">
+                <form method="post" action="/academy/admin/categorias" class="grid gap-3 md:grid-cols-2">
+                  <input name="title" placeholder="Título" required class="field" />
+                  <input name="slug" placeholder="slug opcional" class="field" />
+                  <textarea name="description" placeholder="Descrição" class="field md:col-span-2"></textarea>
+                  <input name="sortOrder" type="number" placeholder="Ordem" class="field" />
+                  <label class="flex items-center gap-2 rounded-2xl bg-white px-4 py-3"><input type="checkbox" name="published" /> Publicada</label>
+                  <button class="rounded-xl bg-[#31513d] p-3 font-black text-white md:col-span-2">Criar categoria</button>
+                </form>
+              </div>
+            </details>
+
+            <div class="mt-5 grid gap-3 md:grid-cols-2">
+              <% categories.forEach(function(item) { %>
+                <details class="nested-card">
+                  <summary>
+                    <div class="flex items-start justify-between gap-3">
+                      <div>
+                        <div class="font-black"><%= item.title %></div>
+                        <div class="mt-1 text-xs text-slate-500">Ordem <%= item.sortOrder %> · <%= item.published ? 'Publicada' : 'Rascunho' %></div>
+                      </div>
+                      <span class="text-sm font-black text-[#b9892e]">Editar</span>
+                    </div>
+                  </summary>
+                  <div class="nested-card-body">
+                    <form method="post" action="/academy/admin/categorias/<%= item.id %>" class="grid gap-3">
+                      <input name="title" value="<%= item.title %>" class="field" />
+                      <input name="slug" value="<%= item.slug %>" class="field" />
+                      <textarea name="description" class="field"><%= item.description || '' %></textarea>
+                      <input name="sortOrder" type="number" value="<%= item.sortOrder %>" class="field" />
+                      <label class="flex items-center gap-2"><input type="checkbox" name="published" <%= item.published ? 'checked' : '' %> /> Publicada</label>
+                      <div class="flex flex-wrap gap-2">
+                        <button class="rounded-xl bg-[#31513d] px-4 py-2 font-bold text-white">Salvar</button>
+                        <button formaction="/academy/admin/categorias/<%= item.id %>/excluir" formmethod="post" class="rounded-xl bg-red-50 px-4 py-2 font-bold text-red-700" onclick="return confirm('Excluir categoria e seus módulos?');">Excluir</button>
+                      </div>
+                    </form>
+                  </div>
+                </details>
+              <% }) %>
+            </div>
+          </div>
+        </details>
+
+        <details class="admin-step">
+          <summary>
+            <div class="admin-step-number">3</div>
+            <div>
+              <h2 class="text-2xl font-black">Módulos</h2>
+              <p class="mt-1 text-sm text-slate-500">Crie a sequência de módulos dentro de cada categoria.</p>
+            </div>
+            <div class="admin-step-chevron">›</div>
+          </summary>
+          <div class="admin-step-body">
+            <details class="nested-card" open>
+              <summary>
+                <div class="font-black text-[#31513d]">Criar novo módulo</div>
+                <div class="text-sm text-slate-500">Escolha a categoria e defina ordem, nível e publicação.</div>
+              </summary>
+              <div class="nested-card-body">
+                <form method="post" action="/academy/admin/modulos" class="grid gap-3 md:grid-cols-2">
+                  <select name="categoryId" required class="field"><% categories.forEach(function(c) { %><option value="<%= c.id %>"><%= c.title %></option><% }) %></select>
+                  <input name="title" placeholder="Título" required class="field" />
+                  <input name="slug" placeholder="slug opcional" class="field" />
+                  <select name="level" class="field"><% Object.values(levels).forEach(function(level) { %><option value="<%= level %>"><%= levelLabels[level] || level %></option><% }) %></select>
+                  <textarea name="description" placeholder="Descrição" class="field md:col-span-2"></textarea>
+                  <input name="sortOrder" type="number" placeholder="Ordem" class="field" />
+                  <label class="flex items-center gap-2 rounded-2xl bg-white px-4 py-3"><input type="checkbox" name="published" /> Publicado</label>
+                  <button class="rounded-xl bg-[#31513d] p-3 font-black text-white md:col-span-2">Criar módulo</button>
+                </form>
+              </div>
+            </details>
+
+            <div class="mt-5 grid gap-3 md:grid-cols-2">
+              <% modules.forEach(function(item) { %>
+                <details class="nested-card">
+                  <summary>
+                    <div class="flex items-start justify-between gap-3">
+                      <div>
+                        <div class="text-xs font-black uppercase tracking-widest text-[#b9892e]"><%= item.category.title %></div>
+                        <div class="mt-1 font-black"><%= item.title %></div>
+                        <div class="mt-1 text-xs text-slate-500">Ordem <%= item.sortOrder %> · <%= item.published ? 'Publicado' : 'Rascunho' %></div>
+                      </div>
+                      <span class="text-sm font-black text-[#b9892e]">Editar</span>
+                    </div>
+                  </summary>
+                  <div class="nested-card-body">
+                    <form method="post" action="/academy/admin/modulos/<%= item.id %>" class="grid gap-3">
+                      <input name="title" value="<%= item.title %>" class="field" />
+                      <input name="slug" value="<%= item.slug %>" class="field" />
+                      <select name="categoryId" class="field"><% categories.forEach(function(c) { %><option value="<%= c.id %>" <%= item.categoryId === c.id ? 'selected' : '' %>><%= c.title %></option><% }) %></select>
+                      <select name="level" class="field"><% Object.values(levels).forEach(function(level) { %><option value="<%= level %>" <%= item.level === level ? 'selected' : '' %>><%= levelLabels[level] || level %></option><% }) %></select>
+                      <textarea name="description" class="field"><%= item.description || '' %></textarea>
+                      <input name="sortOrder" type="number" value="<%= item.sortOrder %>" class="field" />
+                      <label class="flex items-center gap-2"><input type="checkbox" name="published" <%= item.published ? 'checked' : '' %> /> Publicado</label>
+                      <div class="flex flex-wrap gap-2">
+                        <button class="rounded-xl bg-[#31513d] px-4 py-2 font-bold text-white">Salvar</button>
+                        <button formaction="/academy/admin/modulos/<%= item.id %>/excluir" formmethod="post" class="rounded-xl bg-red-50 px-4 py-2 font-bold text-red-700" onclick="return confirm('Excluir módulo e suas aulas?');">Excluir</button>
+                      </div>
+                    </form>
+                  </div>
+                </details>
+              <% }) %>
+            </div>
+          </div>
+        </details>
+
+        <details class="admin-step">
+          <summary>
+            <div class="admin-step-number">4</div>
+            <div>
+              <h2 class="text-2xl font-black">Aulas e conteúdos</h2>
+              <p class="mt-1 text-sm text-slate-500">Cadastre a aula, publique quando estiver pronta e use o editor CMS para detalhar o conteúdo.</p>
+            </div>
+            <div class="admin-step-chevron">›</div>
+          </summary>
+          <div class="admin-step-body">
+            <details class="nested-card" open>
+              <summary>
+                <div class="font-black text-[#31513d]">Criar nova aula</div>
+                <div class="text-sm text-slate-500">O administrador será responsável pelo cadastro de vídeos, textos e arquivos.</div>
+              </summary>
+              <div class="nested-card-body">
+                <form method="post" action="/academy/admin/aulas" class="grid gap-3 md:grid-cols-2">
+                  <select name="moduleId" required class="field"><% modules.forEach(function(m) { %><option value="<%= m.id %>"><%= m.category.title %> · <%= m.title %></option><% }) %></select>
+                  <select name="level" class="field"><% Object.values(levels).forEach(function(level) { %><option value="<%= level %>"><%= levelLabels[level] || level %></option><% }) %></select>
+                  <input name="title" placeholder="Título" required class="field" />
+                  <input name="slug" placeholder="slug opcional" class="field" />
+                  <input name="summary" placeholder="Resumo curto" class="field md:col-span-2" />
+                  <textarea name="videoEmbed" placeholder="Vídeo embed ou iframe" class="field md:col-span-2"></textarea>
+                  <textarea name="richText" placeholder="Texto da aula em HTML" class="field md:col-span-2"></textarea>
+                  <input name="imageUrl" placeholder="Imagem URL" class="field" />
+                  <select name="status" class="field"><% Object.values(contentStatuses).forEach(function(status) { %><option value="<%= status %>"><%= contentStatusLabels[status] || status %></option><% }) %></select>
+                  <input name="durationMinutes" type="number" placeholder="Duração em minutos" class="field" />
+                  <input name="sortOrder" type="number" placeholder="Ordem" class="field" />
+                  <textarea name="filesJson" placeholder='Arquivos JSON [{"name":"PDF","url":"/uploads/a.pdf"}]' class="field md:col-span-2"></textarea>
+                  <input name="metaTitle" placeholder="Meta title" class="field" />
+                  <input name="metaDescription" placeholder="Meta description" class="field" />
+                  <input name="ogImageUrl" placeholder="Open Graph imagem" class="field" />
+                  <input name="relatedLessonIdsJson" placeholder="Aulas relacionadas JSON" class="field" />
+                  <input type="hidden" name="authorId" value="" />
+                  <input type="hidden" name="contentJson" value="" />
+                  <input type="hidden" name="estimatedReadingMinutes" value="" />
+                  <button class="rounded-xl bg-[#31513d] p-3 font-black text-white md:col-span-2">Criar aula e abrir editor</button>
+                </form>
+              </div>
+            </details>
+
+            <div class="mt-5 grid gap-3 md:grid-cols-2">
+              <% lessons.forEach(function(item) { %>
+                <details class="nested-card">
+                  <summary>
+                    <div class="flex items-start justify-between gap-3">
+                      <div>
+                        <div class="text-xs font-black uppercase tracking-widest text-[#b9892e]"><%= item.module.title %></div>
+                        <div class="mt-1 font-black"><%= item.title %></div>
+                        <div class="mt-1 text-xs text-slate-500"><%= contentStatusLabels[item.status] || item.status %> · Ordem <%= item.sortOrder %></div>
+                      </div>
+                      <span class="text-sm font-black text-[#b9892e]">Editar</span>
+                    </div>
+                  </summary>
+                  <div class="nested-card-body">
+                    <form method="post" action="/academy/admin/aulas/<%= item.id %>" class="grid gap-3">
+                      <input name="title" value="<%= item.title %>" class="field" />
+                      <input name="slug" value="<%= item.slug %>" class="field" />
+                      <select name="moduleId" class="field"><% modules.forEach(function(m) { %><option value="<%= m.id %>" <%= item.moduleId === m.id ? 'selected' : '' %>><%= m.category.title %> · <%= m.title %></option><% }) %></select>
+                      <select name="level" class="field"><% Object.values(levels).forEach(function(level) { %><option value="<%= level %>" <%= item.level === level ? 'selected' : '' %>><%= levelLabels[level] || level %></option><% }) %></select>
+                      <select name="status" class="field"><% Object.values(contentStatuses).forEach(function(status) { %><option value="<%= status %>" <%= item.status === status ? 'selected' : '' %>><%= contentStatusLabels[status] || status %></option><% }) %></select>
+                      <textarea name="summary" class="field"><%= item.summary || '' %></textarea>
+                      <textarea name="richText" class="field"><%= item.richText || '' %></textarea>
+                      <textarea name="videoEmbed" class="field"><%= item.videoEmbed || '' %></textarea>
+                      <textarea name="filesJson" class="field"><%= item.filesJson || '' %></textarea>
+                      <input name="imageUrl" value="<%= item.imageUrl || '' %>" placeholder="Imagem URL" class="field" />
+                      <input name="durationMinutes" type="number" value="<%= item.durationMinutes || '' %>" placeholder="Minutos" class="field" />
+                      <input name="sortOrder" type="number" value="<%= item.sortOrder %>" class="field" />
+                      <input name="metaTitle" value="<%= item.metaTitle || '' %>" placeholder="Meta title" class="field" />
+                      <input name="metaDescription" value="<%= item.metaDescription || '' %>" placeholder="Meta description" class="field" />
+                      <input name="ogImageUrl" value="<%= item.ogImageUrl || '' %>" placeholder="Open Graph imagem" class="field" />
+                      <input name="relatedLessonIdsJson" value="<%= item.relatedLessonIdsJson || '' %>" placeholder="Aulas relacionadas JSON" class="field" />
+                      <input type="hidden" name="authorId" value="" />
+                      <input type="hidden" name="contentJson" value="<%= item.contentJson || '' %>" />
+                      <input type="hidden" name="estimatedReadingMinutes" value="<%= item.estimatedReadingMinutes || '' %>" />
+                      <div class="flex flex-wrap gap-2">
+                        <a href="/academy/admin/aulas/<%= item.id %>/editor" class="rounded-xl border border-[#d6a84f] px-4 py-2 font-bold text-[#31513d]">Editor CMS</a>
+                        <button class="rounded-xl bg-[#31513d] px-4 py-2 font-bold text-white">Salvar</button>
+                        <button formaction="/academy/admin/aulas/<%= item.id %>/excluir" formmethod="post" class="rounded-xl bg-red-50 px-4 py-2 font-bold text-red-700" onclick="return confirm('Excluir aula?');">Excluir</button>
+                      </div>
+                    </form>
+                  </div>
+                </details>
+              <% }) %>
+            </div>
+          </div>
+        </details>
+
+        <details class="admin-step">
+          <summary>
+            <div class="admin-step-number">5</div>
+            <div>
+              <h2 class="text-2xl font-black">Mídia e materiais</h2>
+              <p class="mt-1 text-sm text-slate-500">Acesse a biblioteca para subir vídeos, PDFs, imagens e materiais complementares.</p>
+            </div>
+            <div class="admin-step-chevron">›</div>
+          </summary>
+          <div class="admin-step-body">
+            <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+              <p class="text-sm leading-6 text-slate-600">
+                Os uploads e vínculos de mídia ficam em uma tela própria para deixar o cadastro de aulas mais limpo.
+                Depois de enviar o arquivo, use o link do material na aula ou no editor CMS.
+              </p>
+              <a href="/academy/admin/midia" class="inline-flex justify-center rounded-full bg-[#31513d] px-5 py-3 text-sm font-black text-white">Abrir biblioteca de mídia</a>
+            </div>
+          </div>
+        </details>
+
+        <details class="admin-step">
+          <summary>
+            <div class="admin-step-number">6</div>
+            <div>
+              <h2 class="text-2xl font-black">Usuários com acesso</h2>
+              <p class="mt-1 text-sm text-slate-500">Lista apenas quem foi marcado com Gatofilia no cadastro de usuários do PetGus.</p>
+            </div>
+            <div class="admin-step-chevron">›</div>
+          </summary>
+          <div class="admin-step-body">
+            <div class="rounded-2xl border border-[#d6a84f]/40 bg-[#fffaf0] p-5">
+              <div class="font-black text-[#31513d]">Liberação de acesso</div>
+              <p class="mt-1 text-sm text-slate-600">
+                Professores e especialistas não acessam esta área. O administrador cadastra todo o conteúdo e libera alunos em
+                <a href="/users" class="font-black text-[#31513d] underline">Usuários</a>, ativando o campo Gatofilia.
+              </p>
+            </div>
+            <div class="mt-5 grid gap-3 md:grid-cols-2">
+              <% if (!gatofiliaUsers.length) { %>
+                <div class="rounded-2xl bg-slate-50 p-5 text-slate-500">Nenhum usuário liberado para Gatofilia ainda.</div>
+              <% } %>
+              <% gatofiliaUsers.forEach(function(item) { %>
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div class="font-black"><%= item.name %></div>
+                  <div class="mt-1 text-sm text-slate-500"><%= item.email %></div>
+                  <a href="/users/<%= item.id %>" class="mt-3 inline-flex rounded-full border border-[#d6a84f] px-4 py-2 text-sm font-black text-[#31513d]">Abrir cadastro</a>
+                </div>
+              <% }) %>
+            </div>
+          </div>
+        </details>
+
+        <details class="admin-step">
+          <summary>
+            <div class="admin-step-number">7</div>
+            <div>
+              <h2 class="text-2xl font-black">Certificados emitidos</h2>
+              <p class="mt-1 text-sm text-slate-500">Acompanhe os certificados gerados após conclusão de aulas.</p>
+            </div>
+            <div class="admin-step-chevron">›</div>
+          </summary>
+          <div class="admin-step-body">
+            <div class="grid gap-3">
+              <% if (!certificates.length) { %>
+                <div class="rounded-2xl bg-slate-50 p-5 text-slate-500">Nenhum certificado emitido ainda.</div>
+              <% } %>
+              <% certificates.forEach(function(certificate) { %>
+                <div class="grid gap-3 rounded-2xl border border-slate-200 p-4 md:grid-cols-[minmax(0,1fr)_180px] md:items-center">
+                  <div>
+                    <div class="text-xs font-black uppercase tracking-widest text-[#b9892e]"><%= certificate.certificateNumber %></div>
+                    <div class="mt-1 font-black"><%= certificate.title %></div>
+                    <div class="mt-1 text-sm text-slate-500"><%= certificate.user.name %> · <%= certificate.user.email %></div>
+                    <% if (certificate.lesson) { %><div class="mt-1 text-sm text-slate-500">Aula: <%= certificate.lesson.title %></div><% } %>
+                  </div>
+                  <div class="text-sm font-bold text-slate-500"><%= certificate.issuedAt.toLocaleDateString('pt-BR') %></div>
+                </div>
+              <% }) %>
+            </div>
+          </div>
+        </details>
+      </div>
     </main>
   </body>
 </html>

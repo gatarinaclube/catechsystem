@@ -72,9 +72,10 @@ module.exports = (prisma) => ({
         orderBy: { issuedAt: "desc" },
         take: 20,
       }),
-      prisma.user.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, email: true } }),
+      prisma.user.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, email: true, gatofiliaAccess: true } }),
     ]);
     const enrolledUserIds = new Set(enrollments.map((item) => item.userId));
+    const gatofiliaUsers = users.filter((item) => item.gatofiliaAccess);
 
     res.render("academy/admin/dashboard", {
       pageTitle: "Admin Gatofilia",
@@ -89,6 +90,7 @@ module.exports = (prisma) => ({
       enrollments,
       certificates,
       availableUsers: users.filter((item) => !enrolledUserIds.has(item.id)),
+      gatofiliaUsers,
       levels: ACADEMY_LEVELS,
       levelLabels: LEVEL_LABELS,
       contentStatuses: ACADEMY_CONTENT_STATUSES,

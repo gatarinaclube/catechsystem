@@ -109,9 +109,10 @@
   min-height: calc(100vh - 74px);
   padding: 86px max(24px, calc((100vw - 1180px) / 2)) 78px;
   background:
-    radial-gradient(circle at 86% 20%, rgba(0, 164, 223, 0.28), transparent 24rem),
-    radial-gradient(circle at 15% 14%, rgba(242, 106, 27, 0.24), transparent 24rem),
-    linear-gradient(135deg, #071523 0%, #10283b 52%, #071523 100%);
+    linear-gradient(90deg, rgba(7, 21, 35, 0.94) 0%, rgba(7, 21, 35, 0.82) 43%, rgba(7, 21, 35, 0.58) 100%),
+    radial-gradient(circle at 86% 20%, rgba(0, 164, 223, 0.26), transparent 24rem),
+    radial-gradient(circle at 15% 14%, rgba(242, 106, 27, 0.22), transparent 24rem),
+    url("/uploads/academy/petgus-hero-bg.jpg") center center / cover no-repeat;
 }
 
 .public-hero::before,
@@ -128,6 +129,7 @@
     linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
   background-size: 84px 84px;
   mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.16));
+  opacity: 0.42;
 }
 
 .public-hero::after {
@@ -148,6 +150,11 @@
 .public-plan-grid,
 .public-contact-card {
   width: auto;
+}
+
+.public-hero-copy {
+  position: relative;
+  z-index: 1;
 }
 
 .public-eyebrow,
