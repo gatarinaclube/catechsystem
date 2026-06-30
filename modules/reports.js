@@ -447,9 +447,11 @@ function makePlanningReferenceRow({
   amountCents,
   months,
   group = type,
+  targetMonthKey = "",
+  overdue = false,
 }) {
   const values = emptyPlanningReferenceValues(months);
-  const monthKey = planningMonthKeyFromDate(date);
+  const monthKey = targetMonthKey || planningMonthKeyFromDate(date);
   if (monthKey && Object.prototype.hasOwnProperty.call(values, monthKey)) {
     values[monthKey] = Number(amountCents || 0);
   }
@@ -460,10 +462,24 @@ function makePlanningReferenceRow({
     description,
     details: details.filter(Boolean),
     group,
+    overdue,
+    overdueMonthKey: overdue ? monthKey : "",
     dateLabel: formatDateOnlyLabel(date),
     dateTime: date ? new Date(date).getTime() : 0,
     values,
   };
+}
+
+function planningReferenceMonthTarget(date, months, startDate, endDate, monthKeys) {
+  if (!date || !months.length) return null;
+  const firstMonthKey = months[0].key;
+  if (date < startDate) {
+    return { monthKey: firstMonthKey, overdue: true };
+  }
+  if (date >= endDate) return null;
+  const monthKey = planningMonthKeyFromDate(date);
+  if (!monthKeys.has(monthKey)) return null;
+  return { monthKey, overdue: false };
 }
 
 function hasPlanningOtherOwner(cat) {
@@ -672,7 +688,6 @@ async function loadFinancialPlanningReferenceRows(prisma, req, months, config) {
         ...ownerScope(req),
         status: "PENDING",
         dueDate: {
-          gte: startDate,
           lt: endDate,
         },
       },
@@ -687,8 +702,8 @@ async function loadFinancialPlanningReferenceRows(prisma, req, months, config) {
     parseParcelData(revenue.parcelDataJson).forEach((parcel) => {
       if (parcel.paid || parcel.canceled || !parcel.date || !parcel.amountCents) return;
       const dueDate = parseDateInput(parcel.date, null);
-      const monthKey = planningMonthKeyFromDate(dueDate);
-      if (!dueDate || !monthKeys.has(monthKey)) return;
+      const target = planningReferenceMonthTarget(dueDate, months, startDate, endDate, monthKeys);
+      if (!target) return;
       receivableRows.push(makePlanningReferenceRow({
         key: `receivable-${revenue.id}-${parcel.number || receivableRows.length}`,
         type: "receivable",
@@ -702,25 +717,33 @@ async function loadFinancialPlanningReferenceRows(prisma, req, months, config) {
         date: dueDate,
         amountCents: parcel.amountCents,
         months,
+        targetMonthKey: target.monthKey,
+        overdue: target.overdue,
       }));
     });
   });
 
-  const payableRows = payables.map((payable) => makePlanningReferenceRow({
-    key: `payable-${payable.id}`,
-    type: "payable",
-    typeLabel: "Contas a pagar",
-    group: payable.isFixed ? "payableFixed" : "payableVariable",
-    description: payable.supplier || "Empresa não informada",
-    details: [
-      payable.description || payable.category || "Conta a pagar",
-      payable.supplier,
-      payable.category && payable.description ? payable.category : "",
-    ],
-    date: payable.dueDate,
-    amountCents: payable.amountCents,
-    months,
-  }));
+  const payableRows = payables.flatMap((payable) => {
+    const target = planningReferenceMonthTarget(payable.dueDate, months, startDate, endDate, monthKeys);
+    if (!target) return [];
+    return [makePlanningReferenceRow({
+      key: `payable-${payable.id}`,
+      type: "payable",
+      typeLabel: "Contas a pagar",
+      group: payable.isFixed ? "payableFixed" : "payableVariable",
+      description: payable.supplier || "Empresa não informada",
+      details: [
+        payable.description || payable.category || "Conta a pagar",
+        payable.supplier,
+        payable.category && payable.description ? payable.category : "",
+      ],
+      date: payable.dueDate,
+      amountCents: payable.amountCents,
+      months,
+      targetMonthKey: target.monthKey,
+      overdue: target.overdue,
+    })];
+  });
 
   return [
     ...sortPlanningReferenceRows(expectedRevenueRows),
@@ -743,6 +766,10 @@ function sumRowsByMonth(rows, months) {
   ]));
 }
 
+function sumPlanningValues(values, months) {
+  return months.reduce((sum, month) => sum + Number(values?.[month.key] || 0), 0);
+}
+
 function cumulativeByMonth(monthlyValues, months) {
   let running = 0;
   return Object.fromEntries(months.map((month) => {
@@ -753,12 +780,12 @@ function cumulativeByMonth(monthlyValues, months) {
 
 function buildPlanningReferenceSections(referenceRows, months) {
   const definitions = [
-    { key: "expectedRevenue", title: "Receitas Previstas", color: "is-kitten-forecast" },
     { key: "receivable", title: "Contas a Receber", color: "is-receivable" },
     { key: "payables", title: "Contas a Pagar", color: "is-payable", children: [
       { key: "payableFixed", title: "Contas Fixas", color: "is-payable" },
       { key: "payableVariable", title: "Contas Variáveis", color: "is-payable" },
     ] },
+    { key: "expectedRevenue", title: "Receitas Previstas", color: "is-kitten-forecast" },
     { key: "kittenForecast", title: "Filhotes a Nascer", color: "is-kitten-forecast" },
   ];
 
@@ -766,16 +793,55 @@ function buildPlanningReferenceSections(referenceRows, months) {
     const children = (definition.children || []).map(sectionFor);
     const rows = definition.children
       ? children.flatMap((child) => child.rows)
-      : referenceRows.filter((row) => row.group === definition.key);
+      : referenceRows
+        .filter((row) => row.group === definition.key)
+        .map((row) => ({
+          ...row,
+          totalCents: sumPlanningValues(row.values, months),
+        }));
+    const totals = sumRowsByMonth(rows, months);
     return {
       ...definition,
       rows,
       children,
-      totals: sumRowsByMonth(rows, months),
+      totals,
+      totalCents: sumPlanningValues(totals, months),
     };
   }
 
   return definitions.map(sectionFor);
+}
+
+function buildPlanningReferenceForecast(referenceSections, months) {
+  const sectionMap = new Map(referenceSections.map((section) => [section.key, section]));
+  const receivableTotals = sectionMap.get("receivable")?.totals || {};
+  const payableTotals = sectionMap.get("payables")?.totals || {};
+  const expectedRevenueTotals = sectionMap.get("expectedRevenue")?.totals || {};
+  const kittenForecastTotals = sectionMap.get("kittenForecast")?.totals || {};
+
+  const monthlyBalance = Object.fromEntries(months.map((month) => [
+    month.key,
+    Number(receivableTotals[month.key] || 0) - Number(payableTotals[month.key] || 0),
+  ]));
+  const projectedBalance = Object.fromEntries(months.map((month) => [
+    month.key,
+    Number(monthlyBalance[month.key] || 0) + Number(expectedRevenueTotals[month.key] || 0),
+  ]));
+  const withKittensToBeBorn = Object.fromEntries(months.map((month) => [
+    month.key,
+    Number(projectedBalance[month.key] || 0) + Number(kittenForecastTotals[month.key] || 0),
+  ]));
+
+  const rows = [
+    { key: "monthlyBalance", title: "Saldo Mensal", values: monthlyBalance, color: "is-receivable" },
+    { key: "projectedBalance", title: "Saldo Previsto", values: projectedBalance, color: "is-kitten-forecast" },
+    { key: "withKittensToBeBorn", title: "Filhotes a Nascer", values: withKittensToBeBorn, color: "is-kitten-forecast" },
+  ];
+
+  return rows.map((row) => ({
+    ...row,
+    totalCents: sumPlanningValues(row.values, months),
+  }));
 }
 
 function buildFinancialPlanningViewModel(planningKey, months, rows, referenceRows = [], config = {}) {
@@ -792,6 +858,7 @@ function buildFinancialPlanningViewModel(planningKey, months, rows, referenceRow
     Number(revenueTotals[month.key] || 0) - Number(expenseTotals[month.key] || 0),
   ]));
   const projectedBalance = cumulativeByMonth(monthlyBalance, months);
+  const referenceSections = buildPlanningReferenceSections(referenceRows, months);
 
   return {
     planningKey,
@@ -806,7 +873,8 @@ function buildFinancialPlanningViewModel(planningKey, months, rows, referenceRow
       projectedBalance,
     },
     referenceRows,
-    referenceSections: buildPlanningReferenceSections(referenceRows, months),
+    referenceSections,
+    referenceForecastRows: buildPlanningReferenceForecast(referenceSections, months),
     config,
     formatPlanningMoney,
     colorOptions: [

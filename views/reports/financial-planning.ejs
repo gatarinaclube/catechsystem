@@ -217,6 +217,27 @@
         text-align: left;
         text-transform: uppercase;
       }
+      .planning-reference-static {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        width: 100%;
+        padding: 7px 8px;
+        text-transform: uppercase;
+      }
+      .planning-reference-title {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: baseline;
+      }
+      .planning-reference-line-total {
+        font-size: 11px;
+        font-weight: 950;
+        opacity: .94;
+        white-space: nowrap;
+      }
       .planning-reference-toggle::after {
         content: "⌄";
         font-size: 13px;
@@ -261,7 +282,9 @@
         display: none;
       }
       .planning-reference-name {
-        display: block;
+        display: inline-flex;
+        gap: 6px;
+        align-items: baseline;
         font-weight: 700;
         white-space: nowrap;
         overflow: hidden;
@@ -291,6 +314,15 @@
       .planning-reference-row .planning-reference-amount {
         min-width: 92px;
         text-align: right;
+        font-weight: 900;
+      }
+      .planning-reference-row .planning-reference-amount.is-overdue {
+        background: #fee2e2 !important;
+        color: #b91c1c !important;
+        font-weight: 950;
+      }
+      .planning-reference-overdue-note {
+        color: #b91c1c;
         font-weight: 900;
       }
       .planning-config-grid {
@@ -512,6 +544,28 @@
                     </tr>
                     <tr class="planning-spacer"><td colspan="<%= planning.months.length + 1 %>"></td></tr>
                     <tr class="planning-reference-heading">
+                      <th>Previsão de Saldo</th>
+                      <% planning.months.forEach(function(month) { %>
+                        <td><%= month.label %></td>
+                      <% }) %>
+                    </tr>
+                    <% planning.referenceForecastRows.forEach(function(row) { %>
+                      <tr class="planning-reference-section <%= row.color %>">
+                        <th>
+                          <span class="planning-reference-static">
+                            <span class="planning-reference-title">
+                              <span><%= row.title %></span>
+                              <span class="planning-reference-line-total">R$ <%= planning.formatPlanningMoney(row.totalCents, false) %></span>
+                            </span>
+                          </span>
+                        </th>
+                        <% planning.months.forEach(function(month) { %>
+                          <td><%= planning.formatPlanningMoney(row.values[month.key], false) %></td>
+                        <% }) %>
+                      </tr>
+                    <% }) %>
+                    <tr class="planning-spacer"><td colspan="<%= planning.months.length + 1 %>"></td></tr>
+                    <tr class="planning-reference-heading">
                       <th>Demonstrativo automático</th>
                       <% planning.months.forEach(function(month) { %>
                         <td><%= month.label %></td>
@@ -526,8 +580,11 @@
                       <% const sectionId = 'planning-auto-' + section.key; %>
                       <tr class="planning-reference-section <%= section.color %>">
                         <th>
-                          <button class="planning-reference-toggle" type="button" data-toggle-reference="<%= sectionId %>" aria-expanded="true">
-                            <span><%= section.title %></span>
+                          <button class="planning-reference-toggle" type="button" data-toggle-reference="<%= sectionId %>" aria-expanded="false">
+                            <span class="planning-reference-title">
+                              <span><%= section.title %></span>
+                              <span class="planning-reference-line-total">R$ <%= planning.formatPlanningMoney(section.totalCents, false) %></span>
+                            </span>
                           </button>
                         </th>
                         <% planning.months.forEach(function(month) { %>
@@ -536,57 +593,80 @@
                       </tr>
                       <% if (section.children && section.children.length) { %>
                         <% section.children.forEach(function(child) { %>
-                          <tr class="planning-reference-subsection" data-reference-section="<%= sectionId %>">
-                            <th><%= child.title %></th>
+                          <tr class="planning-reference-subsection" data-reference-section="<%= sectionId %>" hidden>
+                            <th>
+                              <span class="planning-reference-title">
+                                <span><%= child.title %></span>
+                                <span class="planning-reference-line-total">R$ <%= planning.formatPlanningMoney(child.totalCents, false) %></span>
+                              </span>
+                            </th>
                             <% planning.months.forEach(function(month) { %>
                               <td><%= planning.formatPlanningMoney(child.totals[month.key], false) %></td>
                             <% }) %>
                           </tr>
                           <% child.rows.forEach(function(row) { %>
-                            <tr class="planning-reference-row is-<%= row.type %>" data-reference-section="<%= sectionId %>">
+                            <tr class="planning-reference-row is-<%= row.type %>" data-reference-section="<%= sectionId %>" hidden>
                               <td class="planning-reference-label">
                                 <details class="planning-reference-details">
-                                  <summary><span class="planning-reference-name"><%= row.description %></span></summary>
+                                  <summary>
+                                    <span class="planning-reference-name">
+                                      <span><%= row.description %></span>
+                                      <span class="planning-reference-line-total">R$ <%= planning.formatPlanningMoney(row.totalCents, false) %></span>
+                                    </span>
+                                  </summary>
                                   <div class="planning-reference-extra">
                                     <% row.details.forEach(function(detail) { %>
                                       <span><%= detail %></span>
                                     <% }) %>
-                                    <span>Vencimento: <%= row.dateLabel %></span>
+                                    <% if (row.overdue) { %>
+                                      <span class="planning-reference-overdue-note">Em atraso: vencimento original em <%= row.dateLabel %></span>
+                                    <% } else { %>
+                                      <span>Vencimento: <%= row.dateLabel %></span>
+                                    <% } %>
                                   </div>
                                 </details>
                               </td>
                               <% planning.months.forEach(function(month) { %>
-                                <td class="planning-reference-amount"><%= planning.formatPlanningMoney(row.values[month.key]) %></td>
+                                <td class="planning-reference-amount <%= row.overdueMonthKey === month.key ? 'is-overdue' : '' %>"><%= planning.formatPlanningMoney(row.values[month.key]) %></td>
                               <% }) %>
                             </tr>
                           <% }) %>
                           <% if (!child.rows.length) { %>
-                            <tr class="planning-reference-empty" data-reference-section="<%= sectionId %>">
+                            <tr class="planning-reference-empty" data-reference-section="<%= sectionId %>" hidden>
                               <td colspan="<%= planning.months.length + 1 %>">Nenhum lançamento em <%= child.title.toLowerCase() %> para estes meses.</td>
                             </tr>
                           <% } %>
                         <% }) %>
                       <% } else { %>
                         <% section.rows.forEach(function(row) { %>
-                          <tr class="planning-reference-row is-<%= row.type %>" data-reference-section="<%= sectionId %>">
+                          <tr class="planning-reference-row is-<%= row.type %>" data-reference-section="<%= sectionId %>" hidden>
                             <td class="planning-reference-label">
                               <details class="planning-reference-details">
-                                <summary><span class="planning-reference-name"><%= row.description %></span></summary>
+                                <summary>
+                                  <span class="planning-reference-name">
+                                    <span><%= row.description %></span>
+                                    <span class="planning-reference-line-total">R$ <%= planning.formatPlanningMoney(row.totalCents, false) %></span>
+                                  </span>
+                                </summary>
                                 <div class="planning-reference-extra">
                                   <% row.details.forEach(function(detail) { %>
                                     <span><%= detail %></span>
                                   <% }) %>
-                                  <span>Vencimento: <%= row.dateLabel %></span>
+                                  <% if (row.overdue) { %>
+                                    <span class="planning-reference-overdue-note">Em atraso: vencimento original em <%= row.dateLabel %></span>
+                                  <% } else { %>
+                                    <span>Vencimento: <%= row.dateLabel %></span>
+                                  <% } %>
                                 </div>
                               </details>
                             </td>
                             <% planning.months.forEach(function(month) { %>
-                              <td class="planning-reference-amount"><%= planning.formatPlanningMoney(row.values[month.key]) %></td>
+                              <td class="planning-reference-amount <%= row.overdueMonthKey === month.key ? 'is-overdue' : '' %>"><%= planning.formatPlanningMoney(row.values[month.key]) %></td>
                             <% }) %>
                           </tr>
                         <% }) %>
                         <% if (!section.rows.length) { %>
-                          <tr class="planning-reference-empty" data-reference-section="<%= sectionId %>">
+                          <tr class="planning-reference-empty" data-reference-section="<%= sectionId %>" hidden>
                             <td colspan="<%= planning.months.length + 1 %>">Nenhum lançamento em <%= section.title.toLowerCase() %> para estes meses.</td>
                           </tr>
                         <% } %>
