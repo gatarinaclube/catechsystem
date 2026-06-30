@@ -427,7 +427,27 @@ function kittenReferenceLabel(revenue) {
   return "Filhote";
 }
 
-function makePlanningReferenceRow({ key, type, typeLabel, description, date, amountCents, months }) {
+function cleanPlanningCatName(cat) {
+  return cat?.name || cat?.kittenNumber || cat?.litterKitten?.kittenNumber || "Gato";
+}
+
+function planningKittenNumberAndName(cat) {
+  const number = cat?.kittenNumber || cat?.litterKitten?.kittenNumber || "";
+  const name = cat?.name || "";
+  return [number, name].filter(Boolean).join(" - ") || "Filhote";
+}
+
+function makePlanningReferenceRow({
+  key,
+  type,
+  typeLabel,
+  description,
+  details = [],
+  date,
+  amountCents,
+  months,
+  group = type,
+}) {
   const values = emptyPlanningReferenceValues(months);
   const monthKey = planningMonthKeyFromDate(date);
   if (monthKey && Object.prototype.hasOwnProperty.call(values, monthKey)) {
@@ -438,6 +458,8 @@ function makePlanningReferenceRow({ key, type, typeLabel, description, date, amo
     type,
     typeLabel,
     description,
+    details: details.filter(Boolean),
+    group,
     dateLabel: formatDateOnlyLabel(date),
     dateTime: date ? new Date(date).getTime() : 0,
     values,
@@ -529,25 +551,90 @@ async function loadFinancialPlanningKittenForecastRows(prisma, req, months, conf
     const plan = planMap.get(female.id);
     const litterHistory = safeJsonParse(plan?.litterHistoryJson, []);
     const nextCrossDate = computePlanningNextCrossDate(female.birthDate, litterHistory);
-    const matingDate = computePlanningReferenceMatingDate(plan?.matingStartDate, plan?.matingEndDate) || nextCrossDate;
-    const receivingDate = addPlanningMonthsAndDays(matingDate, 6, 15);
-    const monthKey = planningMonthKeyFromDate(receivingDate);
-    if (!receivingDate || !monthKeys.has(monthKey)) return [];
-
     const status = isPlanningDevelopingFemale(female)
       ? "EM_DESENVOLVIMENTO"
       : plan?.status || "PARA_ACASALAR";
+
+    if (status === "COM_PROBLEMA") return [];
+
+    let baseDate = null;
+    let receivingDate = null;
+    let baseLabel = "base";
+
+    if (status === "CONFIRMADO" || status === "NAO_CONFIRMADO") {
+      baseDate = computePlanningReferenceMatingDate(plan?.matingStartDate, plan?.matingEndDate) || nextCrossDate;
+      baseDate = baseDate ? addDays(baseDate, 65) : null;
+      baseLabel = "nascimento previsto";
+      receivingDate = addPlanningMonthsAndDays(baseDate, 4, 15);
+    } else if (status === "PARA_ACASALAR") {
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+      const plannedDate = parsePlanningDate(nextCrossDate);
+      baseDate = plannedDate && plannedDate >= today ? plannedDate : today;
+      baseLabel = "cruza prevista";
+      receivingDate = addPlanningMonthsAndDays(baseDate, 6, 15);
+    } else {
+      baseDate = nextCrossDate;
+      baseLabel = "cruza prevista";
+      receivingDate = addPlanningMonthsAndDays(baseDate, 6, 15);
+    }
+
+    const monthKey = planningMonthKeyFromDate(receivingDate);
+    if (!receivingDate || !monthKeys.has(monthKey)) return [];
 
     return [makePlanningReferenceRow({
       key: `kitten-forecast-${female.id}`,
       type: "kitten-forecast",
       typeLabel: "Filhotes a nascer",
-      description: [
-        buildDisplayName(female) || female.name || "Gata sem nome",
+      group: "kittenForecast",
+      description: cleanPlanningCatName(female),
+      details: [
         statusLabelForPlanning(status),
-        `base ${formatDateOnlyLabel(matingDate)}`,
+        `${baseLabel}: ${formatDateOnlyLabel(baseDate)}`,
         `${config.kittensPerLitter} filhotes x ${formatCurrency(config.kittenValueCents)}`,
-      ].filter(Boolean).join(" · "),
+      ],
+      date: receivingDate,
+      amountCents,
+      months,
+    })];
+  });
+}
+
+async function loadFinancialPlanningExpectedRevenueRows(prisma, req, months, config) {
+  const amountCents = Number(config.kittenValueCents || 0);
+  if (!amountCents) return [];
+
+  const monthKeys = new Set(months.map((month) => month.key));
+  const kittens = await prisma.cat.findMany({
+    where: {
+      ...ownerScope(req),
+      OR: [
+        { kittenNumber: { not: null } },
+        { litterKitten: { isNot: null } },
+      ],
+      kittenAvailabilityStatus: { in: ["AVAILABLE", "UNAVAILABLE"] },
+      deceased: { not: true },
+    },
+    include: {
+      mother: true,
+      litterKitten: { include: { litter: true } },
+    },
+    orderBy: [{ birthDate: "asc" }, { kittenNumber: "asc" }, { name: "asc" }],
+  });
+
+  return kittens.flatMap((kitten) => {
+    const receivingDate = addPlanningMonthsAndDays(kitten.birthDate, 4, 15);
+    const monthKey = planningMonthKeyFromDate(receivingDate);
+    if (!receivingDate || !monthKeys.has(monthKey)) return [];
+    const motherName = kitten.mother?.name || kitten.motherName || kitten.litterKitten?.litter?.femaleName || "";
+
+    return [makePlanningReferenceRow({
+      key: `expected-revenue-${kitten.id}`,
+      type: "expected-revenue",
+      typeLabel: "Receitas previstas",
+      group: "expectedRevenue",
+      description: planningKittenNumberAndName(kitten),
+      details: motherName ? [`Mãe: ${motherName}`] : [],
       date: receivingDate,
       amountCents,
       months,
@@ -558,7 +645,7 @@ async function loadFinancialPlanningKittenForecastRows(prisma, req, months, conf
 async function loadFinancialPlanningReferenceRows(prisma, req, months, config) {
   const { startDate, endDate } = planningMonthsDateRange(months);
   const monthKeys = new Set(months.map((month) => month.key));
-  const [revenues, payables, kittenForecastRows] = await Promise.all([
+  const [revenues, payables, expectedRevenueRows, kittenForecastRows] = await Promise.all([
     prisma.revenueEntry.findMany({
       where: {
         ...ownerScope(req),
@@ -571,6 +658,10 @@ async function loadFinancialPlanningReferenceRows(prisma, req, months, config) {
             id: true,
             name: true,
             microchip: true,
+            kittenNumber: true,
+            motherName: true,
+            mother: { select: { name: true } },
+            litterKitten: { include: { litter: true } },
           },
         },
       },
@@ -587,6 +678,7 @@ async function loadFinancialPlanningReferenceRows(prisma, req, months, config) {
       },
       orderBy: [{ dueDate: "asc" }, { id: "asc" }],
     }),
+    loadFinancialPlanningExpectedRevenueRows(prisma, req, months, config),
     loadFinancialPlanningKittenForecastRows(prisma, req, months, config),
   ]);
 
@@ -601,11 +693,12 @@ async function loadFinancialPlanningReferenceRows(prisma, req, months, config) {
         key: `receivable-${revenue.id}-${parcel.number || receivableRows.length}`,
         type: "receivable",
         typeLabel: "Contas a receber",
-        description: [
-          kittenReferenceLabel(revenue),
+        group: "receivable",
+        description: kittenReferenceLabel(revenue),
+        details: [
           revenue.client?.fullName || "Cliente desconhecido",
           `Parcela ${parcel.number || "-"} / ${revenue.installments || "-"}`,
-        ].filter(Boolean).join(" · "),
+        ],
         date: dueDate,
         amountCents: parcel.amountCents,
         months,
@@ -617,17 +710,20 @@ async function loadFinancialPlanningReferenceRows(prisma, req, months, config) {
     key: `payable-${payable.id}`,
     type: "payable",
     typeLabel: "Contas a pagar",
-    description: [
+    group: payable.isFixed ? "payableFixed" : "payableVariable",
+    description: payable.supplier || "Empresa não informada",
+    details: [
       payable.description || payable.category || "Conta a pagar",
       payable.supplier,
       payable.category && payable.description ? payable.category : "",
-    ].filter(Boolean).join(" · "),
+    ],
     date: payable.dueDate,
     amountCents: payable.amountCents,
     months,
   }));
 
   return [
+    ...sortPlanningReferenceRows(expectedRevenueRows),
     ...sortPlanningReferenceRows(receivableRows),
     ...sortPlanningReferenceRows(payableRows),
     ...sortPlanningReferenceRows(kittenForecastRows),
@@ -653,6 +749,33 @@ function cumulativeByMonth(monthlyValues, months) {
     running += Number(monthlyValues[month.key] || 0);
     return [month.key, running];
   }));
+}
+
+function buildPlanningReferenceSections(referenceRows, months) {
+  const definitions = [
+    { key: "expectedRevenue", title: "Receitas Previstas", color: "is-kitten-forecast" },
+    { key: "receivable", title: "Contas a Receber", color: "is-receivable" },
+    { key: "payables", title: "Contas a Pagar", color: "is-payable", children: [
+      { key: "payableFixed", title: "Contas Fixas", color: "is-payable" },
+      { key: "payableVariable", title: "Contas Variáveis", color: "is-payable" },
+    ] },
+    { key: "kittenForecast", title: "Filhotes a Nascer", color: "is-kitten-forecast" },
+  ];
+
+  function sectionFor(definition) {
+    const children = (definition.children || []).map(sectionFor);
+    const rows = definition.children
+      ? children.flatMap((child) => child.rows)
+      : referenceRows.filter((row) => row.group === definition.key);
+    return {
+      ...definition,
+      rows,
+      children,
+      totals: sumRowsByMonth(rows, months),
+    };
+  }
+
+  return definitions.map(sectionFor);
 }
 
 function buildFinancialPlanningViewModel(planningKey, months, rows, referenceRows = [], config = {}) {
@@ -683,6 +806,7 @@ function buildFinancialPlanningViewModel(planningKey, months, rows, referenceRow
       projectedBalance,
     },
     referenceRows,
+    referenceSections: buildPlanningReferenceSections(referenceRows, months),
     config,
     formatPlanningMoney,
     colorOptions: [

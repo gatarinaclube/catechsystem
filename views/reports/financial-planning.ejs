@@ -177,31 +177,103 @@
         color: #cbd5e1;
         font-size: 11px;
       }
-      .planning-reference-row td {
+      .planning-reference-section th,
+      .planning-reference-section td {
+        background: #111827;
+        color: #ffffff;
+        font-weight: 900;
+        padding: 0;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      .planning-reference-section th {
+        text-align: left;
+      }
+      .planning-reference-section.is-receivable th,
+      .planning-reference-section.is-receivable td {
+        background: #166534;
+      }
+      .planning-reference-section.is-payable th,
+      .planning-reference-section.is-payable td {
+        background: #9a3412;
+      }
+      .planning-reference-section.is-kitten-forecast th,
+      .planning-reference-section.is-kitten-forecast td {
+        background: #1d4ed8;
+      }
+      .planning-reference-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        width: 100%;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 900;
+        padding: 7px 8px;
+        text-align: left;
+        text-transform: uppercase;
+      }
+      .planning-reference-toggle::after {
+        content: "⌄";
+        font-size: 13px;
+        transition: transform .18s ease;
+      }
+      .planning-reference-toggle[aria-expanded="false"]::after {
+        transform: rotate(-90deg);
+      }
+      .planning-reference-section td {
+        padding: 6px;
+      }
+      .planning-reference-subsection th,
+      .planning-reference-subsection td {
+        background: #fed7aa;
+        color: #7c2d12;
+        font-weight: 900;
         padding: 5px 6px;
+        text-align: right;
+      }
+      .planning-reference-subsection th {
+        text-align: left;
+        text-transform: uppercase;
+      }
+      .planning-reference-row td {
+        padding: 3px 6px;
         font-variant-numeric: tabular-nums;
       }
       .planning-reference-label {
-        min-width: 260px;
-        width: 260px;
+        min-width: 210px;
+        width: 210px;
         white-space: normal !important;
         line-height: 1.25;
       }
-      .planning-reference-label strong {
-        display: block;
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: .04em;
+      .planning-reference-details {
+        margin: 0;
       }
-      .planning-reference-label span {
+      .planning-reference-details > summary {
+        cursor: pointer;
+        list-style: none;
+      }
+      .planning-reference-details > summary::-webkit-details-marker {
+        display: none;
+      }
+      .planning-reference-name {
         display: block;
         font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
-      .planning-reference-label small {
-        display: block;
+      .planning-reference-extra {
+        display: grid;
+        gap: 1px;
+        margin-top: 4px;
         color: #475569;
         font-weight: 700;
-        margin-top: 2px;
+        font-size: 10px;
       }
       .planning-reference-row.is-receivable td {
         background: #dcfce7;
@@ -211,6 +283,7 @@
         background: #ffedd5;
         color: #7c2d12;
       }
+      .planning-reference-row.is-expected-revenue td,
       .planning-reference-row.is-kitten-forecast td {
         background: #dbeafe;
         color: #1e3a8a;
@@ -238,6 +311,10 @@
       }
       .planning-negative {
         color: #dc2626;
+      }
+      .planning-reference-row[hidden],
+      .planning-reference-subsection[hidden] {
+        display: none;
       }
       .planning-add-row {
         border: 1px solid #111827;
@@ -442,20 +519,78 @@
                     </tr>
                     <% if (!planning.referenceRows.length) { %>
                       <tr class="planning-reference-empty">
-                        <td colspan="<%= planning.months.length + 1 %>">Nenhuma conta a receber de filhote ou conta a pagar pendente encontrada para estes meses.</td>
+                        <td colspan="<%= planning.months.length + 1 %>">Nenhuma informação automática encontrada para estes meses.</td>
                       </tr>
                     <% } %>
-                    <% planning.referenceRows.forEach(function(row) { %>
-                      <tr class="planning-reference-row is-<%= row.type %>">
-                        <td class="planning-reference-label">
-                          <strong><%= row.typeLabel %></strong>
-                          <span><%= row.description %></span>
-                          <small>Vencimento: <%= row.dateLabel %></small>
-                        </td>
+                    <% planning.referenceSections.forEach(function(section) { %>
+                      <% const sectionId = 'planning-auto-' + section.key; %>
+                      <tr class="planning-reference-section <%= section.color %>">
+                        <th>
+                          <button class="planning-reference-toggle" type="button" data-toggle-reference="<%= sectionId %>" aria-expanded="true">
+                            <span><%= section.title %></span>
+                          </button>
+                        </th>
                         <% planning.months.forEach(function(month) { %>
-                          <td class="planning-reference-amount"><%= planning.formatPlanningMoney(row.values[month.key]) %></td>
+                          <td><%= planning.formatPlanningMoney(section.totals[month.key], false) %></td>
                         <% }) %>
                       </tr>
+                      <% if (section.children && section.children.length) { %>
+                        <% section.children.forEach(function(child) { %>
+                          <tr class="planning-reference-subsection" data-reference-section="<%= sectionId %>">
+                            <th><%= child.title %></th>
+                            <% planning.months.forEach(function(month) { %>
+                              <td><%= planning.formatPlanningMoney(child.totals[month.key], false) %></td>
+                            <% }) %>
+                          </tr>
+                          <% child.rows.forEach(function(row) { %>
+                            <tr class="planning-reference-row is-<%= row.type %>" data-reference-section="<%= sectionId %>">
+                              <td class="planning-reference-label">
+                                <details class="planning-reference-details">
+                                  <summary><span class="planning-reference-name"><%= row.description %></span></summary>
+                                  <div class="planning-reference-extra">
+                                    <% row.details.forEach(function(detail) { %>
+                                      <span><%= detail %></span>
+                                    <% }) %>
+                                    <span>Vencimento: <%= row.dateLabel %></span>
+                                  </div>
+                                </details>
+                              </td>
+                              <% planning.months.forEach(function(month) { %>
+                                <td class="planning-reference-amount"><%= planning.formatPlanningMoney(row.values[month.key]) %></td>
+                              <% }) %>
+                            </tr>
+                          <% }) %>
+                          <% if (!child.rows.length) { %>
+                            <tr class="planning-reference-empty" data-reference-section="<%= sectionId %>">
+                              <td colspan="<%= planning.months.length + 1 %>">Nenhum lançamento em <%= child.title.toLowerCase() %> para estes meses.</td>
+                            </tr>
+                          <% } %>
+                        <% }) %>
+                      <% } else { %>
+                        <% section.rows.forEach(function(row) { %>
+                          <tr class="planning-reference-row is-<%= row.type %>" data-reference-section="<%= sectionId %>">
+                            <td class="planning-reference-label">
+                              <details class="planning-reference-details">
+                                <summary><span class="planning-reference-name"><%= row.description %></span></summary>
+                                <div class="planning-reference-extra">
+                                  <% row.details.forEach(function(detail) { %>
+                                    <span><%= detail %></span>
+                                  <% }) %>
+                                  <span>Vencimento: <%= row.dateLabel %></span>
+                                </div>
+                              </details>
+                            </td>
+                            <% planning.months.forEach(function(month) { %>
+                              <td class="planning-reference-amount"><%= planning.formatPlanningMoney(row.values[month.key]) %></td>
+                            <% }) %>
+                          </tr>
+                        <% }) %>
+                        <% if (!section.rows.length) { %>
+                          <tr class="planning-reference-empty" data-reference-section="<%= sectionId %>">
+                            <td colspan="<%= planning.months.length + 1 %>">Nenhum lançamento em <%= section.title.toLowerCase() %> para estes meses.</td>
+                          </tr>
+                        <% } %>
+                      <% } %>
                     <% }) %>
                   </tbody>
                 </table>
@@ -589,6 +724,18 @@
         if (removeButton) {
           removeButton.closest("tr")?.remove();
           recalculatePlanning();
+          syncPlanningScrollbar();
+          return;
+        }
+
+        const referenceToggle = event.target.closest("[data-toggle-reference]");
+        if (referenceToggle) {
+          const sectionId = referenceToggle.dataset.toggleReference;
+          const expanded = referenceToggle.getAttribute("aria-expanded") !== "false";
+          referenceToggle.setAttribute("aria-expanded", expanded ? "false" : "true");
+          document.querySelectorAll(`[data-reference-section="${sectionId}"]`).forEach((row) => {
+            row.hidden = expanded;
+          });
           syncPlanningScrollbar();
         }
       });
