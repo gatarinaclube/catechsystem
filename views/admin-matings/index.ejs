@@ -11,17 +11,16 @@
         display: grid;
         grid-template-columns:
           260px
-          160px
-          210px
-          240px
-          145px
-          145px
-          145px
+          150px
+          190px
+          205px
+          135px
           130px
-          165px
-          155px;
+          130px
+          110px
+          110px;
         align-items: stretch;
-        min-width: 1755px;
+        min-width: 1420px;
       }
       .mating-header {
         font-size: 12px;
@@ -47,6 +46,24 @@
         border-radius: 0;
         background: #ffffff;
       }
+      .mating-row[data-status="CONFIRMADO"] .mating-table > div {
+        border-left-color: #16a34a;
+      }
+      .mating-row[data-status="NAO_CONFIRMADO"] .mating-table > div {
+        border-left-color: #f97316;
+      }
+      .mating-row[data-status="PARA_ACASALAR"] .mating-table > div {
+        border-left-color: #2563eb;
+      }
+      .mating-row[data-status="PAUSA_REPRODUTIVA"] .mating-table > div {
+        border-left-color: #7c3aed;
+      }
+      .mating-row[data-status="COM_PROBLEMA"] .mating-table > div {
+        border-left-color: #dc2626;
+      }
+      .mating-row[data-status="EM_DESENVOLVIMENTO"] .mating-table > div {
+        border-left-color: #64748b;
+      }
       .mating-row.is-supplementing {
         background: #ecfdf5;
       }
@@ -58,6 +75,7 @@
         padding: 9px 10px;
         border-right: 1px solid #cbd5e1;
         border-bottom: 1px solid #cbd5e1;
+        border-left: 3px solid transparent;
         background: rgba(255, 255, 255, 0.78);
       }
       .mating-row.is-supplementing .mating-table > div {
@@ -88,6 +106,47 @@
       }
       .mating-scrollbar-inner {
         height: 1px;
+      }
+      .mating-status-divider {
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        align-items: center;
+        min-width: 1420px;
+        border-left: 1px solid #94a3b8;
+        border-right: 1px solid #94a3b8;
+        border-bottom: 1px solid #94a3b8;
+        color: #ffffff;
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .mating-status-divider span {
+        padding: 8px 12px;
+      }
+      .mating-status-divider small {
+        justify-self: end;
+        padding: 8px 12px;
+        font-size: 11px;
+        opacity: 0.86;
+      }
+      .mating-status-divider[data-status="CONFIRMADO"] {
+        background: #15803d;
+      }
+      .mating-status-divider[data-status="NAO_CONFIRMADO"] {
+        background: #ea580c;
+      }
+      .mating-status-divider[data-status="PARA_ACASALAR"] {
+        background: #2563eb;
+      }
+      .mating-status-divider[data-status="PAUSA_REPRODUTIVA"] {
+        background: #7c3aed;
+      }
+      .mating-status-divider[data-status="COM_PROBLEMA"] {
+        background: #dc2626;
+      }
+      .mating-status-divider[data-status="EM_DESENVOLVIMENTO"] {
+        background: #475569;
       }
       .mating-female-cell {
         position: sticky;
@@ -269,6 +328,89 @@
         border-radius: 8px;
         font-size: 12px;
       }
+      .mating-status-select {
+        color: #ffffff;
+        border: 0;
+        font-weight: 800;
+      }
+      .mating-status-select[data-status="CONFIRMADO"] {
+        background: #16a34a;
+      }
+      .mating-status-select[data-status="NAO_CONFIRMADO"] {
+        background: #f97316;
+      }
+      .mating-status-select[data-status="PARA_ACASALAR"] {
+        background: #2563eb;
+      }
+      .mating-status-select[data-status="PAUSA_REPRODUTIVA"] {
+        background: #7c3aed;
+      }
+      .mating-status-select[data-status="COM_PROBLEMA"] {
+        background: #dc2626;
+      }
+      .mating-status-select[data-status="EM_DESENVOLVIMENTO"] {
+        background: #64748b;
+      }
+      .mating-female-details summary {
+        cursor: pointer;
+        list-style: none;
+      }
+      .mating-female-details summary::-webkit-details-marker {
+        display: none;
+      }
+      .mating-female-more {
+        display: grid;
+        gap: 4px;
+        margin-top: 6px;
+      }
+      .mating-history-compact {
+        display: grid;
+        gap: 6px;
+      }
+      .mating-history-main,
+      .inline-plus {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .mating-history-date-input,
+      .mating-date-field input[type="text"] {
+        width: 96px;
+        min-width: 96px;
+        text-align: center;
+      }
+      .mating-icon-button,
+      .mating-table .mating-icon-button,
+      .delete-history-date,
+      .mating-table .delete-history-date,
+      .add-history-date,
+      .mating-table .add-history-date {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        min-height: 26px;
+        padding: 0;
+        border-radius: 999px;
+        font-size: 12px;
+        line-height: 1;
+      }
+      .mating-history-more {
+        margin-top: 3px;
+      }
+      .mating-history-more summary {
+        cursor: pointer;
+        color: var(--accent);
+        font-size: 11px;
+        font-weight: 800;
+      }
+      .mating-next-date.is-ready {
+        color: #16a34a;
+      }
+      .mating-next-date.is-danger {
+        color: #dc2626;
+      }
       .mating-search-grid {
         display: grid;
         grid-template-columns: minmax(240px, 1fr) auto;
@@ -321,18 +463,26 @@
           grid-template-columns: 1fr;
         }
         .mating-table {
-          min-width: 1420px;
+          min-width: 1280px;
           grid-template-columns:
             220px
-            140px
+            130px
+            170px
             180px
-            215px
             125px
             125px
             125px
-            120px
-            145px
-            125px;
+            105px
+            100px;
+        }
+        .mating-status-divider {
+          min-width: 1280px;
+          grid-template-columns: 220px 1fr;
+        }
+        .mating-history-date-input,
+        .mating-date-field input[type="text"] {
+          width: 88px;
+          min-width: 88px;
         }
       }
     </style>
@@ -481,65 +631,82 @@
           }).join("");
         } %>
 
-        <% groups.forEach(function(group) { %>
-          <% const items = grouped[group.key] || []; %>
-          <details class="content-card module-panel module-accordion">
-            <summary>
-              <div class="module-accordion-summary">
-                <span class="module-accordion-icon">⌄</span>
-                <span class="module-accordion-title"><%= group.label %></span>
-              </div>
-              <span class="module-accordion-count"><%= items.length %></span>
-            </summary>
-            <div class="module-accordion-body">
-              <% if (!items.length) { %>
-                <div class="empty" style="margin-top:12px;">Nenhum registro nesta divisão.</div>
-              <% } else { %>
-                <div class="mating-sheet-shell">
-                  <div class="mating-sheet-wrap" data-mating-sheet-wrap>
-                    <div class="mating-table mating-header">
-                      <div class="mating-female-cell">Fêmea</div>
-                      <div>Status</div>
-                      <div>Macho</div>
-                      <div>Últimas Ninhadas</div>
-                      <div>Próxima Cruza</div>
-                      <div>Cruza 1º dia</div>
-                      <div>Cruza 2º dia</div>
-                      <div>DPP</div>
-                      <div>Gestação</div>
-                      <div>Atualizar</div>
-                    </div>
-                    <div class="mating-list">
-                    <% items.forEach(function(row, index) { %>
+        <% const totalMatingRows = groups.reduce(function(total, group) { return total + ((grouped[group.key] || []).length); }, 0); %>
+        <section class="content-card module-panel">
+          <div class="history-section-head">
+            <div>
+              <div class="content-title">Planejamento de Acasalamentos</div>
+              <div class="content-sub">Tabela geral das fêmeas, organizada por status reprodutivo.</div>
+            </div>
+            <span class="status-pill is-purple"><%= totalMatingRows %></span>
+          </div>
+
+          <% if (!totalMatingRows) { %>
+            <div class="empty" style="margin-top:12px;">Nenhuma fêmea disponível para planejamento.</div>
+          <% } else { %>
+            <div class="mating-sheet-shell">
+              <div class="mating-sheet-wrap" data-mating-sheet-wrap>
+                <div class="mating-table mating-header">
+                  <div class="mating-female-cell">Fêmea</div>
+                  <div>Status</div>
+                  <div>Macho</div>
+                  <div>Última Ninhada</div>
+                  <div>Próxima Cruza</div>
+                  <div>Cruza 1º dia</div>
+                  <div>Cruza 2º dia</div>
+                  <div>DPP</div>
+                  <div>Gestação</div>
+                </div>
+                <div class="mating-list">
+                <% groups.forEach(function(group, groupIndex) { %>
+                  <% const items = grouped[group.key] || []; %>
+                  <div class="mating-status-divider" data-status="<%= group.key %>" data-status-divider="<%= group.key %>" data-group-index="<%= groupIndex %>">
+                    <span><%= group.label %></span>
+                    <small data-status-count="<%= group.key %>"><%= items.length %></small>
+                  </div>
+                  <% items.forEach(function(row, index) { %>
+                    <% const globalOrder = (groupIndex * 1000) + index; %>
+                    <% const nextDateValue = row.nextCrossDate ? new Date(row.nextCrossDate) : null; %>
+                    <% const todayValue = new Date(); todayValue.setHours(0, 0, 0, 0); %>
+                    <% const nextDateClass = row.excessLitterWarning ? "is-danger" : (nextDateValue && nextDateValue <= todayValue ? "is-ready" : ""); %>
+                    <% const historyList = row.litterHistory.length ? row.litterHistory : [""]; %>
+                    <% const latestHistory = historyList[historyList.length - 1]; %>
                     <form
                       method="post"
                       action="/admin/matings/<%= row.female.id %>"
                       class="mating-row <%= row.supplement?.active ? 'is-supplementing' : '' %>"
                       data-mating-row
-                      data-original-order="<%= index %>"
+                      data-status="<%= row.status %>"
+                      data-original-order="<%= globalOrder %>"
                       data-search="<%= String(row.femaleDisplayName || '').toLowerCase() %>"
                     >
                       <input type="hidden" name="ownerId" value="<%= selectedOwnerId || '' %>" />
                       <div class="mating-table">
                         <div class="mating-female-cell">
-                          <div class="item-title">
-                            <%= row.femaleDisplayName %>
-                            <% if (row.supplement?.active) { %>
-                              <span class="status-pill is-green">Suplementação</span>
-                            <% } %>
-                          </div>
-                          <div class="birth-line">Nascimento: <%= row.birthDateLabel %></div>
-                          <% if (row.supplement?.active) { %>
-                            <div class="birth-line">
-                              <%= row.supplement.phase %> · início <%= formatDate(row.supplement.startDate) %> ·
-                              <%= row.supplement.endOpen ? "até lançar a data de cruza" : "fim " + formatDate(row.supplement.endDate) %>
+                          <details class="mating-female-details">
+                            <summary>
+                              <div class="item-title">
+                                <%= row.femaleDisplayName %>
+                                <% if (row.supplement?.active) { %>
+                                  <span class="status-pill is-green">Suplementação</span>
+                                <% } %>
+                              </div>
+                            </summary>
+                            <div class="mating-female-more">
+                              <div class="birth-line">Nascimento: <%= row.birthDateLabel %></div>
+                              <% if (row.supplement?.active) { %>
+                                <div class="birth-line">
+                                  <%= row.supplement.phase %> · início <%= formatDate(row.supplement.startDate) %> ·
+                                  <%= row.supplement.endOpen ? "até lançar a data de cruza" : "fim " + formatDate(row.supplement.endDate) %>
+                                </div>
+                              <% } %>
+                              <div class="parent-line">
+                                <span>Pai: <%= row.fatherName %></span>
+                                <span>Mãe: <%= row.motherName %></span>
+                              </div>
+                              <button type="button" class="origin-button" data-open-origin="origin-<%= row.female.id %>">Origem</button>
                             </div>
-                          <% } %>
-                          <div class="parent-line">
-                            <span>Pai: <%= row.fatherName %></span>
-                            <span>Mãe: <%= row.motherName %></span>
-                          </div>
-                          <button type="button" class="origin-button" data-open-origin="origin-<%= row.female.id %>">Origem</button>
+                          </details>
                           <dialog class="origin-dialog" id="origin-<%= row.female.id %>">
                             <div class="origin-dialog-header">
                               <div class="origin-dialog-title">Origem - <%= row.femaleDisplayName %></div>
@@ -552,43 +719,73 @@
                         </div>
 
                         <div class="mini-stack">
-                          <select name="status" aria-label="Status de acasalamento">
+                          <select name="status" class="mating-status-select" data-status-select data-status="<%= row.status %>" aria-label="Status de acasalamento">
                             <% groups.forEach(function(statusItem) { %>
                               <option value="<%= statusItem.key %>" <%= row.status === statusItem.key ? "selected" : "" %>><%= statusItem.label %></option>
                             <% }) %>
                           </select>
-                          <span class="status-pill is-blue" data-mating-status-pill><%= group.label %></span>
+                          <span class="mating-save-status" data-save-status></span>
                         </div>
 
                         <div class="mating-male-field">
                           <select name="maleCatId" aria-label="Macho">
                             <option value="">Selecione...</option>
                             <% row.maleOptions.forEach(function(male) { %>
-                              <option value="<%= male.id %>" <%= String(row.plan?.maleCatId || '') === String(male.id) ? "selected" : "" %>><%= male.displayName || male.name %></option>
+                              <option value="<%= male.id %>" <%= String(row.plan?.maleCatId || '') === String(male.id) ? "selected" : "" %>><%= male.name %></option>
                             <% }) %>
                           </select>
                         </div>
 
-                        <div class="mini-stack" data-history-box>
-                          <% const historyList = row.litterHistory.length ? row.litterHistory : [""]; %>
-                          <% historyList.forEach(function(value) { %>
-                            <div class="inline-plus" data-history-row>
-                              <% if (value) { %>
-                                <input type="hidden" name="litterHistoryDates" value="<%= formatDateInput(value) %>" />
-                                <span class="history-date-display"><%= formatDate(value) %></span>
-                                <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
-                              <% } else { %>
-                                <input type="text" data-history-date-input inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="" />
-                              <% } %>
-                            </div>
-                          <% }) %>
-                          <div class="history-add-row">
-                            <button type="button" class="btn add-history-date">+</button>
+                        <div class="mating-history-compact" data-history-box>
+                          <div class="mating-history-main">
+                            <% if (latestHistory) { %>
+                              <div class="inline-plus" data-history-row>
+                                <input type="hidden" name="litterHistoryDates" value="<%= formatDateInput(latestHistory) %>" />
+                                <span class="history-date-display"><%= formatDate(latestHistory) %></span>
+                                <button type="button" class="btn mating-icon-button delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
+                              </div>
+                            <% } else { %>
+                              <div class="inline-plus" data-history-row>
+                                <input class="mating-history-date-input" type="text" data-history-date-input inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="" />
+                              </div>
+                            <% } %>
+                            <button type="button" class="btn mating-icon-button add-history-date" title="Adicionar ninhada" aria-label="Adicionar ninhada">+</button>
                           </div>
+
+                          <% if (historyList.filter(Boolean).length > 1) { %>
+                            <details class="mating-history-more">
+                              <summary>Ver anteriores</summary>
+                              <% historyList.slice(0, -1).forEach(function(value) { %>
+                                <div class="inline-plus" data-history-row>
+                                  <% if (value) { %>
+                                    <input type="hidden" name="litterHistoryDates" value="<%= formatDateInput(value) %>" />
+                                    <span class="history-date-display"><%= formatDate(value) %></span>
+                                    <button type="button" class="btn mating-icon-button delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
+                                  <% } %>
+                                </div>
+                              <% }) %>
+                            </details>
+                          <% } else if (latestHistory) { %>
+                            <% historyList.slice(0, -1).forEach(function(value) { %>
+                              <% if (value) { %>
+                                <div class="inline-plus" data-history-row hidden>
+                                  <input type="hidden" name="litterHistoryDates" value="<%= formatDateInput(value) %>" />
+                                </div>
+                              <% } %>
+                            <% }) %>
+                          <% } else { %>
+                            <% historyList.slice(1).forEach(function(value) { %>
+                              <% if (value) { %>
+                                <div class="inline-plus" data-history-row hidden>
+                                  <input type="hidden" name="litterHistoryDates" value="<%= formatDateInput(value) %>" />
+                                </div>
+                              <% } %>
+                            <% }) %>
+                          <% } %>
                         </div>
 
                         <div>
-                          <strong data-next-cross><%= row.nextCrossDate ? formatDate(row.nextCrossDate) : "-" %></strong>
+                          <strong class="mating-next-date <%= nextDateClass %>" data-next-cross><%= row.nextCrossDate ? formatDate(row.nextCrossDate) : "-" %></strong>
                           <div class="mating-excess-warning" data-excess-litter-warning <%= row.excessLitterWarning ? "" : "hidden" %>>Excesso de Ninhada</div>
                         </div>
 
@@ -606,27 +803,19 @@
                           <strong data-dpp-date><%= row.dppDate ? formatDate(row.dppDate) : "-" %></strong>
                         </div>
 
-                        <div data-gestation-days><%= row.gestationDays !== null ? row.gestationDays + " dias de gestação" : "-" %></div>
-
-                        <div>
-                          <div class="mating-save-row">
-                            <button class="btn mating-update-button" type="button">Atualizar</button>
-                            <span class="mating-save-status" data-save-status></span>
-                          </div>
-                        </div>
+                        <div data-gestation-days><%= row.gestationDays !== null ? row.gestationDays + " dias" : "-" %></div>
                       </div>
                     </form>
-                    <% }) %>
-                    </div>
-                  </div>
-                  <div class="mating-scrollbar" data-mating-scrollbar aria-label="Rolagem horizontal da tabela de acasalamentos">
-                    <div class="mating-scrollbar-inner" data-mating-scrollbar-inner></div>
-                  </div>
+                  <% }) %>
+                <% }) %>
                 </div>
-              <% } %>
+              </div>
+              <div class="mating-scrollbar" data-mating-scrollbar aria-label="Rolagem horizontal da tabela de acasalamentos">
+                <div class="mating-scrollbar-inner" data-mating-scrollbar-inner></div>
+              </div>
             </div>
-          </details>
-        <% }) %>
+          <% } %>
+        </section>
 
         <% if (supplementRows && supplementRows.length) { %>
           <section class="content-card module-panel">
@@ -660,6 +849,8 @@
     <script>
       (function () {
         const users = <%- JSON.stringify(users) %>;
+        const statusGroups = <%- JSON.stringify(groups) %>;
+        const statusOrder = new Map(statusGroups.map((group, index) => [group.key, index]));
         const ownerSearch = document.getElementById("matingsOwnerSearch");
         const ownerId = document.getElementById("matingsOwnerId");
 
@@ -689,14 +880,20 @@
               credentials: "same-origin",
               headers: {
                 "Content-Type": "application/x-www-form-urlencoded",
+                "Accept": "application/json",
               },
             });
 
             if (!response.ok) {
               throw new Error("Erro ao salvar");
             }
+
+            const data = await response.json();
+            applyMatingSaveResponse(form, data);
+            setSaveStatus(form.querySelector("[data-save-status]"), "Salvo.", "success");
           } catch (error) {
             console.error(error);
+            setSaveStatus(form.querySelector("[data-save-status]"), "Erro.", "error");
           } finally {
             form.dataset.submitting = "false";
             if (form.dataset.pendingSave === "true") {
@@ -710,6 +907,79 @@
           element.textContent = text || "";
           element.classList.toggle("is-success", type === "success");
           element.classList.toggle("is-error", type === "error");
+        }
+
+        function updateStatusCounters() {
+          const counts = {};
+          document.querySelectorAll("[data-mating-row]").forEach((row) => {
+            counts[row.dataset.status] = (counts[row.dataset.status] || 0) + 1;
+          });
+
+          document.querySelectorAll("[data-status-count]").forEach((counter) => {
+            counter.textContent = counts[counter.dataset.statusCount] || 0;
+          });
+        }
+
+        function rowOrder(row) {
+          const groupIndex = statusOrder.get(row.dataset.status) ?? statusGroups.length;
+          const original = Number(row.dataset.originalOrder || 0);
+          return groupIndex * 10000 + original;
+        }
+
+        function reorderMatingRows() {
+          document.querySelectorAll("[data-status-divider]").forEach((divider) => {
+            const groupIndex = statusOrder.get(divider.dataset.statusDivider) ?? statusGroups.length;
+            divider.style.order = String(groupIndex * 10000 - 1);
+          });
+
+          document.querySelectorAll("[data-mating-row]").forEach((row) => {
+            row.style.order = String(rowOrder(row));
+          });
+
+          updateStatusCounters();
+        }
+
+        function updateNextCrossColor(form, hasExcessWarning) {
+          const nextCross = form.querySelector("[data-next-cross]");
+          if (!nextCross) return;
+          nextCross.classList.toggle("is-danger", Boolean(hasExcessWarning));
+          if (hasExcessWarning) {
+            nextCross.classList.remove("is-ready");
+            return;
+          }
+
+          const match = String(nextCross.textContent || "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+          if (!match) {
+            nextCross.classList.remove("is-ready");
+            return;
+          }
+
+          const date = new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]));
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          nextCross.classList.toggle("is-ready", date <= today);
+        }
+
+        function applyMatingSaveResponse(form, data) {
+          if (!form || !data) return;
+          if (data.status) {
+            form.dataset.status = data.status;
+            const select = form.querySelector("[data-status-select]");
+            if (select) select.dataset.status = data.status;
+          }
+
+          const nextCross = form.querySelector("[data-next-cross]");
+          const dppDate = form.querySelector("[data-dpp-date]");
+          const gestation = form.querySelector("[data-gestation-days]");
+          const excessWarning = form.querySelector("[data-excess-litter-warning]");
+          if (nextCross) nextCross.textContent = data.nextCrossLabel || "-";
+          if (excessWarning) excessWarning.hidden = !data.excessLitterWarning;
+          if (dppDate) dppDate.textContent = data.dppLabel || "-";
+          if (gestation) gestation.textContent = data.gestationLabel || "-";
+
+          form.classList.toggle("is-supplementing", Boolean(data.supplementActive));
+          updateNextCrossColor(form, data.excessLitterWarning);
+          reorderMatingRows();
         }
 
         function maskBrazilianDate(value) {
@@ -791,12 +1061,14 @@
         document.querySelectorAll(".add-history-date").forEach((button) => {
           button.addEventListener("click", () => {
             const box = button.closest("[data-history-box]");
+            const main = button.closest(".mating-history-main") || box;
             const row = document.createElement("div");
             row.className = "inline-plus";
             row.dataset.historyRow = "";
-            row.innerHTML = '<input type="text" data-history-date-input inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="" />';
-            box.insertBefore(row, button.closest(".history-add-row"));
+            row.innerHTML = '<input class="mating-history-date-input" type="text" data-history-date-input inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="" />';
+            main.insertBefore(row, button);
             bindHistoryRow(row);
+            row.querySelector("input")?.focus();
           });
         });
 
@@ -859,7 +1131,7 @@
               row.innerHTML = `
                 <input type="hidden" name="litterHistoryDates" value="${isoDate}" />
                 <span class="history-date-display">${formatDisplayDate(isoDate)}</span>
-                <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
+                <button type="button" class="btn mating-icon-button delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
               `;
               addDeleteHandler(row.querySelector(".delete-history-date"));
               autosave(row.closest("form"));
@@ -884,10 +1156,14 @@
         document.querySelectorAll("[data-history-row]").forEach(bindHistoryRow);
         document.querySelectorAll("[data-mating-date-display]").forEach(bindMatingDateField);
         document.querySelectorAll(".mating-row select").forEach((field) => {
-          field.addEventListener("change", () => autosave(field.closest("form")));
-        });
-        document.querySelectorAll(".mating-update-button").forEach((button) => {
-          button.addEventListener("click", () => manualUpdate(button.closest("form")));
+          field.addEventListener("change", () => {
+            if (field.matches("[data-status-select]")) {
+              field.dataset.status = field.value;
+              field.closest("[data-mating-row]").dataset.status = field.value;
+              reorderMatingRows();
+            }
+            autosave(field.closest("form"));
+          });
         });
 
         const matingSearch = document.getElementById("matingCatSearch");
@@ -909,13 +1185,11 @@
           matingRows.forEach((row) => {
             const matched = Boolean(query) && normalizeSearch(row.dataset.search).includes(query);
             row.classList.toggle("search-match", matched);
-            row.style.order = matched ? "-1" : row.dataset.originalOrder || "0";
+            row.style.order = matched ? "-1" : String(rowOrder(row));
             if (matched && !firstMatch) firstMatch = row;
           });
 
           if (query && firstMatch) {
-            const accordion = firstMatch.closest(".module-accordion");
-            if (accordion) accordion.open = true;
             firstMatch.scrollIntoView({ behavior: "smooth", block: "center" });
           }
         }
@@ -925,10 +1199,15 @@
           if (matingSearch) matingSearch.value = "";
           matingRows.forEach((row) => {
             row.classList.remove("search-match");
-            row.style.order = row.dataset.originalOrder || "0";
+            row.style.order = String(rowOrder(row));
           });
           matingSearch?.focus();
         });
+
+        document.querySelectorAll("[data-status-select]").forEach((select) => {
+          select.dataset.status = select.value;
+        });
+        reorderMatingRows();
 
         document.querySelectorAll("[data-mating-sheet-wrap]").forEach((wrap) => {
           const shell = wrap.closest(".mating-sheet-shell");

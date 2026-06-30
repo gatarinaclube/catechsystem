@@ -477,7 +477,15 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const litterHistory = []
         .concat(req.body.litterHistoryDates || [])
         .map((value) => String(value || "").trim())
-        .filter((value) => value !== "");
+        .filter((value) => value !== "")
+        .sort((a, b) => {
+          const dateA = parseDate(a);
+          const dateB = parseDate(b);
+          if (!dateA && !dateB) return 0;
+          if (!dateA) return 1;
+          if (!dateB) return -1;
+          return dateA - dateB;
+        });
 
       const payload = {
         ownerId: female?.ownerId || null,
@@ -524,7 +532,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           nextCrossLabel: nextCrossDate ? formatDate(nextCrossDate) : "-",
           excessLitterWarning,
           dppLabel: dppDate ? formatDate(dppDate) : "-",
-          gestationLabel: gestationDays !== null ? `${gestationDays} dias de gestação` : "-",
+          gestationLabel: gestationDays !== null ? `${gestationDays} dias` : "-",
           supplementActive: Boolean(supplement?.active),
           supplementText: supplement?.active
             ? `${supplement.phase} · início ${formatDate(supplement.startDate)} · ${supplement.endOpen ? "até lançar a data de cruza" : `fim ${formatDate(supplement.endDate)}`}`
