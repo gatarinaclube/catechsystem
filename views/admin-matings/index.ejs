@@ -10,17 +10,17 @@
       .mating-table {
         display: grid;
         grid-template-columns:
-          260px
-          150px
-          190px
-          205px
-          135px
-          130px
-          130px
-          110px
-          110px;
+          220px
+          138px
+          170px
+          180px
+          125px
+          112px
+          112px
+          94px
+          86px;
         align-items: stretch;
-        min-width: 1420px;
+        min-width: 1237px;
       }
       .mating-header {
         font-size: 12px;
@@ -34,7 +34,7 @@
         z-index: 2;
       }
       .mating-header > div {
-        padding: 9px 10px;
+        padding: 7px 8px;
         border-right: 1px solid #94a3b8;
         border-bottom: 1px solid #94a3b8;
         text-align: center;
@@ -71,8 +71,8 @@
         border-left: 1px solid #cbd5e1;
       }
       .mating-row .mating-table > div {
-        min-height: 82px;
-        padding: 9px 10px;
+        min-height: 40px;
+        padding: 5px 7px;
         border-right: 1px solid #cbd5e1;
         border-bottom: 1px solid #cbd5e1;
         border-left: 3px solid transparent;
@@ -109,9 +109,9 @@
       }
       .mating-status-divider {
         display: grid;
-        grid-template-columns: 260px 1fr;
+        grid-template-columns: 220px 1fr;
         align-items: center;
-        min-width: 1420px;
+        min-width: 1237px;
         border-left: 1px solid #94a3b8;
         border-right: 1px solid #94a3b8;
         border-bottom: 1px solid #94a3b8;
@@ -122,11 +122,11 @@
         text-transform: uppercase;
       }
       .mating-status-divider span {
-        padding: 8px 12px;
+        padding: 6px 10px;
       }
       .mating-status-divider small {
         justify-self: end;
-        padding: 8px 12px;
+        padding: 6px 10px;
         font-size: 11px;
         opacity: 0.86;
       }
@@ -168,6 +168,7 @@
         display: grid;
         gap: 10px;
         margin-top: 14px;
+        max-width: 100%;
       }
       .supplement-item {
         display: flex;
@@ -177,6 +178,8 @@
         border: 1px solid var(--border-soft);
         border-radius: 12px;
         background: #f8fafc;
+        min-width: 0;
+        flex-wrap: wrap;
       }
       .supplement-item-main {
         display: grid;
@@ -324,9 +327,10 @@
       }
       .mating-table select,
       .mating-table input[type="text"] {
-        min-height: 34px;
-        border-radius: 8px;
+        min-height: 27px;
+        border-radius: 7px;
         font-size: 12px;
+        padding: 4px 7px;
       }
       .mating-status-select {
         color: #ffffff;
@@ -363,9 +367,17 @@
         gap: 4px;
         margin-top: 6px;
       }
+      .mating-female-cell .item-title {
+        font-size: 13px;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
       .mating-history-compact {
         display: grid;
-        gap: 6px;
+        gap: 3px;
+        align-content: start;
       }
       .mating-history-main,
       .inline-plus {
@@ -375,8 +387,8 @@
       }
       .mating-history-date-input,
       .mating-date-field input[type="text"] {
-        width: 96px;
-        min-width: 96px;
+        width: 86px;
+        min-width: 86px;
         text-align: center;
       }
       .mating-icon-button,
@@ -388,22 +400,33 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 26px;
-        height: 26px;
-        min-height: 26px;
+        width: 22px;
+        height: 22px;
+        min-height: 22px;
         padding: 0;
         border-radius: 999px;
-        font-size: 12px;
+        font-size: 11px;
         line-height: 1;
       }
       .mating-history-more {
-        margin-top: 3px;
+        margin: 0 0 2px;
       }
       .mating-history-more summary {
         cursor: pointer;
         color: var(--accent);
         font-size: 11px;
         font-weight: 800;
+      }
+      .mating-history-more[open] summary {
+        margin-bottom: 3px;
+      }
+      .mating-next-date,
+      .mating-dpp strong,
+      [data-gestation-days] {
+        display: inline-block;
+        padding-top: 2px;
+        font-size: 13px;
+        line-height: 1.2;
       }
       .mating-next-date.is-ready {
         color: #16a34a;
@@ -416,10 +439,22 @@
         grid-template-columns: minmax(240px, 1fr) auto;
         gap: 12px;
         align-items: end;
+        max-width: 100%;
       }
       .mating-list {
         display: flex;
         flex-direction: column;
+        min-width: 1237px;
+      }
+      .record-list {
+        max-width: 100%;
+      }
+      .record-row {
+        min-width: 0;
+        flex-wrap: wrap;
+      }
+      .record-main {
+        min-width: 0;
       }
       .mating-row.search-match {
         box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.28);
@@ -463,26 +498,29 @@
           grid-template-columns: 1fr;
         }
         .mating-table {
-          min-width: 1280px;
+          min-width: 1116px;
           grid-template-columns:
-            220px
-            130px
-            170px
-            180px
-            125px
-            125px
-            125px
-            105px
-            100px;
+            190px
+            120px
+            155px
+            165px
+            115px
+            98px
+            98px
+            90px
+            85px;
         }
         .mating-status-divider {
-          min-width: 1280px;
-          grid-template-columns: 220px 1fr;
+          min-width: 1116px;
+          grid-template-columns: 190px 1fr;
+        }
+        .mating-list {
+          min-width: 1116px;
         }
         .mating-history-date-input,
         .mating-date-field input[type="text"] {
-          width: 88px;
-          min-width: 88px;
+          width: 82px;
+          min-width: 82px;
         }
       }
     </style>
@@ -645,6 +683,9 @@
             <div class="empty" style="margin-top:12px;">Nenhuma fêmea disponível para planejamento.</div>
           <% } else { %>
             <div class="mating-sheet-shell">
+              <div class="mating-scrollbar" data-mating-scrollbar aria-label="Rolagem horizontal da tabela de acasalamentos">
+                <div class="mating-scrollbar-inner" data-mating-scrollbar-inner></div>
+              </div>
               <div class="mating-sheet-wrap" data-mating-sheet-wrap>
                 <div class="mating-table mating-header">
                   <div class="mating-female-cell">Fêmea</div>
@@ -686,10 +727,7 @@
                           <details class="mating-female-details">
                             <summary>
                               <div class="item-title">
-                                <%= row.femaleDisplayName %>
-                                <% if (row.supplement?.active) { %>
-                                  <span class="status-pill is-green">Suplementação</span>
-                                <% } %>
+                                <%= row.female.name || row.femaleDisplayName %>
                               </div>
                             </summary>
                             <div class="mating-female-more">
@@ -737,6 +775,20 @@
                         </div>
 
                         <div class="mating-history-compact" data-history-box>
+                          <% if (historyList.filter(Boolean).length > 1) { %>
+                            <details class="mating-history-more">
+                              <summary>Ver mais datas</summary>
+                              <% historyList.slice(0, -1).forEach(function(value) { %>
+                                <div class="inline-plus" data-history-row>
+                                  <% if (value) { %>
+                                    <input type="hidden" name="litterHistoryDates" value="<%= formatDateInput(value) %>" />
+                                    <span class="history-date-display"><%= formatDate(value) %></span>
+                                    <button type="button" class="btn mating-icon-button delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
+                                  <% } %>
+                                </div>
+                              <% }) %>
+                            </details>
+                          <% } %>
                           <div class="mating-history-main">
                             <% if (latestHistory) { %>
                               <div class="inline-plus" data-history-row>
@@ -752,20 +804,7 @@
                             <button type="button" class="btn mating-icon-button add-history-date" title="Adicionar ninhada" aria-label="Adicionar ninhada">+</button>
                           </div>
 
-                          <% if (historyList.filter(Boolean).length > 1) { %>
-                            <details class="mating-history-more">
-                              <summary>Ver anteriores</summary>
-                              <% historyList.slice(0, -1).forEach(function(value) { %>
-                                <div class="inline-plus" data-history-row>
-                                  <% if (value) { %>
-                                    <input type="hidden" name="litterHistoryDates" value="<%= formatDateInput(value) %>" />
-                                    <span class="history-date-display"><%= formatDate(value) %></span>
-                                    <button type="button" class="btn mating-icon-button delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
-                                  <% } %>
-                                </div>
-                              <% }) %>
-                            </details>
-                          <% } else if (latestHistory) { %>
+                          <% if (historyList.filter(Boolean).length <= 1 && latestHistory) { %>
                             <% historyList.slice(0, -1).forEach(function(value) { %>
                               <% if (value) { %>
                                 <div class="inline-plus" data-history-row hidden>
@@ -1211,28 +1250,38 @@
 
         document.querySelectorAll("[data-mating-sheet-wrap]").forEach((wrap) => {
           const shell = wrap.closest(".mating-sheet-shell");
-          const scrollbar = shell?.querySelector("[data-mating-scrollbar]");
-          const scrollbarInner = shell?.querySelector("[data-mating-scrollbar-inner]");
+          const scrollbars = Array.from(shell?.querySelectorAll("[data-mating-scrollbar]") || []);
           const table = wrap.querySelector(".mating-table");
-          if (!scrollbar || !scrollbarInner || !table) return;
+          if (!scrollbars.length || !table) return;
 
           function refreshMatingScrollbar() {
-            scrollbarInner.style.width = `${Math.max(table.scrollWidth, wrap.scrollWidth)}px`;
+            const width = `${Math.max(table.scrollWidth, wrap.scrollWidth)}px`;
+            scrollbars.forEach((scrollbar) => {
+              const inner = scrollbar.querySelector("[data-mating-scrollbar-inner]");
+              if (inner) inner.style.width = width;
+            });
           }
 
           let syncing = false;
           wrap.addEventListener("scroll", () => {
             if (syncing) return;
             syncing = true;
-            scrollbar.scrollLeft = wrap.scrollLeft;
+            scrollbars.forEach((scrollbar) => {
+              scrollbar.scrollLeft = wrap.scrollLeft;
+            });
             syncing = false;
           });
 
-          scrollbar.addEventListener("scroll", () => {
-            if (syncing) return;
-            syncing = true;
-            wrap.scrollLeft = scrollbar.scrollLeft;
-            syncing = false;
+          scrollbars.forEach((scrollbar) => {
+            scrollbar.addEventListener("scroll", () => {
+              if (syncing) return;
+              syncing = true;
+              wrap.scrollLeft = scrollbar.scrollLeft;
+              scrollbars.forEach((otherScrollbar) => {
+                if (otherScrollbar !== scrollbar) otherScrollbar.scrollLeft = scrollbar.scrollLeft;
+              });
+              syncing = false;
+            });
           });
 
           refreshMatingScrollbar();
