@@ -10,30 +10,100 @@
       .mating-table {
         display: grid;
         grid-template-columns:
-          minmax(0, 1.25fr)
-          minmax(0, 0.85fr)
-          minmax(0, 1fr)
-          minmax(0, 0.7fr)
-          minmax(130px, 0.62fr)
-          minmax(190px, 1.08fr);
-        gap: 10px;
-        align-items: start;
-        min-width: 0;
+          260px
+          160px
+          210px
+          240px
+          145px
+          145px
+          145px
+          130px
+          165px
+          155px;
+        align-items: stretch;
+        min-width: 1755px;
       }
       .mating-header {
         font-size: 12px;
         font-weight: 600;
-        color: var(--text-muted);
+        color: #111827;
+        background: #e5e7eb;
+        border-top: 1px solid #94a3b8;
+        border-left: 1px solid #94a3b8;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+      }
+      .mating-header > div {
+        padding: 9px 10px;
+        border-right: 1px solid #94a3b8;
+        border-bottom: 1px solid #94a3b8;
+        text-align: center;
       }
       .mating-row {
-        padding: 12px;
-        border: 1px solid var(--border-soft);
-        border-radius: 14px;
-        margin-bottom: 12px;
+        display: block;
+        margin: 0;
+        border: 0;
+        border-radius: 0;
+        background: #ffffff;
       }
       .mating-row.is-supplementing {
-        border-left: 5px solid #16a34a;
-        background: linear-gradient(90deg, rgba(22, 163, 74, 0.08), rgba(255, 255, 255, 0.98) 42%);
+        background: #ecfdf5;
+      }
+      .mating-row .mating-table {
+        border-left: 1px solid #cbd5e1;
+      }
+      .mating-row .mating-table > div {
+        min-height: 82px;
+        padding: 9px 10px;
+        border-right: 1px solid #cbd5e1;
+        border-bottom: 1px solid #cbd5e1;
+        background: rgba(255, 255, 255, 0.78);
+      }
+      .mating-row.is-supplementing .mating-table > div {
+        background: rgba(236, 253, 245, 0.88);
+      }
+      .mating-sheet-shell {
+        margin-top: 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: #f8fafc;
+        overflow: hidden;
+      }
+      .mating-sheet-wrap {
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: visible;
+        scrollbar-width: none;
+      }
+      .mating-sheet-wrap::-webkit-scrollbar {
+        display: none;
+      }
+      .mating-scrollbar {
+        height: 16px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        border-top: 1px solid #cbd5e1;
+        background: #f1f5f9;
+      }
+      .mating-scrollbar-inner {
+        height: 1px;
+      }
+      .mating-female-cell {
+        position: sticky;
+        left: 0;
+        z-index: 1;
+        box-shadow: 8px 0 14px rgba(15, 23, 42, 0.08);
+      }
+      .mating-row .mating-female-cell {
+        background: #f8fafc;
+      }
+      .mating-row.is-supplementing .mating-female-cell {
+        background: #dcfce7;
+      }
+      .mating-header .mating-female-cell {
+        z-index: 3;
+        background: #d1d5db;
       }
       .supplement-list {
         display: grid;
@@ -179,19 +249,25 @@
         margin-bottom: 4px;
       }
       .mating-male-field {
-        margin-top: 8px;
+        margin-top: 0;
       }
       .mating-male-field .field-label {
         display: block;
         margin-bottom: 4px;
       }
       .mating-dpp {
-        padding-left: 14px;
+        padding-left: 0;
       }
       .mating-table input,
       .mating-table select {
         width: 100%;
         min-width: 0;
+      }
+      .mating-table select,
+      .mating-table input[type="text"] {
+        min-height: 34px;
+        border-radius: 8px;
+        font-size: 12px;
       }
       .mating-search-grid {
         display: grid;
@@ -211,7 +287,7 @@
         align-items: center;
         flex-wrap: wrap;
         gap: 8px;
-        margin-top: 10px;
+        margin-top: 0;
       }
       .mating-save-status {
         color: var(--text-muted);
@@ -231,12 +307,6 @@
         font-weight: 900;
       }
       @media (max-width: 900px) {
-        .mating-table {
-          grid-template-columns: 1fr;
-        }
-        .mating-header {
-          display: none;
-        }
         .origin-dialog {
           padding: 14px;
         }
@@ -249,6 +319,20 @@
         }
         .mating-search-grid {
           grid-template-columns: 1fr;
+        }
+        .mating-table {
+          min-width: 1420px;
+          grid-template-columns:
+            220px
+            140px
+            180px
+            215px
+            125px
+            125px
+            125px
+            120px
+            145px
+            125px;
         }
       }
     </style>
@@ -408,125 +492,136 @@
               <span class="module-accordion-count"><%= items.length %></span>
             </summary>
             <div class="module-accordion-body">
-              <div class="mating-table mating-header">
-                <div>Fêmea</div>
-                <div>Status</div>
-                <div>Últimas Ninhadas</div>
-                <div>Próxima Cruza</div>
-                <div>Data Cruza</div>
-                <div>DPP</div>
-              </div>
-
               <% if (!items.length) { %>
                 <div class="empty" style="margin-top:12px;">Nenhum registro nesta divisão.</div>
               <% } else { %>
-                <div class="mating-list">
-                <% items.forEach(function(row, index) { %>
-                <form
-                  method="post"
-                  action="/admin/matings/<%= row.female.id %>"
-                  class="mating-row <%= row.supplement?.active ? 'is-supplementing' : '' %>"
-                  data-mating-row
-                  data-original-order="<%= index %>"
-                  data-search="<%= String(row.femaleDisplayName || '').toLowerCase() %>"
-                >
-                  <input type="hidden" name="ownerId" value="<%= selectedOwnerId || '' %>" />
-                  <div class="mating-table">
-                    <div>
-                      <div class="item-title">
-                        <%= row.femaleDisplayName %>
-                        <% if (row.supplement?.active) { %>
-                          <span class="status-pill is-green">Suplementação</span>
-                        <% } %>
-                      </div>
-                      <div class="birth-line">Nascimento: <%= row.birthDateLabel %></div>
-                      <% if (row.supplement?.active) { %>
-                        <div class="birth-line">
-                          <%= row.supplement.phase %> · início <%= formatDate(row.supplement.startDate) %> ·
-                          <%= row.supplement.endOpen ? "até lançar a data de cruza" : "fim " + formatDate(row.supplement.endDate) %>
-                        </div>
-                      <% } %>
-                      <div class="parent-line">
-                        <span>Pai: <%= row.fatherName %></span>
-                        <span>Mãe: <%= row.motherName %></span>
-                      </div>
-                      <button type="button" class="origin-button" data-open-origin="origin-<%= row.female.id %>">Origem</button>
-                      <dialog class="origin-dialog" id="origin-<%= row.female.id %>">
-                        <div class="origin-dialog-header">
-                          <div class="origin-dialog-title">Origem - <%= row.femaleDisplayName %></div>
-                          <button type="button" class="btn" data-close-origin>Fechar</button>
-                        </div>
-                        <div class="pedigree-map">
-                          <%- renderPedigreeMap(row.pedigree, 5) %>
-                        </div>
-                      </dialog>
+                <div class="mating-sheet-shell">
+                  <div class="mating-sheet-wrap" data-mating-sheet-wrap>
+                    <div class="mating-table mating-header">
+                      <div class="mating-female-cell">Fêmea</div>
+                      <div>Status</div>
+                      <div>Macho</div>
+                      <div>Últimas Ninhadas</div>
+                      <div>Próxima Cruza</div>
+                      <div>Cruza 1º dia</div>
+                      <div>Cruza 2º dia</div>
+                      <div>DPP</div>
+                      <div>Gestação</div>
+                      <div>Atualizar</div>
                     </div>
-
-                    <div class="mini-stack">
-                      <select name="status">
-                        <% groups.forEach(function(statusItem) { %>
-                          <option value="<%= statusItem.key %>" <%= row.status === statusItem.key ? "selected" : "" %>><%= statusItem.label %></option>
-                        <% }) %>
-                      </select>
-                      <span class="status-pill is-blue" data-mating-status-pill><%= group.label %></span>
-                      <div class="mating-male-field">
-                        <label class="field-label">Macho</label>
-                        <select name="maleCatId">
-                          <option value="">Selecione...</option>
-                          <% row.maleOptions.forEach(function(male) { %>
-                            <option value="<%= male.id %>" <%= String(row.plan?.maleCatId || '') === String(male.id) ? "selected" : "" %>><%= male.displayName || male.name %></option>
-                          <% }) %>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div class="mini-stack" data-history-box>
-                      <% const historyList = row.litterHistory.length ? row.litterHistory : [""]; %>
-                      <% historyList.forEach(function(value) { %>
-                        <div class="inline-plus" data-history-row>
-                          <% if (value) { %>
-                            <input type="hidden" name="litterHistoryDates" value="<%= formatDateInput(value) %>" />
-                            <span class="history-date-display"><%= formatDate(value) %></span>
-                            <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
-                          <% } else { %>
-                            <input type="text" data-history-date-input inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="" />
+                    <div class="mating-list">
+                    <% items.forEach(function(row, index) { %>
+                    <form
+                      method="post"
+                      action="/admin/matings/<%= row.female.id %>"
+                      class="mating-row <%= row.supplement?.active ? 'is-supplementing' : '' %>"
+                      data-mating-row
+                      data-original-order="<%= index %>"
+                      data-search="<%= String(row.femaleDisplayName || '').toLowerCase() %>"
+                    >
+                      <input type="hidden" name="ownerId" value="<%= selectedOwnerId || '' %>" />
+                      <div class="mating-table">
+                        <div class="mating-female-cell">
+                          <div class="item-title">
+                            <%= row.femaleDisplayName %>
+                            <% if (row.supplement?.active) { %>
+                              <span class="status-pill is-green">Suplementação</span>
+                            <% } %>
+                          </div>
+                          <div class="birth-line">Nascimento: <%= row.birthDateLabel %></div>
+                          <% if (row.supplement?.active) { %>
+                            <div class="birth-line">
+                              <%= row.supplement.phase %> · início <%= formatDate(row.supplement.startDate) %> ·
+                              <%= row.supplement.endOpen ? "até lançar a data de cruza" : "fim " + formatDate(row.supplement.endDate) %>
+                            </div>
                           <% } %>
+                          <div class="parent-line">
+                            <span>Pai: <%= row.fatherName %></span>
+                            <span>Mãe: <%= row.motherName %></span>
+                          </div>
+                          <button type="button" class="origin-button" data-open-origin="origin-<%= row.female.id %>">Origem</button>
+                          <dialog class="origin-dialog" id="origin-<%= row.female.id %>">
+                            <div class="origin-dialog-header">
+                              <div class="origin-dialog-title">Origem - <%= row.femaleDisplayName %></div>
+                              <button type="button" class="btn" data-close-origin>Fechar</button>
+                            </div>
+                            <div class="pedigree-map">
+                              <%- renderPedigreeMap(row.pedigree, 5) %>
+                            </div>
+                          </dialog>
                         </div>
-                      <% }) %>
-                      <div class="history-add-row">
-                        <button type="button" class="btn add-history-date">+</button>
-                      </div>
-                    </div>
 
-                    <div>
-                      <strong data-next-cross><%= row.nextCrossDate ? formatDate(row.nextCrossDate) : "-" %></strong>
-                      <div class="mating-excess-warning" data-excess-litter-warning <%= row.excessLitterWarning ? "" : "hidden" %>>Excesso de Ninhada</div>
-                    </div>
+                        <div class="mini-stack">
+                          <select name="status" aria-label="Status de acasalamento">
+                            <% groups.forEach(function(statusItem) { %>
+                              <option value="<%= statusItem.key %>" <%= row.status === statusItem.key ? "selected" : "" %>><%= statusItem.label %></option>
+                            <% }) %>
+                          </select>
+                          <span class="status-pill is-blue" data-mating-status-pill><%= group.label %></span>
+                        </div>
 
-                    <div class="mini-stack">
-                      <div class="mating-date-field">
-                        <label class="field-label">1º dia</label>
-                        <input type="hidden" name="matingStartDate" value="<%= row.plan?.matingStartDate ? formatDateInput(row.plan.matingStartDate) : '' %>" data-mating-date-value />
-                        <input type="text" data-mating-date-display inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="<%= row.plan?.matingStartDate ? formatDate(row.plan.matingStartDate) : '' %>" />
-                      </div>
-                      <div class="mating-date-field">
-                        <label class="field-label">2º dia</label>
-                        <input type="hidden" name="matingEndDate" value="<%= row.plan?.matingEndDate ? formatDateInput(row.plan.matingEndDate) : '' %>" data-mating-date-value />
-                        <input type="text" data-mating-date-display inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="<%= row.plan?.matingEndDate ? formatDate(row.plan.matingEndDate) : '' %>" />
-                      </div>
-                    </div>
+                        <div class="mating-male-field">
+                          <select name="maleCatId" aria-label="Macho">
+                            <option value="">Selecione...</option>
+                            <% row.maleOptions.forEach(function(male) { %>
+                              <option value="<%= male.id %>" <%= String(row.plan?.maleCatId || '') === String(male.id) ? "selected" : "" %>><%= male.displayName || male.name %></option>
+                            <% }) %>
+                          </select>
+                        </div>
 
-                    <div class="mini-stack mating-dpp">
-                      <div><strong data-dpp-date><%= row.dppDate ? formatDate(row.dppDate) : "-" %></strong></div>
-                      <div data-gestation-days><%= row.gestationDays !== null ? row.gestationDays + " dias de gestação" : "-" %></div>
-                      <div class="mating-save-row">
-                        <button class="btn mating-update-button" type="button">Atualizar</button>
-                        <span class="mating-save-status" data-save-status></span>
+                        <div class="mini-stack" data-history-box>
+                          <% const historyList = row.litterHistory.length ? row.litterHistory : [""]; %>
+                          <% historyList.forEach(function(value) { %>
+                            <div class="inline-plus" data-history-row>
+                              <% if (value) { %>
+                                <input type="hidden" name="litterHistoryDates" value="<%= formatDateInput(value) %>" />
+                                <span class="history-date-display"><%= formatDate(value) %></span>
+                                <button type="button" class="btn delete-history-date" title="Remover data" aria-label="Remover data">&#128465;</button>
+                              <% } else { %>
+                                <input type="text" data-history-date-input inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="" />
+                              <% } %>
+                            </div>
+                          <% }) %>
+                          <div class="history-add-row">
+                            <button type="button" class="btn add-history-date">+</button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <strong data-next-cross><%= row.nextCrossDate ? formatDate(row.nextCrossDate) : "-" %></strong>
+                          <div class="mating-excess-warning" data-excess-litter-warning <%= row.excessLitterWarning ? "" : "hidden" %>>Excesso de Ninhada</div>
+                        </div>
+
+                        <div class="mating-date-field">
+                          <input type="hidden" name="matingStartDate" value="<%= row.plan?.matingStartDate ? formatDateInput(row.plan.matingStartDate) : '' %>" data-mating-date-value />
+                          <input type="text" data-mating-date-display inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="<%= row.plan?.matingStartDate ? formatDate(row.plan.matingStartDate) : '' %>" />
+                        </div>
+
+                        <div class="mating-date-field">
+                          <input type="hidden" name="matingEndDate" value="<%= row.plan?.matingEndDate ? formatDateInput(row.plan.matingEndDate) : '' %>" data-mating-date-value />
+                          <input type="text" data-mating-date-display inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="<%= row.plan?.matingEndDate ? formatDate(row.plan.matingEndDate) : '' %>" />
+                        </div>
+
+                        <div class="mini-stack mating-dpp">
+                          <strong data-dpp-date><%= row.dppDate ? formatDate(row.dppDate) : "-" %></strong>
+                        </div>
+
+                        <div data-gestation-days><%= row.gestationDays !== null ? row.gestationDays + " dias de gestação" : "-" %></div>
+
+                        <div>
+                          <div class="mating-save-row">
+                            <button class="btn mating-update-button" type="button">Atualizar</button>
+                            <span class="mating-save-status" data-save-status></span>
+                          </div>
+                        </div>
                       </div>
+                    </form>
+                    <% }) %>
                     </div>
                   </div>
-                </form>
-                <% }) %>
+                  <div class="mating-scrollbar" data-mating-scrollbar aria-label="Rolagem horizontal da tabela de acasalamentos">
+                    <div class="mating-scrollbar-inner" data-mating-scrollbar-inner></div>
+                  </div>
                 </div>
               <% } %>
             </div>
@@ -833,6 +928,36 @@
             row.style.order = row.dataset.originalOrder || "0";
           });
           matingSearch?.focus();
+        });
+
+        document.querySelectorAll("[data-mating-sheet-wrap]").forEach((wrap) => {
+          const shell = wrap.closest(".mating-sheet-shell");
+          const scrollbar = shell?.querySelector("[data-mating-scrollbar]");
+          const scrollbarInner = shell?.querySelector("[data-mating-scrollbar-inner]");
+          const table = wrap.querySelector(".mating-table");
+          if (!scrollbar || !scrollbarInner || !table) return;
+
+          function refreshMatingScrollbar() {
+            scrollbarInner.style.width = `${Math.max(table.scrollWidth, wrap.scrollWidth)}px`;
+          }
+
+          let syncing = false;
+          wrap.addEventListener("scroll", () => {
+            if (syncing) return;
+            syncing = true;
+            scrollbar.scrollLeft = wrap.scrollLeft;
+            syncing = false;
+          });
+
+          scrollbar.addEventListener("scroll", () => {
+            if (syncing) return;
+            syncing = true;
+            wrap.scrollLeft = scrollbar.scrollLeft;
+            syncing = false;
+          });
+
+          refreshMatingScrollbar();
+          window.addEventListener("resize", refreshMatingScrollbar);
         });
       })();
     </script>
