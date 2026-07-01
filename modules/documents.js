@@ -77,6 +77,8 @@ Segurança: evite acesso à rua, janelas sem proteção e contato com animais se
   },
 };
 
+const SIGNATURE_DOCUMENT_TYPES = new Set(["SALE_CONTRACT", "EXTERNAL_CONTRACT", "SIGNATURE_DOCUMENT"]);
+
 const TYPES_BY_ROUTE = Object.fromEntries(
   Object.entries(DOCUMENT_TYPES).map(([type, config]) => [config.route, type])
 );
@@ -1856,9 +1858,17 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
   router.post("/documentos/:id/assinatura/:requestId/:action", requireAuth, requirePermission("admin.documents"), async (req, res, next) => {
     try {
+      const returnToSignatures = req.query.returnTo === "assinaturas";
+      const redirectWithMessage = (message, saved = false) => {
+        if (returnToSignatures) {
+          return `/documentos/assinaturas?${saved ? "saved=1" : `error=${encodeURIComponent(message)}`}`;
+        }
+        const documentId = req.params.id;
+        return `/documentos/${documentId}/editar?${saved ? "saved=1" : `error=${encodeURIComponent(message)}`}`;
+      };
       const document = await loadDocument(req.params.id, req.session.userId);
-      if (!document || document.type !== "SALE_CONTRACT") {
-        return res.redirect("/documentos?error=Contrato não encontrado.");
+      if (!document || !SIGNATURE_DOCUMENT_TYPES.has(document.type)) {
+        return res.redirect(returnToSignatures ? "/documentos/assinaturas?error=Contrato não encontrado." : "/documentos?error=Contrato não encontrado.");
       }
       const signatureRequest = await prisma.documentSignatureRequest.findFirst({
         where: {
@@ -1868,13 +1878,16 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         },
       });
       if (!signatureRequest) {
-        return res.redirect(`/documentos/${document.id}/editar?error=Link de assinatura não encontrado.`);
+        return res.redirect(redirectWithMessage("Link de assinatura não encontrado."));
       }
       if (signatureRequest.status === "SIGNED") {
-        return res.redirect(`/documentos/${document.id}/editar?error=Contrato já assinado não pode ser bloqueado ou cancelado.`);
+        return res.redirect(redirectWithMessage("Contrato já assinado não pode ser bloqueado, cancelado ou excluído."));
       }
 
       const action = req.params.action;
+      if (signatureRequest.status === "CANCELED" && action !== "excluir") {
+        return res.redirect(redirectWithMessage("Link cancelado só pode ser excluído."));
+      }
       if (action === "cancelar") {
         await prisma.documentSignatureRequest.update({
           where: { id: signatureRequest.id },
@@ -1889,19 +1902,36 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         await logSignatureEvent(signatureRequest.id, "CONTRACT_BLOCKED", req, "Contrato bloqueado pelo usuário.");
       } else if (action === "desbloquear") {
         if (signatureRequest.status !== "BLOCKED") {
-          return res.redirect(`/documentos/${document.id}/editar?error=Somente contratos bloqueados podem ser desbloqueados.`);
+          return res.redirect(redirectWithMessage("Somente contratos bloqueados podem ser desbloqueados."));
         }
         await prisma.documentSignatureRequest.update({
           where: { id: signatureRequest.id },
           data: { status: "VIEWED" },
         });
         await logSignatureEvent(signatureRequest.id, "CONTRACT_UNBLOCKED", req, "Contrato desbloqueado pelo usuário.");
+      } else if (action === "excluir") {
+        if (signatureRequest.status !== "CANCELED") {
+          return res.redirect(redirectWithMessage("Somente links cancelados podem ser excluídos."));
+        }
+        await prisma.documentSignatureRequest.delete({
+          where: { id: signatureRequest.id },
+        });
+        const remainingRequests = await prisma.documentSignatureRequest.count({
+          where: {
+            documentId: document.id,
+            ownerId: req.session.userId,
+          },
+        });
+        if (!remainingRequests && ["EXTERNAL_CONTRACT", "SIGNATURE_DOCUMENT"].includes(document.type)) {
+          await prisma.catteryDocument.delete({
+            where: { id: document.id },
+          });
+        }
+      } else {
+        return res.redirect(redirectWithMessage("Ação de assinatura inválida."));
       }
 
-      const target = req.query.returnTo === "assinaturas"
-        ? "/documentos/assinaturas?saved=1"
-        : `/documentos/${document.id}/editar?saved=1`;
-      res.redirect(target);
+      res.redirect(redirectWithMessage("", true));
     } catch (err) {
       next(err);
     }

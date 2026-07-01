@@ -275,6 +275,11 @@
                               <button type="submit" class="btn signature-danger-button">Cancelar</button>
                             </form>
                           <% } %>
+                          <% if (request.status === 'CANCELED') { %>
+                            <form method="post" action="/documentos/<%= request.documentId %>/assinatura/<%= request.id %>/excluir?returnTo=assinaturas" onsubmit="return confirm('Excluir este link cancelado? Esta ação não poderá ser desfeita.');">
+                              <button type="submit" class="btn signature-danger-button">Excluir</button>
+                            </form>
+                          <% } %>
                         </div>
                         <details class="signature-timeline-details">
                           <summary>Acompanhamento</summary>

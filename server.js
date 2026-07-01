@@ -25,6 +25,7 @@ const {
   loadPlanLimitOverrides,
 } = require("./utils/planLimits");
 const { loadProfileRulesConfig } = require("./utils/profileRules");
+const { ensureFixedPayablesWindow } = require("./utils/accountPayables");
 const {
   parseDate,
   addDays,
@@ -2236,6 +2237,7 @@ monthRevenues.forEach((revenue) => {
   });
 });
 
+await ensureFixedPayablesWindow(prisma, userScope);
 const nextPayables = await prisma.accountPayable.findMany({
   where: {
     ...userScope,

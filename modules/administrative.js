@@ -1,5 +1,6 @@
 const express = require("express");
 const { dataOwnerScope } = require("../utils/access");
+const { ensureFixedPayableWindow, ensureFixedPayablesWindow, makeRecurringGroupId } = require("../utils/accountPayables");
 const { formatCnpj, formatCpfCnpj, formatPhone } = require("../utils/format");
 
 function todayForInput() {
@@ -987,6 +988,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requireAuth,
     requirePermission("admin.administrative"),
     async (req, res) => {
+      await ensureFixedPayablesWindow(prisma, supplierScope(req));
       const [payables, suppliers, categories, paymentMethods] = await Promise.all([
         prisma.accountPayable.findMany({
           where: supplierScope(req),
@@ -1018,12 +1020,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     async (req, res) => {
       try {
         const data = payableData(req);
-        await prisma.accountPayable.create({
+        const payable = await prisma.accountPayable.create({
           data: {
             ...data,
-            recurringGroupId: data.isFixed ? `${Date.now()}-${Math.round(Math.random() * 1e9)}` : null,
+            recurringGroupId: data.isFixed ? makeRecurringGroupId() : null,
           },
         });
+        await ensureFixedPayableWindow(prisma, payable);
         res.redirect("/administrativo/contas-a-pagar?ok=1");
       } catch (err) {
         res.redirect(`/administrativo/contas-a-pagar?error=${encodeURIComponent(err.message || "Erro ao salvar conta a pagar.")}`);
@@ -1043,20 +1046,21 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       try {
         const data = payableData(req);
+        const recurringGroupId = data.isFixed ? payable.recurringGroupId || makeRecurringGroupId() : null;
         await prisma.accountPayable.update({
           where: { id: payable.id },
           data: {
             ...data,
             ownerId: payable.ownerId,
-            recurringGroupId: data.isFixed ? payable.recurringGroupId || `${Date.now()}-${Math.round(Math.random() * 1e9)}` : null,
+            recurringGroupId,
           },
         });
 
-        if (payable.recurringGroupId && req.body.applyFuture === "YES") {
+        if (recurringGroupId && req.body.applyFuture === "YES") {
           await prisma.accountPayable.updateMany({
             where: {
               ownerId: payable.ownerId,
-              recurringGroupId: payable.recurringGroupId,
+              recurringGroupId,
               status: "PENDING",
               dueDate: { gt: payable.dueDate },
             },
@@ -1071,6 +1075,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             },
           });
         }
+        const updatedPayable = await prisma.accountPayable.findUnique({ where: { id: payable.id } });
+        await ensureFixedPayableWindow(prisma, updatedPayable);
 
         res.redirect("/administrativo/contas-a-pagar?ok=1");
       } catch (err) {
@@ -1108,6 +1114,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         },
       });
 
+      const paidRecurringGroupId = payable.isFixed ? payable.recurringGroupId || makeRecurringGroupId() : payable.recurringGroupId;
       await prisma.accountPayable.update({
         where: { id: payable.id },
         data: {
@@ -1115,26 +1122,77 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           paidAt,
           paymentMethod,
           expenseEntryId: expense.id,
+          recurringGroupId: paidRecurringGroupId,
         },
       });
 
       if (payable.isFixed) {
-        await prisma.accountPayable.create({
-          data: {
+        const recurringGroupId = paidRecurringGroupId;
+        let seed = await prisma.accountPayable.findFirst({
+          where: {
             ownerId: payable.ownerId,
-            supplier: payable.supplier,
-            category: payable.category,
-            description: payable.description,
-            amountCents: payable.amountCents,
-            dueDate: addMonths(payable.dueDate, 1),
-            paymentMethod: payable.paymentMethod,
-            note: payable.note,
+            recurringGroupId,
             isFixed: true,
-            recurringGroupId: payable.recurringGroupId || `${Date.now()}-${Math.round(Math.random() * 1e9)}`,
+            status: "PENDING",
           },
+          orderBy: [{ dueDate: "asc" }, { id: "asc" }],
         });
+        if (!seed) {
+          seed = await prisma.accountPayable.create({
+            data: {
+              ownerId: payable.ownerId,
+              supplier: payable.supplier,
+              category: payable.category,
+              description: payable.description,
+              amountCents: payable.amountCents,
+              dueDate: addMonths(payable.dueDate, 1),
+              paymentMethod: payable.paymentMethod,
+              note: payable.note,
+              isFixed: true,
+              recurringGroupId,
+            },
+          });
+        }
+        await ensureFixedPayableWindow(prisma, seed);
       }
 
+      res.redirect("/administrativo/contas-a-pagar?ok=1");
+    }
+  );
+
+  router.post(
+    "/administrativo/contas-a-pagar/:id/suspender-futuras",
+    requireAuth,
+    requirePermission("admin.administrative"),
+    async (req, res) => {
+      const payable = await prisma.accountPayable.findFirst({
+        where: { id: Number(req.params.id), ...supplierScope(req), status: "PENDING" },
+      });
+      if (!payable) return res.status(404).send("Conta a pagar não encontrada.");
+      if (!payable.recurringGroupId) {
+        await prisma.accountPayable.update({
+          where: { id: payable.id },
+          data: { isFixed: false },
+        });
+        return res.redirect("/administrativo/contas-a-pagar?ok=1");
+      }
+      await prisma.$transaction([
+        prisma.accountPayable.deleteMany({
+          where: {
+            ownerId: payable.ownerId,
+            recurringGroupId: payable.recurringGroupId,
+            status: "PENDING",
+            dueDate: { gt: payable.dueDate },
+          },
+        }),
+        prisma.accountPayable.update({
+          where: { id: payable.id },
+          data: {
+            isFixed: false,
+            recurringGroupId: null,
+          },
+        }),
+      ]);
       res.redirect("/administrativo/contas-a-pagar?ok=1");
     }
   );

@@ -117,6 +117,12 @@
                         </div>
                       </form>
 
+                      <% if (payable.isFixed) { %>
+                        <form method="post" action="/administrativo/contas-a-pagar/<%= payable.id %>/suspender-futuras" onsubmit="return confirm('Suspender as próximas contas fixas relacionadas a esta conta? As anteriores serão mantidas.');" class="supplier-delete">
+                          <button class="btn" type="submit">Suspender futuras contas fixas</button>
+                        </form>
+                      <% } %>
+
                       <form method="post" action="/administrativo/contas-a-pagar/<%= payable.id %>/delete" onsubmit="return confirm('Excluir esta conta a pagar?');" class="supplier-delete">
                         <button class="btn btn-danger" type="submit">Excluir</button>
                       </form>

@@ -1,6 +1,7 @@
 const express = require("express");
 const PDFDocument = require("pdfkit");
 const { dataOwnerScope, userCan } = require("../utils/access");
+const { ensureFixedPayablesWindow } = require("../utils/accountPayables");
 const {
   addMonths: addCatteryMonths,
   ageInMonths,
@@ -669,6 +670,7 @@ async function loadFinancialPlanningExpectedRevenueRows(prisma, req, months, con
 }
 
 async function loadFinancialPlanningReferenceRows(prisma, req, months, config) {
+  await ensureFixedPayablesWindow(prisma, ownerScope(req));
   const { startDate, endDate } = planningMonthsDateRange(months);
   const monthKeys = new Set(months.map((month) => month.key));
   const [revenues, payables, expectedRevenueRows, kittenForecastRows] = await Promise.all([
@@ -709,28 +711,51 @@ async function loadFinancialPlanningReferenceRows(prisma, req, months, config) {
 
   const receivableRows = [];
   revenues.forEach((revenue) => {
+    const receivableRow = {
+      key: `receivable-${revenue.id}`,
+      type: "receivable",
+      typeLabel: "Contas a receber",
+      group: "receivable",
+      description: kittenReferenceLabel(revenue),
+      details: [revenue.client?.fullName || "Cliente desconhecido"],
+      overdue: false,
+      overdueMonthKey: "",
+      dateLabel: "",
+      dateTime: Number.POSITIVE_INFINITY,
+      values: emptyPlanningReferenceValues(months),
+    };
+    let openParcelCount = 0;
+    let firstDate = null;
+    const overdueDates = [];
+
     parseParcelData(revenue.parcelDataJson).forEach((parcel) => {
       if (parcel.paid || parcel.canceled || !parcel.date || !parcel.amountCents) return;
       const dueDate = parseDateInput(parcel.date, null);
       const target = planningReferenceMonthTarget(dueDate, months, startDate, endDate, monthKeys);
       if (!target) return;
-      receivableRows.push(makePlanningReferenceRow({
-        key: `receivable-${revenue.id}-${parcel.number || receivableRows.length}`,
-        type: "receivable",
-        typeLabel: "Contas a receber",
-        group: "receivable",
-        description: kittenReferenceLabel(revenue),
-        details: [
-          revenue.client?.fullName || "Cliente desconhecido",
-          `Parcela ${parcel.number || "-"} / ${revenue.installments || "-"}`,
-        ],
-        date: dueDate,
-        amountCents: parcel.amountCents,
-        months,
-        targetMonthKey: target.monthKey,
-        overdue: target.overdue,
-      }));
+      openParcelCount += 1;
+      receivableRow.values[target.monthKey] += Number(parcel.amountCents || 0);
+      receivableRow.details.push(
+        `Parcela ${parcel.number || "-"} / ${revenue.installments || "-"}: ${formatCurrency(parcel.amountCents)} em ${formatDateOnlyLabel(dueDate)}`
+      );
+      if (!firstDate || dueDate < firstDate) firstDate = dueDate;
+      if (dueDate && dueDate.getTime() < receivableRow.dateTime) {
+        receivableRow.dateTime = dueDate.getTime();
+      }
+      if (target.overdue) {
+        receivableRow.overdue = true;
+        receivableRow.overdueMonthKey = target.monthKey;
+        overdueDates.push(formatDateOnlyLabel(dueDate));
+      }
     });
+
+    if (openParcelCount) {
+      receivableRow.dateLabel = firstDate ? formatDateOnlyLabel(firstDate) : "-";
+      if (overdueDates.length) {
+        receivableRow.details.push(`Parcelas em atraso: ${overdueDates.join(", ")}`);
+      }
+      receivableRows.push(receivableRow);
+    }
   });
 
   const payableRows = payables.flatMap((payable) => {

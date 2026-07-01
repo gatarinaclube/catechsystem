@@ -7,6 +7,154 @@
     <link rel="stylesheet" href="/css/theme.css" />
     <link rel="stylesheet" href="/css/layout.css" />
     <link rel="stylesheet" href="/css/cattery-admin.css" />
+    <style>
+      .health-certificate-editor {
+        max-width: 920px;
+        margin: 0 auto 18px;
+      }
+
+      .health-paper {
+        background: #fff;
+        border: 1px solid #d7dde6;
+        box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
+        padding: 28px;
+      }
+
+      .health-paper-header {
+        display: grid;
+        grid-template-columns: 110px 1fr;
+        gap: 18px;
+        align-items: start;
+        border-bottom: 2px solid #d6a84f;
+        padding-bottom: 16px;
+        margin-bottom: 10px;
+      }
+
+      .health-logo-box {
+        min-height: 78px;
+        border: 1px dashed #cbd5e1;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        color: #64748b;
+        font-size: 0.78rem;
+        text-align: center;
+        padding: 8px;
+      }
+
+      .health-header-fields {
+        display: grid;
+        gap: 8px;
+      }
+
+      .health-title-band {
+        border: 1px solid #111827;
+        text-align: center;
+        font-weight: 900;
+        font-size: clamp(1.15rem, 2vw, 1.45rem);
+        letter-spacing: 0.04em;
+        padding: 10px;
+        margin: 10px 0 0;
+      }
+
+      .health-section-title {
+        margin-top: 14px;
+        background: #d9d9d9;
+        border: 1px solid #111827;
+        color: #111827;
+        font-weight: 900;
+        padding: 7px 14px;
+        text-transform: uppercase;
+      }
+
+      .health-table {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        border-left: 1px solid #111827;
+        border-top: 1px solid #111827;
+      }
+
+      .health-cell {
+        border-right: 1px solid #111827;
+        border-bottom: 1px solid #111827;
+        padding: 6px;
+        min-height: 54px;
+      }
+
+      .health-cell.span-2 { grid-column: span 2; }
+      .health-cell.span-3 { grid-column: span 3; }
+      .health-cell.span-4 { grid-column: span 4; }
+      .health-cell.span-6 { grid-column: span 6; }
+
+      .health-cell label,
+      .health-paper label {
+        display: block;
+        color: #475569;
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+      }
+
+      .health-paper input,
+      .health-paper select,
+      .health-paper textarea {
+        width: 100%;
+        border: 0;
+        background: transparent;
+        color: #111827;
+        font: inherit;
+        padding: 2px 0;
+        outline: none;
+      }
+
+      .health-paper input:focus,
+      .health-paper select:focus,
+      .health-paper textarea:focus {
+        background: #fff8e6;
+        box-shadow: inset 0 -2px 0 #d6a84f;
+      }
+
+      .health-paper textarea {
+        resize: vertical;
+        min-height: 150px;
+        line-height: 1.55;
+      }
+
+      .health-signature-box {
+        min-height: 70px;
+      }
+
+      .health-date-line {
+        border: 1px solid #111827;
+        border-top: 0;
+        padding: 10px;
+        text-align: center;
+      }
+
+      @media (max-width: 760px) {
+        .health-paper {
+          padding: 16px;
+        }
+
+        .health-paper-header {
+          grid-template-columns: 1fr;
+        }
+
+        .health-table {
+          grid-template-columns: 1fr;
+        }
+
+        .health-cell,
+        .health-cell.span-2,
+        .health-cell.span-3,
+        .health-cell.span-4,
+        .health-cell.span-6 {
+          grid-column: 1;
+        }
+      }
+    </style>
   </head>
   <body>
     <div class="shell">
@@ -41,6 +189,168 @@
           <input type="hidden" name="id" value="<%= document.id || '' %>" />
           <input type="hidden" name="type" value="<%= type %>" />
 
+          <% if (type === 'HEALTH_CERTIFICATE') { %>
+            <section class="health-certificate-editor">
+              <div class="health-paper">
+                <div class="health-paper-header">
+                  <div class="health-logo-box">
+                    <div>
+                      <label for="logoChoice">Logo</label>
+                      <select id="logoChoice" name="logoChoice">
+                        <option value="NONE" <%= document.logoChoice === 'NONE' ? 'selected' : '' %>>Sem logo</option>
+                        <option value="CATTERY" <%= document.logoChoice === 'CATTERY' ? 'selected' : '' %>>Gatil</option>
+                        <option value="VET" <%= document.logoChoice === 'VET' ? 'selected' : '' %>>Veterinário</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="health-header-fields">
+                    <div>
+                      <label for="veterinarianClinicName">Clínica Veterinária</label>
+                      <input id="veterinarianClinicName" name="veterinarianClinicName" type="text" value="<%= settings.veterinarianClinicName || settings.catteryName || '' %>" />
+                    </div>
+                    <div>
+                      <label for="veterinarianAddress">Endereço</label>
+                      <input id="veterinarianAddress" name="veterinarianAddress" type="text" value="<%= settings.veterinarianAddress || user.address || '' %>" />
+                    </div>
+                    <div class="grid-2">
+                      <div>
+                        <label for="veterinarianPhone">Telefone</label>
+                        <input id="veterinarianPhone" name="veterinarianPhone" type="text" value="<%= settings.veterinarianPhone || '' %>" />
+                      </div>
+                      <div>
+                        <label for="veterinarianEmail">E-mail</label>
+                        <input id="veterinarianEmail" name="veterinarianEmail" type="email" value="<%= settings.veterinarianEmail || '' %>" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <input type="hidden" id="catId" name="catId" value="<%= document.catId || '' %>" />
+                <input type="hidden" name="title" value="<%= document.title || config.defaultTitle %>" />
+                <div class="health-title-band">ATESTADO DE SAÚDE ANIMAL</div>
+
+                <div class="health-section-title">1. Proprietário do animal</div>
+                <div class="health-table">
+                  <div class="health-cell span-4">
+                    <label>Nome completo</label>
+                    <input type="text" value="<%= user.name || settings.catteryName || '' %>" readonly />
+                  </div>
+                  <div class="health-cell span-2">
+                    <label>CPF/RG</label>
+                    <input type="text" value="<%= user.cpf || '' %>" readonly />
+                  </div>
+                  <div class="health-cell span-6">
+                    <label>Endereço</label>
+                    <input type="text" value="<%= user.address || '' %>" readonly />
+                  </div>
+                  <div class="health-cell span-2">
+                    <label>Cidade</label>
+                    <input type="text" value="<%= user.city || '' %>" readonly />
+                  </div>
+                  <div class="health-cell span-2">
+                    <label>CEP</label>
+                    <input type="text" value="<%= user.cep || '' %>" readonly />
+                  </div>
+                  <div class="health-cell span-2">
+                    <label>Estado</label>
+                    <input type="text" value="<%= user.state || '' %>" readonly />
+                  </div>
+                  <div class="health-cell span-3">
+                    <label>Telefone</label>
+                    <input type="text" value="<%= user.phones || '' %>" readonly />
+                  </div>
+                  <div class="health-cell span-3">
+                    <label>E-mail</label>
+                    <input type="text" value="<%= user.email || '' %>" readonly />
+                  </div>
+                </div>
+
+                <div class="health-section-title">2. Identificação do animal</div>
+                <div class="health-table">
+                  <div class="health-cell span-6">
+                    <label for="catSearch">Nome</label>
+                    <input id="catSearch" list="healthCatOptions" autocomplete="off" value="<%= document.cat ? document.cat.displayName : '' %>" placeholder="Digite parte do nome do gato para selecionar" />
+                    <datalist id="healthCatOptions">
+                      <% cats.forEach(function(cat) { %>
+                        <option value="<%= cat.displayName %>" data-id="<%= cat.id %>"></option>
+                      <% }) %>
+                    </datalist>
+                  </div>
+                  <div class="health-cell span-2">
+                    <label>Espécie</label>
+                    <input type="text" value="Felina" readonly />
+                  </div>
+                  <div class="health-cell span-2">
+                    <label>Raça</label>
+                    <input id="healthCatBreed" type="text" readonly />
+                  </div>
+                  <div class="health-cell span-2">
+                    <label>Sexo</label>
+                    <input id="healthCatGender" type="text" readonly />
+                  </div>
+                  <div class="health-cell span-3">
+                    <label>Data de Nascimento</label>
+                    <input id="healthCatBirthDate" type="text" readonly />
+                  </div>
+                  <div class="health-cell span-3">
+                    <label>Microchip Nº</label>
+                    <input id="healthCatMicrochip" type="text" readonly />
+                  </div>
+                </div>
+
+                <div class="health-section-title">3. Declaração do Médico Veterinário</div>
+                <div class="health-table">
+                  <div class="health-cell span-6">
+                    <label for="body">Declaração</label>
+                    <textarea id="body" name="body" required><%= document.body || '' %></textarea>
+                  </div>
+                  <div class="health-cell span-4">
+                    <label for="veterinarian">Médico Veterinário Emitente</label>
+                    <input id="veterinarian" name="veterinarian" type="text" value="<%= settings.veterinarian || settings.veterinarianName || '' %>" />
+                  </div>
+                  <div class="health-cell span-2">
+                    <label for="crmv">CRMV</label>
+                    <input id="crmv" name="crmv" type="text" value="<%= settings.crmv || '' %>" />
+                  </div>
+                  <div class="health-cell span-2">
+                    <label for="crmvUf">UF CRMV</label>
+                    <input id="crmvUf" name="crmvUf" maxlength="2" type="text" value="<%= settings.crmvUf || '' %>" />
+                  </div>
+                  <div class="health-cell span-2">
+                    <label for="veterinarianTradeName">Nome Fantasia</label>
+                    <input id="veterinarianTradeName" name="veterinarianTradeName" type="text" value="<%= settings.veterinarianTradeName || '' %>" />
+                  </div>
+                  <div class="health-cell span-2">
+                    <label for="veterinarianCnpj">CNPJ</label>
+                    <input id="veterinarianCnpj" name="veterinarianCnpj" type="text" value="<%= settings.veterinarianCnpj || '' %>" />
+                  </div>
+                  <div class="health-cell span-2">
+                    <label for="veterinarianCity">Cidade</label>
+                    <input id="veterinarianCity" name="veterinarianCity" type="text" value="<%= settings.veterinarianCity || user.city || '' %>" />
+                  </div>
+                  <div class="health-cell span-2">
+                    <label for="veterinarianCep">CEP</label>
+                    <input id="veterinarianCep" name="veterinarianCep" type="text" value="<%= settings.veterinarianCep || user.cep || '' %>" />
+                  </div>
+                  <div class="health-cell span-2">
+                    <label for="veterinarianState">Estado</label>
+                    <input id="veterinarianState" name="veterinarianState" type="text" value="<%= settings.veterinarianState || user.state || '' %>" />
+                  </div>
+                  <div class="health-cell span-3">
+                    <label for="veterinarianMobile">Celular</label>
+                    <input id="veterinarianMobile" name="veterinarianMobile" type="text" value="<%= settings.veterinarianMobile || '' %>" />
+                  </div>
+                  <div class="health-cell span-3 health-signature-box">
+                    <label>Assinatura e Carimbo</label>
+                  </div>
+                </div>
+                <div class="health-date-line">
+                  <label for="documentDate">Data do atestado</label>
+                  <input id="documentDate" name="documentDate" type="date" value="<%= document.documentDate || '' %>" required />
+                </div>
+              </div>
+            </section>
+          <% } else { %>
           <section class="content-card" style="margin-bottom:18px;">
             <div class="content-title">Dados do documento</div>
             <div class="grid-2" style="margin-top:12px;">
@@ -254,6 +564,7 @@
               <% } %>
             </section>
           <% } %>
+          <% } %>
 
           <div class="form-actions" style="text-align:right; margin-bottom:18px;">
             <button type="submit" class="btn btn-primary">Salvar</button>
@@ -320,6 +631,39 @@
     </div>
 
     <script>
+      const healthCats = <%- JSON.stringify((cats || []).map(function(cat) {
+        return {
+          id: cat.id,
+          displayName: cat.displayName || "",
+          breed: cat.breed || "",
+          gender: cat.gender === "M" ? "Macho" : cat.gender === "F" ? "Fêmea" : cat.gender || "",
+          birthDateLabel: cat.birthDateLabel || "",
+          microchip: cat.microchip || ""
+        };
+      })) %>;
+      const healthCatSearch = document.getElementById("catSearch");
+      const healthCatId = document.getElementById("catId");
+      function fillHealthCat(cat) {
+        if (!cat) return;
+        healthCatId.value = cat.id || "";
+        document.getElementById("healthCatBreed").value = cat.breed || "";
+        document.getElementById("healthCatGender").value = cat.gender || "";
+        document.getElementById("healthCatBirthDate").value = cat.birthDateLabel || "";
+        document.getElementById("healthCatMicrochip").value = cat.microchip || "";
+      }
+      if (healthCatSearch) {
+        const initialCat = healthCats.find((cat) => String(cat.id) === String(healthCatId.value));
+        fillHealthCat(initialCat);
+        healthCatSearch.addEventListener("change", () => {
+          const selected = healthCats.find((cat) => cat.displayName === healthCatSearch.value);
+          if (selected) {
+            fillHealthCat(selected);
+          } else {
+            healthCatId.value = "";
+          }
+        });
+      }
+
       const recipientClient = document.getElementById("recipientClient");
       if (recipientClient) {
         recipientClient.addEventListener("change", () => {
