@@ -46,27 +46,33 @@
           <% } else { %>
             <div class="record-list">
               <% expenses.forEach(function(expense) { %>
-                <a class="record-row" href="/despesas/<%= expense.id %>" style="text-decoration:none;">
-                  <div class="record-main">
-                    <div class="record-title">
-                      <%= expense.supplier || "Fornecedor não informado" %>
+                <div class="record-row">
+                  <a class="record-row-main-link" href="/despesas/<%= expense.id %>?returnTo=<%= encodeURIComponent(returnTo || '/despesas') %>">
+                    <div class="record-main">
+                      <div class="record-title">
+                        <%= expense.supplier || "Fornecedor não informado" %>
+                      </div>
+                      <div class="record-sub">
+                        <%= expense.category || "Sem categoria" %>
+                        <% if (expense.paymentMethod) { %>
+                          · <%= expense.paymentMethod %>
+                        <% } %>
+                        <% if (expense.note) { %>
+                          · <%= expense.note %>
+                        <% } %>
+                      </div>
                     </div>
-                    <div class="record-sub">
-                      <%= expense.category || "Sem categoria" %>
-                      <% if (expense.paymentMethod) { %>
-                        · <%= expense.paymentMethod %>
-                      <% } %>
-                      <% if (expense.note) { %>
-                        · <%= expense.note %>
-                      <% } %>
+                    <div class="record-meta">
+                      <span class="status-pill is-red">Despesa</span>
+                      <div style="margin-top:6px;"><%= expense.amountLabel %></div>
+                      <div class="record-sub"><%= expense.dateLabel %></div>
                     </div>
-                  </div>
-                  <div class="record-meta">
-                    <span class="status-pill is-red">Despesa</span>
-                    <div style="margin-top:6px;"><%= expense.amountLabel %></div>
-                    <div class="record-sub"><%= expense.dateLabel %></div>
-                  </div>
-                </a>
+                  </a>
+                  <form class="record-row-delete" method="post" action="/despesas/<%= expense.id %>/delete" onsubmit="return confirm('Excluir esta despesa?');">
+                    <input type="hidden" name="returnTo" value="<%= returnTo || '/despesas' %>" />
+                    <button class="record-delete-button" type="submit" title="Excluir despesa" aria-label="Excluir despesa">🗑</button>
+                  </form>
+                </div>
               <% }) %>
             </div>
           <% } %>

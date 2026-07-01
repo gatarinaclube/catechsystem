@@ -1,5 +1,5 @@
 const express = require("express");
-const { canViewAllData } = require("../utils/access");
+const { canViewAllData, dataOwnerScope } = require("../utils/access");
 const { getCreationLimits, yearlyRange } = require("../utils/planLimits");
 const { selectedBreedsFromSettings } = require("../utils/userPreferences");
 const { ensureMicrochipWhenRequired } = require("../utils/microchipRules");
@@ -119,7 +119,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
   function ownerScope(req) {
-    return canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId };
+    return dataOwnerScope(req);
   }
 
   async function ensureLitterCreationLimits(req, newKittenCount = 0) {
@@ -516,17 +516,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requireAuth,
     requirePermission("admin.litters"),
     async (req, res) => {
-      const selectedOwnerId = req.query.ownerId ? Number(req.query.ownerId) : null;
-      const users = canViewAllData(req.session?.userRole)
-        ? await prisma.user.findMany({
-            orderBy: { name: "asc" },
-            select: { id: true, name: true, email: true },
-          })
-        : [];
+      const selectedOwnerId = null;
+      const users = [];
       const litters = await prisma.litter.findMany({
-        where: canViewAllData(req.session?.userRole) && selectedOwnerId
-          ? { ownerId: selectedOwnerId }
-          : ownerScope(req),
+        where: ownerScope(req),
         orderBy: [{ litterBirthDate: "desc" }, { litterNumber: "desc" }, { id: "desc" }],
       });
 

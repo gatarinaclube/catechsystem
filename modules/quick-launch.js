@@ -3,7 +3,7 @@ const fs = require("fs");
 const multer = require("multer");
 const path = require("path");
 const { Prisma } = require("@prisma/client");
-const { ROLES, canViewAllData, normalizeRole, userCan } = require("../utils/access");
+const { ROLES, dataOwnerScope, normalizeRole, userCan } = require("../utils/access");
 const { getFileUploadLimit, validateFilesForRole } = require("../utils/planLimits");
 
 const OPTION_TYPES = ["CATEGORY", "SUPPLIER", "PAYMENT"];
@@ -88,6 +88,14 @@ function safeJsonParse(value) {
 
 function cleanText(value) {
   return String(value || "").trim();
+}
+
+function safeReturnPath(value, fallback) {
+  const raw = String(value || "").trim();
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.includes("://")) {
+    return fallback;
+  }
+  return raw.slice(0, 240);
 }
 
 function onlyDigits(value) {
@@ -372,8 +380,8 @@ module.exports = (prisma) => {
   });
 
   function ownerScope(req) {
-    if (canViewAllData(req.session?.userRole)) return {};
-    return { ownerId: currentOwnerId(req) };
+    if (req.publicExpenseUser) return { ownerId: currentOwnerId(req) };
+    return dataOwnerScope(req);
   }
 
   function currentOwnerId(req) {
@@ -508,9 +516,7 @@ module.exports = (prisma) => {
 
     try {
       const supplierRows = await prisma.expenseSupplier.findMany({
-        where: canViewAllData(req.session?.userRole)
-          ? {}
-          : { ownerId: currentOwnerId(req) },
+        where: { ownerId: currentOwnerId(req) },
         select: { commercialName: true, tradeName: true, cnpj: true, defaultCategory: true },
         orderBy: { commercialName: "asc" },
       });
@@ -526,9 +532,7 @@ module.exports = (prisma) => {
 
     try {
       const accountRows = await prisma.financialAccountSetting.findMany({
-        where: canViewAllData(req.session?.userRole)
-          ? {}
-          : { ownerId: currentOwnerId(req) },
+        where: { ownerId: currentOwnerId(req) },
         select: { accountName: true, isCreditCard: true },
       });
       creditCardNames = new Set(accountRows.filter((row) => row.isCreditCard).map((row) => row.accountName));
@@ -567,9 +571,7 @@ module.exports = (prisma) => {
   async function loadExpenseCreditCardNames(req, fallbackOwnerId = null) {
     const ownerId = currentOwnerId(req) || fallbackOwnerId;
     const rows = await prisma.financialAccountSetting.findMany({
-      where: canViewAllData(req.session?.userRole)
-        ? { isCreditCard: true }
-        : { ownerId: ownerId || null, isCreditCard: true },
+      where: { ownerId: ownerId || null, isCreditCard: true },
       select: { accountName: true },
     });
     return new Set(rows.map((row) => row.accountName).filter(Boolean));
@@ -758,10 +760,12 @@ module.exports = (prisma) => {
 
   async function renderExpenseForm(res, req, extra = {}) {
     const options = await loadOptions(req);
+    const backPath = safeReturnPath(extra.backPath || req.query.returnTo || req.body?.returnTo, "/despesas");
     res.status(extra.status || 200).render("quick-launch/index", {
       ...options,
       expense: mapExpenseForForm(extra.expense),
       formAction: extra.formAction || (extra.expense?.id ? `/despesas/${extra.expense.id}` : "/despesas"),
+      backPath,
       success: extra.success || false,
       error: extra.error || null,
       homePath: req.session?.userId ? "/dashboard" : "/login",
@@ -799,6 +803,7 @@ module.exports = (prisma) => {
       })),
       month,
       page,
+      returnTo: `/despesas?month=${encodeURIComponent(month)}&page=${encodeURIComponent(String(page))}`,
       totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
       hasPreviousPage: page > 1,
       hasNextPage: page * pageSize < totalCount,
@@ -1149,7 +1154,10 @@ module.exports = (prisma) => {
       where: { id, ...ownerScope(req) },
     });
     if (!expense) return res.status(404).send("Despesa não encontrada.");
-    await renderExpenseForm(res, req, { expense });
+    await renderExpenseForm(res, req, {
+      expense,
+      backPath: safeReturnPath(req.query.returnTo, "/despesas"),
+    });
   });
 
   router.post("/despesas/:id", upload.single("receipt"), async (req, res, next) => {
@@ -1173,12 +1181,13 @@ module.exports = (prisma) => {
         where: { id: existing.id },
         data,
       });
-      res.redirect("/despesas");
+      res.redirect(safeReturnPath(req.body.returnTo, "/despesas"));
     } catch (err) {
       await renderExpenseForm(res, req, {
         status: 400,
         error: err.message || "Erro ao atualizar despesa.",
         expense: { ...existing, ...req.body },
+        backPath: safeReturnPath(req.body.returnTo, "/despesas"),
       });
     }
   });
@@ -1195,7 +1204,7 @@ module.exports = (prisma) => {
     if (!existing) return res.status(404).send("Despesa não encontrada.");
 
     await prisma.quickLaunchEntry.delete({ where: { id } });
-    res.redirect("/despesas/lista");
+    res.redirect(safeReturnPath(req.body.returnTo, "/despesas"));
   });
 
   return router;

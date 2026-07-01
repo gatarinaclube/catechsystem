@@ -144,6 +144,18 @@ function canViewAllData(role) {
   return isAdminRole(role);
 }
 
+function currentDataOwnerId(req) {
+  return req?.session?.userId || null;
+}
+
+function dataOwnerScope(req) {
+  return { ownerId: currentDataOwnerId(req) };
+}
+
+function dataUserScope(req) {
+  return { userId: currentDataOwnerId(req) };
+}
+
 function buildAccessContext(role) {
   const normalizedRole = normalizeRole(role);
 
@@ -213,5 +225,8 @@ module.exports = {
   userCan,
   isAdminRole,
   canViewAllData,
+  currentDataOwnerId,
+  dataOwnerScope,
+  dataUserScope,
   buildAccessContext,
 };

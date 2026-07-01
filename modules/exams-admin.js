@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
 const archiver = require("archiver");
-const { canViewAllData } = require("../utils/access");
+const { dataOwnerScope } = require("../utils/access");
 const { getFileUploadLimit, validateFilesForRole } = require("../utils/planLimits");
 const {
   examKittensTabEnabledFromSettings,
@@ -372,7 +372,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
   function ownerScope(req) {
-    return canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId };
+    return dataOwnerScope(req);
   }
 
   async function ensureCatAccess(req, catId) {
@@ -414,16 +414,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         : [];
       const settingsByUserId = new Map(settingsRows.map((settings) => [settings.userId, settings]));
       let currentUserSettings = settingsByUserId.get(req.session.userId) || null;
-      if (!currentUserSettings && !canViewAllData(req.session?.userRole)) {
+      if (!currentUserSettings) {
         currentUserSettings = await prisma.userSettings.findUnique({
           where: { userId: req.session.userId },
           select: { userId: true, examsJson: true },
         });
       }
       const currentUserActiveExams = await loadActiveExamFields(req);
-      const currentUserShowsKittensTab = canViewAllData(req.session?.userRole)
-        ? true
-        : examKittensTabEnabledFromSettings(currentUserSettings, { defaultEnabled: true });
+      const currentUserShowsKittensTab = examKittensTabEnabledFromSettings(currentUserSettings, { defaultEnabled: true });
       const defaultActiveExams = buildActiveExamFields(selectedExamsFromSettings(null, { defaultAll: true }));
 
       const grouped = Object.fromEntries(

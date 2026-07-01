@@ -1,5 +1,5 @@
 const express = require("express");
-const { canViewAllData, userCan } = require("../utils/access");
+const { dataOwnerScope, userCan } = require("../utils/access");
 const { buildDisplayName, kittenFallbackDisplayName } = require("../utils/cattery-admin");
 const { formatCpfCnpj, formatPhone } = require("../utils/format");
 
@@ -77,6 +77,14 @@ function paginationData(query) {
   const page = Math.max(1, Number.parseInt(query.page || "1", 10) || 1);
   const pageSize = 20;
   return { page, pageSize, skip: (page - 1) * pageSize };
+}
+
+function safeReturnPath(value, fallback) {
+  const raw = String(value || "").trim();
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.includes("://")) {
+    return fallback;
+  }
+  return raw.slice(0, 240);
 }
 
 function safeJsonParse(value, fallback = []) {
@@ -288,12 +296,10 @@ module.exports = (prisma) => {
   });
 
   function ownerScope(req) {
-    if (canViewAllData(req.session?.userRole)) return {};
-    return { ownerId: req.session?.userId || null };
+    return dataOwnerScope(req);
   }
 
   function clientScope(req) {
-    if (canViewAllData(req.session?.userRole)) return { deletedAt: null };
     return {
       deletedAt: null,
       OR: [
@@ -329,13 +335,21 @@ module.exports = (prisma) => {
       where: clientScope(req),
       orderBy: { fullName: "asc" },
     });
+    const selectedRevenueKittenId = revenue?.kittenId ? Number(revenue.kittenId) : null;
     const kittens = await prisma.cat.findMany({
       where: {
         ...ownerScope(req),
-        OR: [{ kittenNumber: { not: null } }, { litterKitten: { isNot: null } }],
-        deceased: false,
-        delivered: false,
-        breedingProspect: false,
+        OR: [
+          {
+            AND: [
+              { OR: [{ kittenNumber: { not: null } }, { litterKitten: { isNot: null } }] },
+              { deceased: false },
+              { delivered: false },
+              { breedingProspect: false },
+            ],
+          },
+          ...(selectedRevenueKittenId ? [{ id: selectedRevenueKittenId }] : []),
+        ],
       },
       include: {
         litterKitten: { include: { litter: true } },
@@ -360,6 +374,14 @@ module.exports = (prisma) => {
     });
     const paymentAccounts = Array.from(new Set(accounts.map((item) => item.name).filter(Boolean)))
       .sort((a, b) => a.localeCompare(b, "pt-BR"));
+    const kittenOptions = kittens.map((cat) => ({ ...cat, label: buildKittenLabel(cat) }));
+    const availableKittens = kittenOptions.filter((cat) => deriveKittenStatus(cat) === "AVAILABLE");
+    const reservedKittens = kittenOptions.filter((cat) => deriveKittenStatus(cat) === "RESERVED");
+    const linkedKitten = selectedRevenueKittenId
+      ? kittenOptions.find((cat) => Number(cat.id) === selectedRevenueKittenId)
+      : null;
+    const linkedAlreadyListed = linkedKitten && [...availableKittens, ...reservedKittens]
+      .some((cat) => Number(cat.id) === Number(linkedKitten.id));
 
     return {
       clients: clients.map((client) => ({
@@ -369,16 +391,16 @@ module.exports = (prisma) => {
       kittenGroups: [
         {
           label: "Disponíveis",
-          kittens: kittens
-            .filter((cat) => deriveKittenStatus(cat) === "AVAILABLE")
-            .map((cat) => ({ ...cat, label: buildKittenLabel(cat) })),
+          kittens: availableKittens,
         },
         {
           label: "Reservados",
-          kittens: kittens
-            .filter((cat) => deriveKittenStatus(cat) === "RESERVED")
-            .map((cat) => ({ ...cat, label: buildKittenLabel(cat) })),
+          kittens: reservedKittens,
         },
+        ...(linkedKitten && !linkedAlreadyListed ? [{
+          label: "Vinculado à receita",
+          kittens: [linkedKitten],
+        }] : []),
       ],
       productServices: products.map((item) => ({
         ...item,
@@ -442,11 +464,12 @@ function buildRevenueData(body, existing = null) {
   }
 
   async function renderForm(req, res, extra = {}) {
+    const backPath = safeReturnPath(extra.backPath || req.query.returnTo || req.body?.returnTo, extra.defaultBackPath || "/receitas");
     res.status(extra.status || 200).render("revenues/index", {
       ...(await loadContext(req, extra.revenue)),
       revenueSummary: buildRevenueSummary(extra.revenue),
       formAction: extra.formAction || (extra.revenue?.id ? `/receitas/${extra.revenue.id}` : "/receitas"),
-      backPath: extra.backPath || "/receitas",
+      backPath,
       success: extra.success || false,
       error: extra.error || null,
       homePath: req.session?.userId ? "/dashboard" : "/login",
@@ -556,6 +579,7 @@ function buildRevenueData(body, existing = null) {
       revenues: pageRows,
       month,
       page,
+      returnTo: `/receitas/lista?month=${encodeURIComponent(month)}&page=${encodeURIComponent(String(page))}`,
       totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
       hasPreviousPage: page > 1,
       hasNextPage: page * pageSize < totalCount,
@@ -591,7 +615,8 @@ function buildRevenueData(body, existing = null) {
     await renderForm(req, res, {
       revenue,
       formAction: `/vendas/${revenue.id}`,
-      backPath: "/vendas",
+      backPath: safeReturnPath(req.query.returnTo, "/vendas"),
+      defaultBackPath: "/vendas",
     });
   });
 
@@ -638,7 +663,8 @@ function buildRevenueData(body, existing = null) {
         status: 400,
         revenue: existing,
         formAction: `/vendas/${existing.id}`,
-        backPath: "/vendas",
+        backPath: safeReturnPath(req.body.returnTo, "/vendas"),
+        defaultBackPath: "/vendas",
         error: "Filhote selecionado não encontrado para este usuário.",
       });
     }
@@ -648,7 +674,8 @@ function buildRevenueData(body, existing = null) {
         status: 400,
         revenue: existing,
         formAction: `/vendas/${existing.id}`,
-        backPath: "/vendas",
+        backPath: safeReturnPath(req.body.returnTo, "/vendas"),
+        defaultBackPath: "/vendas",
         error: "Selecione um cliente cadastrado para registrar a venda do filhote.",
       });
     }
@@ -670,7 +697,18 @@ function buildRevenueData(body, existing = null) {
       });
       await syncKittenOwnerFromSale(tx, data.kittenId, client);
     });
-    res.redirect("/vendas");
+    res.redirect(safeReturnPath(req.body.returnTo, "/vendas"));
+  });
+
+  router.post("/vendas/:id/delete", async (req, res) => {
+    const existing = await prisma.revenueEntry.findFirst({
+      where: { id: Number(req.params.id), ...ownerScope(req) },
+      select: { id: true },
+    });
+    if (!existing) return res.status(404).send("Venda não encontrada.");
+
+    await prisma.revenueEntry.delete({ where: { id: existing.id } });
+    res.redirect(safeReturnPath(req.body.returnTo, "/vendas"));
   });
 
   router.get("/receitas/clientes/novo", async (req, res) => {
@@ -829,7 +867,11 @@ function buildRevenueData(body, existing = null) {
       where: { id: Number(req.params.id), ...ownerScope(req) },
     });
     if (!revenue) return res.status(404).send("Receita não encontrada.");
-    await renderForm(req, res, { revenue });
+    await renderForm(req, res, {
+      revenue,
+      backPath: safeReturnPath(req.query.returnTo, "/receitas/lista"),
+      defaultBackPath: "/receitas/lista",
+    });
   });
 
   router.post("/receitas/:id", async (req, res) => {
@@ -842,7 +884,18 @@ function buildRevenueData(body, existing = null) {
       where: { id: existing.id },
       data: buildRevenueData(req.body, existing),
     });
-    res.redirect("/receitas/lista");
+    res.redirect(safeReturnPath(req.body.returnTo, "/receitas/lista"));
+  });
+
+  router.post("/receitas/:id/delete", async (req, res) => {
+    const existing = await prisma.revenueEntry.findFirst({
+      where: { id: Number(req.params.id), ...ownerScope(req) },
+      select: { id: true },
+    });
+    if (!existing) return res.status(404).send("Receita não encontrada.");
+
+    await prisma.revenueEntry.delete({ where: { id: existing.id } });
+    res.redirect(safeReturnPath(req.body.returnTo, "/receitas/lista"));
   });
 
   return router;

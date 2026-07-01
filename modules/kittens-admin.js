@@ -2,7 +2,7 @@ const express = require("express");
 const fs = require("fs");
 const multer = require("multer");
 const path = require("path");
-const { canViewAllData } = require("../utils/access");
+const { dataOwnerScope } = require("../utils/access");
 const { ageInMonths, buildKittenRegisteredName, kittenFallbackDisplayName } = require("../utils/cattery-admin");
 const { getFileUploadLimit, validateFilesForRole } = require("../utils/planLimits");
 const { selectedBreedsFromSettings } = require("../utils/userPreferences");
@@ -201,13 +201,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   }
 
   function ownerScope(req) {
-    return canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId };
+    return dataOwnerScope(req);
   }
 
   function clientScope(req) {
-    return canViewAllData(req.session?.userRole)
-      ? { deletedAt: null }
-      : { ownerId: req.session.userId, deletedAt: null };
+    return { ownerId: req.session.userId, deletedAt: null };
   }
 
   async function ensureCatAccess(req, catId) {
@@ -233,19 +231,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       where: { ...scopedOwner, gender: "M" },
       orderBy: { name: "asc" },
     });
-    const users = canViewAllData(req.session?.userRole)
-      ? await prisma.user.findMany({
-          orderBy: { name: "asc" },
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phones: true,
-            city: true,
-            state: true,
-          },
-        })
-      : [];
+    const users = [];
     const ownerClients = await prisma.revenueClient.findMany({
       where: clientScope(req),
       orderBy: { fullName: "asc" },
@@ -427,21 +413,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requirePermission("admin.kittens"),
     async (req, res) => {
       const selectedOwnerId = req.query.ownerId ? Number(req.query.ownerId) : null;
-      const users = canViewAllData(req.session?.userRole)
-        ? await prisma.user.findMany({
-            orderBy: { name: "asc" },
-            select: { id: true, name: true, email: true },
-          })
-        : [];
+      const users = [];
       const kittens = await prisma.cat.findMany({
         where: {
           OR: [
             { kittenNumber: { not: null } },
             { litterKitten: { isNot: null } },
           ],
-          ...(canViewAllData(req.session?.userRole) && selectedOwnerId
-            ? { ownerId: selectedOwnerId }
-            : ownerScope(req)),
+          ...ownerScope(req),
         },
         include: {
           litterKitten: { include: { litter: true } },

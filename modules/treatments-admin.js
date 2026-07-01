@@ -1,5 +1,5 @@
 const express = require("express");
-const { canViewAllData } = require("../utils/access");
+const { dataOwnerScope } = require("../utils/access");
 const {
   ageInMonths,
   buildDisplayName,
@@ -105,7 +105,7 @@ function splitAdministrationTime(value) {
 }
 
 function ownerScope(req) {
-  return canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId };
+  return dataOwnerScope(req);
 }
 
 function treatmentPayload(treatment) {

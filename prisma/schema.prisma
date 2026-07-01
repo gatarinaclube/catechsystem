@@ -146,10 +146,29 @@ model GatofiliaLead {
   message         String?
   wantsUpdates    Boolean  @default(false)
   whatsappPayload String?
+  status          String   @default("NEW")
+  respondedAt     DateTime?
 
   createdAt DateTime @default(now())
 
   @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model PetgusPublicLead {
+  id Int @id @default(autoincrement())
+
+  name      String
+  email     String
+  phone     String?
+  message   String?
+  status    String    @default("NEW")
+  respondedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+  @@index([status])
   @@index([createdAt])
 }
 

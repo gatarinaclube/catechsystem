@@ -103,7 +103,7 @@
                     <tr>
                       <td><%= row.dateLabel %></td>
                       <td>
-                        <a class="item-link" href="/receitas/<%= row.id %>">
+                        <a class="item-link" href="/receitas/<%= row.id %>?returnTo=<%= encodeURIComponent('/reports/revenues' + (pdfQuery ? '?' + pdfQuery : '')) %>">
                           <%= row.kittenLabel || '-' %>
                         </a>
                       </td>

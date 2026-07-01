@@ -3,7 +3,6 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
-const { canViewAllData } = require("../utils/access");
 const { sendStatusEmail } = require("../utils/mailer");
 const { formatCpfCnpj, formatPhone } = require("../utils/format");
 
@@ -360,7 +359,6 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
   function clientScope(req) {
-    if (canViewAllData(req.session?.userRole)) return { deletedAt: null };
     return {
       deletedAt: null,
       OR: [

@@ -1939,6 +1939,38 @@ textarea:focus {
   background: #ffffff;
 }
 
+.record-row-main-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 0;
+  flex: 1 1 auto;
+  color: inherit;
+  text-decoration: none;
+}
+
+.record-row-delete {
+  flex: 0 0 auto;
+}
+
+.record-delete-button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(185, 28, 28, 0.22);
+  border-radius: 10px;
+  background: #fff7f7;
+  color: #b91c1c;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.record-delete-button:hover {
+  background: #fee2e2;
+  border-color: rgba(185, 28, 28, 0.45);
+}
+
 .record-main {
   min-width: 0;
 }

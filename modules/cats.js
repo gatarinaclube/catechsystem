@@ -245,18 +245,9 @@ const upload = multer({
 
 // --------- LISTAGEM DE GATOS ---------
 router.get("/cats", requireAuth, async (req, res) => {
-  const { userId, role, isAdmin } = getAuthInfo(req);
+  const { userId, role } = getAuthInfo(req);
 
-  // ADMIN vê todos / USER vê só os próprios
-  let where = {};
-  if (isAdmin) {
-    const { ownerId } = req.query;
-    if (ownerId) {
-      where.ownerId = Number(ownerId);
-    }
-  } else {
-    where.ownerId = userId;
-  }
+  const where = { ownerId: userId };
 
   try {
     // Usuário logado para o sidebar
@@ -266,13 +257,7 @@ router.get("/cats", requireAuth, async (req, res) => {
 
     const user = userFromDb ? { ...userFromDb, role } : { id: userId, role };
 
-    // Lista de donos para o filtro (somente ADMIN)
-    let owners = [];
-    if (isAdmin) {
-      owners = await prisma.user.findMany({
-        orderBy: { name: "asc" },
-      });
-    }
+    const owners = [];
 
     const catsFromDb = await prisma.cat.findMany({
       where,
@@ -292,7 +277,7 @@ router.get("/cats", requireAuth, async (req, res) => {
         : null,
     }));
 
-    const selectedOwnerId = isAdmin ? (req.query.ownerId || "") : "";
+    const selectedOwnerId = "";
 
   res.render("cats/list", {
   user,
@@ -310,7 +295,7 @@ router.get("/cats", requireAuth, async (req, res) => {
 
 // --------- FORMULÁRIO: NOVO GATO ---------
 router.get("/cats/new", requireAuth, async (req, res) => {
-  const { userId, role, isAdmin } = getAuthInfo(req);
+  const { userId, role } = getAuthInfo(req);
 
   try {
     const userFromDb = await prisma.user.findUnique({
@@ -319,14 +304,8 @@ router.get("/cats/new", requireAuth, async (req, res) => {
 
     const user = userFromDb ? { ...userFromDb, role } : { id: userId, role };
 
-    // ADMIN vê todos; USER vê só seus gatos (ownerId = userId)
-    const maleWhere = isAdmin
-      ? { gender: "M" }
-      : { gender: "M", ownerId: userId };
-
-    const femaleWhere = isAdmin
-      ? { gender: "F" }
-      : { gender: "F", ownerId: userId };
+    const maleWhere = { gender: "M", ownerId: userId };
+    const femaleWhere = { gender: "F", ownerId: userId };
 
     const maleCats = await prisma.cat.findMany({
       where: maleWhere,
@@ -471,8 +450,7 @@ router.get("/cats/:id", requireAuth, async (req, res) => {
       return res.status(404).send("Gato não encontrado");
     }
 
-    // USER só pode ver se é o dono
-    if (!isAdmin && cat.ownerId !== userId) {
+    if (cat.ownerId !== userId) {
       return res.status(403).send("Você não tem acesso a este gato.");
     }
 
@@ -832,7 +810,7 @@ router.post("/cats/:id/status", requireAuth, async (req, res) => {
         return res.status(404).send("Gato não encontrado");
       }
 
-      if (!isAdmin && cat.ownerId !== userId) {
+      if (cat.ownerId !== userId) {
         return res.status(403).send("Você não pode editar este gato.");
       }
 
@@ -861,7 +839,7 @@ router.post(
   ]),
   async (req, res) => {
     const { id } = req.params;
-    const { userId, isAdmin } = getAuthInfo(req);
+    const { userId } = getAuthInfo(req);
 
     try {
       const existingCat = await prisma.cat.findUnique({
@@ -872,7 +850,7 @@ router.post(
         return res.status(404).send("Gato não encontrado");
       }
 
-      if (!isAdmin && existingCat.ownerId !== userId) {
+      if (existingCat.ownerId !== userId) {
         return res.status(403).send("Você não pode editar este gato.");
       }
 
@@ -1081,7 +1059,7 @@ router.post(
         return res.status(404).send("Gato não encontrado");
       }
 
-      if (!isAdmin && cat.ownerId !== userId) {
+      if (cat.ownerId !== userId) {
         return res
           .status(403)
           .send("Você não tem permissão para excluir este gato");

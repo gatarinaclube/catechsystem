@@ -2,7 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const { ROLES, canViewAllData, normalizeRole } = require("../utils/access");
+const { ROLES, canViewAllData, dataOwnerScope, normalizeRole } = require("../utils/access");
 const {
   getFileUploadLimit,
   getCreationLimits,
@@ -243,7 +243,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   }
 
   function ownerScope(req) {
-    return canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId };
+    return dataOwnerScope(req);
   }
 
   async function ensureBreederLimit(req) {
@@ -523,17 +523,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requireAuth,
     requirePermission("admin.breeders"),
     async (req, res) => {
-      const selectedOwnerId = req.query.ownerId ? Number(req.query.ownerId) : null;
-      const users = canViewAllData(req.session?.userRole)
-        ? await prisma.user.findMany({
-            orderBy: { name: "asc" },
-            select: { id: true, name: true, email: true },
-          })
-        : [];
+      const selectedOwnerId = null;
+      const users = [];
       const cats = await prisma.cat.findMany({
-        where: canViewAllData(req.session?.userRole) && selectedOwnerId
-          ? { ownerId: selectedOwnerId }
-          : ownerScope(req),
+        where: ownerScope(req),
         include: {
           litterKitten: true,
         },

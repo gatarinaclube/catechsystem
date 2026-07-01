@@ -82,10 +82,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requirePermission("service.titleHomologation"),
     async (req, res) => {
     try {
-      const { userId, isAdmin } = getAuthInfo(req);
+      const { userId } = getAuthInfo(req);
 
       const cats = await prisma.cat.findMany({
-        where: isAdmin ? {} : { ownerId: userId },
+        where: { ownerId: userId },
         orderBy: { name: "asc" },
       });
 

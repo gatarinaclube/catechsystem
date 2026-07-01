@@ -147,55 +147,101 @@
             </div>
           <% } %>
 
-          <% leads.forEach(function(lead) { %>
-            <% const fullName = [lead.firstName, lead.lastName].filter(Boolean).join(' '); %>
-            <% const whatsappDigits = String(lead.whatsapp || '').replace(/\D/g, ''); %>
-            <article class="overflow-hidden rounded-[1.5rem] border border-slate-100 bg-white shadow-sm">
-              <div class="grid gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
-                <div>
-                  <div class="flex flex-wrap items-center gap-2">
-                    <span class="rounded-full bg-[#f3ead8] px-3 py-1 text-xs font-black uppercase tracking-widest text-[#8c651f]">
-                      <%= lead.hasCattery === 'Sim' ? 'Criador com gatil' : 'Futuro criador' %>
-                    </span>
-                    <span class="text-xs font-bold text-slate-400"><%= lead.createdAt.toLocaleString('pt-BR') %></span>
-                  </div>
-                  <h3 class="mt-3 text-2xl font-black"><%= fullName %></h3>
-                  <p class="mt-1 text-sm font-bold text-slate-500">
-                    <%= [lead.city, lead.state, lead.country].filter(Boolean).join(' / ') || 'Local não informado' %>
-                  </p>
-                  <div class="mt-4 grid gap-3 text-sm text-slate-600 md:grid-cols-3">
-                    <div>
-                      <span class="block text-xs font-black uppercase tracking-widest text-slate-400">Gatil</span>
-                      <strong class="text-slate-800"><%= lead.catteryName || 'Ainda não possui' %></strong>
-                    </div>
-                    <div>
-                      <span class="block text-xs font-black uppercase tracking-widest text-slate-400">Raça</span>
-                      <strong class="text-slate-800"><%= lead.hasCattery === 'Sim' ? (lead.breed || '-') : (lead.wantsStart || '-') %></strong>
-                    </div>
-                    <div>
-                      <span class="block text-xs font-black uppercase tracking-widest text-slate-400">Origem</span>
-                      <strong class="text-slate-800"><%= lead.referralSource || '-' %></strong>
-                    </div>
-                  </div>
-                </div>
+          <% [
+            { title: 'Novas', leads: newLeads, tone: 'border-[#d6a84f]/40 bg-[#fff9ed]', empty: 'Nenhuma solicitação nova.' },
+            { title: 'Respondidas', leads: respondedLeads, tone: 'border-emerald-200 bg-emerald-50', empty: 'Nenhuma solicitação marcada como respondida.' },
+          ].forEach(function(group) { %>
+            <details class="overflow-hidden rounded-[1.5rem] border <%= group.tone %>" <%= group.title === 'Novas' ? 'open' : '' %>>
+              <summary class="flex cursor-pointer items-center justify-between gap-3 px-5 py-4">
+                <span class="text-lg font-black"><%= group.title %></span>
+                <span class="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-600"><%= group.leads.length %></span>
+              </summary>
+              <div class="grid gap-3 border-t border-white/70 p-4">
+                <% if (!group.leads.length) { %>
+                  <div class="rounded-2xl bg-white/80 p-5 text-center text-sm font-bold text-slate-500"><%= group.empty %></div>
+                <% } %>
 
-                <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-                  <a href="mailto:<%= lead.email %>" class="rounded-2xl bg-[#31513d] px-4 py-3 text-center text-sm font-black text-white"><%= lead.email %></a>
-                  <% if (whatsappDigits) { %>
-                    <a href="https://wa.me/<%= whatsappDigits %>" target="_blank" rel="noopener" class="rounded-2xl border border-[#31513d] px-4 py-3 text-center text-sm font-black text-[#31513d]">
-                      WhatsApp <%= lead.whatsapp %>
-                    </a>
-                  <% } %>
-                </div>
+                <% group.leads.forEach(function(lead) { %>
+                  <% const fullName = [lead.firstName, lead.lastName].filter(Boolean).join(' '); %>
+                  <% const whatsappDigits = String(lead.whatsapp || '').replace(/\D/g, ''); %>
+                  <details class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+                    <summary class="cursor-pointer px-5 py-4">
+                      <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <div class="flex flex-wrap items-center gap-2">
+                            <span class="rounded-full bg-[#f3ead8] px-3 py-1 text-[11px] font-black uppercase tracking-widest text-[#8c651f]">
+                              <%= lead.hasCattery === 'Sim' ? 'Criador com gatil' : 'Futuro criador' %>
+                            </span>
+                            <span class="text-xs font-bold text-slate-400"><%= lead.createdAt.toLocaleString('pt-BR') %></span>
+                          </div>
+                          <h3 class="mt-2 text-xl font-black"><%= fullName || 'Sem nome' %></h3>
+                          <p class="mt-1 text-sm font-bold text-slate-500">
+                            <%= [lead.city, lead.state, lead.country].filter(Boolean).join(' / ') || 'Local não informado' %>
+                          </p>
+                        </div>
+                        <span class="text-sm font-black text-[#31513d]">Abrir detalhes</span>
+                      </div>
+                    </summary>
+
+                    <div class="grid gap-4 border-t border-slate-100 p-5 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
+                      <div class="grid gap-3 text-sm text-slate-600 md:grid-cols-3">
+                        <div>
+                          <span class="block text-xs font-black uppercase tracking-widest text-slate-400">Gatil</span>
+                          <strong class="text-slate-800"><%= lead.catteryName || 'Ainda não possui' %></strong>
+                        </div>
+                        <div>
+                          <span class="block text-xs font-black uppercase tracking-widest text-slate-400">Raça</span>
+                          <strong class="text-slate-800"><%= lead.hasCattery === 'Sim' ? (lead.breed || '-') : (lead.wantsStart || '-') %></strong>
+                        </div>
+                        <div>
+                          <span class="block text-xs font-black uppercase tracking-widest text-slate-400">Origem</span>
+                          <strong class="text-slate-800"><%= lead.referralSource || '-' %></strong>
+                        </div>
+                        <div>
+                          <span class="block text-xs font-black uppercase tracking-widest text-slate-400">Tempo de criação</span>
+                          <strong class="text-slate-800"><%= lead.breedingTime || '-' %></strong>
+                        </div>
+                        <div>
+                          <span class="block text-xs font-black uppercase tracking-widest text-slate-400">Atualizações</span>
+                          <strong class="text-slate-800"><%= lead.wantsUpdates ? 'Sim' : 'Não' %></strong>
+                        </div>
+                        <div>
+                          <span class="block text-xs font-black uppercase tracking-widest text-slate-400">Respondida em</span>
+                          <strong class="text-slate-800"><%= lead.respondedAt ? lead.respondedAt.toLocaleString('pt-BR') : '-' %></strong>
+                        </div>
+                        <% if (lead.message) { %>
+                          <div class="md:col-span-3">
+                            <span class="block text-xs font-black uppercase tracking-widest text-slate-400">Mensagem</span>
+                            <p class="mt-1 whitespace-pre-line leading-7"><%= lead.message %></p>
+                          </div>
+                        <% } %>
+                      </div>
+
+                      <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+                        <a href="mailto:<%= lead.email %>" class="rounded-2xl bg-[#31513d] px-4 py-3 text-center text-sm font-black text-white"><%= lead.email %></a>
+                        <% if (whatsappDigits) { %>
+                          <a href="https://wa.me/<%= whatsappDigits %>" target="_blank" rel="noopener" class="rounded-2xl border border-[#31513d] px-4 py-3 text-center text-sm font-black text-[#31513d]">
+                            WhatsApp <%= lead.whatsapp %>
+                          </a>
+                        <% } %>
+                        <% if (String(lead.status || 'NEW').toUpperCase() === 'RESPONDED') { %>
+                          <form method="post" action="/academy/admin/interesses/<%= lead.id %>/nova">
+                            <button class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-700">Marcar como nova</button>
+                          </form>
+                        <% } else { %>
+                          <form method="post" action="/academy/admin/interesses/<%= lead.id %>/respondida">
+                            <button class="w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-black text-white">Marcar respondida</button>
+                          </form>
+                        <% } %>
+                        <form method="post" action="/academy/admin/interesses/<%= lead.id %>/excluir" onsubmit="return confirm('Excluir esta solicitação?');">
+                          <button class="w-full rounded-2xl border border-red-200 px-4 py-3 text-sm font-black text-red-700">Excluir</button>
+                        </form>
+                      </div>
+                    </div>
+                  </details>
+                <% }) %>
               </div>
-
-              <% if (lead.message) { %>
-                <details class="border-t border-slate-100">
-                  <summary class="cursor-pointer px-5 py-4 text-sm font-black text-[#31513d]">Ver mensagem</summary>
-                  <p class="whitespace-pre-line px-5 pb-5 text-sm leading-7 text-slate-600"><%= lead.message %></p>
-                </details>
-              <% } %>
-            </article>
+            </details>
           <% }) %>
         </div>
       </section>

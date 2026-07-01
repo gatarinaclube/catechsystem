@@ -1,6 +1,6 @@
 const express = require("express");
 const PDFDocument = require("pdfkit");
-const { canViewAllData, userCan } = require("../utils/access");
+const { dataOwnerScope, userCan } = require("../utils/access");
 const {
   addMonths: addCatteryMonths,
   ageInMonths,
@@ -24,7 +24,15 @@ function currentMonthInput() {
 
 function parseDateInput(value, fallback) {
   const text = String(value || fallback || "").slice(0, 10);
-  const [year, month, day] = text.split("-").map(Number);
+  let year;
+  let month;
+  let day;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+    [year, month, day] = text.split("-").map(Number);
+  } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(text)) {
+    [day, month, year] = text.split("/").map(Number);
+  }
 
   if (!year || !month || !day) {
     return null;
@@ -424,7 +432,9 @@ function kittenReferenceLabel(revenue) {
   const kittenName = revenue.kitten?.name || revenue.kittenLabel || "";
   if (kittenName) return kittenName;
   if (revenue.kitten?.microchip) return `Microchip ${revenue.kitten.microchip}`;
-  return "Filhote";
+  if (revenue.productService?.name) return revenue.productService.name;
+  if (revenue.client?.fullName) return revenue.client.fullName;
+  return "Receita";
 }
 
 function cleanPlanningCatName(cat) {
@@ -665,10 +675,10 @@ async function loadFinancialPlanningReferenceRows(prisma, req, months, config) {
     prisma.revenueEntry.findMany({
       where: {
         ...ownerScope(req),
-        kittenId: { not: null },
       },
       include: {
         client: true,
+        productService: { select: { name: true } },
         kitten: {
           select: {
             id: true,
@@ -960,7 +970,7 @@ function buildAccountingFilters(query) {
 
 function buildExpenseWhere(req, filters) {
   const where = {
-    ...(canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId }),
+    ...dataOwnerScope(req),
     competenceDate: {
       gte: filters.startDate,
       lt: addDays(filters.endDate, 1),
@@ -976,7 +986,7 @@ function buildExpenseWhere(req, filters) {
 
 function buildRevenueWhere(req, filters) {
   return {
-    ...(canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId }),
+    ...dataOwnerScope(req),
   };
 }
 
@@ -1010,13 +1020,11 @@ function buildCreditCardQueryString(filters, forcePdf = false) {
 }
 
 function ownerScope(req) {
-  if (canViewAllData(req.session?.userRole)) return {};
-  return { ownerId: req.session?.userId || null };
+  return dataOwnerScope(req);
 }
 
 function settingScope(req) {
-  if (canViewAllData(req.session?.userRole)) return {};
-  return { ownerId: req.session?.userId || null };
+  return dataOwnerScope(req);
 }
 
 function mapExpenseRows(expenses) {
@@ -1700,11 +1708,11 @@ function kittenReservationClass(kitten, revenue, forceAvailable = false) {
 }
 
 function ownerIdForReport(req, litter) {
-  return canViewAllData(req.session?.userRole) ? litter.ownerId || req.session.userId : req.session.userId;
+  return req.session.userId;
 }
 
 function littersScope(req) {
-  return canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId };
+  return dataOwnerScope(req);
 }
 
 function reservationLitterSortNumber(summary) {

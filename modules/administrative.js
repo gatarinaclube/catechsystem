@@ -1,5 +1,5 @@
 const express = require("express");
-const { canViewAllData } = require("../utils/access");
+const { dataOwnerScope } = require("../utils/access");
 const { formatCnpj, formatCpfCnpj, formatPhone } = require("../utils/format");
 
 function todayForInput() {
@@ -97,8 +97,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
   function ownerScope(req) {
-    if (canViewAllData(req.session?.userRole)) return {};
-    return { ownerId: req.session?.userId || null };
+    return dataOwnerScope(req);
   }
 
   function settingOwnerId(req) {
@@ -106,8 +105,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   }
 
   function supplierScope(req) {
-    if (canViewAllData(req.session?.userRole)) return {};
-    return { ownerId: req.session?.userId || null };
+    return dataOwnerScope(req);
   }
 
   function supplierData(req) {
@@ -141,8 +139,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   }
 
   function productServiceScope(req) {
-    if (canViewAllData(req.session?.userRole)) return {};
-    return { ownerId: req.session?.userId || null };
+    return dataOwnerScope(req);
   }
 
   function productServiceData(req) {
@@ -219,14 +216,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       await tx.quickLaunchEntry.updateMany({
         where: {
           supplier: previous,
-          ...(canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session?.userId || null }),
+          ...dataOwnerScope(req),
         },
         data: { supplier: next },
       });
       await tx.accountPayable.updateMany({
         where: {
           supplier: previous,
-          ...(canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session?.userId || null }),
+          ...dataOwnerScope(req),
         },
         data: { supplier: next },
       });
@@ -674,13 +671,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const usageCount = await prisma.quickLaunchEntry.count({
         where: {
           supplier: supplier.commercialName,
-          ...(canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session?.userId || null }),
+          ...dataOwnerScope(req),
         },
       });
       const payableUsageCount = await prisma.accountPayable.count({
         where: {
           supplier: supplier.commercialName,
-          ...(canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session?.userId || null }),
+          ...dataOwnerScope(req),
         },
       });
       if (usageCount > 0 || payableUsageCount > 0) {

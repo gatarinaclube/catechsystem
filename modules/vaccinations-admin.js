@@ -1,5 +1,5 @@
 const express = require("express");
-const { canViewAllData } = require("../utils/access");
+const { dataOwnerScope } = require("../utils/access");
 const {
   addDays,
   parseDate,
@@ -127,7 +127,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
   function ownerScope(req) {
-    return canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId };
+    return dataOwnerScope(req);
   }
 
   async function ensureCatAccess(req, catId) {

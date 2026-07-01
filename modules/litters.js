@@ -313,7 +313,7 @@ console.log("=======================");
       const catOwnerWhere = (id, gender) => ({
         id: Number(id),
         gender,
-        ...(getAuthInfo(req).isAdmin ? {} : { ownerId: userId }),
+        ownerId: userId,
       });
 
       // ----- Buscar dados do macho selecionado -----
@@ -612,8 +612,8 @@ console.log("DEBUG AUTH FILE:", authorizationFile);
 
   // ---------- LISTAGEM DE NINHADAS (JSON) ----------
   router.get("/litters", requireAuth, async (req, res) => {
-    const { userId, isAdmin } = getAuthInfo(req);
-    const where = isAdmin ? {} : { ownerId: userId };
+    const { userId } = getAuthInfo(req);
+    const where = { ownerId: userId };
 
     try {
       const litters = await prisma.litter.findMany({

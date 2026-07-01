@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><%= pageTitle %> - PetGus</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+    <style>
+      .public-admin-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+      }
+      .public-admin-stat {
+        border: 1px solid var(--border-soft);
+        border-radius: 18px;
+        background: #ffffff;
+        padding: 16px;
+      }
+      .public-admin-stat span {
+        color: var(--text-muted);
+        display: block;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .public-admin-stat strong {
+        color: var(--text-main);
+        display: block;
+        font-size: 30px;
+        margin-top: 6px;
+      }
+      .lead-section {
+        border: 1px solid var(--border-soft);
+        border-radius: 18px;
+        overflow: hidden;
+      }
+      .lead-section > summary {
+        align-items: center;
+        cursor: pointer;
+        display: flex;
+        font-weight: 900;
+        justify-content: space-between;
+        padding: 14px 16px;
+      }
+      .lead-count {
+        background: rgba(14, 116, 144, 0.1);
+        border-radius: 999px;
+        color: #0e7490;
+        font-size: 12px;
+        padding: 4px 9px;
+      }
+      .lead-list {
+        border-top: 1px solid var(--border-soft);
+        display: grid;
+        gap: 10px;
+        padding: 12px;
+      }
+      .lead-card {
+        border: 1px solid var(--border-soft);
+        border-radius: 14px;
+        background: #ffffff;
+        overflow: hidden;
+      }
+      .lead-card summary {
+        cursor: pointer;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: space-between;
+        padding: 12px 14px;
+      }
+      .lead-card-title {
+        font-weight: 900;
+      }
+      .lead-card-sub {
+        color: var(--text-muted);
+        font-size: 12px;
+        font-weight: 700;
+        margin-top: 3px;
+      }
+      .lead-card-body {
+        border-top: 1px solid var(--border-soft);
+        display: grid;
+        gap: 12px;
+        padding: 14px;
+      }
+      .lead-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .lead-actions a,
+      .lead-actions button {
+        border: 1px solid var(--border-soft);
+        border-radius: 999px;
+        background: #ffffff;
+        color: var(--text-main);
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 900;
+        padding: 8px 12px;
+        text-decoration: none;
+      }
+      .lead-actions .primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #ffffff;
+      }
+      .lead-actions .danger {
+        border-color: rgba(185, 28, 28, 0.28);
+        color: #b91c1c;
+      }
+      .sales-table-wrap {
+        overflow-x: auto;
+      }
+      .sales-table {
+        border-collapse: collapse;
+        min-width: 920px;
+        width: 100%;
+      }
+      .sales-table th,
+      .sales-table td {
+        border-bottom: 1px solid var(--border-soft);
+        padding: 10px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+      .sales-table th {
+        color: var(--text-muted);
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+      .status-pill {
+        border-radius: 999px;
+        background: rgba(245, 158, 11, 0.12);
+        color: var(--accent-hover);
+        display: inline-flex;
+        font-size: 12px;
+        font-weight: 900;
+        padding: 5px 9px;
+      }
+      @media (max-width: 860px) {
+        .public-admin-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 560px) {
+        .public-admin-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath, access }) %>
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">PetGus Pública</h2>
+            <div class="welcome-sub">
+              Contatos recebidos pelo site público e acompanhamento comercial dos planos contratados.
+            </div>
+          </div>
+          <div class="actions">
+            <a class="btn btn-secondary" href="/" target="_blank" rel="noopener">Ver site público</a>
+          </div>
+        </div>
+
+        <section class="content-card module-panel">
+          <div class="content-title">Resumo</div>
+          <div class="public-admin-grid">
+            <div class="public-admin-stat">
+              <span>Novos contatos</span>
+              <strong><%= newLeads.length %></strong>
+            </div>
+            <div class="public-admin-stat">
+              <span>Respondidos</span>
+              <strong><%= respondedLeads.length %></strong>
+            </div>
+            <div class="public-admin-stat">
+              <span>Contratações ativas</span>
+              <strong><%= salesSummary.active %></strong>
+            </div>
+            <div class="public-admin-stat">
+              <span>Teste/pagamento pendente</span>
+              <strong><%= salesSummary.trial + salesSummary.pending %></strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="content-card module-panel">
+          <div class="content-title">Contatos recebidos pela página PetGus</div>
+          <div class="content-sub">As solicitações chegam como novas e podem ser marcadas como respondidas após contato.</div>
+
+          <div class="module-grid" style="margin-top:16px;">
+            <% [
+              { title: "Novas", leads: newLeads, open: true, empty: "Nenhum contato novo." },
+              { title: "Respondidas", leads: respondedLeads, open: false, empty: "Nenhum contato respondido." },
+            ].forEach(function(group) { %>
+              <details class="lead-section" <%= group.open ? "open" : "" %>>
+                <summary>
+                  <span><%= group.title %></span>
+                  <span class="lead-count"><%= group.leads.length %></span>
+                </summary>
+                <div class="lead-list">
+                  <% if (!group.leads.length) { %>
+                    <div class="empty-state"><%= group.empty %></div>
+                  <% } %>
+
+                  <% group.leads.forEach(function(lead) { %>
+                    <% const phoneDigits = String(lead.phone || '').replace(/\D/g, ''); %>
+                    <details class="lead-card">
+                      <summary>
+                        <div>
+                          <div class="lead-card-title"><%= lead.name %></div>
+                          <div class="lead-card-sub"><%= lead.email %> • <%= lead.createdAt.toLocaleString('pt-BR') %></div>
+                        </div>
+                        <span class="status-pill"><%= String(lead.status || 'NEW').toUpperCase() === 'RESPONDED' ? 'Respondida' : 'Nova' %></span>
+                      </summary>
+                      <div class="lead-card-body">
+                        <div>
+                          <strong>Telefone:</strong> <%= lead.phone || '-' %>
+                          <% if (lead.respondedAt) { %>
+                            <br /><strong>Respondida em:</strong> <%= lead.respondedAt.toLocaleString('pt-BR') %>
+                          <% } %>
+                        </div>
+                        <% if (lead.message) { %>
+                          <p><%= lead.message %></p>
+                        <% } %>
+                        <div class="lead-actions">
+                          <a class="primary" href="mailto:<%= lead.email %>">E-mail</a>
+                          <% if (phoneDigits) { %>
+                            <a href="https://wa.me/<%= phoneDigits %>" target="_blank" rel="noopener">WhatsApp</a>
+                          <% } %>
+                          <% if (String(lead.status || 'NEW').toUpperCase() === 'RESPONDED') { %>
+                            <form method="post" action="/admin/petgus-publica/interesses/<%= lead.id %>/nova">
+                              <button type="submit">Marcar nova</button>
+                            </form>
+                          <% } else { %>
+                            <form method="post" action="/admin/petgus-publica/interesses/<%= lead.id %>/respondida">
+                              <button type="submit">Marcar respondida</button>
+                            </form>
+                          <% } %>
+                          <form method="post" action="/admin/petgus-publica/interesses/<%= lead.id %>/excluir" onsubmit="return confirm('Excluir este contato?');">
+                            <button class="danger" type="submit">Excluir</button>
+                          </form>
+                        </div>
+                      </div>
+                    </details>
+                  <% }) %>
+                </div>
+              </details>
+            <% }) %>
+          </div>
+        </section>
+
+        <section class="content-card module-panel">
+          <div class="content-title">Relatório de vendas e contratações</div>
+          <div class="content-sub">
+            Lista baseada nos usuários com plano comercial, teste, pagamento ou cobrança Asaas vinculada.
+          </div>
+
+          <div class="sales-table-wrap" style="margin-top:16px;">
+            <table class="sales-table">
+              <thead>
+                <tr>
+                  <th>Usuário</th>
+                  <th>Plano</th>
+                  <th>Status</th>
+                  <th>Ativação</th>
+                  <th>Vencimento</th>
+                  <th>Evento/Origem</th>
+                  <th>Pagamento</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (!salesUsers.length) { %>
+                  <tr>
+                    <td colspan="7">Nenhuma contratação comercial encontrada.</td>
+                  </tr>
+                <% } %>
+                <% salesUsers.forEach(function(item) { %>
+                  <tr>
+                    <td>
+                      <strong><%= item.name %></strong><br />
+                      <span class="content-sub"><%= item.email %></span>
+                    </td>
+                    <td><%= planSalesLabel(item.selectedPlan) %></td>
+                    <td><span class="status-pill"><%= subscriptionStatusLabel(item.subscriptionStatus) %></span></td>
+                    <td><%= formatProfilePlanDate(item.planActivatedAt) %></td>
+                    <td><%= formatProfilePlanDate(item.trialEndsAt) %></td>
+                    <td><%= item.asaasLastEvent || '-' %></td>
+                    <td>
+                      <% if (item.asaasPaymentUrl) { %>
+                        <a href="<%= item.asaasPaymentUrl %>" target="_blank" rel="noopener">Abrir cobrança</a>
+                      <% } else { %>
+                        -
+                      <% } %>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

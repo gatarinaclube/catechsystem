@@ -15,6 +15,7 @@
       </header>
 
       <form class="quick-card" method="post" action="<%= formAction %>">
+        <input type="hidden" name="returnTo" value="<%= backPath || '/receitas' %>" />
         <% if (success) { %><div class="message message-success">Receita salva.</div><% } %>
         <% if (error) { %><div class="message message-error"><%= error %></div><% } %>
 
@@ -160,7 +161,14 @@
       </form>
 
       <footer class="quick-footer">
+        <a class="quick-options-link" href="<%= backPath || '/receitas' %>" title="Voltar">←</a>
         <a class="quick-options-link" href="<%= homePath %>" title="Página inicial">⌂</a>
+        <% if (revenue.id) { %>
+          <form method="post" action="<%= formAction && formAction.startsWith('/vendas') ? '/vendas/' + revenue.id + '/delete' : '/receitas/' + revenue.id + '/delete' %>" onsubmit="return confirm('Excluir esta receita/venda?');">
+            <input type="hidden" name="returnTo" value="<%= backPath || '/receitas' %>" />
+            <button type="submit" class="quick-options-link quick-icon-button" title="Excluir receita/venda" aria-label="Excluir receita/venda">🗑</button>
+          </form>
+        <% } %>
       </footer>
     </main>
     <script>

@@ -28,28 +28,34 @@
           <% } else { %>
             <div class="record-list">
               <% revenues.forEach(function(revenue) { %>
-                <a class="record-row" href="/vendas/<%= revenue.id %>" style="text-decoration:none;">
-                  <div class="record-main">
-                    <div class="record-title">
-                      <%= revenue.kittenLabel || "Venda sem filhote" %>
+                <div class="record-row">
+                  <a class="record-row-main-link" href="/vendas/<%= revenue.id %>?returnTo=<%= encodeURIComponent('/vendas') %>">
+                    <div class="record-main">
+                      <div class="record-title">
+                        <%= revenue.kittenLabel || "Venda sem filhote" %>
+                      </div>
+                      <div class="record-sub">
+                        <%= revenue.client ? revenue.client.fullName : "Cliente desconhecido" %>
+                        <% if (revenue.paymentAccount) { %>
+                          · <%= revenue.paymentAccount %>
+                        <% } %>
+                        <% if (revenue.invoiceNumber) { %>
+                          · NF <%= revenue.invoiceNumber %>
+                        <% } %>
+                      </div>
                     </div>
-                    <div class="record-sub">
-                      <%= revenue.client ? revenue.client.fullName : "Cliente desconhecido" %>
-                      <% if (revenue.paymentAccount) { %>
-                        · <%= revenue.paymentAccount %>
-                      <% } %>
-                      <% if (revenue.invoiceNumber) { %>
-                        · NF <%= revenue.invoiceNumber %>
-                      <% } %>
+                    <div class="record-meta">
+                      <span class="status-pill is-green">Venda</span>
+                      <div style="margin-top:6px;">
+                      <%= (Number(revenue.totalAmountCents || 0) / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) %>
+                      </div>
                     </div>
-                  </div>
-                  <div class="record-meta">
-                    <span class="status-pill is-green">Venda</span>
-                    <div style="margin-top:6px;">
-                    <%= (Number(revenue.totalAmountCents || 0) / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) %>
-                    </div>
-                  </div>
-                </a>
+                  </a>
+                  <form class="record-row-delete" method="post" action="/vendas/<%= revenue.id %>/delete" onsubmit="return confirm('Excluir esta receita/venda?');">
+                    <input type="hidden" name="returnTo" value="/vendas" />
+                    <button class="record-delete-button" type="submit" title="Excluir receita/venda" aria-label="Excluir receita/venda">🗑</button>
+                  </form>
+                </div>
               <% }) %>
             </div>
           <% } %>

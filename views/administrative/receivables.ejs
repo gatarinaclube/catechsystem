@@ -50,7 +50,7 @@
           <% } else { %>
             <div class="record-list">
               <% receivables.forEach(function(row) { %>
-                <a class="record-row" href="/vendas/<%= row.id %>" style="text-decoration:none;">
+                <a class="record-row" href="/vendas/<%= row.id %>?returnTo=<%= encodeURIComponent('/administrativo/contas-a-receber') %>" style="text-decoration:none;">
                   <div class="record-main">
                     <div class="record-title"><%= row.kittenLabel %></div>
                     <div class="record-sub">

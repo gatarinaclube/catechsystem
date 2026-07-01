@@ -15,6 +15,7 @@ const {
   getRoleLabel,
   isAdminRole,
   canViewAllData,
+  dataOwnerScope,
   buildAccessContext,
   userCan,
 } = require("./utils/access");
@@ -1136,6 +1137,14 @@ app.post("/contato", async (req, res) => {
   }
 
   try {
+    await prisma.petgusPublicLead.create({
+      data: {
+        name,
+        email: email.toLowerCase(),
+        phone,
+      },
+    });
+
     await sendStatusEmail({
       to: petgusContactEmail,
       subject: "Novo contato pelo site PetGus",
@@ -1156,6 +1165,108 @@ app.post("/contato", async (req, res) => {
     console.error("Erro ao enviar contato público:", err);
     return res.redirect("/?contato=erro#contato");
   }
+});
+
+function petgusLeadRedirect(req) {
+  return req.get("Referer") || "/admin/petgus-publica";
+}
+
+function planSalesLabel(value) {
+  return value ? getRoleLabel(value) : "-";
+}
+
+function subscriptionStatusLabel(value) {
+  const status = String(value || "").toUpperCase();
+  const labels = {
+    ACTIVE: "Ativo",
+    TRIALING: "Teste",
+    PENDING: "Pagamento pendente",
+    EXPIRED: "Vencido",
+    CANCELED: "Cancelado",
+    PENDING_ASSOCIATION_PAYMENT: "Associação pendente",
+  };
+  return labels[status] || (status || "-");
+}
+
+app.get("/admin/petgus-publica", requireAuth, requireAdmin, async (req, res) => {
+  const [leads, salesUsers] = await Promise.all([
+    prisma.petgusPublicLead.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 250,
+    }),
+    prisma.user.findMany({
+      where: {
+        OR: [
+          { accountOrigin: "COMMERCIAL" },
+          { selectedPlan: { in: [ROLES.BASIC, ROLES.MASTER, ROLES.PREMIUM] } },
+          { asaasPaymentId: { not: null } },
+          { asaasSubscriptionId: { not: null } },
+        ],
+      },
+      orderBy: [{ planActivatedAt: "desc" }, { createdAt: "desc" }],
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        selectedPlan: true,
+        subscriptionStatus: true,
+        trialEndsAt: true,
+        planActivatedAt: true,
+        asaasPaymentUrl: true,
+        asaasLastEvent: true,
+        createdAt: true,
+      },
+      take: 250,
+    }),
+  ]);
+
+  const newLeads = leads.filter((lead) => String(lead.status || "NEW").toUpperCase() !== "RESPONDED");
+  const respondedLeads = leads.filter((lead) => String(lead.status || "NEW").toUpperCase() === "RESPONDED");
+  const activeSales = salesUsers.filter((user) => String(user.subscriptionStatus || "").toUpperCase() === "ACTIVE");
+  const trialSales = salesUsers.filter((user) => String(user.subscriptionStatus || "").toUpperCase() === "TRIALING");
+  const pendingSales = salesUsers.filter((user) => ["PENDING", "EXPIRED"].includes(String(user.subscriptionStatus || "").toUpperCase()));
+
+  res.render("admin/petgus-public", {
+    pageTitle: "PetGus Pública",
+    user: req.user,
+    currentPath: "/admin/petgus-publica",
+    access: res.locals.access,
+    leads,
+    newLeads,
+    respondedLeads,
+    salesUsers,
+    salesSummary: {
+      total: salesUsers.length,
+      active: activeSales.length,
+      trial: trialSales.length,
+      pending: pendingSales.length,
+    },
+    planSalesLabel,
+    subscriptionStatusLabel,
+    formatProfilePlanDate,
+    saved: req.query.salvo === "1",
+  });
+});
+
+app.post("/admin/petgus-publica/interesses/:id/respondida", requireAuth, requireAdmin, async (req, res) => {
+  await prisma.petgusPublicLead.update({
+    where: { id: Number(req.params.id) },
+    data: { status: "RESPONDED", respondedAt: new Date() },
+  });
+  res.redirect(petgusLeadRedirect(req));
+});
+
+app.post("/admin/petgus-publica/interesses/:id/nova", requireAuth, requireAdmin, async (req, res) => {
+  await prisma.petgusPublicLead.update({
+    where: { id: Number(req.params.id) },
+    data: { status: "NEW", respondedAt: null },
+  });
+  res.redirect(petgusLeadRedirect(req));
+});
+
+app.post("/admin/petgus-publica/interesses/:id/excluir", requireAuth, requireAdmin, async (req, res) => {
+  await prisma.petgusPublicLead.delete({ where: { id: Number(req.params.id) } });
+  res.redirect(petgusLeadRedirect(req));
 });
 
 app.use(kittenShowcaseRouterFactory.publicRouter(prisma));
@@ -1917,7 +2028,7 @@ app.get("/dashboard", requireAuth, async (req, res) => {
       return res.redirect("/billing/pay");
     }
 
-    const userScope = canViewAllData(req.session.userRole) ? {} : { ownerId: req.session.userId };
+    const userScope = dataOwnerScope(req);
     const monthStart = new Date();
     monthStart.setDate(1);
     monthStart.setHours(0, 0, 0, 0);
@@ -2362,7 +2473,7 @@ pendingServicesCount: pendingServices.length,
 
 app.get("/buscar", requireAuth, async (req, res) => {
   const query = String(req.query.q || "").trim();
-  const userScope = canViewAllData(req.session.userRole) ? {} : { ownerId: req.session.userId };
+  const userScope = dataOwnerScope(req);
   const contains = { contains: query, mode: "insensitive" };
   const formattedDocumentQuery = formatCpfCnpj(query);
   const results = {

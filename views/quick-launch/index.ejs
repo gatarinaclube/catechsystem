@@ -25,6 +25,7 @@
       </header>
 
       <form class="quick-card" method="post" action="<%= formAction %>" enctype="multipart/form-data">
+        <input type="hidden" name="returnTo" value="<%= backPath || '/despesas' %>" />
         <% if (success) { %>
           <div class="message message-success">Despesa salva.</div>
         <% } %>
@@ -180,10 +181,11 @@
         </div>
       <% } else { %>
         <footer class="quick-footer">
-          <a class="quick-options-link" href="/despesas" title="Despesas lançadas">←</a>
+          <a class="quick-options-link" href="<%= backPath || '/despesas' %>" title="Despesas lançadas">←</a>
           <a class="quick-options-link" href="<%= homePath %>" title="Página inicial">⌂</a>
           <% if (expense.id) { %>
             <form method="post" action="/despesas/<%= expense.id %>/delete" onsubmit="return confirm('Excluir esta despesa?');">
+              <input type="hidden" name="returnTo" value="<%= backPath || '/despesas' %>" />
               <button type="submit" class="quick-options-link quick-icon-button" title="Excluir despesa">🗑</button>
             </form>
           <% } %>

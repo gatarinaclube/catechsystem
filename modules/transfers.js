@@ -82,17 +82,16 @@ function transferCategoryForCat(cat) {
     requireAuth,
     requirePermission("service.transfer"),
     async (req, res) => {
-    const { userId, isAdmin } = getAuthInfo(req);
+    const { userId } = getAuthInfo(req);
 
     // Busca usuário logado (para preencher "Antigo Proprietário")
 const user = await prisma.user.findUnique({
   where: { id: userId },
 });
 
-    // Busca gatos: USER vê só os seus, ADMIN vê todos
     const cats = await prisma.cat.findMany({
       where: {
-        ...(isAdmin ? {} : { ownerId: userId }),
+        ownerId: userId,
         deceased: { not: true },
       },
       include: { litterKitten: true },
@@ -158,7 +157,7 @@ if (req.body.oldOwnerType === "OTHER" && !authorizationFile) {
 } = req.body;
 
 
-  const { userId, isAdmin } = getAuthInfo(req);
+  const { userId } = getAuthInfo(req);
 
   try {
     validateFilesForRole([authorizationFile, kittenPedigreeFile].filter(Boolean), req.session?.userRole);
@@ -170,7 +169,7 @@ if (req.body.oldOwnerType === "OTHER" && !authorizationFile) {
     const cat = await prisma.cat.findFirst({
       where: {
         id: Number(catId),
-        ...(isAdmin ? {} : { ownerId: userId }),
+        ownerId: userId,
       },
       include: { litterKitten: true },
     });

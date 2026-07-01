@@ -309,6 +309,32 @@ input[type="file"] {
   text-decoration: none;
 }
 
+.quick-list-row-action {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  gap: 8px;
+  align-items: center;
+}
+
+.quick-list-row-action a {
+  min-width: 0;
+}
+
+.quick-delete-button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(185, 28, 28, 0.22);
+  border-radius: 9px;
+  background: #fff7f7;
+  color: #b91c1c;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.quick-delete-button:hover {
+  background: #fee2e2;
+}
+
 .quick-pagination {
   display: flex;
   align-items: center;

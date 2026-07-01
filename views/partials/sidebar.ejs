@@ -142,6 +142,7 @@
           { href: "/admin/microchips", match: "/admin/microchips", icon: "🔎", label: "Gestão de Microchip", allowed: access && access.canManageMicrochips, hideWhenDenied: true, preferenceKey: "microchips" },
           { href: "/admin/financeiro", match: "/admin/financeiro", icon: "💳", label: "Financeiro técnico", allowed: access && access.canManageFinanceSettings, hideWhenDenied: true, preferenceKey: "financeSettings" },
           { href: "/admin/perfis-limites", match: "/admin/perfis-limites", icon: "🧩", label: "Limites por Perfil", allowed: access && access.canManageProfileRules, hideWhenDenied: true },
+          { href: "/admin/petgus-publica", match: "/admin/petgus-publica", icon: "🌐", label: "PetGus Pública", allowed: access && access.isAdmin, hideWhenDenied: true },
           { href: "/academy/admin/configuracoes", match: "/academy/admin/configuracoes", icon: "🎓", label: "Gatofilia Pública", allowed: access && access.isAdmin && access.canAccessAcademy, hideWhenDenied: true },
         ];
       %>

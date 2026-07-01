@@ -1,5 +1,5 @@
 const express = require("express");
-const { canViewAllData } = require("../utils/access");
+const { dataOwnerScope } = require("../utils/access");
 const {
   addMonths,
   addDays,
@@ -284,24 +284,15 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
   function ownerScope(req) {
-    return canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId };
+    return dataOwnerScope(req);
   }
 
-  async function loadOwnerFilter(req, selectedOwnerId) {
-    const users = canViewAllData(req.session?.userRole)
-      ? await prisma.user.findMany({
-          orderBy: { name: "asc" },
-          select: { id: true, name: true, email: true },
-        })
-      : [];
-
-    return { users, selectedOwnerId };
+  async function loadOwnerFilter() {
+    return { users: [], selectedOwnerId: null };
   }
 
-  async function buildRows(req, selectedOwnerId = null) {
-    const scopedOwner = canViewAllData(req.session?.userRole) && selectedOwnerId
-      ? { ownerId: selectedOwnerId }
-      : ownerScope(req);
+  async function buildRows(req) {
+    const scopedOwner = ownerScope(req);
     const females = await prisma.cat.findMany({
       where: {
         ...scopedOwner,
@@ -425,9 +416,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requireAuth,
     requirePermission("admin.matings"),
     async (req, res) => {
-      const selectedOwnerId = req.query.ownerId ? Number(req.query.ownerId) : null;
-      const { users } = await loadOwnerFilter(req, selectedOwnerId);
-      const { grouped, males, supplementRows } = await buildRows(req, selectedOwnerId);
+      const selectedOwnerId = null;
+      const { users } = await loadOwnerFilter();
+      const { grouped, males, supplementRows } = await buildRows(req);
 
       res.render("admin-matings/index", {
         user: req.user,
@@ -451,13 +442,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requirePermission("admin.matings"),
     async (req, res) => {
       const femaleCatId = Number(req.params.femaleCatId);
-      const selectedOwnerId = req.body.ownerId ? Number(req.body.ownerId) : null;
+      const selectedOwnerId = null;
 
       const female = await prisma.cat.findUnique({
         where: { id: femaleCatId },
         select: { ownerId: true },
       });
-      if (!female || (!canViewAllData(req.session?.userRole) && female.ownerId !== req.session.userId)) {
+      if (!female || female.ownerId !== req.session.userId) {
         return res.status(403).send("Você não tem acesso a esta gata.");
       }
       const maleCatId = req.body.maleCatId ? Number(req.body.maleCatId) : null;
@@ -465,7 +456,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         const male = await prisma.cat.findFirst({
           where: {
             id: maleCatId,
-            ...(canViewAllData(req.session?.userRole) ? {} : { ownerId: req.session.userId }),
+            ...ownerScope(req),
           },
           select: { id: true },
         });

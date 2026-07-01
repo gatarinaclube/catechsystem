@@ -22,6 +22,13 @@ function cleanSlug(title, slug) {
   return slugify(slug || title);
 }
 
+function splitLeadsByStatus(leads) {
+  return {
+    newLeads: leads.filter((lead) => String(lead.status || "NEW").toUpperCase() !== "RESPONDED"),
+    respondedLeads: leads.filter((lead) => String(lead.status || "NEW").toUpperCase() === "RESPONDED"),
+  };
+}
+
 function lessonPayloadFromBody(body) {
   const status = body.status || ACADEMY_CONTENT_STATUSES.DRAFT;
   return {
@@ -140,12 +147,14 @@ module.exports = (prisma) => ({
       orderBy: { createdAt: "desc" },
       take: 250,
     });
+    const leadGroups = splitLeadsByStatus(leads);
 
     res.render("academy/admin/interests", {
       pageTitle: "Interesses Gatofilia - Admin",
       user: req.user,
       academy: await getAcademyContext(prisma, req),
       leads,
+      ...leadGroups,
       q,
     });
   },
@@ -158,6 +167,7 @@ module.exports = (prisma) => ({
         take: 100,
       }),
     ]);
+    const leadGroups = splitLeadsByStatus(leads);
 
     res.render("academy/admin/public-settings", {
       pageTitle: "Gatofilia Pública - Admin",
@@ -166,6 +176,7 @@ module.exports = (prisma) => ({
       settings,
       countdown: buildAcademyCountdown(settings),
       leads,
+      ...leadGroups,
       saved: req.query.salvo === "1",
     });
   },
@@ -179,6 +190,27 @@ module.exports = (prisma) => ({
     });
 
     res.redirect("/academy/admin/configuracoes?salvo=1");
+  },
+
+  markInterestResponded: async (req, res) => {
+    await prisma.gatofiliaLead.update({
+      where: { id: Number(req.params.id) },
+      data: { status: "RESPONDED", respondedAt: new Date() },
+    });
+    res.redirect(req.get("Referer") || "/academy/admin/configuracoes");
+  },
+
+  markInterestNew: async (req, res) => {
+    await prisma.gatofiliaLead.update({
+      where: { id: Number(req.params.id) },
+      data: { status: "NEW", respondedAt: null },
+    });
+    res.redirect(req.get("Referer") || "/academy/admin/configuracoes");
+  },
+
+  deleteInterest: async (req, res) => {
+    await prisma.gatofiliaLead.delete({ where: { id: Number(req.params.id) } });
+    res.redirect(req.get("Referer") || "/academy/admin/configuracoes");
   },
 
   uploadMedia: async (req, res) => {

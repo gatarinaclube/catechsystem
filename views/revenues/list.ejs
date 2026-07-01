@@ -28,16 +28,22 @@
           <ul class="quick-list">
             <% revenues.forEach(function(revenue) { %>
               <li>
-                <a class="quick-expense-row" href="/receitas/<%= revenue.id %>">
-                  <span class="quick-expense-left">
-                    <strong><%= revenue.dateLabel %></strong>
-                    <span><%= revenue.amountLabel %></span>
-                  </span>
-                  <span class="quick-expense-supplier">
-                    <strong><%= revenue.kittenLabel || '-' %></strong>
-                    <span><%= revenue.clientLabel || '-' %> · Parcela <%= revenue.parcelLabel || '-' %></span>
-                  </span>
-                </a>
+                <div class="quick-list-row-action">
+                  <a class="quick-expense-row" href="/receitas/<%= revenue.id %>?returnTo=<%= encodeURIComponent(returnTo || '/receitas/lista') %>">
+                    <span class="quick-expense-left">
+                      <strong><%= revenue.dateLabel %></strong>
+                      <span><%= revenue.amountLabel %></span>
+                    </span>
+                    <span class="quick-expense-supplier">
+                      <strong><%= revenue.kittenLabel || '-' %></strong>
+                      <span><%= revenue.clientLabel || '-' %> · Parcela <%= revenue.parcelLabel || '-' %></span>
+                    </span>
+                  </a>
+                  <form method="post" action="/receitas/<%= revenue.id %>/delete" onsubmit="return confirm('Excluir esta receita?');">
+                    <input type="hidden" name="returnTo" value="<%= returnTo || '/receitas/lista' %>" />
+                    <button class="quick-delete-button" type="submit" title="Excluir receita" aria-label="Excluir receita">🗑</button>
+                  </form>
+                </div>
               </li>
             <% }) %>
           </ul>
