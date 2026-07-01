@@ -425,6 +425,38 @@ function computePlanningReferenceMatingDate(startDate, endDate) {
   return addDays(start, Math.ceil(diffDays / 2));
 }
 
+function addPlanningDays(date, days) {
+  const parsed = parsePlanningDate(date);
+  if (!parsed) return null;
+  return new Date(Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate() + days));
+}
+
+function sortPlanningDates(dates) {
+  return dates
+    .map(parsePlanningDate)
+    .filter(Boolean)
+    .sort((a, b) => a - b);
+}
+
+function adjustProjectedLitterBirthDate(candidateBirthDate, litterDates) {
+  let adjusted = parsePlanningDate(candidateBirthDate);
+  if (!adjusted) return null;
+
+  for (let guard = 0; guard < 10; guard += 1) {
+    const twoYearsBefore = addPlanningMonthsAndDays(adjusted, -24, 0);
+    const recent = litterDates
+      .filter((date) => date < adjusted && (!twoYearsBefore || date >= twoYearsBefore))
+      .slice(-3);
+    if (recent.length < 3) return adjusted;
+
+    const nextAllowed = addPlanningMonthsAndDays(recent[0], 24, 0);
+    if (!nextAllowed || nextAllowed <= adjusted) return adjusted;
+    adjusted = nextAllowed;
+  }
+
+  return adjusted;
+}
+
 function emptyPlanningReferenceValues(months) {
   return Object.fromEntries(months.map((month) => [month.key, 0]));
 }
@@ -573,11 +605,12 @@ async function loadFinancialPlanningKittenForecastRows(prisma, req, months, conf
   });
   const planMap = new Map(plans.map((plan) => [plan.femaleCatId, plan]));
   const monthKeys = new Set(months.map((month) => month.key));
+  const { startDate, endDate } = planningMonthsDateRange(months);
 
   return visibleFemales.flatMap((female) => {
     const plan = planMap.get(female.id);
-    const litterHistory = safeJsonParse(plan?.litterHistoryJson, []);
-    const nextCrossDate = computePlanningNextCrossDate(female.birthDate, litterHistory);
+    const litterDates = sortPlanningDates(safeJsonParse(plan?.litterHistoryJson, []));
+    const nextCrossDate = computePlanningNextCrossDate(female.birthDate, litterDates);
     const status = isPlanningDevelopingFemale(female)
       ? "EM_DESENVOLVIMENTO"
       : plan?.status || "PARA_ACASALAR";
@@ -585,45 +618,77 @@ async function loadFinancialPlanningKittenForecastRows(prisma, req, months, conf
     if (status === "COM_PROBLEMA") return [];
 
     let baseDate = null;
-    let receivingDate = null;
+    let projectedBirthDate = null;
+    let firstReceivingDate = null;
     let baseLabel = "base";
 
     if (status === "CONFIRMADO" || status === "NAO_CONFIRMADO") {
       baseDate = computePlanningReferenceMatingDate(plan?.matingStartDate, plan?.matingEndDate) || nextCrossDate;
-      baseDate = baseDate ? addDays(baseDate, 65) : null;
+      projectedBirthDate = baseDate ? addPlanningDays(baseDate, 65) : null;
       baseLabel = "nascimento previsto";
-      receivingDate = addPlanningMonthsAndDays(baseDate, 4, 15);
+      firstReceivingDate = addPlanningMonthsAndDays(projectedBirthDate, 4, 15);
     } else if (status === "PARA_ACASALAR") {
       const today = new Date();
       today.setUTCHours(0, 0, 0, 0);
       const plannedDate = parsePlanningDate(nextCrossDate);
       baseDate = plannedDate && plannedDate >= today ? plannedDate : today;
       baseLabel = "cruza prevista";
-      receivingDate = addPlanningMonthsAndDays(baseDate, 6, 15);
+      projectedBirthDate = addPlanningDays(baseDate, 65);
+      firstReceivingDate = addPlanningMonthsAndDays(baseDate, 6, 15);
     } else {
       baseDate = nextCrossDate;
       baseLabel = "cruza prevista";
-      receivingDate = addPlanningMonthsAndDays(baseDate, 6, 15);
+      projectedBirthDate = addPlanningDays(baseDate, 65);
+      firstReceivingDate = addPlanningMonthsAndDays(baseDate, 6, 15);
     }
 
-    const monthKey = planningMonthKeyFromDate(receivingDate);
-    if (!receivingDate || !monthKeys.has(monthKey)) return [];
+    if (!firstReceivingDate || !projectedBirthDate) return [];
 
-    return [makePlanningReferenceRow({
-      key: `kitten-forecast-${female.id}`,
-      type: "kitten-forecast",
-      typeLabel: "Filhotes a nascer",
-      group: "kittenForecast",
-      description: cleanPlanningCatName(female),
-      details: [
-        statusLabelForPlanning(status),
-        `${baseLabel}: ${formatDateOnlyLabel(baseDate)}`,
-        `${config.kittensPerLitter} filhotes x ${formatCurrency(config.kittenValueCents)}`,
-      ],
-      date: receivingDate,
-      amountCents,
-      months,
-    })];
+    const rows = [];
+    let receivingDate = firstReceivingDate;
+    let birthDate = projectedBirthDate;
+    const projectedLitterDates = [...litterDates];
+
+    for (let index = 0; index < 24 && receivingDate && receivingDate < endDate; index += 1) {
+      const adjustedBirthDate = adjustProjectedLitterBirthDate(birthDate, projectedLitterDates);
+      if (!adjustedBirthDate) break;
+      const adjustedReceivingDate = addPlanningMonthsAndDays(adjustedBirthDate, 4, 15);
+      if (!adjustedReceivingDate) break;
+
+      if (adjustedReceivingDate >= startDate) {
+        const monthKey = planningMonthKeyFromDate(adjustedReceivingDate);
+        if (monthKeys.has(monthKey)) {
+          const isConfirmedForecast = status === "CONFIRMADO" || status === "NAO_CONFIRMADO";
+          const referenceLabel = index === 0 ? baseLabel : "nascimento projetado";
+          const referenceDate = index === 0
+            ? (isConfirmedForecast ? projectedBirthDate : baseDate)
+            : adjustedBirthDate;
+          rows.push(makePlanningReferenceRow({
+            key: `kitten-forecast-${female.id}-${index + 1}`,
+            type: "kitten-forecast",
+            typeLabel: "Filhotes a nascer",
+            group: "kittenForecast",
+            description: cleanPlanningCatName(female),
+            details: [
+              statusLabelForPlanning(status),
+              `${referenceLabel}: ${formatDateOnlyLabel(referenceDate)}`,
+              `Recebimento previsto: ${formatDateOnlyLabel(adjustedReceivingDate)}`,
+              `${config.kittensPerLitter} filhotes x ${formatCurrency(config.kittenValueCents)}`,
+            ],
+            date: adjustedReceivingDate,
+            amountCents,
+            months,
+          }));
+        }
+      }
+
+      projectedLitterDates.push(adjustedBirthDate);
+      projectedLitterDates.sort((a, b) => a - b);
+      receivingDate = addPlanningMonthsAndDays(adjustedReceivingDate, 6, 15);
+      birthDate = addPlanningMonthsAndDays(receivingDate, -4, -15);
+    }
+
+    return rows;
   });
 }
 
