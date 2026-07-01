@@ -644,15 +644,36 @@ async function loadFinancialPlanningKittenForecastRows(prisma, req, months, conf
 
     if (!firstReceivingDate || !projectedBirthDate) return [];
 
-    const rows = [];
+    const forecastRow = {
+      key: `kitten-forecast-${female.id}`,
+      type: "kitten-forecast",
+      typeLabel: "Filhotes a nascer",
+      group: "kittenForecast",
+      description: cleanPlanningCatName(female),
+      details: [
+        statusLabelForPlanning(status),
+        `${config.kittensPerLitter} filhotes x ${formatCurrency(config.kittenValueCents)}`,
+      ],
+      overdue: false,
+      overdueMonthKey: "",
+      dateLabel: "",
+      dateTime: Number.POSITIVE_INFINITY,
+      values: emptyPlanningReferenceValues(months),
+    };
+    let forecastCount = 0;
+    let firstForecastDate = null;
     let receivingDate = firstReceivingDate;
     let birthDate = projectedBirthDate;
     const projectedLitterDates = [...litterDates];
 
     for (let index = 0; index < 24 && receivingDate && receivingDate < endDate; index += 1) {
+      const candidateBirthDate = parsePlanningDate(birthDate);
       const adjustedBirthDate = adjustProjectedLitterBirthDate(birthDate, projectedLitterDates);
       if (!adjustedBirthDate) break;
-      const adjustedReceivingDate = addPlanningMonthsAndDays(adjustedBirthDate, 4, 15);
+      const birthWasAdjusted = candidateBirthDate && adjustedBirthDate.getTime() !== candidateBirthDate.getTime();
+      const adjustedReceivingDate = birthWasAdjusted
+        ? addPlanningMonthsAndDays(adjustedBirthDate, 4, 15)
+        : receivingDate;
       if (!adjustedReceivingDate) break;
 
       if (adjustedReceivingDate >= startDate) {
@@ -663,32 +684,29 @@ async function loadFinancialPlanningKittenForecastRows(prisma, req, months, conf
           const referenceDate = index === 0
             ? (isConfirmedForecast ? projectedBirthDate : baseDate)
             : adjustedBirthDate;
-          rows.push(makePlanningReferenceRow({
-            key: `kitten-forecast-${female.id}-${index + 1}`,
-            type: "kitten-forecast",
-            typeLabel: "Filhotes a nascer",
-            group: "kittenForecast",
-            description: cleanPlanningCatName(female),
-            details: [
-              statusLabelForPlanning(status),
-              `${referenceLabel}: ${formatDateOnlyLabel(referenceDate)}`,
-              `Recebimento previsto: ${formatDateOnlyLabel(adjustedReceivingDate)}`,
-              `${config.kittensPerLitter} filhotes x ${formatCurrency(config.kittenValueCents)}`,
-            ],
-            date: adjustedReceivingDate,
-            amountCents,
-            months,
-          }));
+          forecastRow.values[monthKey] += amountCents;
+          forecastRow.details.push(
+            `${referenceLabel}: ${formatDateOnlyLabel(referenceDate)} · recebimento: ${formatDateOnlyLabel(adjustedReceivingDate)}`
+          );
+          forecastCount += 1;
+          if (!firstForecastDate || adjustedReceivingDate < firstForecastDate) {
+            firstForecastDate = adjustedReceivingDate;
+          }
+          if (adjustedReceivingDate && adjustedReceivingDate.getTime() < forecastRow.dateTime) {
+            forecastRow.dateTime = adjustedReceivingDate.getTime();
+          }
         }
       }
 
       projectedLitterDates.push(adjustedBirthDate);
       projectedLitterDates.sort((a, b) => a - b);
       receivingDate = addPlanningMonthsAndDays(adjustedReceivingDate, 6, 15);
-      birthDate = addPlanningMonthsAndDays(receivingDate, -4, -15);
+      birthDate = addPlanningMonthsAndDays(adjustedBirthDate, 6, 15);
     }
 
-    return rows;
+    if (!forecastCount) return [];
+    forecastRow.dateLabel = firstForecastDate ? formatDateOnlyLabel(firstForecastDate) : "-";
+    return [forecastRow];
   });
 }
 
