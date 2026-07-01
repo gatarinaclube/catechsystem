@@ -74,8 +74,8 @@
                       </small>
                     </span>
                     <span style="display:flex; align-items:center; gap:8px;">
-                      <span class="status-pill <%= payable.status === 'PAID' ? 'is-green' : 'is-yellow' %>">
-                        <%= payable.status === 'PAID' ? 'Pago' : 'Pendente' %>
+                      <span class="status-pill <%= payable.statusClass || (payable.status === 'PAID' ? 'is-green' : 'is-yellow') %>">
+                        <%= payable.statusLabel || (payable.status === 'PAID' ? 'Pago' : 'Pendente') %>
                       </span>
                       <form method="post" action="/administrativo/contas-a-pagar/<%= payable.id %>/delete" onsubmit="event.stopPropagation(); return confirm('Excluir esta conta a pagar?');" onclick="event.stopPropagation();">
                         <button class="record-delete-button" type="submit" title="Excluir conta a pagar" aria-label="Excluir conta a pagar" onclick="event.stopPropagation();">🗑</button>

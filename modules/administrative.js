@@ -51,6 +51,11 @@ function parseDateInput(value) {
   return year && month && day ? new Date(Date.UTC(year, month - 1, day)) : new Date();
 }
 
+function todayUtc() {
+  const [year, month, day] = todayForInput().split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
 function addMonths(date, amount) {
   const next = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + amount, date.getUTCDate()));
   if (next.getUTCDate() !== date.getUTCDate()) {
@@ -320,7 +325,26 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     };
   }
 
+  function payableStatusView(row) {
+    if (row.status === "PAID") {
+      return { label: "Pago", className: "is-green" };
+    }
+    const dueDate = row.dueDate ? new Date(row.dueDate) : null;
+    const today = todayUtc();
+    const nextTenDays = new Date(today);
+    nextTenDays.setUTCDate(nextTenDays.getUTCDate() + 10);
+
+    if (dueDate && dueDate < today) {
+      return { label: "Vencida", className: "is-red" };
+    }
+    if (dueDate && dueDate <= nextTenDays) {
+      return { label: "Pendente", className: "is-yellow" };
+    }
+    return { label: "Prevista", className: "is-blue" };
+  }
+
   function mapPayable(row) {
+    const statusView = payableStatusView(row);
     return {
       ...row,
       amount: formatAmount(row.amountCents),
@@ -328,6 +352,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       dueDateInput: formatDateInput(row.dueDate),
       dueDateLabel: formatDateLabel(row.dueDate),
       paidAtLabel: row.paidAt ? formatDateLabel(row.paidAt) : "",
+      statusLabel: statusView.label,
+      statusClass: statusView.className,
     };
   }
 
@@ -1156,7 +1182,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         await ensureFixedPayableWindow(prisma, seed);
       }
 
-      res.redirect("/administrativo/contas-a-pagar?ok=1");
+      res.redirect("/despesas?ok=1");
     }
   );
 
