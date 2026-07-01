@@ -841,27 +841,50 @@ async function loadFinancialPlanningReferenceRows(prisma, req, months, config) {
     }
   });
 
-  const payableRows = payables.flatMap((payable) => {
+  const payableMap = new Map();
+  payables.forEach((payable) => {
     const target = planningReferenceMonthTarget(payable.dueDate, months, startDate, endDate, monthKeys);
-    if (!target) return [];
-    return [makePlanningReferenceRow({
-      key: `payable-${payable.id}`,
-      type: "payable",
-      typeLabel: "Contas a pagar",
-      group: payable.isFixed ? "payableFixed" : "payableVariable",
-      description: payable.supplier || "Empresa não informada",
-      details: [
-        payable.description || payable.category || "Conta a pagar",
-        payable.supplier,
-        payable.category && payable.description ? payable.category : "",
-      ],
-      date: payable.dueDate,
-      amountCents: payable.amountCents,
-      months,
-      targetMonthKey: target.monthKey,
-      overdue: target.overdue,
-    })];
+    if (!target) return;
+    const supplierKey = (payable.supplier || "Empresa não informada").trim().toLowerCase();
+    const group = payable.isFixed ? "payableFixed" : "payableVariable";
+    const key = `payable-${group}-${supplierKey}`;
+    if (!payableMap.has(key)) {
+      payableMap.set(key, {
+        key,
+        type: "payable",
+        typeLabel: "Contas a pagar",
+        group,
+        description: payable.supplier || "Empresa não informada",
+        details: [],
+        overdue: false,
+        overdueMonthKey: "",
+        dateLabel: "",
+        dateTime: Number.POSITIVE_INFINITY,
+        values: emptyPlanningReferenceValues(months),
+      });
+    }
+    const row = payableMap.get(key);
+    row.values[target.monthKey] += Number(payable.amountCents || 0);
+    const dueDateTime = payable.dueDate ? new Date(payable.dueDate).getTime() : 0;
+    if (dueDateTime && dueDateTime < row.dateTime) {
+      row.dateTime = dueDateTime;
+      row.dateLabel = formatDateOnlyLabel(payable.dueDate);
+    }
+    if (target.overdue) {
+      row.overdue = true;
+      row.overdueMonthKey = target.monthKey;
+    }
+    row.details.push([
+      formatDateOnlyLabel(payable.dueDate),
+      payable.description || payable.category || "Conta a pagar",
+      formatCurrency(payable.amountCents),
+      payable.category && payable.description ? payable.category : "",
+    ].filter(Boolean).join(" · "));
   });
+  const payableRows = Array.from(payableMap.values()).map((row) => ({
+    ...row,
+    dateLabel: row.dateLabel || "-",
+  }));
 
   return [
     ...sortPlanningReferenceRows(expectedRevenueRows),
