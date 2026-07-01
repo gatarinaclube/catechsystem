@@ -45,6 +45,12 @@ function formatDateLabel(date) {
   return `${day}/${month}/${year}`;
 }
 
+function formatMonthInput(date) {
+  const value = new Date(date);
+  if (Number.isNaN(value.getTime())) return todayForInput().slice(0, 7);
+  return `${value.getUTCFullYear()}-${String(value.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
 function parseDateInput(value) {
   const text = String(value || todayForInput()).slice(0, 10);
   const [year, month, day] = text.split("-").map(Number);
@@ -1017,8 +1023,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       await ensureFixedPayablesWindow(prisma, supplierScope(req));
       const [payables, suppliers, categories, paymentMethods] = await Promise.all([
         prisma.accountPayable.findMany({
-          where: supplierScope(req),
-          orderBy: [{ status: "asc" }, { dueDate: "asc" }],
+          where: {
+            ...supplierScope(req),
+            status: "PENDING",
+          },
+          orderBy: [{ dueDate: "asc" }],
           take: 300,
         }),
         loadSupplierRows(req),
@@ -1182,7 +1191,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         await ensureFixedPayableWindow(prisma, seed);
       }
 
-      res.redirect("/despesas?ok=1");
+      res.redirect(`/despesas?month=${encodeURIComponent(formatMonthInput(paidAt))}&ok=1`);
     }
   );
 
