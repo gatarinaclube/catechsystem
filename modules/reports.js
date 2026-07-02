@@ -2926,6 +2926,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requireAuth,
     requirePermission("admin.reports"),
     async (req, res) => {
+      const wantsJson = req.xhr || req.get("accept")?.includes("application/json") || req.get("x-requested-with") === "fetch";
       try {
         const { registrationStatus, kittenRows, summaryIds } = normalizeReservationSavePayload(req.body);
 
@@ -2984,9 +2985,15 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           }
         }
 
+        if (wantsJson) {
+          return res.json({ ok: true });
+        }
         res.redirect("/reports/resumo-reserva-pagamento?ok=1");
       } catch (err) {
         console.error("Erro ao salvar resumo reserva/pagamento:", err);
+        if (wantsJson) {
+          return res.status(500).json({ ok: false, error: "Erro ao salvar resumo." });
+        }
         res.redirect(`/reports/resumo-reserva-pagamento?error=${encodeURIComponent("Erro ao salvar resumo.")}`);
       }
     }

@@ -125,6 +125,22 @@
         align-items: center;
         gap: 5px;
       }
+      .reservation-autosave-status {
+        min-height: 20px;
+        color: #64748b;
+        font-weight: 700;
+        font-size: 0.88rem;
+        text-align: right;
+      }
+      .reservation-autosave-status.is-saving {
+        color: #a16207;
+      }
+      .reservation-autosave-status.is-saved {
+        color: #15803d;
+      }
+      .reservation-autosave-status.is-error {
+        color: #b91c1c;
+      }
       .reservation-kitten-name {
         display: inline-flex;
         align-items: center;
@@ -309,7 +325,7 @@
           </form>
         </section>
 
-        <form method="post" action="/reports/resumo-reserva-pagamento/save">
+        <form id="reservationSaveForm" method="post" action="/reports/resumo-reserva-pagamento/save">
           <section class="content-card reservation-report-card">
             <div class="report-summary">
               <div>
@@ -317,7 +333,7 @@
                 <div class="content-sub"><%= summaries.length %> ninhada(s) adicionada(s).</div>
               </div>
               <% if (summaries.length) { %>
-                <button class="btn btn-primary" type="submit">Salvar alterações</button>
+                <div class="reservation-autosave-status" id="reservationAutosaveStatus" aria-live="polite">Salvamento automático ativo</div>
               <% } %>
             </div>
 
@@ -495,9 +511,6 @@
                   <% }) %>
                 </details>
               <% } %>
-              <div class="actions" style="justify-content:flex-end; margin-top:14px;">
-                <button class="btn btn-primary" type="submit">Salvar alterações</button>
-              </div>
             <% } %>
           </section>
         </form>
@@ -530,6 +543,67 @@
         };
         select.addEventListener("change", updateWarning);
         updateWarning();
+      });
+
+      const reservationSaveForm = document.getElementById("reservationSaveForm");
+      const autosaveStatus = document.getElementById("reservationAutosaveStatus");
+      let autosaveTimer = null;
+      let autosaveSequence = 0;
+
+      const setAutosaveStatus = (message, className) => {
+        if (!autosaveStatus) return;
+        autosaveStatus.textContent = message;
+        autosaveStatus.classList.remove("is-saving", "is-saved", "is-error");
+        if (className) autosaveStatus.classList.add(className);
+      };
+
+      const isCompleteDateField = (field) => {
+        if (field.type !== "date") return true;
+        return !field.value || /^\d{4}-\d{2}-\d{2}$/.test(field.value);
+      };
+
+      const runAutosave = async () => {
+        if (!reservationSaveForm) return;
+        const sequence = ++autosaveSequence;
+        setAutosaveStatus("Salvando...", "is-saving");
+        try {
+          const response = await fetch(reservationSaveForm.action, {
+            method: "POST",
+            body: new FormData(reservationSaveForm),
+            headers: {
+              "Accept": "application/json",
+              "X-Requested-With": "fetch",
+            },
+          });
+          if (!response.ok) throw new Error("Falha ao salvar");
+          if (sequence === autosaveSequence) {
+            setAutosaveStatus("Salvo", "is-saved");
+          }
+        } catch (err) {
+          if (sequence === autosaveSequence) {
+            setAutosaveStatus("Não foi possível salvar automaticamente.", "is-error");
+          }
+        }
+      };
+
+      const scheduleAutosave = (field, delay = 650) => {
+        if (!field || !reservationSaveForm || !reservationSaveForm.contains(field)) return;
+        if (!isCompleteDateField(field)) return;
+        clearTimeout(autosaveTimer);
+        autosaveTimer = setTimeout(runAutosave, delay);
+      };
+
+      reservationSaveForm?.querySelectorAll(".reservation-input, .reservation-select").forEach((field) => {
+        if (field.type === "date") {
+          field.addEventListener("change", () => scheduleAutosave(field, 0));
+          return;
+        }
+        if (field.tagName === "SELECT") {
+          field.addEventListener("change", () => scheduleAutosave(field, 0));
+          return;
+        }
+        field.addEventListener("input", () => scheduleAutosave(field));
+        field.addEventListener("change", () => scheduleAutosave(field, 0));
       });
 
       const tableWrap = document.getElementById("reservationTableWrap");

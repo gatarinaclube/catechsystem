@@ -125,6 +125,16 @@
       : "";
   }
 
+  function moveHiddenLittersToEnd() {
+    Array.from(root.querySelectorAll("[data-litter]"))
+      .sort((a, b) => {
+        const hiddenA = getValue(field(a, "published")) === false;
+        const hiddenB = getValue(field(b, "published")) === false;
+        return Number(hiddenA) - Number(hiddenB);
+      })
+      .forEach((litter) => root.appendChild(litter));
+  }
+
   function addParentPreview(litter, type, url) {
     const grid = litter.querySelector(`[data-parent-photo-grid="${type}"]`);
     if (!grid || !url) return;
@@ -160,9 +170,7 @@
     const hideButton = litter.querySelector("[data-hide-litter]");
     if (hideButton) hideButton.textContent = published ? "Ocultar" : "Reativar";
 
-    if (!published && options.move !== false) {
-      root.appendChild(litter);
-    }
+    if (options.move !== false) moveHiddenLittersToEnd();
 
     setCollapsedControls(litter, !published);
     syncLitterSummary(litter);
@@ -599,6 +607,7 @@
     const kittens = data?.kittens && data.kittens.length ? data.kittens : [{ sex: "M", available: true, photos: [] }];
     kittens.forEach((kitten) => addKitten(node, kitten));
     syncLitterVisibility(node, { move: false });
+    moveHiddenLittersToEnd();
     updateTitles();
     syncLitterLimit();
   }
