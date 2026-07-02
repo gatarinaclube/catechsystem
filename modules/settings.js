@@ -79,6 +79,89 @@ function parseNullableInteger(value) {
   return Math.floor(number);
 }
 
+function normalizeMicrochip(value) {
+  return value ? String(value).replace(/\D/g, "").slice(0, 15) : "";
+}
+
+function formatMicrochipDisplay(value) {
+  const digits = normalizeMicrochip(value);
+  return digits.replace(/(\d{3})(?=\d)/g, "$1.");
+}
+
+function microchipsFromText(value) {
+  const text = String(value || "");
+  const found = new Set();
+  const compactLines = text
+    .split(/[\n,;]+/)
+    .map((token) => normalizeMicrochip(token))
+    .filter((token) => token.length === 15);
+
+  compactLines.forEach((token) => found.add(token));
+  (text.match(/\d[\d.\-\s]{13,}\d/g) || []).forEach((match) => {
+    const digits = normalizeMicrochip(match);
+    if (digits.length === 15) found.add(digits);
+  });
+
+  return Array.from(found);
+}
+
+function microchipsFromSequence(startValue, endValue) {
+  const start = normalizeMicrochip(startValue);
+  const end = normalizeMicrochip(endValue);
+  if (start.length !== 15 || end.length !== 15) return [];
+
+  const startNumber = BigInt(start);
+  const endNumber = BigInt(end);
+  if (endNumber < startNumber) return [];
+
+  const count = endNumber - startNumber + 1n;
+  if (count > 500n) {
+    const error = new Error("Inclua no máximo 500 microchips por sequência.");
+    error.code = "MICROCHIP_SEQUENCE_LIMIT";
+    throw error;
+  }
+
+  const list = [];
+  for (let current = startNumber; current <= endNumber; current += 1n) {
+    list.push(current.toString().padStart(15, "0"));
+  }
+  return list;
+}
+
+async function loadMicrochipInventory(prisma, userId) {
+  return prisma.$queryRaw`
+    SELECT
+      inv."id",
+      inv."microchip",
+      inv."linkedCatId",
+      inv."linkedKittenId",
+      inv."createdAt",
+      cat."name" AS "catName",
+      cat."kittenNumber" AS "kittenNumber"
+    FROM "UserMicrochipInventory" inv
+    LEFT JOIN "Cat" cat ON cat."id" = inv."linkedCatId"
+    WHERE inv."userId" = ${userId}
+      AND inv."deletedAt" IS NULL
+    ORDER BY inv."microchip" ASC
+  `;
+}
+
+async function microchipAlreadyExists(prisma, microchip) {
+  const [cat, publicRegistration, inventoryRows] = await Promise.all([
+    prisma.cat.findUnique({ where: { microchip }, select: { id: true } }),
+    prisma.publicMicrochipRegistration.findUnique({ where: { microchip }, select: { id: true } }),
+    prisma.$queryRaw`
+      SELECT "id"
+      FROM "UserMicrochipInventory"
+      WHERE "microchip" = ${microchip}
+        AND "deletedAt" IS NULL
+      LIMIT 1
+    `,
+  ]);
+
+  return Boolean(cat || publicRegistration || inventoryRows.length);
+}
+
 function buildAbsoluteUrl(req, path) {
   const host = req.get("host");
   const protocol = req.get("x-forwarded-proto") || req.protocol || "https";
@@ -237,11 +320,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         req.session.initialSettingsSaved = true;
       }
       const modulePreferenceRows = modulePreferenceRowsForRole(req.session.userRole, settings.modulePreferences);
+      const microchipInventory = await loadMicrochipInventory(prisma, req.session.userId);
 
       res.render("settings/index", {
         user: req.user,
         currentPath: req.path,
         settings,
+        microchipInventory,
+        formatMicrochipDisplay,
         initialSetupRequired,
         showQuickFinanceLinks,
         expensePublicLink: expensePublicToken ? buildAbsoluteUrl(req, `/despesas/u/${expensePublicToken}`) : "",
@@ -252,6 +338,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         canUseVaccineNotifications,
         modulePreferenceRows,
         success: req.query.saved === "1",
+        microchipSuccess: req.query.microchips === "1",
+        microchipMessage: req.query.microchipMessage || "",
         error: null,
       });
     } catch (err) {
@@ -524,6 +612,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         user: req.user,
         currentPath: "/settings",
         settings,
+        microchipInventory: [],
+        formatMicrochipDisplay,
         initialSetupRequired: !savedSettingsBefore,
         showQuickFinanceLinks,
         expensePublicLink,
@@ -534,10 +624,75 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         canUseVaccineNotifications,
         modulePreferenceRows: modulePreferenceRowsForRole(req.session.userRole, settings.modulePreferences),
         success: false,
+        microchipSuccess: false,
+        microchipMessage: "",
         error: "Erro ao salvar configurações.",
       });
     }
   });
+
+  router.post(
+    "/settings/microchips",
+    requireAuth,
+    requirePermission("admin.settings"),
+    async (req, res) => {
+      try {
+        const textMicrochips = microchipsFromText(req.body.microchipNumbers);
+        const sequenceMicrochips = microchipsFromSequence(req.body.microchipStart, req.body.microchipEnd);
+        const microchips = Array.from(new Set([...textMicrochips, ...sequenceMicrochips]));
+
+        if (!microchips.length) {
+          return res.redirect("/settings?microchipMessage=Informe pelo menos um microchip com 15 dígitos.");
+        }
+
+        let inserted = 0;
+        let skipped = 0;
+        for (const microchip of microchips) {
+          if (await microchipAlreadyExists(prisma, microchip)) {
+            skipped += 1;
+            continue;
+          }
+
+          await prisma.$executeRaw`
+            INSERT INTO "UserMicrochipInventory" ("userId", "microchip", "updatedAt")
+            VALUES (${req.session.userId}, ${microchip}, CURRENT_TIMESTAMP)
+          `;
+          inserted += 1;
+        }
+
+        const message = encodeURIComponent(
+          `${inserted} microchip(s) incluído(s).${skipped ? ` ${skipped} ignorado(s) por já existirem.` : ""}`
+        );
+        return res.redirect(`/settings?microchips=1&microchipMessage=${message}`);
+      } catch (err) {
+        console.error("Erro ao incluir microchips:", err);
+        return res.redirect(`/settings?microchipMessage=${encodeURIComponent(err.message || "Erro ao incluir microchips.")}`);
+      }
+    }
+  );
+
+  router.post(
+    "/settings/microchips/:id/delete",
+    requireAuth,
+    requirePermission("admin.settings"),
+    async (req, res) => {
+      try {
+        await prisma.$executeRaw`
+          UPDATE "UserMicrochipInventory"
+          SET "deletedAt" = CURRENT_TIMESTAMP,
+              "linkedCatId" = NULL,
+              "linkedKittenId" = NULL,
+              "updatedAt" = CURRENT_TIMESTAMP
+          WHERE "id" = ${Number(req.params.id)}
+            AND "userId" = ${req.session.userId}
+        `;
+        return res.redirect("/settings?microchips=1&microchipMessage=Microchip removido da lista.");
+      } catch (err) {
+        console.error("Erro ao excluir microchip:", err);
+        return res.redirect("/settings?microchipMessage=Erro ao excluir microchip.");
+      }
+    }
+  );
 
   return router;
 };

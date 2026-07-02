@@ -164,7 +164,7 @@
             <div class="microchip-form-grid">
               <label>Status do cadastro
                 <select name="status">
-                  <% Object.keys(statusLabels).forEach((status) => { %>
+                  <% Object.keys(statusLabels).filter((status) => status !== 'RESERVED').forEach((status) => { %>
                     <option value="<%= status %>" <%= editingAnimal.status === status ? 'selected' : '' %>><%= statusLabels[status] %></option>
                   <% }) %>
                 </select>

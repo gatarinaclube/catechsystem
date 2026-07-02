@@ -252,6 +252,17 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const kittens = litter?.kittens?.length
       ? litter.kittens
       : [];
+    const currentMicrochips = new Set(kittens.map((kitten) => normalizeMicrochip(kitten.microchip)).filter(Boolean));
+    const microchipInventoryRows = await prisma.$queryRaw`
+      SELECT "microchip", "linkedCatId", "linkedKittenId"
+      FROM "UserMicrochipInventory"
+      WHERE "userId" = ${ownerIdForSettings}
+        AND "deletedAt" IS NULL
+      ORDER BY "microchip" ASC
+    `;
+    const availableMicrochips = microchipInventoryRows
+      .filter((row) => !row.linkedCatId || currentMicrochips.has(row.microchip))
+      .map((row) => row.microchip);
     const selectedBreeds = selectedBreedsFromSettings(ownerSettings, [
       litter?.litterBreed,
       ...kittens.map((kitten) => kitten.breed),
@@ -275,6 +286,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       deadAfterBirthCauses: parseJsonArray(litter?.deadAfterBirthCausesJson),
       litter,
       kittens,
+      availableMicrochips,
       catteryName,
       kittenNameMaxLength,
       error,
@@ -282,7 +294,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     };
   }
 
-  async function ensureUniqueMicrochips(kittens, currentLitterId = null) {
+  async function ensureUniqueMicrochips(kittens, currentLitterId = null, ownerId = null) {
     const seen = new Set();
     for (const kitten of kittens) {
       const mc = normalizeMicrochip(kitten.microchip);
@@ -307,6 +319,30 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         const error = new Error(`O microchip ${mc} já está cadastrado em outro gato.`);
         error.code = "DUPLICATE_CAT_MICROCHIP";
         throw error;
+      }
+
+      const publicRegistration = await prisma.publicMicrochipRegistration.findUnique({
+        where: { microchip: mc },
+        select: { id: true },
+      });
+      if (publicRegistration) {
+        const error = new Error(`O microchip ${mc} já está cadastrado no sistema público.`);
+        error.code = "DUPLICATE_PUBLIC_MICROCHIP";
+        throw error;
+      }
+
+      if (ownerId) {
+        const inventoryRows = await prisma.$queryRaw`
+          SELECT "userId"
+          FROM "UserMicrochipInventory"
+          WHERE "microchip" = ${mc}
+            AND "deletedAt" IS NULL
+        `;
+        if (inventoryRows.some((row) => Number(row.userId) !== Number(ownerId))) {
+          const error = new Error(`O microchip ${mc} já está reservado por outro usuário.`);
+          error.code = "DUPLICATE_INVENTORY_MICROCHIP";
+          throw error;
+        }
       }
     }
 
@@ -421,6 +457,47 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     return created.id;
   }
 
+  async function syncMicrochipInventoryForLitter(tx, ownerId, persistedKittens, removedKittens = []) {
+    for (const kitten of [...persistedKittens, ...removedKittens]) {
+      if (kitten.id) {
+        await tx.$executeRaw`
+          UPDATE "UserMicrochipInventory"
+          SET "linkedCatId" = NULL,
+              "linkedKittenId" = NULL,
+              "updatedAt" = CURRENT_TIMESTAMP
+          WHERE "userId" = ${ownerId}
+            AND "linkedKittenId" = ${kitten.id}
+            AND "deletedAt" IS NULL
+        `;
+      }
+      if (kitten.kittenCatId) {
+        await tx.$executeRaw`
+          UPDATE "UserMicrochipInventory"
+          SET "linkedCatId" = NULL,
+              "linkedKittenId" = NULL,
+              "updatedAt" = CURRENT_TIMESTAMP
+          WHERE "userId" = ${ownerId}
+            AND "linkedCatId" = ${kitten.kittenCatId}
+            AND "deletedAt" IS NULL
+        `;
+      }
+    }
+
+    for (const kitten of persistedKittens) {
+      const microchip = normalizeMicrochip(kitten.microchip);
+      if (!microchip) continue;
+      await tx.$executeRaw`
+        UPDATE "UserMicrochipInventory"
+        SET "linkedCatId" = ${kitten.kittenCatId || null},
+            "linkedKittenId" = ${kitten.id || null},
+            "updatedAt" = CURRENT_TIMESTAMP
+        WHERE "userId" = ${ownerId}
+          AND "microchip" = ${microchip}
+          AND "deletedAt" IS NULL
+      `;
+    }
+  }
+
   async function persistLitter(tx, payload, existingLitter = null) {
     const motherCat = payload.femaleCatId
       ? await tx.cat.findUnique({ where: { id: payload.femaleCatId } })
@@ -464,6 +541,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
     const existingIds = new Set((existingLitter?.kittens || []).map((kitten) => kitten.id));
     const keptIds = new Set();
+    const persistedKittens = [];
+    const removedKittens = [];
 
     for (const kitten of payload.kittens) {
       const kittenCatId = await syncKittenCat(tx, litter, kitten, motherCat, fatherCat);
@@ -487,6 +566,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           where: { id: kitten.existingId },
           data: kittenData,
         });
+        persistedKittens.push({ id: kitten.existingId, kittenCatId, microchip: kitten.microchip });
       } else {
         const created = await tx.litterKitten.create({
           data: {
@@ -495,18 +575,22 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           },
         });
         keptIds.add(created.id);
+        persistedKittens.push({ id: created.id, kittenCatId, microchip: kitten.microchip });
       }
     }
 
     for (const existingId of existingIds) {
       if (!keptIds.has(existingId)) {
         const kitten = existingLitter.kittens.find((item) => item.id === existingId);
+        removedKittens.push({ id: existingId, kittenCatId: kitten?.kittenCatId || null });
         if (kitten?.kittenCatId) {
           await tx.cat.delete({ where: { id: kitten.kittenCatId } });
         }
         await tx.litterKitten.delete({ where: { id: existingId } });
       }
     }
+
+    await syncMicrochipInventoryForLitter(tx, litter.ownerId, persistedKittens, removedKittens);
 
     return litter;
   }
@@ -564,7 +648,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           kittenNameMaxLength
         );
         await ensureLitterCreationLimits(req, kittens.length);
-        await ensureUniqueMicrochips(kittens);
+        await ensureUniqueMicrochips(kittens, null, req.session.userId);
         const deadAtBirthCount = Number(req.body.deadAtBirthCount || 0);
         const deadAfterBirthCount = Number(req.body.deadAfterBirthCount || 0);
         const deadAtBirthCauses = parseDeathCauses(
@@ -698,7 +782,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           req,
           Math.max(0, kittens.length - existingLitter.kittens.length)
         );
-        await ensureUniqueMicrochips(kittens, existingLitter.id);
+        await ensureUniqueMicrochips(kittens, existingLitter.id, existingLitter.ownerId || req.session.userId);
         const deadAtBirthCount = Number(req.body.deadAtBirthCount || 0);
         const deadAfterBirthCount = Number(req.body.deadAfterBirthCount || 0);
         const deadAtBirthCauses = parseDeathCauses(

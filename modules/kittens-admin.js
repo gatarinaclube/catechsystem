@@ -3,7 +3,6 @@ const fs = require("fs");
 const multer = require("multer");
 const path = require("path");
 const { dataOwnerScope } = require("../utils/access");
-const { ageInMonths, buildKittenRegisteredName, kittenFallbackDisplayName } = require("../utils/cattery-admin");
 const { getFileUploadLimit, validateFilesForRole } = require("../utils/planLimits");
 const { selectedBreedsFromSettings } = require("../utils/userPreferences");
 const {
@@ -177,6 +176,78 @@ function statusFlags(status) {
   };
 }
 
+function cleanNameToken(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function catteryNameCandidates(cat) {
+  const rawNames = [
+    cat?.catteryName,
+    cat?.litterKitten?.litter?.catteryName,
+    cat?.owner?.settings?.catteryName,
+  ].map(cleanNameToken).filter(Boolean);
+
+  const candidates = new Set();
+  rawNames.forEach((name) => {
+    candidates.add(name);
+    const withoutGatil = name.replace(/^gatil\s+/i, "").trim();
+    if (withoutGatil) candidates.add(withoutGatil);
+    const firstWord = withoutGatil.split(/\s+/)[0];
+    if (firstWord) candidates.add(firstWord);
+  });
+
+  return Array.from(candidates).sort((a, b) => b.length - a.length);
+}
+
+function stripCatteryFromName(value, cat) {
+  let name = cleanNameToken(value).replace(/^[A-Z]{2}\*\s*/i, "").trim();
+  if (!name) return "";
+
+  catteryNameCandidates(cat).forEach((candidate) => {
+    if (!name) return;
+    const lowerName = name.toLocaleLowerCase("pt-BR");
+    const lowerCandidate = candidate.toLocaleLowerCase("pt-BR");
+    if (lowerName === lowerCandidate) {
+      name = "";
+      return;
+    }
+    if (lowerName.startsWith(`${lowerCandidate} `) || lowerName.startsWith(lowerCandidate)) {
+      name = name.slice(candidate.length).trim();
+    }
+  });
+
+  if (/^[a-z]\s+[A-ZÀ-Ý]/.test(name)) {
+    name = name.slice(1).trim();
+  }
+
+  return name;
+}
+
+function kittenSexLabel(cat) {
+  const sex = String(cat?.gender || cat?.sex || cat?.litterKitten?.sex || "").toUpperCase();
+  if (sex === "M") return "Macho";
+  if (sex === "F") return "Fêmea";
+  return "Sem nome";
+}
+
+function kittenNameWithoutCattery(cat) {
+  const rawName = cleanNameToken(cat?.name);
+  if (!rawName || /^filhote\s+\d+$/i.test(rawName)) {
+    return kittenSexLabel(cat);
+  }
+  return stripCatteryFromName(rawName, cat) || kittenSexLabel(cat);
+}
+
+function kittenMotherNameWithoutCattery(cat) {
+  const motherName = (
+    cat?.mother?.name ||
+    cat?.motherName ||
+    cat?.litterKitten?.litter?.femaleName ||
+    ""
+  );
+  return stripCatteryFromName(motherName, cat) || "-";
+}
+
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
 
@@ -263,7 +334,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     };
   }
 
-  async function validateMicrochip(microchip, currentCatId = null) {
+  async function validateMicrochip(microchip, currentCatId = null, ownerId = null) {
     const digits = normalizeMicrochip(microchip);
     if (!digits) return null;
 
@@ -290,6 +361,30 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       throw error;
     }
 
+    const publicRegistration = await prisma.publicMicrochipRegistration.findUnique({
+      where: { microchip: digits },
+      select: { id: true },
+    });
+    if (publicRegistration) {
+      const error = new Error("Este microchip já está cadastrado no sistema público.");
+      error.code = "DUPLICATE_MICROCHIP";
+      throw error;
+    }
+
+    if (ownerId) {
+      const inventoryRows = await prisma.$queryRaw`
+        SELECT "userId"
+        FROM "UserMicrochipInventory"
+        WHERE "microchip" = ${digits}
+          AND "deletedAt" IS NULL
+      `;
+      if (inventoryRows.some((row) => Number(row.userId) !== Number(ownerId))) {
+        const error = new Error("Este microchip já está reservado por outro usuário.");
+        error.code = "DUPLICATE_MICROCHIP";
+        throw error;
+      }
+    }
+
     return digits;
   }
 
@@ -298,19 +393,15 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       cat.kittenNumber ||
       cat.litterKitten?.kittenNumber ||
       (cat.litterKitten?.index ? String(cat.litterKitten.index).padStart(4, "0") : "----");
-    const isNamedYoungLitterKitten = Boolean(cat.name && (cat.kittenNumber || cat.litterKitten) && ageInMonths(cat.birthDate) <= 4);
-    if (isNamedYoungLitterKitten) {
-      return [
-        linkedKittenNumber,
-        cat.name,
-        cat.mother?.name || cat.motherName || cat.litterKitten?.litter?.femaleName || "-",
-        formatMicrochip(cat.microchip),
-      ].join(" - ");
-    }
+    const name = kittenNameWithoutCattery(cat);
+    const mother = kittenMotherNameWithoutCattery(cat);
 
-    const displayName = buildKittenRegisteredName(cat) || kittenFallbackDisplayName(cat) || `${linkedKittenNumber} - ${cat.name || "Sem nome"}`;
-
-    return `${displayName} - ${formatMicrochip(cat.microchip)}`;
+    return [
+      linkedKittenNumber,
+      name,
+      mother,
+      formatMicrochip(cat.microchip),
+    ].join(" - ");
   }
 
   function getKittenOrderValue(cat) {
@@ -348,8 +439,40 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     });
   }
 
+  async function syncMicrochipInventoryForKitten(tx, ownerId, catId, litterKittenId, microchip) {
+    await tx.$executeRaw`
+      UPDATE "UserMicrochipInventory"
+      SET "linkedCatId" = NULL,
+          "linkedKittenId" = NULL,
+          "updatedAt" = CURRENT_TIMESTAMP
+      WHERE "userId" = ${ownerId}
+        AND "deletedAt" IS NULL
+        AND (
+          "linkedCatId" = ${catId}
+          OR ${litterKittenId ? true : false} AND "linkedKittenId" = ${litterKittenId || 0}
+        )
+    `;
+
+    const digits = normalizeMicrochip(microchip);
+    if (!digits) return;
+
+    await tx.$executeRaw`
+      UPDATE "UserMicrochipInventory"
+      SET "linkedCatId" = ${catId},
+          "linkedKittenId" = ${litterKittenId || null},
+          "updatedAt" = CURRENT_TIMESTAMP
+      WHERE "userId" = ${ownerId}
+        AND "microchip" = ${digits}
+        AND "deletedAt" IS NULL
+    `;
+  }
+
   async function parsePayload(req, existingKitten = null) {
-    const microchip = await validateMicrochip(req.body.microchip, existingKitten?.id || null);
+    const microchip = await validateMicrochip(
+      req.body.microchip,
+      existingKitten?.id || null,
+      existingKitten?.ownerId || req.session.userId
+    );
     const birthDate = req.body.birthDate ? new Date(req.body.birthDate) : null;
     const ownerLockedBySale = existingKitten?.ownershipSource === "SALE";
     const selectedOwnerClientId = req.body.currentOwnerClientId ? Number(req.body.currentOwnerClientId) : null;
@@ -603,6 +726,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             data,
           });
           await syncLitterKitten(tx, existingKitten.id, data);
+          await syncMicrochipInventoryForKitten(
+            tx,
+            existingKitten.ownerId || req.session.userId,
+            existingKitten.id,
+            existingKitten.litterKitten?.id || null,
+            data.microchip
+          );
           await syncDeathHistoryEntry(tx, existingKitten.id, updated);
         });
         if (shouldRemovePreviousContractFile) {

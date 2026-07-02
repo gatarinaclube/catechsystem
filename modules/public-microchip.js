@@ -46,6 +46,7 @@ const STATUS_LABELS = {
   MISSING: "Desaparecido",
   DECEASED: "Óbito",
   DELETED: "Cadastro excluído",
+  RESERVED: "Reservado",
 };
 
 function normalizeMicrochip(value) {
@@ -186,7 +187,17 @@ async function duplicateExists(prisma, microchip, currentId = null) {
     select: { id: true },
   });
 
-  return Boolean(internalCat);
+  if (internalCat) return true;
+
+  const inventoryRows = await prisma.$queryRaw`
+    SELECT "id"
+    FROM "UserMicrochipInventory"
+    WHERE "microchip" = ${microchip}
+      AND "deletedAt" IS NULL
+    LIMIT 1
+  `;
+
+  return Boolean(inventoryRows.length);
 }
 
 function normalizePublicEntry(registration) {
@@ -214,6 +225,20 @@ function normalizeInternalCatEntry(cat) {
     microchip: cat.microchip,
     status: cat.deceased ? "DECEASED" : "ACTIVE",
     updatedAt: cat.createdAt,
+  };
+}
+
+function normalizeInventoryEntry(item) {
+  return {
+    id: `inventory-${item.id}`,
+    source: "INVENTORY",
+    href: item.linkedCatId ? `/admin/microchips/gato/${item.linkedCatId}` : "",
+    ownerName: item.userName || "Usuário não identificado",
+    ownerEmail: item.userEmail || "",
+    animalName: item.catName || "Microchip reservado",
+    microchip: item.microchip,
+    status: item.linkedCatId ? "ACTIVE" : "RESERVED",
+    updatedAt: item.updatedAt || item.createdAt,
   };
 }
 
@@ -245,7 +270,7 @@ async function buildAdminMicrochipEntries(prisma, query) {
       }
     : { microchip: { not: null } };
 
-  const [publicRows, internalCats] = await Promise.all([
+  const [publicRows, internalCats, inventoryRows] = await Promise.all([
     prisma.publicMicrochipRegistration.findMany({
       where: publicWhere,
       orderBy: { updatedAt: "desc" },
@@ -257,11 +282,37 @@ async function buildAdminMicrochipEntries(prisma, query) {
       orderBy: { createdAt: "desc" },
       take: 100,
     }),
+    prisma.$queryRaw`
+      SELECT
+        inv."id",
+        inv."microchip",
+        inv."linkedCatId",
+        inv."createdAt",
+        inv."updatedAt",
+        u."name" AS "userName",
+        u."email" AS "userEmail",
+        cat."name" AS "catName"
+      FROM "UserMicrochipInventory" inv
+      JOIN "User" u ON u."id" = inv."userId"
+      LEFT JOIN "Cat" cat ON cat."id" = inv."linkedCatId"
+      WHERE inv."deletedAt" IS NULL
+        AND inv."linkedCatId" IS NULL
+        AND (
+          ${!hasQuery}
+          OR inv."microchip" LIKE ${`%${qDigits || q}%`}
+          OR u."name" ILIKE ${`%${q}%`}
+          OR u."email" ILIKE ${`%${q}%`}
+          OR cat."name" ILIKE ${`%${q}%`}
+        )
+      ORDER BY inv."updatedAt" DESC
+      LIMIT 100
+    `,
   ]);
 
   return [
     ...publicRows.map(normalizePublicEntry),
     ...internalCats.map(normalizeInternalCatEntry),
+    ...inventoryRows.map(normalizeInventoryEntry),
   ].sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
 }
 
@@ -418,9 +469,16 @@ module.exports = function publicMicrochipRouterFactory(prisma, requireAuth, requ
         where: { microchip },
         select: { id: true },
       });
+      const inventoryRows = found || internalCat ? [] : await prisma.$queryRaw`
+        SELECT "id"
+        FROM "UserMicrochipInventory"
+        WHERE "microchip" = ${microchip}
+          AND "deletedAt" IS NULL
+        LIMIT 1
+      `;
 
       return res.render("microchip/index", await renderOwnerArea(req, prisma, {
-        searchResult: found || internalCat ? "found" : "not-found",
+        searchResult: found || internalCat || inventoryRows.length ? "found" : "not-found",
         contactMicrochip: microchip,
       }));
     } catch (err) {

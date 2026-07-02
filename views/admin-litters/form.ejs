@@ -189,6 +189,7 @@
             </div>
 
             <div id="kittenRows" style="margin-top:16px;"></div>
+            <datalist id="availableMicrochipOptions"></datalist>
           </div>
 
           <div class="content-card" id="deadStatsCard" style="margin-bottom:18px;">
@@ -254,6 +255,7 @@
       const deathCausesAfterBirth = <%- JSON.stringify(deathCausesAfterBirth || []) %>;
       const currentDeadAtBirthCauses = <%- JSON.stringify(deadAtBirthCauses || []) %>;
       const currentDeadAfterBirthCauses = <%- JSON.stringify(deadAfterBirthCauses || []) %>;
+      const availableMicrochips = <%- JSON.stringify(availableMicrochips || []) %>;
       const lastEmsStorageKey = "catech:lastEmsCode";
       const kittens = <%- JSON.stringify(kittens.map((kitten) => ({
         ...kitten,
@@ -323,6 +325,27 @@
         let digits = input.value.replace(/\D/g, "").slice(0, 15);
         const groups = digits.match(/.{1,3}/g) || [];
         input.value = groups.join(".");
+      }
+
+      function normalizeMicrochipInput(value) {
+        return String(value || "").replace(/\D/g, "").slice(0, 15);
+      }
+
+      function refreshMicrochipOptions() {
+        const datalist = document.getElementById("availableMicrochipOptions");
+        if (!datalist) return;
+        const selected = new Set(
+          Array.from(document.querySelectorAll(".kitten-microchip"))
+            .map((input) => normalizeMicrochipInput(input.value))
+            .filter(Boolean)
+        );
+        datalist.innerHTML = availableMicrochips
+          .filter((microchip) => !selected.has(microchip))
+          .map((microchip) => {
+            const formatted = String(microchip).replace(/(\d{3})(?=\d)/g, "$1.");
+            return `<option value="${formatted}">${formatted}</option>`;
+          })
+          .join("");
       }
 
       function updateDeadBlocks() {
@@ -426,7 +449,7 @@
               </div>
               <div class="litter-kitten-field">
                 <label class="field-label">Microchip</label>
-                <input name="kitten_microchip_${i}" class="kitten-microchip" maxlength="19" inputmode="numeric" value="${kitten.microchip || ""}" />
+                <input name="kitten_microchip_${i}" class="kitten-microchip" list="availableMicrochipOptions" maxlength="19" inputmode="numeric" value="${kitten.microchip || ""}" />
                 <div class="section-note" style="margin-top:4px;">Obrigatório a partir de 4 meses.</div>
               </div>
               <div class="litter-kitten-field">
@@ -476,9 +499,13 @@
         });
 
         document.querySelectorAll(".kitten-microchip").forEach((input) => {
-          input.addEventListener("input", () => formatMicrochipInput(input));
+          input.addEventListener("input", () => {
+            formatMicrochipInput(input);
+            refreshMicrochipOptions();
+          });
           formatMicrochipInput(input);
         });
+        refreshMicrochipOptions();
 
         document.querySelectorAll('input[type="checkbox"][name^="kitten_deceased_"]').forEach((checkbox) => {
           checkbox.addEventListener("change", () => {

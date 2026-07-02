@@ -57,9 +57,17 @@
                     <td><%= item.ownerName %></td>
                     <td><%= item.animalName %></td>
                     <td><%= formatMicrochip(item.microchip) %></td>
-                    <td><%= item.source === 'INTERNAL' ? 'Cadastro interno' : 'Cadastro público' %></td>
+                    <td>
+                      <%= item.source === 'INTERNAL' ? 'Cadastro interno' : (item.source === 'INVENTORY' ? 'Estoque do usuário' : 'Cadastro público') %>
+                    </td>
                     <td><%= statusLabels[item.status] || item.status %></td>
-                    <td><a class="btn btn-light btn-sm" href="<%= item.href %>">Abrir</a></td>
+                    <td>
+                      <% if (item.href) { %>
+                        <a class="btn btn-light btn-sm" href="<%= item.href %>">Abrir</a>
+                      <% } else { %>
+                        <span class="content-sub">Reservado</span>
+                      <% } %>
+                    </td>
                   </tr>
                 <% }) %>
               </tbody>

@@ -233,9 +233,53 @@
         font-weight: 800;
         color: var(--text-main);
       }
+      .microchip-inventory-grid {
+        display: grid;
+        grid-template-columns: minmax(220px, 1fr) minmax(180px, 0.5fr) auto;
+        gap: 12px;
+        align-items: end;
+      }
+      .microchip-inventory-list {
+        display: grid;
+        gap: 8px;
+        margin-top: 14px;
+      }
+      .microchip-inventory-row {
+        display: grid;
+        grid-template-columns: minmax(160px, 220px) minmax(140px, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        padding: 9px 10px;
+        border: 1px solid var(--border-soft);
+        border-radius: 10px;
+        background: #ffffff;
+      }
+      .microchip-inventory-number {
+        font-weight: 900;
+        color: var(--text-main);
+      }
+      .microchip-inventory-status {
+        color: var(--text-muted);
+        font-size: 13px;
+      }
+      .microchip-inventory-status.is-linked {
+        color: #166534;
+        font-weight: 800;
+      }
+      .microchip-inventory-delete {
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        background: #fff1f2;
+        color: #b91c1c;
+        cursor: pointer;
+        padding: 7px 10px;
+        font-weight: 800;
+      }
       @media (max-width: 700px) {
         .breed-picker,
-        .logo-panel {
+        .logo-panel,
+        .microchip-inventory-grid,
+        .microchip-inventory-row {
           grid-template-columns: 1fr;
         }
         .plan-limit-table {
@@ -282,6 +326,71 @@
             <div class="content-sub"><%= error %></div>
           </div>
         <% } %>
+
+        <% if (typeof microchipMessage !== "undefined" && microchipMessage) { %>
+          <div class="content-card" style="border-left:4px solid <%= microchipSuccess ? '#16a34a' : '#f59e0b' %>; margin-bottom:18px;">
+            <div class="content-sub"><%= microchipMessage %></div>
+          </div>
+        <% } %>
+
+        <details class="content-card settings-panel">
+          <summary>
+            <div>
+              <div class="content-title">Estoque de microchips</div>
+              <div class="content-sub">Cadastre números comprados para selecionar depois no Registro de Ninhada.</div>
+            </div>
+          </summary>
+          <div class="settings-panel-body">
+            <form method="post" action="/settings/microchips">
+              <div class="field">
+                <label class="field-label" for="microchipNumbers">Números avulsos</label>
+                <textarea
+                  id="microchipNumbers"
+                  name="microchipNumbers"
+                  rows="4"
+                  placeholder="Informe um microchip por linha, com ou sem pontos."
+                ></textarea>
+                <div class="section-note">Cada número deve ter 15 dígitos. Duplicados serão ignorados.</div>
+              </div>
+              <div class="microchip-inventory-grid" style="margin-top:12px;">
+                <div class="field">
+                  <label class="field-label" for="microchipStart">Sequência inicial</label>
+                  <input id="microchipStart" name="microchipStart" type="text" maxlength="19" inputmode="numeric" placeholder="000.000.000.000.001" />
+                </div>
+                <div class="field">
+                  <label class="field-label" for="microchipEnd">Sequência final</label>
+                  <input id="microchipEnd" name="microchipEnd" type="text" maxlength="19" inputmode="numeric" placeholder="000.000.000.000.100" />
+                </div>
+                <button class="btn primary" type="submit">Adicionar</button>
+              </div>
+            </form>
+
+            <div class="content-sub" style="margin-top:18px;">
+              Microchips disponíveis podem ser selecionados em Ninhadas. Quando vinculados a um filhote, deixam de aparecer como disponíveis.
+            </div>
+            <div class="microchip-inventory-list">
+              <% if ((microchipInventory || []).length) { %>
+                <% microchipInventory.forEach(function(item) { %>
+                  <div class="microchip-inventory-row">
+                    <div class="microchip-inventory-number"><%= formatMicrochipDisplay(item.microchip) %></div>
+                    <div class="microchip-inventory-status <%= item.linkedCatId ? 'is-linked' : '' %>">
+                      <% if (item.linkedCatId) { %>
+                        Vinculado<%= item.kittenNumber ? ' ao filhote ' + item.kittenNumber : '' %><%= item.catName ? ' · ' + item.catName : '' %>
+                      <% } else { %>
+                        Disponível
+                      <% } %>
+                    </div>
+                    <form method="post" action="/settings/microchips/<%= item.id %>/delete" onsubmit="return confirm('Remover este microchip da lista? O cadastro do gato, se houver, não será alterado.');">
+                      <button class="microchip-inventory-delete" type="submit">Excluir</button>
+                    </form>
+                  </div>
+                <% }) %>
+              <% } else { %>
+                <div class="content-sub">Nenhum microchip incluído.</div>
+              <% } %>
+            </div>
+          </div>
+        </details>
 
         <form method="post" action="/settings" enctype="multipart/form-data">
           <% if (typeof showQuickFinanceLinks !== "undefined" && showQuickFinanceLinks) { %>
@@ -965,6 +1074,20 @@
         refreshMatingSupplementFields();
         refreshVeterinarianFields();
         refreshVaccineIntervals();
+
+        function formatMicrochip(value) {
+          return String(value || "")
+            .replace(/\D/g, "")
+            .slice(0, 15)
+            .replace(/(\d{3})(?=\d)/g, "$1.");
+        }
+        document.querySelectorAll("#microchipNumbers, #microchipStart, #microchipEnd").forEach((input) => {
+          input.addEventListener("input", () => {
+            if (input.tagName === "TEXTAREA") return;
+            input.value = formatMicrochip(input.value);
+          });
+          if (input.tagName !== "TEXTAREA") input.value = formatMicrochip(input.value);
+        });
       })();
     </script>
   </body>

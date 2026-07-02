@@ -93,6 +93,7 @@ model User {
   catTreatments             CatTreatment[]
   expenseSuppliers          ExpenseSupplier[]
   accountPayables           AccountPayable[]
+  microchipInventory        UserMicrochipInventory[]
   passwordResetTokens       PasswordResetToken[]
   academyEnrollments        AcademyEnrollment[]
   academyProgress           AcademyProgress[]
@@ -433,6 +434,23 @@ model UserSettings {
   modulePreferencesJson            String?
   createdAt                        DateTime @default(now())
   updatedAt                        DateTime @updatedAt
+}
+
+model UserMicrochipInventory {
+  id             Int       @id @default(autoincrement())
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         Int
+  microchip      String    @unique
+  linkedCat      Cat?      @relation(fields: [linkedCatId], references: [id], onDelete: SetNull)
+  linkedCatId    Int?
+  linkedKittenId Int?
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([userId, deletedAt])
+  @@index([linkedCatId])
+  @@index([linkedKittenId])
 }
 
 model VaccineReminderEmailLog {
@@ -993,6 +1011,7 @@ model Cat {
   examPlan           ExamPlan?
   historyEntries     CatHistoryEntry[]
   treatments         CatTreatment[]
+  reservedMicrochips UserMicrochipInventory[]
 
   status CatStatus @default(APROVADO)
 }
