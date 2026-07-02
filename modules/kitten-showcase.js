@@ -51,7 +51,7 @@ const ASSOCIATED_SHOWCASE_ROLES = new Set([
 function createUpload(role) {
   return multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 20 * 1024 * 1024, files: 80 },
+    limits: { fileSize: 50 * 1024 * 1024, files: 80 },
     fileFilter: (req, file, cb) => {
       const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
       const isAboutPdf = file.fieldname === "aboutPdf" && file.mimetype === "application/pdf";
@@ -89,6 +89,8 @@ async function compressShowcaseImage(file, limitBytes, limitLabel) {
     { width: Math.min(width, 1000), quality: 64 },
     { width: Math.min(width, 850), quality: 58 },
     { width: Math.min(width, 720), quality: 52 },
+    { width: Math.min(width, 640), quality: 46 },
+    { width: Math.min(width, 520), quality: 40 },
   ];
 
   let bestBuffer = null;
@@ -1017,7 +1019,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         try {
           return renderAdmin(req, res, {
             status: 413,
-            error: "Uma das imagens ultrapassa 20 MB. Envie uma foto menor para que a vitrine consiga reduzir automaticamente.",
+            error: "Uma das imagens ultrapassa 50 MB. Envie uma foto menor para que a vitrine consiga reduzir automaticamente.",
           });
         } catch (renderErr) {
           return next(renderErr);

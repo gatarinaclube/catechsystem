@@ -20,6 +20,7 @@
   const limits = window.__SHOWCASE_LIMITS__ || {};
   const uploadLimitBytes = Number(limits.uploadLimitBytes) || 5 * 1024 * 1024;
   const uploadLimitLabel = limits.uploadLimitLabel || "5 MB";
+  const maxCompressibleImageBytes = 50 * 1024 * 1024;
 
   function makeKey(prefix) {
     return `${prefix}_${Date.now()}_${Math.round(Math.random() * 100000)}`;
@@ -133,8 +134,12 @@
     const birthDate = getValue(field(litter, "birthDate"));
     const title = litter.querySelector("[data-litter-summary-title]");
     const subtitle = litter.querySelector("[data-litter-summary-sub]");
+    const compact = litter.querySelector("[data-litter-compact]");
     if (title) title.textContent = `${father} × ${mother}`;
     if (subtitle) subtitle.textContent = birthDate ? `Nascimento: ${birthDate}` : "Clique para editar esta ninhada";
+    if (compact) compact.textContent = birthDate
+      ? `${father} × ${mother} · nascimento ${birthDate}`
+      : `${father} × ${mother}`;
   }
 
   function setCollapsedControls(litter, collapsed) {
@@ -162,14 +167,135 @@
     syncLitterLimit();
   }
 
-  function filesAreWithinLimit(input) {
-    return Array.from(input.files || []).every((file) => file.size <= uploadLimitBytes);
+  function fileLimitForInput(file) {
+    if (file.type === "application/pdf") {
+      return { bytes: uploadLimitBytes, label: uploadLimitLabel };
+    }
+    return { bytes: maxCompressibleImageBytes, label: "50 MB" };
   }
 
-  function validateFiles(input) {
-    if (filesAreWithinLimit(input)) return true;
+  function filesAreWithinLimit(input) {
+    return Array.from(input.files || []).every((file) => {
+      const limit = fileLimitForInput(file);
+      return file.size <= limit.bytes;
+    });
+  }
+
+  function isCompressibleImage(file) {
+    return /^image\/(jpeg|jpg|png|webp)$/i.test(file.type || "");
+  }
+
+  function loadImage(file) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      const url = URL.createObjectURL(file);
+      image.onload = () => {
+        URL.revokeObjectURL(url);
+        resolve(image);
+      };
+      image.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error("Não foi possível ler a imagem selecionada."));
+      };
+      image.src = url;
+    });
+  }
+
+  function canvasToBlob(canvas, quality) {
+    return new Promise((resolve) => {
+      canvas.toBlob(resolve, "image/webp", quality);
+    });
+  }
+
+  async function compressImageFile(file) {
+    if (!isCompressibleImage(file) || file.size <= uploadLimitBytes) return file;
+
+    const image = await loadImage(file);
+    const baseWidth = Math.min(image.naturalWidth || image.width || 1600, 1800);
+    const attempts = [
+      { width: baseWidth, quality: 0.82 },
+      { width: Math.min(baseWidth, 1500), quality: 0.76 },
+      { width: Math.min(baseWidth, 1250), quality: 0.7 },
+      { width: Math.min(baseWidth, 1050), quality: 0.64 },
+      { width: Math.min(baseWidth, 900), quality: 0.58 },
+      { width: Math.min(baseWidth, 760), quality: 0.52 },
+      { width: Math.min(baseWidth, 640), quality: 0.46 },
+      { width: Math.min(baseWidth, 520), quality: 0.4 },
+    ];
+
+    let bestBlob = null;
+    for (const attempt of attempts) {
+      const ratio = Math.min(1, attempt.width / (image.naturalWidth || image.width || attempt.width));
+      const width = Math.max(1, Math.round((image.naturalWidth || image.width || attempt.width) * ratio));
+      const height = Math.max(1, Math.round((image.naturalHeight || image.height || width) * ratio));
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d");
+      context.drawImage(image, 0, 0, width, height);
+      const blob = await canvasToBlob(canvas, attempt.quality);
+      if (!blob) continue;
+      bestBlob = blob;
+      if (blob.size <= uploadLimitBytes) break;
+    }
+
+    if (!bestBlob || bestBlob.size > uploadLimitBytes) {
+      throw new Error(`Não foi possível reduzir automaticamente "${file.name}" para ${uploadLimitLabel}. Tente uma foto menor.`);
+    }
+
+    const baseName = (file.name || "imagem").replace(/\.[^.]+$/, "");
+    return new File([bestBlob], `${baseName}.webp`, {
+      type: "image/webp",
+      lastModified: Date.now(),
+    });
+  }
+
+  function replaceInputFiles(input, files) {
+    const dataTransfer = new DataTransfer();
+    files.forEach((file) => dataTransfer.items.add(file));
+    input.files = dataTransfer.files;
+  }
+
+  async function prepareFiles(input) {
+    const files = Array.from(input.files || []);
+    if (!files.length) return true;
+
+    const hasPdf = files.some((file) => file.type === "application/pdf");
+    const oversizedRaw = files.find((file) => file.size > fileLimitForInput(file).bytes);
+    if (oversizedRaw) {
+      input.value = "";
+      alert(hasPdf && oversizedRaw.type === "application/pdf"
+        ? `O PDF deve ter no máximo ${uploadLimitLabel}.`
+        : "Cada imagem pode ter até 50 MB para que a vitrine consiga reduzir automaticamente.");
+      return false;
+    }
+
+    try {
+      const prepared = [];
+      let changed = false;
+      for (const file of files) {
+        const nextFile = await compressImageFile(file);
+        prepared.push(nextFile);
+        if (nextFile !== file) changed = true;
+      }
+      if (changed) replaceInputFiles(input, prepared);
+      return true;
+    } catch (err) {
+      input.value = "";
+      alert(err.message || "Não foi possível reduzir automaticamente a imagem selecionada.");
+      return false;
+    }
+  }
+
+  async function validateFiles(input) {
+    if (filesAreWithinLimit(input) && Array.from(input.files || []).every((file) => file.size <= uploadLimitBytes || file.type !== "application/pdf")) {
+      return prepareFiles(input);
+    }
+    const hasPdf = Array.from(input.files || []).some((file) => file.type === "application/pdf");
     input.value = "";
-    alert(`Cada arquivo deve ter no máximo ${uploadLimitLabel}.`);
+    alert(hasPdf
+      ? `O PDF deve ter no máximo ${uploadLimitLabel}.`
+      : "Cada imagem pode ter até 50 MB. A vitrine reduzirá automaticamente para o limite do seu plano ao salvar.");
     return false;
   }
 
@@ -235,8 +361,8 @@
 
     const input = node.querySelector("[data-photo-input]");
     input.name = `kittenPhotos_${key}`;
-    input.addEventListener("change", () => {
-      if (!validateFiles(input)) return;
+    input.addEventListener("change", async () => {
+      if (!(await validateFiles(input))) return;
       const grid = node.querySelector("[data-photo-grid]");
       Array.from(input.files || []).forEach((file) => {
         const card = makePhotoCard(URL.createObjectURL(file));
@@ -263,6 +389,7 @@
     const key = data?.key || makeKey("litter");
     const node = litterTemplate.content.firstElementChild.cloneNode(true);
     node.dataset.key = key;
+    node.classList.toggle("is-editor-collapsed", Boolean(data));
 
     [
       "birthDate",
@@ -303,8 +430,8 @@
       const currentPhotos = data?.[`${type}Photos`] || [data?.[`${type}Photo`]].filter(Boolean);
       photoInput.name = `${type}Photos_${key}`;
       currentPhotos.slice(0, 2).forEach((photo) => addParentPreview(node, type, photo));
-      photoInput.addEventListener("change", () => {
-        if (!validateFiles(photoInput)) {
+      photoInput.addEventListener("change", async () => {
+        if (!(await validateFiles(photoInput))) {
           return;
         }
         grid.querySelectorAll(".showcase-photo-card.is-new").forEach((card) => card.remove());
@@ -338,8 +465,13 @@
     node.querySelector("[data-litter-summary]").addEventListener("click", () => {
       if (!node.classList.contains("is-hidden-litter")) return;
       node.classList.remove("is-hidden-litter");
+      node.classList.remove("is-editor-collapsed");
       setCollapsedControls(node, false);
       syncLitterSummary(node);
+    });
+
+    node.querySelector("[data-toggle-litter-editor]").addEventListener("click", () => {
+      node.classList.toggle("is-editor-collapsed");
     });
 
     node.querySelector("[data-add-kitten]").addEventListener("click", () => {
@@ -394,8 +526,8 @@
     node.querySelectorAll("[data-comparison-photo]").forEach((input) => {
       const fieldName = input.dataset.comparisonPhoto;
       input.name = `comparison${fieldName.charAt(0).toUpperCase()}${fieldName.slice(1)}_${key}`;
-      input.addEventListener("change", () => {
-        if (!validateFiles(input)) return;
+      input.addEventListener("change", async () => {
+        if (!(await validateFiles(input))) return;
         const file = input.files?.[0];
         if (!file) return;
         const hidden = comparisonField(node, fieldName);
@@ -508,15 +640,14 @@
   slugInput.addEventListener("input", updatePublicLink);
   paymentCardInstallments.addEventListener("change", syncPaymentInstallments);
   themeColorInputs.forEach((input) => input.addEventListener("input", syncThemePreview));
-  form.addEventListener("submit", (event) => {
-    const oversized = Array.from(form.querySelectorAll('input[type="file"]'))
-      .some((input) => !filesAreWithinLimit(input));
-    if (oversized) {
-      alert(`Cada arquivo deve ter no máximo ${uploadLimitLabel}.`);
-      event.preventDefault();
-      return;
-    }
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const prepared = await Promise.all(
+      Array.from(form.querySelectorAll('input[type="file"]')).map((input) => prepareFiles(input))
+    );
+    if (prepared.some((ok) => !ok)) return;
     payloadInput.value = JSON.stringify(collectPayload());
+    form.submit();
   });
 
   if (initial.litters && initial.litters.length) {

@@ -1043,6 +1043,90 @@ textarea:focus {
   margin-bottom: 18px;
 }
 
+.showcase-collapsible {
+  padding: 0;
+  overflow: hidden;
+}
+
+.showcase-collapse-summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  list-style: none;
+  padding: 18px 20px;
+}
+
+.showcase-collapse-summary::-webkit-details-marker {
+  display: none;
+}
+
+.showcase-collapse-summary > div {
+  min-width: 0;
+}
+
+.showcase-collapse-summary > span {
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  color: var(--text-muted);
+  flex: 0 0 auto;
+  font-size: 0;
+  font-weight: 800;
+  padding: 7px 11px;
+}
+
+.showcase-collapse-summary > span::after {
+  content: "Expandir";
+  font-size: 12px;
+}
+
+.showcase-collapsible[open] .showcase-collapse-summary > span {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #92400e;
+}
+
+.showcase-collapsible[open] .showcase-collapse-summary > span::after {
+  content: "Recolher";
+}
+
+.showcase-collapse-body {
+  border-top: 1px solid var(--border-soft);
+  padding: 18px 20px 20px;
+}
+
+.showcase-collapse-trigger {
+  align-items: flex-start;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.showcase-collapse-trigger small {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.showcase-litter.is-editor-collapsed .showcase-litter-body {
+  display: none;
+}
+
+.showcase-litter.is-editor-collapsed {
+  padding-bottom: 14px;
+}
+
+.showcase-litter.is-editor-collapsed .showcase-section-head {
+  margin-bottom: 0;
+}
+
 .showcase-litter.is-hidden-litter {
   margin-bottom: 8px;
   padding: 0;

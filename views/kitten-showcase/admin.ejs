@@ -191,8 +191,15 @@
         <form id="showcaseForm" method="post" action="/admin/vitrine-filhotes" enctype="multipart/form-data">
           <input type="hidden" id="payload" name="payload" />
 
-          <section class="content-card showcase-panel">
-            <div class="content-title">Cabeçalho público</div>
+          <details class="content-card showcase-panel showcase-collapsible">
+            <summary class="showcase-collapse-summary">
+              <div>
+                <div class="content-title">Cabeçalho público</div>
+                <div class="content-sub">Logo, link público, canais de contato, texto inicial e publicação.</div>
+              </div>
+              <span>Expandir</span>
+            </summary>
+            <div class="showcase-collapse-body">
             <div class="showcase-header-editor">
               <div class="field-panel showcase-logo-panel">
                 <div class="content-title">Logo</div>
@@ -279,9 +286,18 @@
                 </div>
               </div>
             </div>
+            </div>
+          </details>
 
-            <div class="field-panel showcase-payment-panel">
-              <div class="content-title">Formas de pagamento</div>
+          <details class="content-card showcase-panel showcase-collapsible">
+            <summary class="showcase-collapse-summary">
+              <div>
+                <div class="content-title">Formas de pagamento</div>
+                <div class="content-sub">Opções e texto exibidos após as ninhadas na vitrine pública.</div>
+              </div>
+              <span>Expandir</span>
+            </summary>
+            <div class="showcase-collapse-body">
               <div class="showcase-payment-options">
                 <label class="showcase-toggle">
                   <input id="paymentPix" type="checkbox" <%= showcase.paymentPix ? "checked" : "" %> />
@@ -305,9 +321,17 @@
                 <textarea id="paymentText" rows="4" placeholder="Ex.: condições, reserva, sinal, parcelamento, orientações para contato"><%= showcase.paymentText || '' %></textarea>
               </div>
             </div>
+          </details>
 
-            <div class="field-panel showcase-about-panel">
-              <div class="content-title">Informações sobre o gatil</div>
+          <details class="content-card showcase-panel showcase-collapsible">
+            <summary class="showcase-collapse-summary">
+              <div>
+                <div class="content-title">Informações sobre o gatil</div>
+                <div class="content-sub">Texto institucional e apresentação em PDF exibidos abaixo das formas de pagamento.</div>
+              </div>
+              <span>Expandir</span>
+            </summary>
+            <div class="showcase-collapse-body">
               <div class="field">
                 <label class="field-label" for="aboutText">Texto sobre o gatil</label>
                 <textarea id="aboutText" rows="5" placeholder="Ex.: história do gatil, criação, socialização, entrega, acompanhamento e diferenciais"><%= showcase.aboutText || '' %></textarea>
@@ -321,8 +345,17 @@
                 <% } %>
               </div>
             </div>
+          </details>
 
-            <div class="field-panel showcase-evolution-panel">
+          <details class="content-card showcase-panel showcase-collapsible">
+            <summary class="showcase-collapse-summary">
+              <div>
+                <div class="content-title">Evolução de Filhotes</div>
+                <div class="content-sub">Comparativos opcionais de crescimento dos filhotes.</div>
+              </div>
+              <span>Expandir</span>
+            </summary>
+            <div class="showcase-collapse-body">
               <div class="showcase-section-head">
                 <div>
                   <div class="content-title">Evolução de Filhotes</div>
@@ -342,7 +375,7 @@
               </div>
               <div id="comparisonsRoot" class="showcase-comparison-stack"></div>
             </div>
-          </section>
+          </details>
 
           <div id="littersRoot" class="showcase-stack"></div>
 
@@ -358,7 +391,10 @@
       <section class="content-card showcase-litter" data-litter>
         <div class="showcase-section-head">
           <div>
-            <div class="content-title" data-litter-title>Ninhada</div>
+            <button type="button" class="showcase-collapse-trigger" data-toggle-litter-editor>
+              <span class="content-title" data-litter-title>Ninhada</span>
+              <small data-litter-compact>Editar ninhada</small>
+            </button>
             <div class="content-sub">As ninhadas mais antigas aparecem primeiro no link público.</div>
           </div>
           <div class="actions">
@@ -372,7 +408,7 @@
           <small data-litter-summary-sub>Editar ninhada</small>
         </button>
 
-        <div class="showcase-litter-body" data-litter-body>
+        <div class="showcase-litter-body showcase-collapse-body" data-litter-body>
 
         <div class="grid-3">
           <div class="field">
