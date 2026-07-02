@@ -256,6 +256,20 @@
     input.files = dataTransfer.files;
   }
 
+  function syncInputOrderFromGrid(input, grid) {
+    if (!input || !grid || !input.files?.length) return;
+    const files = Array.from(input.files);
+    const orderedIndexes = Array.from(grid.querySelectorAll(".showcase-photo-card.is-new"))
+      .map((card) => Number(card.dataset.fileIndex))
+      .filter((index) => Number.isInteger(index) && files[index]);
+    if (!orderedIndexes.length) return;
+    replaceInputFiles(input, orderedIndexes.map((index) => files[index]));
+    Array.from(grid.querySelectorAll(".showcase-photo-card.is-new")).forEach((card, index) => {
+      card.dataset.fileIndex = String(index);
+      card.dataset.newToken = `new:${index}`;
+    });
+  }
+
   async function prepareFiles(input) {
     const files = Array.from(input.files || []);
     if (!files.length) return true;
@@ -299,25 +313,37 @@
     return false;
   }
 
-  function makePhotoCard(path) {
+  function makePhotoCard(path, options = {}) {
     const card = document.createElement("button");
     card.type = "button";
     card.className = "showcase-photo-card";
     card.draggable = true;
     card.dataset.path = path;
+    if (options.newToken) card.dataset.newToken = options.newToken;
+    if (Number.isInteger(options.fileIndex)) card.dataset.fileIndex = String(options.fileIndex);
     card.innerHTML = `<img src="${path}" alt="" /><span>Remover</span>`;
-    card.addEventListener("click", () => card.remove());
+    card.addEventListener("click", () => {
+      card.remove();
+      if (options.input && options.grid) syncInputOrderFromGrid(options.input, options.grid);
+    });
     addDragHandlers(card, ".showcase-photo-card");
     return card;
   }
 
-  function makeParentPhotoCard(path) {
+  function makeParentPhotoCard(path, options = {}) {
     const card = document.createElement("button");
     card.type = "button";
     card.className = "showcase-photo-card";
+    card.draggable = true;
     card.dataset.path = path;
+    if (options.newToken) card.dataset.newToken = options.newToken;
+    if (Number.isInteger(options.fileIndex)) card.dataset.fileIndex = String(options.fileIndex);
     card.innerHTML = `<img src="${path}" alt="" /><span>Remover</span>`;
-    card.addEventListener("click", () => card.remove());
+    card.addEventListener("click", () => {
+      card.remove();
+      if (options.input && options.grid) syncInputOrderFromGrid(options.input, options.grid);
+    });
+    addDragHandlers(card, ".showcase-photo-card");
     return card;
   }
 
@@ -336,7 +362,14 @@
 
   function addDragHandlers(item, selector) {
     item.addEventListener("dragstart", () => item.classList.add("dragging"));
-    item.addEventListener("dragend", () => item.classList.remove("dragging"));
+    item.addEventListener("dragend", () => {
+      item.classList.remove("dragging");
+      const list = item.parentElement;
+      const input = list?.closest("[data-kitten], [data-litter]")?.querySelector(
+        list.matches("[data-photo-grid]") ? "[data-photo-input]" : `[name="${list.dataset.inputName || ""}"]`
+      );
+      if (input) syncInputOrderFromGrid(input, list);
+    });
     item.addEventListener("dragover", (event) => {
       event.preventDefault();
       const list = item.parentElement;
@@ -364,10 +397,16 @@
     input.addEventListener("change", async () => {
       if (!(await validateFiles(input))) return;
       const grid = node.querySelector("[data-photo-grid]");
-      Array.from(input.files || []).forEach((file) => {
-        const card = makePhotoCard(URL.createObjectURL(file));
+      grid.querySelectorAll(".showcase-photo-card.is-new").forEach((card) => card.remove());
+      Array.from(input.files || []).forEach((file, fileIndex) => {
+        const card = makePhotoCard(URL.createObjectURL(file), {
+          fileIndex,
+          grid,
+          input,
+          newToken: `new:${fileIndex}`,
+        });
         card.classList.add("is-new");
-        grid.prepend(card);
+        grid.appendChild(card);
       });
     });
 
@@ -429,16 +468,22 @@
       const grid = node.querySelector(`[data-parent-photo-grid="${type}"]`);
       const currentPhotos = data?.[`${type}Photos`] || [data?.[`${type}Photo`]].filter(Boolean);
       photoInput.name = `${type}Photos_${key}`;
+      grid.dataset.inputName = photoInput.name;
       currentPhotos.slice(0, 2).forEach((photo) => addParentPreview(node, type, photo));
       photoInput.addEventListener("change", async () => {
         if (!(await validateFiles(photoInput))) {
           return;
         }
         grid.querySelectorAll(".showcase-photo-card.is-new").forEach((card) => card.remove());
-        Array.from(photoInput.files || []).slice(0, 2).reverse().forEach((file) => {
-          const card = makeParentPhotoCard(URL.createObjectURL(file));
+        Array.from(photoInput.files || []).slice(0, 2).forEach((file, fileIndex) => {
+          const card = makeParentPhotoCard(URL.createObjectURL(file), {
+            fileIndex,
+            grid,
+            input: photoInput,
+            newToken: `new:${fileIndex}`,
+          });
           card.classList.add("is-new");
-          grid.prepend(card);
+          grid.appendChild(card);
         });
         if ((photoInput.files || []).length > 2) {
           alert("Use no máximo 2 fotos para o pai ou para a mãe.");
@@ -553,6 +598,10 @@
   }
 
   function collectPayload() {
+    const photoOrder = (container) => Array.from(container?.querySelectorAll(".showcase-photo-card") || [])
+      .map((card) => card.dataset.newToken || card.dataset.path)
+      .filter(Boolean);
+
     const litters = Array.from(root.querySelectorAll("[data-litter]")).map((litter) => ({
       key: litter.dataset.key,
       birthDate: getValue(field(litter, "birthDate")),
@@ -563,6 +612,7 @@
       fatherPhotos: Array.from(litter.querySelectorAll('[data-parent-photo-grid="father"] .showcase-photo-card:not(.is-new)'))
         .map((card) => card.dataset.path)
         .filter(Boolean),
+      fatherPhotoOrder: photoOrder(litter.querySelector('[data-parent-photo-grid="father"]')),
       fatherColor: getValue(field(litter, "fatherColor")),
       fatherNote: getValue(field(litter, "fatherNote")),
       fatherPkdef: getValue(field(litter, "fatherPkdef")),
@@ -572,6 +622,7 @@
       motherPhotos: Array.from(litter.querySelectorAll('[data-parent-photo-grid="mother"] .showcase-photo-card:not(.is-new)'))
         .map((card) => card.dataset.path)
         .filter(Boolean),
+      motherPhotoOrder: photoOrder(litter.querySelector('[data-parent-photo-grid="mother"]')),
       motherColor: getValue(field(litter, "motherColor")),
       motherNote: getValue(field(litter, "motherNote")),
       motherPkdef: getValue(field(litter, "motherPkdef")),
@@ -587,6 +638,7 @@
         photos: Array.from(kitten.querySelectorAll(".showcase-photo-card:not(.is-new)"))
           .map((card) => card.dataset.path)
           .filter(Boolean),
+        photoOrder: photoOrder(kitten.querySelector("[data-photo-grid]")),
       })),
     }));
 

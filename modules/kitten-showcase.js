@@ -502,6 +502,49 @@ function filesByField(files) {
   return map;
 }
 
+function resolvePhotoOrder(order, uploadedPhotos, existingPhotos, maxItems = null) {
+  const uploads = Array.isArray(uploadedPhotos) ? uploadedPhotos : [];
+  const existing = Array.isArray(existingPhotos) ? existingPhotos.map(compact).filter(Boolean) : [];
+  const ordered = [];
+  const used = new Set();
+
+  if (Array.isArray(order)) {
+    for (const item of order) {
+      const value = compact(item);
+      if (!value) continue;
+      const newMatch = value.match(/^new:(\d+)$/);
+      if (newMatch) {
+        const uploadIndex = Number(newMatch[1]);
+        if (uploads[uploadIndex] && !used.has(`new:${uploadIndex}`)) {
+          ordered.push(uploads[uploadIndex]);
+          used.add(`new:${uploadIndex}`);
+        }
+        continue;
+      }
+      if (!used.has(value)) {
+        ordered.push(value);
+        used.add(value);
+      }
+    }
+  }
+
+  uploads.forEach((photo, index) => {
+    if (photo && !used.has(`new:${index}`) && !used.has(photo)) {
+      ordered.push(photo);
+      used.add(`new:${index}`);
+      used.add(photo);
+    }
+  });
+  existing.forEach((photo) => {
+    if (!used.has(photo)) {
+      ordered.push(photo);
+      used.add(photo);
+    }
+  });
+
+  return maxItems === null ? ordered : ordered.slice(0, maxItems);
+}
+
 function emptyShowcase(settings, user) {
   const catteryName = compact(settings?.catteryName) || compact(user?.fifeCatteryName) || compact(user?.name) || "Meu Gatil";
   return {
@@ -1199,14 +1242,18 @@ module.exports = (prisma, requireAuth, requirePermission) => {
             const litterKey = litter.key;
             const fatherUploads = uploaded.get(`fatherPhotos_${litterKey}`) || [];
             const motherUploads = uploaded.get(`motherPhotos_${litterKey}`) || [];
-            const fatherPhotos = [
-              ...fatherUploads,
-              ...(Array.isArray(litter.fatherPhotos) ? litter.fatherPhotos.map(compact).filter(Boolean) : []),
-            ].slice(0, 2);
-            const motherPhotos = [
-              ...motherUploads,
-              ...(Array.isArray(litter.motherPhotos) ? litter.motherPhotos.map(compact).filter(Boolean) : []),
-            ].slice(0, 2);
+            const fatherPhotos = resolvePhotoOrder(
+              litter.fatherPhotoOrder,
+              fatherUploads,
+              litter.fatherPhotos,
+              2
+            );
+            const motherPhotos = resolvePhotoOrder(
+              litter.motherPhotoOrder,
+              motherUploads,
+              litter.motherPhotos,
+              2
+            );
             const savedLitter = await tx.catteryShowcaseLitter.create({
               data: {
                 showcaseId: showcase.id,
@@ -1250,7 +1297,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
               const newPhotos = uploaded.get(`kittenPhotos_${kitten.key}`) || [];
               const existingPhotos = Array.isArray(kitten.photos) ? kitten.photos.map(compact).filter(Boolean) : [];
-              const photos = [...newPhotos, ...existingPhotos];
+              const photos = resolvePhotoOrder(kitten.photoOrder, newPhotos, existingPhotos);
               for (const [photoIndex, photoPath] of photos.entries()) {
                 await tx.catteryShowcasePhoto.create({
                   data: {
@@ -1275,7 +1322,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               },
             });
           }
-        });
+        }, { maxWait: 10000, timeout: 30000 });
 
         res.redirect("/admin/vitrine-filhotes?ok=1");
       } catch (err) {
