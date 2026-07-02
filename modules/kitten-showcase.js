@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
+const sharp = require("sharp");
 const {
   getFileUploadLimit,
   getCreationLimits,
@@ -48,24 +49,9 @@ const ASSOCIATED_SHOWCASE_ROLES = new Set([
 ]);
 
 function createUpload(role) {
-  const uploadsRoot =
-    process.env.UPLOADS_DIR || path.join(__dirname, "..", "public", "uploads");
-  const uploadDir = path.join(uploadsRoot, "showcase");
-  const uploadLimit = getFileUploadLimit(role);
-
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-  }
-
   return multer({
-    storage: multer.diskStorage({
-      destination: (req, file, cb) => cb(null, uploadDir),
-      filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname || "").toLowerCase();
-        cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
-      },
-    }),
-    limits: { fileSize: uploadLimit.bytes, files: 80 },
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 20 * 1024 * 1024, files: 80 },
     fileFilter: (req, file, cb) => {
       const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
       const isAboutPdf = file.fieldname === "aboutPdf" && file.mimetype === "application/pdf";
@@ -73,6 +59,97 @@ function createUpload(role) {
       cb(accepted ? null : new Error("Envie imagens na vitrine e PDF apenas na apresentação do gatil."), accepted);
     },
   });
+}
+
+function showcaseUploadDir() {
+  const uploadsRoot = process.env.UPLOADS_DIR || path.join(__dirname, "..", "public", "uploads");
+  const uploadDir = path.join(uploadsRoot, "showcase");
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+  return uploadDir;
+}
+
+function showcaseUploadPath(filename) {
+  return `/uploads/showcase/${filename}`;
+}
+
+function makeUploadFilename(ext) {
+  return `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+}
+
+async function compressShowcaseImage(file, limitBytes, limitLabel) {
+  const uploadDir = showcaseUploadDir();
+  const metadata = await sharp(file.buffer, { animated: false }).metadata();
+  const width = Math.min(metadata.width || 1600, 1600);
+  const attempts = [
+    { width, quality: 82 },
+    { width: Math.min(width, 1400), quality: 76 },
+    { width: Math.min(width, 1200), quality: 70 },
+    { width: Math.min(width, 1000), quality: 64 },
+    { width: Math.min(width, 850), quality: 58 },
+    { width: Math.min(width, 720), quality: 52 },
+  ];
+
+  let bestBuffer = null;
+  for (const attempt of attempts) {
+    const buffer = await sharp(file.buffer, { animated: false })
+      .rotate()
+      .resize({ width: attempt.width, withoutEnlargement: true })
+      .webp({ quality: attempt.quality })
+      .toBuffer();
+    bestBuffer = buffer;
+    if (buffer.length <= limitBytes) break;
+  }
+
+  if (!bestBuffer || bestBuffer.length > limitBytes) {
+    const error = new Error(`Não foi possível reduzir automaticamente a imagem "${file.originalname}" para ${limitLabel}. Tente uma imagem menor.`);
+    error.code = "UPLOAD_LIMIT";
+    throw error;
+  }
+
+  const filename = makeUploadFilename(".webp");
+  await fs.promises.writeFile(path.join(uploadDir, filename), bestBuffer);
+  const { buffer, role: _role, ...fileInfo } = file;
+  return {
+    ...fileInfo,
+    filename,
+    path: path.join(uploadDir, filename),
+    size: bestBuffer.length,
+    mimetype: "image/webp",
+    compressed: true,
+  };
+}
+
+async function storeShowcasePdf(file, limitBytes, limitLabel) {
+  if (file.size > limitBytes) {
+    const error = new Error(`O PDF da apresentação ultrapassa ${limitLabel}. Reduza o PDF e tente novamente.`);
+    error.code = "UPLOAD_LIMIT";
+    throw error;
+  }
+  const uploadDir = showcaseUploadDir();
+  const filename = makeUploadFilename(".pdf");
+  await fs.promises.writeFile(path.join(uploadDir, filename), file.buffer);
+  const { buffer, role: _role, ...fileInfo } = file;
+  return {
+    ...fileInfo,
+    filename,
+    path: path.join(uploadDir, filename),
+  };
+}
+
+async function processShowcaseFiles(files, role) {
+  const limit = getFileUploadLimit(role);
+  const processed = [];
+  for (const file of files || []) {
+    const fileWithRole = { ...file, role };
+    if (file.mimetype === "application/pdf") {
+      processed.push(await storeShowcasePdf(fileWithRole, limit.bytes, limit.label));
+    } else {
+      processed.push(await compressShowcaseImage(fileWithRole, limit.bytes, limit.label));
+    }
+  }
+  return processed;
 }
 
 function slugify(value) {
@@ -418,7 +495,7 @@ function filesByField(files) {
   const map = new Map();
   for (const file of files || []) {
     if (!map.has(file.fieldname)) map.set(file.fieldname, []);
-    map.get(file.fieldname).push(`/uploads/showcase/${file.filename}`);
+    map.get(file.fieldname).push(showcaseUploadPath(file.filename));
   }
   return map;
 }
@@ -915,16 +992,32 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   }
 
   function uploadShowcaseFiles(req, res, next) {
-    const uploadLimit = getFileUploadLimit(req.session?.userRole);
     const upload = createUpload(req.session?.userRole);
     upload.any()(req, res, async (err) => {
-      if (!err) return next();
+      if (!err) {
+        try {
+          req.files = await processShowcaseFiles(req.files || [], req.session?.userRole);
+          return next();
+        } catch (processErr) {
+          if (processErr.code === "UPLOAD_LIMIT") {
+            try {
+              return renderAdmin(req, res, {
+                status: 413,
+                error: processErr.message,
+              });
+            } catch (renderErr) {
+              return next(renderErr);
+            }
+          }
+          return next(processErr);
+        }
+      }
 
       if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
         try {
           return renderAdmin(req, res, {
             status: 413,
-            error: `Uma das imagens ultrapassa ${uploadLimit.label}. Reduza o tamanho da foto e tente novamente.`,
+            error: "Uma das imagens ultrapassa 20 MB. Envie uma foto menor para que a vitrine consiga reduzir automaticamente.",
           });
         } catch (renderErr) {
           return next(renderErr);
