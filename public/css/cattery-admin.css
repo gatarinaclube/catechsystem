@@ -1571,7 +1571,6 @@ textarea:focus {
   border: 1px solid var(--border-soft);
   border-radius: 8px;
   background: #ffffff;
-  cursor: grab;
 }
 
 .showcase-photo-card img {
@@ -1593,10 +1592,45 @@ textarea:focus {
   font-size: 11px;
 }
 
+.showcase-photo-move,
+.showcase-photo-remove {
+  position: absolute;
+  top: 6px;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 999px;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
+  z-index: 2;
+}
+
+.showcase-photo-move {
+  left: 6px;
+  background: var(--accent);
+  cursor: grab;
+}
+
+.showcase-photo-card.is-drag-ready .showcase-photo-move {
+  cursor: grabbing;
+}
+
+.showcase-photo-remove {
+  right: 6px;
+  background: rgba(15, 23, 42, 0.74);
+  cursor: pointer;
+}
+
 .showcase-photo-card.is-new::before {
   content: "Nova";
   position: absolute;
-  top: 6px;
+  bottom: 6px;
   left: 6px;
   border-radius: 999px;
   background: var(--accent);

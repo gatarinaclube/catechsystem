@@ -21,6 +21,9 @@
   const uploadLimitBytes = Number(limits.uploadLimitBytes) || 5 * 1024 * 1024;
   const uploadLimitLabel = limits.uploadLimitLabel || "5 MB";
   const maxCompressibleImageBytes = 50 * 1024 * 1024;
+  const maxKittenPhotos = 20;
+  const maxParentPhotos = 2;
+  const pendingFilesByInput = new WeakMap();
 
   function makeKey(prefix) {
     return `${prefix}_${Date.now()}_${Math.round(Math.random() * 100000)}`;
@@ -256,15 +259,31 @@
     input.files = dataTransfer.files;
   }
 
+  function getPendingFiles(input) {
+    return pendingFilesByInput.get(input) || Array.from(input.files || []);
+  }
+
+  function setPendingFiles(input, files) {
+    const normalized = Array.from(files || []);
+    pendingFilesByInput.set(input, normalized);
+    replaceInputFiles(input, normalized);
+  }
+
   function syncInputOrderFromGrid(input, grid) {
-    if (!input || !grid || !input.files?.length) return;
-    const files = Array.from(input.files);
-    const orderedIndexes = Array.from(grid.querySelectorAll(".showcase-photo-card.is-new"))
+    if (!input || !grid) return;
+    const files = getPendingFiles(input);
+    const newCards = Array.from(grid.querySelectorAll(".showcase-photo-card.is-new"));
+    if (!newCards.length) {
+      setPendingFiles(input, []);
+      return;
+    }
+    if (!files.length) return;
+    const orderedIndexes = newCards
       .map((card) => Number(card.dataset.fileIndex))
       .filter((index) => Number.isInteger(index) && files[index]);
     if (!orderedIndexes.length) return;
-    replaceInputFiles(input, orderedIndexes.map((index) => files[index]));
-    Array.from(grid.querySelectorAll(".showcase-photo-card.is-new")).forEach((card, index) => {
+    setPendingFiles(input, orderedIndexes.map((index) => files[index]));
+    newCards.forEach((card, index) => {
       card.dataset.fileIndex = String(index);
       card.dataset.newToken = `new:${index}`;
     });
@@ -313,38 +332,95 @@
     return false;
   }
 
-  function makePhotoCard(path, options = {}) {
-    const card = document.createElement("button");
-    card.type = "button";
+  async function appendSelectedPhotos(input, grid, maxTotal, limitMessage, makeCard) {
+    const previousFiles = getPendingFiles(input);
+    const selectedFiles = Array.from(input.files || []);
+    const savedCount = grid.querySelectorAll(".showcase-photo-card:not(.is-new)").length;
+    const remainingSlots = Math.max(0, maxTotal - savedCount - previousFiles.length);
+
+    if (!selectedFiles.length) {
+      setPendingFiles(input, previousFiles);
+      return;
+    }
+
+    if (remainingSlots <= 0) {
+      setPendingFiles(input, previousFiles);
+      alert(limitMessage);
+      return;
+    }
+
+    replaceInputFiles(input, selectedFiles);
+    if (!(await validateFiles(input))) {
+      setPendingFiles(input, previousFiles);
+      return;
+    }
+
+    const preparedFiles = Array.from(input.files || []);
+    const acceptedFiles = preparedFiles.slice(0, remainingSlots);
+    if (preparedFiles.length > acceptedFiles.length) alert(limitMessage);
+
+    setPendingFiles(input, previousFiles.concat(acceptedFiles));
+    grid.querySelectorAll(".showcase-photo-card.is-new").forEach((card) => card.remove());
+    getPendingFiles(input).forEach((file, fileIndex) => {
+      const card = makeCard(URL.createObjectURL(file), {
+        fileIndex,
+        grid,
+        input,
+        newToken: `new:${fileIndex}`,
+      });
+      card.classList.add("is-new");
+      grid.appendChild(card);
+    });
+  }
+
+  function makeReorderablePhotoCard(path, options = {}) {
+    const card = document.createElement("div");
     card.className = "showcase-photo-card";
-    card.draggable = true;
+    card.draggable = false;
     card.dataset.path = path;
     if (options.newToken) card.dataset.newToken = options.newToken;
     if (Number.isInteger(options.fileIndex)) card.dataset.fileIndex = String(options.fileIndex);
-    card.innerHTML = `<img src="${path}" alt="" /><span>Remover</span>`;
-    card.addEventListener("click", () => {
+
+    const image = document.createElement("img");
+    image.src = path;
+    image.alt = "";
+
+    const moveButton = document.createElement("button");
+    moveButton.type = "button";
+    moveButton.className = "showcase-photo-move";
+    moveButton.textContent = "+";
+    moveButton.title = "Mover foto";
+
+    const removeButton = document.createElement("button");
+    removeButton.type = "button";
+    removeButton.className = "showcase-photo-remove";
+    removeButton.textContent = "x";
+    removeButton.title = "Remover foto";
+
+    moveButton.addEventListener("pointerdown", () => {
+      card.dataset.dragEnabled = "true";
+      card.draggable = true;
+      card.classList.add("is-drag-ready");
+    });
+    moveButton.addEventListener("click", (event) => event.stopPropagation());
+
+    removeButton.addEventListener("click", (event) => {
+      event.stopPropagation();
       card.remove();
       if (options.input && options.grid) syncInputOrderFromGrid(options.input, options.grid);
     });
+
+    card.append(image, moveButton, removeButton);
     addDragHandlers(card, ".showcase-photo-card");
     return card;
   }
 
+  function makePhotoCard(path, options = {}) {
+    return makeReorderablePhotoCard(path, options);
+  }
+
   function makeParentPhotoCard(path, options = {}) {
-    const card = document.createElement("button");
-    card.type = "button";
-    card.className = "showcase-photo-card";
-    card.draggable = true;
-    card.dataset.path = path;
-    if (options.newToken) card.dataset.newToken = options.newToken;
-    if (Number.isInteger(options.fileIndex)) card.dataset.fileIndex = String(options.fileIndex);
-    card.innerHTML = `<img src="${path}" alt="" /><span>Remover</span>`;
-    card.addEventListener("click", () => {
-      card.remove();
-      if (options.input && options.grid) syncInputOrderFromGrid(options.input, options.grid);
-    });
-    addDragHandlers(card, ".showcase-photo-card");
-    return card;
+    return makeReorderablePhotoCard(path, options);
   }
 
   function makeComparisonPhotoCard(path, hiddenInput) {
@@ -361,9 +437,20 @@
   }
 
   function addDragHandlers(item, selector) {
-    item.addEventListener("dragstart", () => item.classList.add("dragging"));
+    item.addEventListener("dragstart", (event) => {
+      if (item.classList.contains("showcase-photo-card") && item.dataset.dragEnabled !== "true") {
+        event.preventDefault();
+        return;
+      }
+      item.classList.add("dragging");
+    });
     item.addEventListener("dragend", () => {
       item.classList.remove("dragging");
+      if (item.classList.contains("showcase-photo-card")) {
+        item.draggable = false;
+        item.dataset.dragEnabled = "";
+        item.classList.remove("is-drag-ready");
+      }
       const list = item.parentElement;
       const input = list?.closest("[data-kitten], [data-litter]")?.querySelector(
         list.matches("[data-photo-grid]") ? "[data-photo-input]" : `[name="${list.dataset.inputName || ""}"]`
@@ -395,19 +482,14 @@
     const input = node.querySelector("[data-photo-input]");
     input.name = `kittenPhotos_${key}`;
     input.addEventListener("change", async () => {
-      if (!(await validateFiles(input))) return;
       const grid = node.querySelector("[data-photo-grid]");
-      grid.querySelectorAll(".showcase-photo-card.is-new").forEach((card) => card.remove());
-      Array.from(input.files || []).forEach((file, fileIndex) => {
-        const card = makePhotoCard(URL.createObjectURL(file), {
-          fileIndex,
-          grid,
-          input,
-          newToken: `new:${fileIndex}`,
-        });
-        card.classList.add("is-new");
-        grid.appendChild(card);
-      });
+      await appendSelectedPhotos(
+        input,
+        grid,
+        maxKittenPhotos,
+        "Use no máximo 20 fotos para cada filhote.",
+        makePhotoCard
+      );
     });
 
     (data?.photos || []).forEach((photo) => {
@@ -471,23 +553,13 @@
       grid.dataset.inputName = photoInput.name;
       currentPhotos.slice(0, 2).forEach((photo) => addParentPreview(node, type, photo));
       photoInput.addEventListener("change", async () => {
-        if (!(await validateFiles(photoInput))) {
-          return;
-        }
-        grid.querySelectorAll(".showcase-photo-card.is-new").forEach((card) => card.remove());
-        Array.from(photoInput.files || []).slice(0, 2).forEach((file, fileIndex) => {
-          const card = makeParentPhotoCard(URL.createObjectURL(file), {
-            fileIndex,
-            grid,
-            input: photoInput,
-            newToken: `new:${fileIndex}`,
-          });
-          card.classList.add("is-new");
-          grid.appendChild(card);
-        });
-        if ((photoInput.files || []).length > 2) {
-          alert("Use no máximo 2 fotos para o pai ou para a mãe.");
-        }
+        await appendSelectedPhotos(
+          photoInput,
+          grid,
+          maxParentPhotos,
+          "Use no máximo 2 fotos para o pai ou para a mãe.",
+          makeParentPhotoCard
+        );
       });
     });
 

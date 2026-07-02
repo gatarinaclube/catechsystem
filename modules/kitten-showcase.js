@@ -1297,7 +1297,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
               const newPhotos = uploaded.get(`kittenPhotos_${kitten.key}`) || [];
               const existingPhotos = Array.isArray(kitten.photos) ? kitten.photos.map(compact).filter(Boolean) : [];
-              const photos = resolvePhotoOrder(kitten.photoOrder, newPhotos, existingPhotos);
+              const photos = resolvePhotoOrder(kitten.photoOrder, newPhotos, existingPhotos, 20);
               for (const [photoIndex, photoPath] of photos.entries()) {
                 await tx.catteryShowcasePhoto.create({
                   data: {
