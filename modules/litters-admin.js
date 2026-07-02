@@ -252,7 +252,6 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const kittens = litter?.kittens?.length
       ? litter.kittens
       : [];
-    const currentMicrochips = new Set(kittens.map((kitten) => normalizeMicrochip(kitten.microchip)).filter(Boolean));
     const microchipInventoryRows = await prisma.$queryRaw`
       SELECT "microchip", "linkedCatId", "linkedKittenId"
       FROM "UserMicrochipInventory"
@@ -261,7 +260,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       ORDER BY "microchip" ASC
     `;
     const availableMicrochips = microchipInventoryRows
-      .filter((row) => !row.linkedCatId || currentMicrochips.has(row.microchip))
+      .filter((row) => !row.linkedCatId)
       .map((row) => row.microchip);
     const selectedBreeds = selectedBreedsFromSettings(ownerSettings, [
       litter?.litterBreed,
@@ -498,6 +497,17 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     }
   }
 
+  async function deleteGeneratedKittenCat(tx, catId) {
+    await tx.$executeRaw`DELETE FROM "CatHistoryEntry" WHERE "catId" = ${catId}`;
+    await tx.$executeRaw`DELETE FROM "VaccinationPlan" WHERE "catId" = ${catId}`;
+    await tx.$executeRaw`DELETE FROM "DewormingPlan" WHERE "catId" = ${catId}`;
+    await tx.$executeRaw`DELETE FROM "WeighingPlan" WHERE "catId" = ${catId}`;
+    await tx.$executeRaw`DELETE FROM "ExamPlan" WHERE "catId" = ${catId}`;
+    await tx.$executeRaw`DELETE FROM "SecondCopyRequest" WHERE "catId" = ${catId}`;
+    await tx.catTreatment.deleteMany({ where: { catId } });
+    await tx.cat.delete({ where: { id: catId } });
+  }
+
   async function persistLitter(tx, payload, existingLitter = null) {
     const motherCat = payload.femaleCatId
       ? await tx.cat.findUnique({ where: { id: payload.femaleCatId } })
@@ -584,7 +594,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         const kitten = existingLitter.kittens.find((item) => item.id === existingId);
         removedKittens.push({ id: existingId, kittenCatId: kitten?.kittenCatId || null });
         if (kitten?.kittenCatId) {
-          await tx.cat.delete({ where: { id: kitten.kittenCatId } });
+          await deleteGeneratedKittenCat(tx, kitten.kittenCatId);
         }
         await tx.litterKitten.delete({ where: { id: existingId } });
       }

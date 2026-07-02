@@ -449,7 +449,7 @@
               </div>
               <div class="litter-kitten-field">
                 <label class="field-label">Microchip</label>
-                <input name="kitten_microchip_${i}" class="kitten-microchip" list="availableMicrochipOptions" maxlength="19" inputmode="numeric" value="${kitten.microchip || ""}" />
+                <input name="kitten_microchip_${i}" class="kitten-microchip" ${availableMicrochips.length ? 'list="availableMicrochipOptions"' : ""} maxlength="19" inputmode="numeric" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" value="${kitten.microchip || ""}" />
                 <div class="section-note" style="margin-top:4px;">Obrigatório a partir de 4 meses.</div>
               </div>
               <div class="litter-kitten-field">
