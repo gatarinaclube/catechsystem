@@ -85,13 +85,18 @@
 
                   <div class="supplier-edit">
                     <% if (payable.status === 'PENDING') { %>
-                      <form method="post" action="/administrativo/contas-a-pagar/<%= payable.id %>/update" class="supplier-form">
+                      <form
+                        method="post"
+                        action="/administrativo/contas-a-pagar/<%= payable.id %>/update"
+                        class="supplier-form"
+                        data-payable-edit-form
+                        data-has-related="<%= payable.recurringGroupId ? 'YES' : 'NO' %>"
+                        data-original-amount="<%= payable.amount || '' %>"
+                        data-original-due-date="<%= payable.dueDateInput || '' %>"
+                      >
                         <%- include('./payables-form-fields', { payable, suppliers, categories, paymentMethods, prefix: 'payable-' + payable.id }) %>
                         <% if (payable.recurringGroupId) { %>
-                          <label class="checkbox-line">
-                            <input type="checkbox" name="applyFuture" value="YES" />
-                            Aplicar alterações nas próximas contas relacionadas ainda pendentes
-                          </label>
+                          <input type="hidden" name="applyFuture" value="NO" data-apply-future-input />
                         <% } %>
                         <div class="form-actions">
                           <button class="btn btn-primary" type="submit">Salvar alterações</button>
@@ -162,6 +167,37 @@
       }
 
       syncPayableInstallmentFields(document);
+
+      function amountCentsValue(value) {
+        const raw = String(value || "").replace(/[^\d,.-]/g, "").trim();
+        if (!raw) return 0;
+        const lastComma = raw.lastIndexOf(",");
+        const lastDot = raw.lastIndexOf(".");
+        const decimalIndex = Math.max(lastComma, lastDot);
+        if (decimalIndex >= 0) {
+          const integerPart = raw.slice(0, decimalIndex).replace(/\D/g, "");
+          const decimalPart = raw.slice(decimalIndex + 1).replace(/\D/g, "").slice(0, 2);
+          return Number.parseInt(`${integerPart || "0"}${decimalPart.padEnd(2, "0")}`, 10) || 0;
+        }
+        return (Number.parseInt(raw.replace(/\D/g, ""), 10) || 0) * 100;
+      }
+
+      document.querySelectorAll("[data-payable-edit-form]").forEach((form) => {
+        form.addEventListener("submit", () => {
+          if (form.dataset.hasRelated !== "YES") return;
+          const amountInput = form.querySelector('[name="amount"]');
+          const dueDateInput = form.querySelector('[name="dueDate"]');
+          const applyFutureInput = form.querySelector("[data-apply-future-input]");
+          const amountChanged = amountCentsValue(amountInput?.value) !== amountCentsValue(form.dataset.originalAmount);
+          const dueDateChanged = String(dueDateInput?.value || "") !== String(form.dataset.originalDueDate || "");
+          if (!applyFutureInput || (!amountChanged && !dueDateChanged)) return;
+
+          const updateFuture = window.confirm(
+            "Atualizar futuras contas a pagar deste lançamento?\n\nOK: atualizar esta e as futuras.\nCancelar: atualizar somente esta conta."
+          );
+          applyFutureInput.value = updateFuture ? "YES" : "NO";
+        });
+      });
 
       function onlyDigits(value) {
         return String(value || "").replace(/\D/g, "");

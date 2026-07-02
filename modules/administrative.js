@@ -371,6 +371,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     return scheduleType === "INSTALLMENT_WEEKLY" ? addDays(firstDate, index * 7) : addMonths(firstDate, index);
   }
 
+  function relatedPayableDueDate(firstDate, index, recurringGroupId) {
+    const groupType = payableGroupType(recurringGroupId);
+    return groupType === "weekly" || groupType === "installment-weekly"
+      ? addDays(firstDate, index * 7)
+      : addMonths(firstDate, index);
+  }
+
   function fixedGroupTypeFromSchedule(scheduleType) {
     return scheduleType === "WEEKLY" ? "weekly" : "monthly";
   }
@@ -408,6 +415,28 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       });
     }
     await prisma.accountPayable.createMany({ data: rows });
+  }
+
+  async function updateFuturePayableDates(prisma, payable, recurringGroupId, firstDueDate) {
+    const futureRows = await prisma.accountPayable.findMany({
+      where: {
+        ownerId: payable.ownerId,
+        recurringGroupId,
+        status: "PENDING",
+        dueDate: { gt: payable.dueDate },
+      },
+      orderBy: [{ dueDate: "asc" }, { id: "asc" }],
+      select: { id: true },
+    });
+
+    for (let index = 0; index < futureRows.length; index += 1) {
+      await prisma.accountPayable.update({
+        where: { id: futureRows[index].id },
+        data: {
+          dueDate: relatedPayableDueDate(firstDueDate, index + 1, recurringGroupId),
+        },
+      });
+    }
   }
 
   function payableStatusView(row) {
@@ -1239,6 +1268,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               isFixed: data.record.isFixed,
             },
           });
+          await updateFuturePayableDates(prisma, payable, recurringGroupId, data.record.dueDate);
         }
         const updatedPayable = await prisma.accountPayable.findUnique({ where: { id: payable.id } });
         await ensureFixedPayableWindow(prisma, updatedPayable);
