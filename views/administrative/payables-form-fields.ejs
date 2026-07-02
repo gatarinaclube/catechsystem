@@ -57,9 +57,24 @@
     <input id="<%= prefix %>-note" name="note" value="<%= payable.note || '' %>" />
   </div>
   <div class="field">
-    <label class="checkbox-line" style="margin-top:28px;">
-      <input type="checkbox" name="isFixed" value="YES" <%= payable.isFixed ? 'checked' : '' %> />
-      Conta fixa mensal
-    </label>
+    <label class="field-label" for="<%= prefix %>-scheduleType">Repetição</label>
+    <select id="<%= prefix %>-scheduleType" name="scheduleType" data-payable-schedule>
+      <option value="SINGLE" <%= (payable.scheduleType || 'SINGLE') === 'SINGLE' ? 'selected' : '' %>>Conta única</option>
+      <option value="MONTHLY" <%= payable.scheduleType === 'MONTHLY' ? 'selected' : '' %>>Repetir mensalmente</option>
+      <option value="WEEKLY" <%= payable.scheduleType === 'WEEKLY' ? 'selected' : '' %>>Repetir semanalmente</option>
+      <option value="INSTALLMENT_MONTHLY" <%= payable.scheduleType === 'INSTALLMENT_MONTHLY' ? 'selected' : '' %>>Parcelado mensal</option>
+      <option value="INSTALLMENT_WEEKLY" <%= payable.scheduleType === 'INSTALLMENT_WEEKLY' ? 'selected' : '' %>>Parcelado semanal</option>
+    </select>
+  </div>
+  <div class="field" data-payable-installments-field style="display:none;">
+    <label class="field-label" for="<%= prefix %>-installmentCount">Quantidade de parcelas</label>
+    <input
+      id="<%= prefix %>-installmentCount"
+      name="installmentCount"
+      type="number"
+      min="1"
+      max="120"
+      value="<%= payable.installmentCount || 2 %>"
+    />
   </div>
 </div>

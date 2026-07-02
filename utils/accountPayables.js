@@ -7,6 +7,12 @@ function addMonths(date, amount) {
   return next;
 }
 
+function addDays(date, amount) {
+  const next = new Date(date);
+  next.setUTCDate(next.getUTCDate() + amount);
+  return next;
+}
+
 function dateKey(date) {
   const value = new Date(date);
   return [
@@ -18,6 +24,18 @@ function dateKey(date) {
 
 function makeRecurringGroupId() {
   return `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+}
+
+function makePayableGroupId(type = "monthly") {
+  return `${type}-${makeRecurringGroupId()}`;
+}
+
+function payableGroupType(groupId) {
+  const text = String(groupId || "");
+  if (text.startsWith("weekly-")) return "weekly";
+  if (text.startsWith("installment-weekly-")) return "installment-weekly";
+  if (text.startsWith("installment-monthly-")) return "installment-monthly";
+  return "monthly";
 }
 
 function currentMonthAnchorFrom(date) {
@@ -32,9 +50,19 @@ function currentMonthAnchorFrom(date) {
   return anchor;
 }
 
+function currentWeekAnchorFrom(date) {
+  const today = new Date();
+  const anchor = new Date(date);
+  while (anchor < today) {
+    anchor.setUTCDate(anchor.getUTCDate() + 7);
+  }
+  return anchor;
+}
+
 async function ensureFixedPayableWindow(prisma, seed, months = 12) {
   if (!seed?.isFixed) return;
-  const recurringGroupId = seed.recurringGroupId || makeRecurringGroupId();
+  const groupType = payableGroupType(seed.recurringGroupId);
+  const recurringGroupId = seed.recurringGroupId || makePayableGroupId("monthly");
   if (!seed.recurringGroupId) {
     await prisma.accountPayable.update({
       where: { id: seed.id },
@@ -50,11 +78,14 @@ async function ensureFixedPayableWindow(prisma, seed, months = 12) {
     select: { dueDate: true },
   });
   const existingDates = new Set(groupRows.map((row) => dateKey(row.dueDate)));
-  const anchorDate = currentMonthAnchorFrom(seed.dueDate);
+  const anchorDate = groupType === "weekly"
+    ? currentWeekAnchorFrom(seed.dueDate)
+    : currentMonthAnchorFrom(seed.dueDate);
   const rowsToCreate = [];
+  const steps = groupType === "weekly" ? 52 : months;
 
-  for (let index = 0; index < months; index += 1) {
-    const dueDate = addMonths(anchorDate, index);
+  for (let index = 0; index < steps; index += 1) {
+    const dueDate = groupType === "weekly" ? addDays(anchorDate, index * 7) : addMonths(anchorDate, index);
     const key = dateKey(dueDate);
     if (existingDates.has(key)) continue;
     rowsToCreate.push({
@@ -99,4 +130,6 @@ module.exports = {
   ensureFixedPayableWindow,
   ensureFixedPayablesWindow,
   makeRecurringGroupId,
+  makePayableGroupId,
+  payableGroupType,
 };

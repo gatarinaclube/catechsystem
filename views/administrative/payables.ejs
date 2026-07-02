@@ -69,7 +69,7 @@
                       <strong><%= payable.supplier %> · <%= payable.amountLabel %></strong>
                       <small>
                         <%= payable.category %> · Vencimento <%= payable.dueDateLabel %>
-                        <% if (payable.isFixed) { %> · Fixa mensal<% } %>
+                        <% if (payable.recurrenceLabel) { %> · <%= payable.recurrenceLabel %><% } %>
                         <% if (payable.status === 'PAID') { %> · Pago em <%= payable.paidAtLabel %><% } %>
                       </small>
                     </span>
@@ -90,7 +90,7 @@
                         <% if (payable.recurringGroupId) { %>
                           <label class="checkbox-line">
                             <input type="checkbox" name="applyFuture" value="YES" />
-                            Aplicar alterações nas próximas contas fixas ainda pendentes
+                            Aplicar alterações nas próximas contas relacionadas ainda pendentes
                           </label>
                         <% } %>
                         <div class="form-actions">
@@ -117,9 +117,9 @@
                         </div>
                       </form>
 
-                      <% if (payable.isFixed) { %>
-                        <form method="post" action="/administrativo/contas-a-pagar/<%= payable.id %>/suspender-futuras" onsubmit="return confirm('Suspender as próximas contas fixas relacionadas a esta conta? As anteriores serão mantidas.');" class="supplier-delete">
-                          <button class="btn" type="submit">Suspender futuras contas fixas</button>
+                      <% if (payable.recurringGroupId) { %>
+                        <form method="post" action="/administrativo/contas-a-pagar/<%= payable.id %>/suspender-futuras" onsubmit="return confirm('Suspender as próximas contas relacionadas a esta conta? As anteriores serão mantidas.');" class="supplier-delete">
+                          <button class="btn" type="submit">Suspender futuras contas relacionadas</button>
                         </form>
                       <% } %>
 
@@ -147,6 +147,21 @@
           defaultCategory: supplier.defaultCategory || ""
         };
       })) %>;
+
+      function syncPayableInstallmentFields(scope) {
+        (scope || document).querySelectorAll("[data-payable-schedule]").forEach((select) => {
+          const formGrid = select.closest(".form-grid");
+          const field = formGrid ? formGrid.querySelector("[data-payable-installments-field]") : null;
+          if (!field) return;
+          const sync = () => {
+            field.style.display = select.value.startsWith("INSTALLMENT_") ? "block" : "none";
+          };
+          select.addEventListener("change", sync);
+          sync();
+        });
+      }
+
+      syncPayableInstallmentFields(document);
 
       function onlyDigits(value) {
         return String(value || "").replace(/\D/g, "");

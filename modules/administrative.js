@@ -1,6 +1,11 @@
 const express = require("express");
 const { dataOwnerScope } = require("../utils/access");
-const { ensureFixedPayableWindow, ensureFixedPayablesWindow, makeRecurringGroupId } = require("../utils/accountPayables");
+const {
+  ensureFixedPayableWindow,
+  ensureFixedPayablesWindow,
+  makePayableGroupId,
+  payableGroupType,
+} = require("../utils/accountPayables");
 const { formatCnpj, formatCpfCnpj, formatPhone } = require("../utils/format");
 
 function todayForInput() {
@@ -67,6 +72,12 @@ function addMonths(date, amount) {
   if (next.getUTCDate() !== date.getUTCDate()) {
     next.setUTCDate(0);
   }
+  return next;
+}
+
+function addDays(date, amount) {
+  const next = new Date(date);
+  next.setUTCDate(next.getUTCDate() + amount);
   return next;
 }
 
@@ -314,21 +325,89 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const amountCents = parseAmountToCents(req.body.amount);
     const supplier = cleanText(req.body.supplier);
     const category = cleanText(req.body.category);
+    const scheduleType = ["SINGLE", "MONTHLY", "WEEKLY", "INSTALLMENT_MONTHLY", "INSTALLMENT_WEEKLY"].includes(req.body.scheduleType)
+      ? req.body.scheduleType
+      : (req.body.isFixed === "YES" ? "MONTHLY" : "SINGLE");
+    const installmentCount = Math.min(120, Math.max(1, Number.parseInt(req.body.installmentCount || "1", 10) || 1));
     if (!supplier || !category || amountCents <= 0) {
       throw new Error("Informe fornecedor, categoria e valor.");
     }
 
     return {
-      ownerId: req.session?.userId || null,
-      supplier,
-      category,
-      description: cleanText(req.body.description) || null,
-      amountCents,
-      dueDate: parseDateInput(req.body.dueDate),
-      paymentMethod: cleanText(req.body.paymentMethod) || null,
-      note: cleanText(req.body.note) || null,
-      isFixed: req.body.isFixed === "YES",
+      record: {
+        ownerId: req.session?.userId || null,
+        supplier,
+        category,
+        description: cleanText(req.body.description) || null,
+        amountCents,
+        dueDate: parseDateInput(req.body.dueDate),
+        paymentMethod: cleanText(req.body.paymentMethod) || null,
+        note: cleanText(req.body.note) || null,
+        isFixed: ["MONTHLY", "WEEKLY"].includes(scheduleType),
+      },
+      scheduleType,
+      installmentCount,
     };
+  }
+
+  function scheduleTypeForPayable(row) {
+    if (row.isFixed) return payableGroupType(row.recurringGroupId) === "weekly" ? "WEEKLY" : "MONTHLY";
+    const groupType = payableGroupType(row.recurringGroupId);
+    if (groupType === "installment-weekly") return "INSTALLMENT_WEEKLY";
+    if (groupType === "installment-monthly") return "INSTALLMENT_MONTHLY";
+    return "SINGLE";
+  }
+
+  function payableRecurrenceLabel(row) {
+    const scheduleType = scheduleTypeForPayable(row);
+    if (scheduleType === "MONTHLY") return "Fixa mensal";
+    if (scheduleType === "WEEKLY") return "Fixa semanal";
+    if (scheduleType === "INSTALLMENT_MONTHLY") return "Parcelado mensal";
+    if (scheduleType === "INSTALLMENT_WEEKLY") return "Parcelado semanal";
+    return "";
+  }
+
+  function installmentDueDate(firstDate, index, scheduleType) {
+    return scheduleType === "INSTALLMENT_WEEKLY" ? addDays(firstDate, index * 7) : addMonths(firstDate, index);
+  }
+
+  function fixedGroupTypeFromSchedule(scheduleType) {
+    return scheduleType === "WEEKLY" ? "weekly" : "monthly";
+  }
+
+  function recurringGroupIdForFixedPayable(payable, scheduleType) {
+    const desiredGroupType = fixedGroupTypeFromSchedule(scheduleType);
+    return payable.recurringGroupId && payableGroupType(payable.recurringGroupId) === desiredGroupType
+      ? payable.recurringGroupId
+      : makePayableGroupId(desiredGroupType);
+  }
+
+  function splitAmountCents(totalCents, count) {
+    const installments = Math.max(1, Number.parseInt(count || "1", 10) || 1);
+    const base = Math.floor(Number(totalCents || 0) / installments);
+    const remainder = Number(totalCents || 0) - base * installments;
+    return Array.from({ length: installments }, (_, index) => base + (index < remainder ? 1 : 0));
+  }
+
+  async function createInstallmentPayables(prisma, data) {
+    const groupType = data.scheduleType === "INSTALLMENT_WEEKLY" ? "installment-weekly" : "installment-monthly";
+    const recurringGroupId = makePayableGroupId(groupType);
+    const amounts = splitAmountCents(data.record.amountCents, data.installmentCount);
+    const rows = [];
+    for (let index = 0; index < data.installmentCount; index += 1) {
+      rows.push({
+        ...data.record,
+        amountCents: amounts[index] || 0,
+        dueDate: installmentDueDate(data.record.dueDate, index, data.scheduleType),
+        isFixed: false,
+        recurringGroupId,
+        description: [
+          data.record.description,
+          `Parcela ${index + 1}/${data.installmentCount}`,
+        ].filter(Boolean).join(" · "),
+      });
+    }
+    await prisma.accountPayable.createMany({ data: rows });
   }
 
   function payableStatusView(row) {
@@ -360,6 +439,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       paidAtLabel: row.paidAt ? formatDateLabel(row.paidAt) : "",
       statusLabel: statusView.label,
       statusClass: statusView.className,
+      scheduleType: scheduleTypeForPayable(row),
+      recurrenceLabel: payableRecurrenceLabel(row),
     };
   }
 
@@ -1055,10 +1136,16 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     async (req, res) => {
       try {
         const data = payableData(req);
+        if (data.scheduleType.startsWith("INSTALLMENT_")) {
+          await createInstallmentPayables(prisma, data);
+          return res.redirect("/administrativo/contas-a-pagar?ok=1");
+        }
         const payable = await prisma.accountPayable.create({
           data: {
-            ...data,
-            recurringGroupId: data.isFixed ? makeRecurringGroupId() : null,
+            ...data.record,
+            recurringGroupId: data.record.isFixed
+              ? makePayableGroupId(data.scheduleType === "WEEKLY" ? "weekly" : "monthly")
+              : null,
           },
         });
         await ensureFixedPayableWindow(prisma, payable);
@@ -1081,15 +1168,58 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       try {
         const data = payableData(req);
-        const recurringGroupId = data.isFixed ? payable.recurringGroupId || makeRecurringGroupId() : null;
+        if (data.scheduleType.startsWith("INSTALLMENT_")) {
+          await prisma.$transaction(async (tx) => {
+            if (payable.recurringGroupId && req.body.applyFuture === "YES") {
+              await tx.accountPayable.deleteMany({
+                where: {
+                  ownerId: payable.ownerId,
+                  recurringGroupId: payable.recurringGroupId,
+                  status: "PENDING",
+                  dueDate: { gt: payable.dueDate },
+                },
+              });
+            }
+            await tx.accountPayable.delete({ where: { id: payable.id } });
+            await createInstallmentPayables(tx, {
+              ...data,
+              record: {
+                ...data.record,
+                ownerId: payable.ownerId,
+              },
+            });
+          });
+          return res.redirect("/administrativo/contas-a-pagar?ok=1");
+        }
+        const recurringGroupId = data.record.isFixed
+          ? recurringGroupIdForFixedPayable(payable, data.scheduleType)
+          : payable.recurringGroupId?.startsWith("installment-")
+            ? payable.recurringGroupId
+            : null;
         await prisma.accountPayable.update({
           where: { id: payable.id },
           data: {
-            ...data,
+            ...data.record,
             ownerId: payable.ownerId,
             recurringGroupId,
           },
         });
+
+        if (
+          recurringGroupId
+          && payable.recurringGroupId
+          && payable.recurringGroupId !== recurringGroupId
+          && req.body.applyFuture === "YES"
+        ) {
+          await prisma.accountPayable.deleteMany({
+            where: {
+              ownerId: payable.ownerId,
+              recurringGroupId: payable.recurringGroupId,
+              status: "PENDING",
+              dueDate: { gt: payable.dueDate },
+            },
+          });
+        }
 
         if (recurringGroupId && req.body.applyFuture === "YES") {
           await prisma.accountPayable.updateMany({
@@ -1100,13 +1230,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               dueDate: { gt: payable.dueDate },
             },
             data: {
-              supplier: data.supplier,
-              category: data.category,
-              description: data.description,
-              amountCents: data.amountCents,
-              paymentMethod: data.paymentMethod,
-              note: data.note,
-              isFixed: data.isFixed,
+              supplier: data.record.supplier,
+              category: data.record.category,
+              description: data.record.description,
+              amountCents: data.record.amountCents,
+              paymentMethod: data.record.paymentMethod,
+              note: data.record.note,
+              isFixed: data.record.isFixed,
             },
           });
         }
@@ -1149,7 +1279,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         },
       });
 
-      const paidRecurringGroupId = payable.isFixed ? payable.recurringGroupId || makeRecurringGroupId() : payable.recurringGroupId;
+      const paidRecurringGroupId = payable.isFixed ? payable.recurringGroupId || makePayableGroupId("monthly") : payable.recurringGroupId;
       await prisma.accountPayable.update({
         where: { id: payable.id },
         data: {
@@ -1163,6 +1293,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       if (payable.isFixed) {
         const recurringGroupId = paidRecurringGroupId;
+        const nextDueDate = payableGroupType(recurringGroupId) === "weekly"
+          ? addDays(payable.dueDate, 7)
+          : addMonths(payable.dueDate, 1);
         let seed = await prisma.accountPayable.findFirst({
           where: {
             ownerId: payable.ownerId,
@@ -1180,7 +1313,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               category: payable.category,
               description: payable.description,
               amountCents: payable.amountCents,
-              dueDate: addMonths(payable.dueDate, 1),
+              dueDate: nextDueDate,
               paymentMethod: payable.paymentMethod,
               note: payable.note,
               isFixed: true,
