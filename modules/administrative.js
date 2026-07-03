@@ -329,6 +329,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       ? req.body.scheduleType
       : (req.body.isFixed === "YES" ? "MONTHLY" : "SINGLE");
     const installmentCount = Math.min(120, Math.max(1, Number.parseInt(req.body.installmentCount || "1", 10) || 1));
+    const splitInstallmentAmount = req.body.splitInstallmentAmount === "YES";
     if (!supplier || !category || amountCents <= 0) {
       throw new Error("Informe fornecedor, categoria e valor.");
     }
@@ -347,6 +348,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       },
       scheduleType,
       installmentCount,
+      splitInstallmentAmount,
     };
   }
 
@@ -389,8 +391,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       : makePayableGroupId(desiredGroupType);
   }
 
-  function splitAmountCents(totalCents, count) {
+  function installmentAmountCents(totalCents, count, shouldSplit) {
     const installments = Math.max(1, Number.parseInt(count || "1", 10) || 1);
+    if (!shouldSplit) {
+      return Array.from({ length: installments }, () => Number(totalCents || 0));
+    }
     const base = Math.floor(Number(totalCents || 0) / installments);
     const remainder = Number(totalCents || 0) - base * installments;
     return Array.from({ length: installments }, (_, index) => base + (index < remainder ? 1 : 0));
@@ -399,7 +404,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   async function createInstallmentPayables(prisma, data) {
     const groupType = data.scheduleType === "INSTALLMENT_WEEKLY" ? "installment-weekly" : "installment-monthly";
     const recurringGroupId = makePayableGroupId(groupType);
-    const amounts = splitAmountCents(data.record.amountCents, data.installmentCount);
+    const amounts = installmentAmountCents(data.record.amountCents, data.installmentCount, data.splitInstallmentAmount);
     const rows = [];
     for (let index = 0; index < data.installmentCount; index += 1) {
       rows.push({
@@ -457,6 +462,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     return { label: "Prevista", className: "is-blue" };
   }
 
+  function payableInstallmentLabel(row) {
+    const groupType = payableGroupType(row.recurringGroupId);
+    if (groupType !== "installment-weekly" && groupType !== "installment-monthly") return "";
+    const match = String(row.description || "").match(/Parcela\s+(\d+)\s*\/\s*(\d+)/i);
+    return match ? `${match[1]}/${match[2]}` : "";
+  }
+
   function mapPayable(row) {
     const statusView = payableStatusView(row);
     return {
@@ -470,6 +482,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       statusClass: statusView.className,
       scheduleType: scheduleTypeForPayable(row),
       recurrenceLabel: payableRecurrenceLabel(row),
+      installmentLabel: payableInstallmentLabel(row),
     };
   }
 

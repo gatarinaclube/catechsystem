@@ -20,6 +20,32 @@
       .supplier-lookup-status.is-error {
         color: #b91c1c;
       }
+
+      .payable-installment-line {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .payable-installment-line input[type="number"] {
+        max-width: 110px;
+      }
+
+      .payable-installment-split {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #666;
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+
+      .payable-installment-split input {
+        width: 16px;
+        height: 16px;
+      }
     </style>
   </head>
   <body>
@@ -70,6 +96,7 @@
                       <small>
                         <%= payable.category %> · Vencimento <%= payable.dueDateLabel %>
                         <% if (payable.recurrenceLabel) { %> · <%= payable.recurrenceLabel %><% } %>
+                        <% if (payable.installmentLabel) { %> · Parcela <%= payable.installmentLabel %><% } %>
                         <% if (payable.status === 'PAID') { %> · Pago em <%= payable.paidAtLabel %><% } %>
                       </small>
                     </span>
@@ -154,13 +181,47 @@
 
       function syncPayableInstallmentFields(scope) {
         (scope || document).querySelectorAll("[data-payable-schedule]").forEach((select) => {
+          const form = select.closest("form");
           const formGrid = select.closest(".form-grid");
           const field = formGrid ? formGrid.querySelector("[data-payable-installments-field]") : null;
           if (!field) return;
+          const amountInput = form ? form.querySelector('[name="amount"]') : null;
+          const countInput = field.querySelector("[data-payable-installment-count]");
+          const splitInput = field.querySelector("[data-payable-split-installments]");
+          const preview = field.querySelector("[data-payable-installment-preview]");
+          const parseMoneyToCents = (value) => {
+            const text = String(value || "").replace(/[^\d,.-]/g, "").trim();
+            if (!text) return 0;
+            const hasComma = text.includes(",");
+            let normalized = text;
+            if (hasComma) {
+              normalized = text.replace(/\./g, "").replace(",", ".");
+            } else if ((text.match(/\./g) || []).length > 1 || /\.\d{3}$/.test(text)) {
+              normalized = text.replace(/\./g, "");
+            }
+            const amount = Number(normalized);
+            return Number.isFinite(amount) ? Math.round(amount * 100) : 0;
+          };
+          const formatMoney = (cents) => new Intl.NumberFormat("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+          }).format((Number(cents) || 0) / 100);
+          const refreshPreview = () => {
+            if (!preview) return;
+            const count = Math.max(1, Number.parseInt(countInput?.value || "1", 10) || 1);
+            const amountCents = parseMoneyToCents(amountInput?.value || "");
+            const installmentCents = splitInput?.checked ? Math.round(amountCents / count) : amountCents;
+            preview.textContent = `Valor por parcela: ${formatMoney(installmentCents)}${splitInput?.checked ? " (valor dividido)" : " (valor repetido)"}`;
+          };
           const sync = () => {
-            field.style.display = select.value.startsWith("INSTALLMENT_") ? "block" : "none";
+            const isInstallment = select.value.startsWith("INSTALLMENT_");
+            field.style.display = isInstallment ? "block" : "none";
+            if (isInstallment) refreshPreview();
           };
           select.addEventListener("change", sync);
+          amountInput?.addEventListener("input", refreshPreview);
+          countInput?.addEventListener("input", refreshPreview);
+          splitInput?.addEventListener("change", refreshPreview);
           sync();
         });
       }
