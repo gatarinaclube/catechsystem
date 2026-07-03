@@ -719,6 +719,108 @@ body {
   pointer-events: none;
 }
 
+.gatofilia-presentation-page .gatofilia-band-light {
+  position: relative;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(200, 163, 90, 0.16), transparent 28%),
+    radial-gradient(circle at 86% 68%, rgba(49, 81, 61, 0.1), transparent 28%),
+    linear-gradient(180deg, #fffaf0, #f7f1e6);
+  color: #17130e;
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.9),
+    inset 0 -1px rgba(200, 163, 90, 0.22);
+}
+
+.gatofilia-presentation-page .gatofilia-band-light::before {
+  border-color: rgba(126, 92, 31, 0.12);
+}
+
+.gatofilia-presentation-page .gatofilia-band-light h2,
+.gatofilia-presentation-page .gatofilia-band-light h3 {
+  color: #17130e;
+}
+
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-eyebrow,
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-presentation-hero-card span,
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-presentation-proof span,
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-presentation-guest-grid span {
+  color: #8c651f;
+}
+
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-section-heading p:not(.gatofilia-eyebrow),
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-interest-copy p:not(.gatofilia-eyebrow) {
+  color: #51483b;
+}
+
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-presentation-text-grid,
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-presentation-proof,
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-operation-grid,
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-audience-grid {
+  filter: drop-shadow(0 24px 54px rgba(61, 43, 16, 0.12));
+}
+
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-presentation-text-grid,
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-presentation-proof {
+  border-color: rgba(126, 92, 31, 0.18);
+  background: rgba(126, 92, 31, 0.18);
+}
+
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-presentation-text-grid article,
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-presentation-proof span,
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-operation-grid article,
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-audience-grid article {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(255, 250, 240, 0.82)),
+    #ffffff;
+}
+
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-presentation-text-grid p,
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-operation-grid p,
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-audience-grid li {
+  color: #4a4035;
+}
+
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-operation-grid article,
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-audience-grid article,
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-video-placeholder {
+  border-color: rgba(126, 92, 31, 0.18);
+}
+
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-operation-grid article.is-featured,
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-offer-card {
+  border-color: rgba(200, 163, 90, 0.58);
+  box-shadow: 0 28px 72px rgba(61, 43, 16, 0.16);
+}
+
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-offer-card h3 {
+  color: #f8f8f8;
+}
+
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-offer-card > span,
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-price-grid strong {
+  color: #c8a35a;
+}
+
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-offer-card p,
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-price-grid small {
+  color: #d8d1c4;
+}
+
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-video-placeholder {
+  background:
+    radial-gradient(circle at 50% 38%, rgba(200, 163, 90, 0.18), transparent 34%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(255, 250, 240, 0.78));
+  box-shadow: 0 28px 72px rgba(61, 43, 16, 0.14);
+}
+
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-video-placeholder strong {
+  color: #17130e;
+}
+
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-video-placeholder p {
+  color: #51483b;
+}
+
 .gatofilia-presentation-text-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -830,6 +932,61 @@ body {
     radial-gradient(circle at 80% 8%, rgba(224, 180, 83, 0.22), transparent 30%),
     linear-gradient(145deg, rgba(200, 163, 90, 0.13), rgba(248, 248, 248, 0.035)),
     #151515;
+}
+
+.gatofilia-presentation-guest-grid article.is-confirmed {
+  border-color: rgba(224, 180, 83, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(224, 180, 83, 0.18);
+}
+
+.gatofilia-guest-education {
+  color: #f1eadc !important;
+  font-weight: 750;
+}
+
+.gatofilia-guest-list {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(200, 163, 90, 0.16);
+}
+
+.gatofilia-guest-list strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #c8a35a;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.gatofilia-guest-list ul {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gatofilia-guest-list li {
+  position: relative;
+  padding-left: 16px;
+  color: #d8d1c4;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.gatofilia-guest-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.7em;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #c8a35a;
 }
 
 .gatofilia-comparison {

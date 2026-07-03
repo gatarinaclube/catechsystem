@@ -16,6 +16,7 @@
       const cardLabel = presentationSettings.presentationCardLabel || "Cartão - 12x R$ 200,00";
       const offerTitle = presentationSettings.presentationOfferTitle || "Exclusiva para os 10 primeiros inscritos";
       const offerNote = presentationSettings.presentationOfferNote || "Considerando os benefícios inclusos, uma parte significativa do investimento retorna em estrutura, tecnologia, associação e apoio prático.";
+      const presentationGuests = Array.isArray(presentationSettings.presentationGuests) ? presentationSettings.presentationGuests : [];
       const isVideoFile = function(url) { return /\.(mp4|webm)(\?.*)?$/i.test(String(url || "")); };
     %>
     <header class="gatofilia-presentation-nav" id="gatofiliaNav">
@@ -82,7 +83,7 @@
         <% } %>
       </section>
 
-      <section id="historia" class="gatofilia-section gatofilia-presentation-story reveal-on-scroll">
+      <section id="historia" class="gatofilia-section gatofilia-presentation-story gatofilia-band-light reveal-on-scroll">
         <div class="gatofilia-section-heading">
           <p class="gatofilia-eyebrow">Por que criamos a Gatofilia</p>
           <h2>A Gatofilia nasceu da nossa própria história.</h2>
@@ -148,7 +149,7 @@
         </p>
       </section>
 
-      <section id="ecosistema" class="gatofilia-section gatofilia-ecosystem reveal-on-scroll">
+      <section id="ecosistema" class="gatofilia-section gatofilia-ecosystem gatofilia-band-light reveal-on-scroll">
         <div class="gatofilia-section-heading centered compact">
           <p class="gatofilia-eyebrow">O que é a Gatofilia</p>
           <h2>Não é curso. Não é mentoria. Não é plataforma. É um ecossistema.</h2>
@@ -188,7 +189,7 @@
         </div>
       </section>
 
-      <section class="gatofilia-section gatofilia-operation reveal-on-scroll">
+      <section class="gatofilia-section gatofilia-operation gatofilia-band-light reveal-on-scroll">
         <div class="gatofilia-section-heading centered compact">
           <p class="gatofilia-eyebrow">Como funciona</p>
           <h2>Teoria, prática e acompanhamento contínuo para aplicar o conhecimento no seu gatil.</h2>
@@ -240,7 +241,7 @@
         </div>
       </section>
 
-      <section class="gatofilia-section gatofilia-audience reveal-on-scroll">
+      <section class="gatofilia-section gatofilia-audience gatofilia-band-light reveal-on-scroll">
         <div class="gatofilia-section-heading centered compact">
           <p class="gatofilia-eyebrow">Quem deveria participar</p>
           <h2>Excelência não acontece por acaso. Ela é construída.</h2>
@@ -276,21 +277,47 @@
           <p>Esta área está preparada para receber os especialistas confirmados e convidados da jornada.</p>
         </div>
         <div class="gatofilia-presentation-guest-grid">
-          <% [
-            ["Confirmado", "Médicos-veterinários", "Saúde, reprodução, neonatologia e manejo preventivo."],
-            ["Convidado", "Criadores experientes", "Vivência prática, seleção, exposições e desenvolvimento de raça."],
-            ["Convidado", "Profissionais de gestão", "Organização, marca, comercialização e processos do gatil."]
-          ].forEach(function(item) { %>
+          <% if (presentationGuests.length) { %>
+            <% presentationGuests.forEach(function(guest) { %>
+              <article class="<%= guest.status === 'Confirmado' ? 'is-confirmed' : '' %>">
+                <span><%= guest.status || 'Convidado' %></span>
+                <h3><%= guest.name || 'Profissional convidado' %></h3>
+                <% if (guest.education) { %>
+                  <p class="gatofilia-guest-education"><%= guest.education %></p>
+                <% } %>
+                <% if (guest.specializations && guest.specializations.length) { %>
+                  <div class="gatofilia-guest-list">
+                    <strong>Especialização</strong>
+                    <ul>
+                      <% guest.specializations.forEach(function(item) { %>
+                        <li><%= item %></li>
+                      <% }) %>
+                    </ul>
+                  </div>
+                <% } %>
+                <% if (guest.experiences && guest.experiences.length) { %>
+                  <div class="gatofilia-guest-list">
+                    <strong>Experiência</strong>
+                    <ul>
+                      <% guest.experiences.forEach(function(item) { %>
+                        <li><%= item %></li>
+                      <% }) %>
+                    </ul>
+                  </div>
+                <% } %>
+              </article>
+            <% }) %>
+          <% } else { %>
             <article>
-              <span><%= item[0] %></span>
-              <h3><%= item[1] %></h3>
-              <p><%= item[2] %></p>
+              <span>Em breve</span>
+              <h3>Especialistas em confirmação</h3>
+              <p>Os profissionais convidados serão apresentados nesta área assim que confirmados.</p>
             </article>
-          <% }) %>
+          <% } %>
         </div>
       </section>
 
-      <section id="investimento" class="gatofilia-section gatofilia-investment reveal-on-scroll">
+      <section id="investimento" class="gatofilia-section gatofilia-investment gatofilia-band-light reveal-on-scroll">
         <div class="gatofilia-section-heading centered compact">
           <p class="gatofilia-eyebrow">Bônus exclusivos e investimento</p>
           <h2>Você não estará adquirindo apenas uma jornada de conhecimento.</h2>
@@ -338,7 +365,7 @@
         <p class="gatofilia-section-note">Investir em conhecimento sempre custa menos do que aprender apenas com os próprios erros.</p>
       </section>
 
-      <section id="inscricao" class="gatofilia-interest reveal-on-scroll">
+      <section id="inscricao" class="gatofilia-interest gatofilia-band-light reveal-on-scroll">
         <div class="gatofilia-interest-copy">
           <p class="gatofilia-eyebrow">Próximos passos</p>
           <h2>Gostaria de participar?</h2>
@@ -453,7 +480,7 @@
         </div>
       </section>
 
-      <section class="gatofilia-section gatofilia-closing-video reveal-on-scroll">
+      <section class="gatofilia-section gatofilia-closing-video gatofilia-band-light reveal-on-scroll">
         <div class="gatofilia-section-heading centered compact">
           <p class="gatofilia-eyebrow">Encerramento</p>
           <h2>O próximo passo é decidir construir com conhecimento.</h2>

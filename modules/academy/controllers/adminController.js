@@ -37,6 +37,27 @@ function academyUploadUrl(file) {
   return file ? `/uploads/academy/${file.filename}` : "";
 }
 
+function formArray(value) {
+  if (Array.isArray(value)) return value;
+  return value === undefined ? [] : [value];
+}
+
+function presentationGuestsFromBody(body) {
+  const statuses = formArray(body.presentationGuestStatus);
+  const names = formArray(body.presentationGuestName);
+  const educations = formArray(body.presentationGuestEducation);
+  const specializations = formArray(body.presentationGuestSpecializations);
+  const experiences = formArray(body.presentationGuestExperiences);
+
+  return names.map((name, index) => ({
+    status: statuses[index],
+    name,
+    education: educations[index],
+    specializations: specializations[index],
+    experiences: experiences[index],
+  }));
+}
+
 function lessonPayloadFromBody(body) {
   const status = body.status || ACADEMY_CONTENT_STATUSES.DRAFT;
   return {
@@ -213,6 +234,7 @@ module.exports = (prisma) => ({
       presentationCardLabel: req.body.presentationCardLabel,
       presentationOfferTitle: req.body.presentationOfferTitle,
       presentationOfferNote: req.body.presentationOfferNote,
+      presentationGuests: presentationGuestsFromBody(req.body),
     });
 
     res.redirect("/academy/admin/configuracoes?salvo=1");

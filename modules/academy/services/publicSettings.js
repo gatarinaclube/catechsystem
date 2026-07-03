@@ -12,6 +12,29 @@ const DEFAULT_ACADEMY_PUBLIC_SETTINGS = {
   presentationCardLabel: "Cartão - 12x R$ 200,00",
   presentationOfferTitle: "Exclusiva para os 10 primeiros inscritos",
   presentationOfferNote: "Considerando os benefícios inclusos, uma parte significativa do investimento retorna em estrutura, tecnologia, associação e apoio prático.",
+  presentationGuests: [
+    {
+      status: "Confirmado",
+      name: "Médicos-veterinários",
+      education: "Saúde felina",
+      specializations: ["Reprodução", "Neonatologia", "Manejo preventivo"],
+      experiences: ["Atuação prática em saúde, reprodução e protocolos de criação."],
+    },
+    {
+      status: "Convidado",
+      name: "Criadores experientes",
+      education: "Felinocultura prática",
+      specializations: ["Seleção", "Exposições", "Desenvolvimento de raça"],
+      experiences: ["Vivência em seleção, pista e desenvolvimento de programas de criação."],
+    },
+    {
+      status: "Convidado",
+      name: "Profissionais de gestão",
+      education: "Gestão e posicionamento",
+      specializations: ["Organização", "Marca", "Processos"],
+      experiences: ["Apoio em organização, comercialização e processos para gatis."],
+    },
+  ],
 };
 
 function normalizeSettings(value = {}) {
@@ -29,6 +52,7 @@ function normalizeSettings(value = {}) {
     presentationCardLabel: cleanText(value.presentationCardLabel, DEFAULT_ACADEMY_PUBLIC_SETTINGS.presentationCardLabel),
     presentationOfferTitle: cleanText(value.presentationOfferTitle, DEFAULT_ACADEMY_PUBLIC_SETTINGS.presentationOfferTitle),
     presentationOfferNote: cleanText(value.presentationOfferNote, DEFAULT_ACADEMY_PUBLIC_SETTINGS.presentationOfferNote),
+    presentationGuests: normalizeGuests(value.presentationGuests),
   };
 }
 
@@ -43,6 +67,31 @@ function normalizeUrl(value) {
   if (raw.startsWith("/uploads/academy/")) return raw;
   if (/^https?:\/\//i.test(raw)) return raw;
   return "";
+}
+
+function normalizeList(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item || "").trim()).filter(Boolean);
+  }
+  return String(value || "")
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizeGuests(value) {
+  const source = value === undefined ? DEFAULT_ACADEMY_PUBLIC_SETTINGS.presentationGuests : value;
+  if (!Array.isArray(source)) return [];
+
+  return source
+    .map((guest) => ({
+      status: cleanText(guest?.status, "Convidado") === "Confirmado" ? "Confirmado" : "Convidado",
+      name: cleanText(guest?.name, ""),
+      education: cleanText(guest?.education, ""),
+      specializations: normalizeList(guest?.specializations),
+      experiences: normalizeList(guest?.experiences),
+    }))
+    .filter((guest) => guest.name || guest.education || guest.specializations.length || guest.experiences.length);
 }
 
 function normalizeDateInput(value) {

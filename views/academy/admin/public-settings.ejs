@@ -149,6 +149,79 @@
                     class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]"
                   ><%= settings.presentationOfferNote || '' %></textarea>
                 </label>
+
+                <section class="rounded-3xl border border-[#d6a84f]/30 bg-[#fff9ed] p-4">
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p class="text-xs font-black uppercase tracking-[0.18em] text-[#8c651f]">Especialistas convidados</p>
+                      <p class="mt-1 text-sm font-bold text-slate-600">
+                        Cadastre os profissionais que aparecerão na página de apresentação.
+                      </p>
+                    </div>
+                    <button type="button" data-add-presentation-guest class="rounded-2xl bg-[#31513d] px-4 py-2 text-sm font-black text-white">
+                      + Profissional
+                    </button>
+                  </div>
+
+                  <div class="mt-5 grid gap-4" data-presentation-guests>
+                    <% const presentationGuests = (settings.presentationGuests && settings.presentationGuests.length ? settings.presentationGuests : [{ status: 'Convidado', name: '', education: '', specializations: [], experiences: [] }]); %>
+                    <% presentationGuests.forEach(function(guest) { %>
+                      <article class="grid gap-4 rounded-3xl border border-slate-200 bg-white p-4" data-presentation-guest-card>
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                          <label class="grid gap-2 text-sm font-bold text-slate-700">
+                            Status
+                            <select name="presentationGuestStatus" class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]">
+                              <option value="Confirmado" <%= guest.status === 'Confirmado' ? 'selected' : '' %>>Confirmado</option>
+                              <option value="Convidado" <%= guest.status !== 'Confirmado' ? 'selected' : '' %>>Convidado</option>
+                            </select>
+                          </label>
+                          <button type="button" data-remove-presentation-guest class="rounded-2xl border border-red-200 px-4 py-2 text-sm font-black text-red-700">
+                            Remover
+                          </button>
+                        </div>
+
+                        <div class="grid gap-4 md:grid-cols-2">
+                          <label class="grid gap-2 text-sm font-bold text-slate-700">
+                            Nome
+                            <input
+                              name="presentationGuestName"
+                              value="<%= guest.name || '' %>"
+                              class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]"
+                            />
+                          </label>
+                          <label class="grid gap-2 text-sm font-bold text-slate-700">
+                            Formação
+                            <input
+                              name="presentationGuestEducation"
+                              value="<%= guest.education || '' %>"
+                              class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]"
+                            />
+                          </label>
+                        </div>
+
+                        <label class="grid gap-2 text-sm font-bold text-slate-700">
+                          Especializações
+                          <textarea
+                            name="presentationGuestSpecializations"
+                            rows="3"
+                            class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]"
+                            placeholder="Uma especialização por linha"
+                          ><%= (guest.specializations || []).join('\n') %></textarea>
+                        </label>
+
+                        <label class="grid gap-2 text-sm font-bold text-slate-700">
+                          Experiências
+                          <textarea
+                            name="presentationGuestExperiences"
+                            rows="3"
+                            class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]"
+                            placeholder="Uma experiência por linha"
+                          ><%= (guest.experiences || []).join('\n') %></textarea>
+                        </label>
+                      </article>
+                    <% }) %>
+                  </div>
+                </section>
               </div>
             </details>
 
@@ -446,5 +519,50 @@
         </div>
       </section>
     </main>
+    <script>
+      (() => {
+        const list = document.querySelector("[data-presentation-guests]");
+        const addButton = document.querySelector("[data-add-presentation-guest]");
+        if (!list || !addButton) return;
+
+        const wireRemoveButtons = () => {
+          list.querySelectorAll("[data-remove-presentation-guest]").forEach((button) => {
+            if (button.dataset.wired) return;
+            button.dataset.wired = "1";
+            button.addEventListener("click", () => {
+              const cards = list.querySelectorAll("[data-presentation-guest-card]");
+              const card = button.closest("[data-presentation-guest-card]");
+              if (cards.length <= 1) {
+                card.querySelectorAll("input, textarea").forEach((field) => {
+                  field.value = "";
+                });
+                const select = card.querySelector("select");
+                if (select) select.value = "Convidado";
+                return;
+              }
+              card.remove();
+            });
+          });
+        };
+
+        addButton.addEventListener("click", () => {
+          const template = list.querySelector("[data-presentation-guest-card]");
+          if (!template) return;
+          const clone = template.cloneNode(true);
+          clone.querySelectorAll("input, textarea").forEach((field) => {
+            field.value = "";
+          });
+          const select = clone.querySelector("select");
+          if (select) select.value = "Convidado";
+          clone.querySelectorAll("[data-remove-presentation-guest]").forEach((button) => {
+            delete button.dataset.wired;
+          });
+          list.appendChild(clone);
+          wireRemoveButtons();
+        });
+
+        wireRemoveButtons();
+      })();
+    </script>
   </body>
 </html>
