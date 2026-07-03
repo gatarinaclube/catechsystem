@@ -692,7 +692,7 @@ async function loadFinancialPlanningKittenForecastRows(prisma, req, months, conf
       );
 
       for (
-        let projectedDate = addPlanningMonthsAndDays(adjustedDppDate, 6, 15), index = 0;
+        let projectedDate = addPlanningMonthsAndDays(adjustedDppDate, 10, 15), index = 0;
         projectedDate && projectedDate < endDate && index < 24;
         index += 1
       ) {
@@ -702,7 +702,7 @@ async function loadFinancialPlanningKittenForecastRows(prisma, req, months, conf
         addForecastValue(adjustedProjectedDate, "projeção após DPP", adjustedProjectedDate);
         projectedLitterDates.push(adjustedProjectedDate);
         projectedLitterDates.sort((a, b) => a - b);
-        projectedDate = addPlanningMonthsAndDays(adjustedProjectedDate, 6, 15);
+        projectedDate = addPlanningMonthsAndDays(adjustedProjectedDate, 10, 15);
       }
     } else {
       if (!nextCrossDate) return [];
