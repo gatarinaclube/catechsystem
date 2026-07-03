@@ -432,10 +432,20 @@ function addPlanningDays(date, days) {
 }
 
 function sortPlanningDates(dates) {
-  return dates
+  const unique = new Map();
+  dates
     .map(parsePlanningDate)
     .filter(Boolean)
-    .sort((a, b) => a - b);
+    .forEach((date) => {
+      const key = [
+        date.getUTCFullYear(),
+        String(date.getUTCMonth() + 1).padStart(2, "0"),
+        String(date.getUTCDate()).padStart(2, "0"),
+      ].join("-");
+      unique.set(key, date);
+    });
+
+  return Array.from(unique.values()).sort((a, b) => a - b);
 }
 
 function adjustProjectedLitterBirthDate(candidateBirthDate, litterDates) {

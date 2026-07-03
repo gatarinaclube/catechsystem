@@ -30,6 +30,54 @@ function safeJsonParse(value, fallback = []) {
   }
 }
 
+function cleanNameToken(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function catteryNameCandidates(cat) {
+  const rawNames = [
+    cat?.catteryName,
+    cat?.litterKitten?.litter?.catteryName,
+    cat?.owner?.settings?.catteryName,
+    cat?.owner?.fifeCatteryName,
+  ].map(cleanNameToken).filter(Boolean);
+
+  const candidates = new Set();
+  rawNames.forEach((name) => {
+    candidates.add(name);
+    const withoutGatil = name.replace(/^gatil\s+/i, "").trim();
+    if (withoutGatil) candidates.add(withoutGatil);
+    const firstWord = withoutGatil.split(/\s+/)[0];
+    if (firstWord) candidates.add(firstWord);
+  });
+
+  return Array.from(candidates).sort((a, b) => b.length - a.length);
+}
+
+function nameWithoutCattery(value, cat) {
+  let name = cleanNameToken(value).replace(/^[A-Z]{2}\*\s*/i, "").trim();
+  if (!name) return "";
+
+  catteryNameCandidates(cat).forEach((candidate) => {
+    if (!name) return;
+    const lowerName = name.toLocaleLowerCase("pt-BR");
+    const lowerCandidate = candidate.toLocaleLowerCase("pt-BR");
+    if (lowerName === lowerCandidate) {
+      name = "";
+      return;
+    }
+    if (lowerName.startsWith(`${lowerCandidate} `) || lowerName.startsWith(lowerCandidate)) {
+      name = name.slice(candidate.length).trim();
+    }
+  });
+
+  if (/^[a-z]\s+[A-ZÀ-Ý]/.test(name)) {
+    name = name.slice(1).trim();
+  }
+
+  return name;
+}
+
 function toIsoDate(value) {
   const date = parseDate(value);
   if (!date) return "";
@@ -395,6 +443,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const fatherName = female.father?.name || female.fatherName || "-";
       const motherName = female.mother?.name || female.motherName || "-";
       const excessLitterWarning = hasExcessLitterWarning(litterHistory);
+      const femaleDisplayName = buildDisplayName(female);
+      const femaleShortName = nameWithoutCattery(female.name || femaleDisplayName, female) || femaleDisplayName;
 
       grouped[status] = grouped[status] || [];
       grouped[status].push({
@@ -411,7 +461,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         motherName,
         status,
         birthDateLabel: formatDate(female.birthDate) || "-",
-        femaleDisplayName: buildDisplayName(female),
+        femaleDisplayName,
+        femaleShortName,
         pedigree: buildPedigreeNode(female, 5),
       });
     });

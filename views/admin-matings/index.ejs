@@ -770,7 +770,7 @@
                       data-mating-row
                       data-status="<%= row.status %>"
                       data-original-order="<%= globalOrder %>"
-                      data-search="<%= String(row.femaleDisplayName || '').toLowerCase() %>"
+                      data-search="<%= [row.femaleShortName, row.femaleDisplayName].filter(Boolean).join(' ').toLowerCase() %>"
                     >
                       <input type="hidden" name="ownerId" value="<%= selectedOwnerId || '' %>" />
                       <div class="mating-table">
@@ -778,7 +778,7 @@
                           <details class="mating-female-details">
                             <summary>
                               <div class="item-title">
-                                <%= row.female.name || row.femaleDisplayName %>
+                                <%= row.femaleShortName || row.femaleDisplayName %>
                               </div>
                             </summary>
                             <div class="mating-female-more">
@@ -939,8 +939,29 @@
         ownerSearch?.addEventListener("input", syncOwnerId);
         ownerSearch?.addEventListener("change", syncOwnerId);
 
+        function normalizeHistoryRows(form) {
+          if (!form) return;
+          const seen = new Set();
+          form.querySelectorAll('input[name="litterHistoryDates"]').forEach((input) => {
+            const value = String(input.value || "").trim();
+            if (!value) return;
+            if (!seen.has(value)) {
+              seen.add(value);
+              return;
+            }
+
+            const row = input.closest("[data-history-row]");
+            if (row) {
+              row.remove();
+            } else {
+              input.remove();
+            }
+          });
+        }
+
         async function autosave(form) {
           if (!form) return;
+          normalizeHistoryRows(form);
           if (form.dataset.submitting === "true") {
             form.dataset.pendingSave = "true";
             return;
@@ -1087,6 +1108,7 @@
 
         async function manualUpdate(form) {
           if (!form) return;
+          normalizeHistoryRows(form);
           const button = form.querySelector(".mating-update-button");
           const status = form.querySelector("[data-save-status]");
           setSaveStatus(status, "Salvando...");
