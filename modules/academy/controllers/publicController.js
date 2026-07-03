@@ -236,6 +236,22 @@ module.exports = (prisma) => ({
     });
   },
 
+  presentation: async (req, res) => {
+    res.set("X-Robots-Tag", "noindex, nofollow");
+    const publicSettings = await getAcademyPublicSettings(prisma);
+    renderPublic(req, res, "presentation", {
+      academyCountdown: buildAcademyCountdown(publicSettings),
+      leadStatus: req.query.interesse || null,
+      seo: {
+        path: "/apresentacao",
+        title: "Apresentação Gatofilia",
+        description: "Apresentação reservada da Jornada Gatofilia para interessados convidados.",
+        image: "/uploads/academy/gatofilia-ecosystem-01.png",
+        robots: "noindex,nofollow",
+      },
+    });
+  },
+
   interest: async (req, res) => {
     const host = String(req.hostname || "").toLowerCase().replace(/:\d+$/, "");
     const gatofiliaDomains = String(process.env.GATOFILIA_DOMAINS || "")
@@ -247,7 +263,8 @@ module.exports = (prisma) => ({
       host === "www.gatofilia.com.br" ||
       gatofiliaDomains.some((domain) => host === domain || host === `www.${domain}`)
     );
-    const basePath = isGatofiliaHost ? "/" : (req.path.startsWith("/gatofilia") ? "/gatofilia" : "/academy");
+    const isPresentationInterest = req.path.startsWith("/apresentacao");
+    const basePath = isPresentationInterest ? "/apresentacao" : (isGatofiliaHost ? "/" : (req.path.startsWith("/gatofilia") ? "/gatofilia" : "/academy"));
     const leadData = {
       firstName: cleanText(req.body.firstName, 120),
       lastName: cleanText(req.body.lastName, 120),
@@ -265,6 +282,15 @@ module.exports = (prisma) => ({
       message: cleanText(req.body.message, 2000),
       wantsUpdates: Boolean(req.body.wantsUpdates),
     };
+    const presentationData = {
+      cpf: cleanText(req.body.cpf, 40),
+      zipCode: cleanText(req.body.zipCode, 40),
+      district: cleanText(req.body.district, 140),
+      street: cleanText(req.body.street, 180),
+      addressNumber: cleanText(req.body.addressNumber, 40),
+      addressComplement: cleanText(req.body.addressComplement, 120),
+      paymentChoice: cleanText(req.body.paymentChoice, 120),
+    };
 
     const requiredFields = [
       leadData.firstName,
@@ -278,6 +304,14 @@ module.exports = (prisma) => ({
       leadData.referralSource,
       leadData.message,
     ];
+
+    if (isPresentationInterest) {
+      requiredFields.push(presentationData.cpf, presentationData.addressNumber, presentationData.paymentChoice);
+      const isBrazilLead = ["brasil", "brazil", "br"].includes(leadData.country.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim());
+      if (isBrazilLead) {
+        requiredFields.push(presentationData.zipCode, presentationData.district, presentationData.street);
+      }
+    }
 
     if (leadData.hasCattery === "Sim") {
       requiredFields.push(leadData.catteryName, leadData.breed, leadData.breedingTime);
@@ -297,11 +331,29 @@ module.exports = (prisma) => ({
       message: `Olá, ${leadData.firstName}. Recebemos seu interesse na Gatofilia.`,
       status: "prepared",
     });
+    const fullMessage = isPresentationInterest ? [
+      leadData.message,
+      "",
+      "Dados para confirmação de inscrição:",
+      `CPF: ${presentationData.cpf || "-"}`,
+      `Endereço: ${[
+        presentationData.street,
+        presentationData.addressNumber,
+        presentationData.addressComplement,
+        presentationData.district,
+        leadData.city,
+        leadData.state,
+        leadData.country,
+        presentationData.zipCode ? `CEP ${presentationData.zipCode}` : "",
+      ].filter(Boolean).join(", ") || "-"}`,
+      `Forma de pagamento escolhida: ${presentationData.paymentChoice || "-"}`,
+    ].join("\n") : leadData.message;
 
     try {
       const lead = await prisma.gatofiliaLead.create({
         data: {
           ...leadData,
+          message: fullMessage,
           whatsappPayload,
         },
       });

@@ -39,6 +39,10 @@ module.exports = (prisma) => {
 
   router.get("/academy", publicController.home);
   router.get("/gatofilia", publicController.home);
+  router.get("/apresentacaoa", (req, res) => res.redirect(301, "/apresentacao"));
+  router.get("/apresentacao", publicController.presentation);
+  router.get("/academy/apresentacao", publicController.presentation);
+  router.post("/apresentacao/interesse", publicController.interest);
   router.post("/gatofilia/interesse", publicController.interest);
   router.post("/academy/interesse", publicController.interest);
   router.get("/academy/sobre", publicAnchorRedirect("quem-somos"));
