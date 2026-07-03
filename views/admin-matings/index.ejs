@@ -855,23 +855,6 @@
                             <button type="button" class="btn mating-icon-button add-history-date" title="Adicionar ninhada" aria-label="Adicionar ninhada">+</button>
                           </div>
 
-                          <% if (historyList.filter(Boolean).length <= 1 && latestHistory) { %>
-                            <% historyList.slice(0, -1).forEach(function(value) { %>
-                              <% if (value) { %>
-                                <div class="inline-plus" data-history-row hidden>
-                                  <input type="hidden" name="litterHistoryDates" value="<%= formatDateInput(value) %>" />
-                                </div>
-                              <% } %>
-                            <% }) %>
-                          <% } else { %>
-                            <% historyList.slice(1).forEach(function(value) { %>
-                              <% if (value) { %>
-                                <div class="inline-plus" data-history-row hidden>
-                                  <input type="hidden" name="litterHistoryDates" value="<%= formatDateInput(value) %>" />
-                                </div>
-                              <% } %>
-                            <% }) %>
-                          <% } %>
                         </div>
 
                         <div>

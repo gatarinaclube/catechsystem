@@ -30,6 +30,35 @@ function safeJsonParse(value, fallback = []) {
   }
 }
 
+function toIsoDate(value) {
+  const date = parseDate(value);
+  if (!date) return "";
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+function normalizeLitterHistoryDates(values) {
+  const unique = new Map();
+
+  []
+    .concat(values || [])
+    .map((value) => toIsoDate(value))
+    .filter(Boolean)
+    .forEach((value) => unique.set(value, value));
+
+  return Array.from(unique.values()).sort((a, b) => {
+    const dateA = parseDate(a);
+    const dateB = parseDate(b);
+    if (!dateA && !dateB) return 0;
+    if (!dateA) return 1;
+    if (!dateB) return -1;
+    return dateA - dateB;
+  });
+}
+
 function laterDate(a, b) {
   if (!a) return b;
   if (!b) return a;
@@ -355,7 +384,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       )
       .forEach((female) => {
       const plan = planMap.get(female.id);
-      const litterHistory = safeJsonParse(plan?.litterHistoryJson);
+      const litterHistory = normalizeLitterHistoryDates(safeJsonParse(plan?.litterHistoryJson));
       const nextCrossDate = computeNextCrossDate(female.birthDate, litterHistory);
       const dppDate = computeDpp(plan?.matingStartDate, plan?.matingEndDate);
       const gestationDays = computeGestationDays(plan?.matingStartDate, plan?.matingEndDate);
@@ -465,18 +494,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           return res.status(403).send("Você não tem acesso a este macho.");
         }
       }
-      const litterHistory = []
-        .concat(req.body.litterHistoryDates || [])
-        .map((value) => String(value || "").trim())
-        .filter((value) => value !== "")
-        .sort((a, b) => {
-          const dateA = parseDate(a);
-          const dateB = parseDate(b);
-          if (!dateA && !dateB) return 0;
-          if (!dateA) return 1;
-          if (!dateB) return -1;
-          return dateA - dateB;
-        });
+      const litterHistory = normalizeLitterHistoryDates(req.body.litterHistoryDates);
 
       const payload = {
         ownerId: female?.ownerId || null,
