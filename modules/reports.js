@@ -680,29 +680,30 @@ async function loadFinancialPlanningKittenForecastRows(prisma, req, months, conf
       const dppDate = matingReferenceDate ? addPlanningDays(matingReferenceDate, 60) : null;
       if (!dppDate) return [];
       const projectedLitterDates = [...litterDates];
-      const adjustedDppDate = adjustProjectedLitterBirthDate(dppDate, projectedLitterDates);
-      if (!adjustedDppDate) return [];
-      projectedLitterDates.push(adjustedDppDate);
-      projectedLitterDates.sort((a, b) => a - b);
-
-      addForecastValue(
-        addPlanningMonthsAndDays(adjustedDppDate, 4, 15),
-        "DPP",
-        adjustedDppDate
-      );
 
       for (
-        let projectedDate = addPlanningMonthsAndDays(adjustedDppDate, 10, 15), index = 0;
-        projectedDate && projectedDate < endDate && index < 24;
+        let candidateLitterDate = dppDate, index = 0;
+        candidateLitterDate && index < 24;
         index += 1
       ) {
-        const adjustedProjectedDate = adjustProjectedLitterBirthDate(projectedDate, projectedLitterDates);
-        if (!adjustedProjectedDate) break;
+        const adjustedLitterDate = adjustProjectedLitterBirthDate(candidateLitterDate, projectedLitterDates);
+        if (!adjustedLitterDate) break;
 
-        addForecastValue(adjustedProjectedDate, "projeção após DPP", adjustedProjectedDate);
-        projectedLitterDates.push(adjustedProjectedDate);
+        const wasAdjustedForLimit =
+          parsePlanningDate(candidateLitterDate)?.getTime() !== adjustedLitterDate.getTime();
+        const receivingDate = wasAdjustedForLimit
+          ? addPlanningMonthsAndDays(adjustedLitterDate, 6, 15)
+          : addPlanningMonthsAndDays(adjustedLitterDate, 4, 15);
+        if (!receivingDate || receivingDate >= endDate) break;
+
+        addForecastValue(
+          receivingDate,
+          index === 0 ? "DPP" : "projeção após DPP",
+          adjustedLitterDate
+        );
+        projectedLitterDates.push(adjustedLitterDate);
         projectedLitterDates.sort((a, b) => a - b);
-        projectedDate = addPlanningMonthsAndDays(adjustedProjectedDate, 10, 15);
+        candidateLitterDate = addPlanningMonthsAndDays(adjustedLitterDate, 6, 0);
       }
     } else {
       if (!nextCrossDate) return [];
