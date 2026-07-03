@@ -443,14 +443,33 @@ function adjustProjectedLitterBirthDate(candidateBirthDate, litterDates) {
   if (!adjusted) return null;
 
   for (let guard = 0; guard < 10; guard += 1) {
+    const sortedDates = litterDates
+      .map(parsePlanningDate)
+      .filter((date) => date && date < adjusted)
+      .sort((a, b) => a - b);
     const twoYearsBefore = addPlanningMonthsAndDays(adjusted, -24, 0);
-    const recent = litterDates
-      .filter((date) => date < adjusted && (!twoYearsBefore || date >= twoYearsBefore))
+    const recentTwoYears = sortedDates
+      .filter((date) => !twoYearsBefore || date >= twoYearsBefore)
       .slice(-3);
-    if (recent.length < 3) return adjusted;
+    const oneYearBefore = addPlanningMonthsAndDays(adjusted, -12, 0);
+    const recentOneYear = sortedDates
+      .filter((date) => !oneYearBefore || date >= oneYearBefore)
+      .slice(-2);
 
-    const nextAllowed = addPlanningMonthsAndDays(recent[0], 24, 0);
-    if (!nextAllowed || nextAllowed <= adjusted) return adjusted;
+    const nextAllowedDates = [];
+    if (recentTwoYears.length >= 3) {
+      const nextAllowed = addPlanningDays(addPlanningMonthsAndDays(recentTwoYears[0], 24, 0), 1);
+      if (nextAllowed) nextAllowedDates.push(nextAllowed);
+    }
+    if (recentOneYear.length >= 2) {
+      const nextAllowed = addPlanningDays(addPlanningMonthsAndDays(recentOneYear[0], 12, 0), 1);
+      if (nextAllowed) nextAllowedDates.push(nextAllowed);
+    }
+
+    const nextAllowed = nextAllowedDates
+      .filter((date) => date > adjusted)
+      .sort((a, b) => b - a)[0];
+    if (!nextAllowed) return adjusted;
     adjusted = nextAllowed;
   }
 
@@ -617,33 +636,6 @@ async function loadFinancialPlanningKittenForecastRows(prisma, req, months, conf
 
     if (status === "COM_PROBLEMA") return [];
 
-    let baseDate = null;
-    let projectedBirthDate = null;
-    let firstReceivingDate = null;
-    let baseLabel = "base";
-
-    if (status === "CONFIRMADO" || status === "NAO_CONFIRMADO") {
-      baseDate = computePlanningReferenceMatingDate(plan?.matingStartDate, plan?.matingEndDate) || nextCrossDate;
-      projectedBirthDate = baseDate ? addPlanningDays(baseDate, 65) : null;
-      baseLabel = "nascimento previsto";
-      firstReceivingDate = addPlanningMonthsAndDays(projectedBirthDate, 4, 15);
-    } else if (status === "PARA_ACASALAR") {
-      const today = new Date();
-      today.setUTCHours(0, 0, 0, 0);
-      const plannedDate = parsePlanningDate(nextCrossDate);
-      baseDate = plannedDate && plannedDate >= today ? plannedDate : today;
-      baseLabel = "cruza prevista";
-      projectedBirthDate = addPlanningDays(baseDate, 65);
-      firstReceivingDate = addPlanningMonthsAndDays(baseDate, 6, 15);
-    } else {
-      baseDate = nextCrossDate;
-      baseLabel = "cruza prevista";
-      projectedBirthDate = addPlanningDays(baseDate, 65);
-      firstReceivingDate = addPlanningMonthsAndDays(baseDate, 6, 15);
-    }
-
-    if (!firstReceivingDate || !projectedBirthDate) return [];
-
     const forecastRow = {
       key: `kitten-forecast-${female.id}`,
       type: "kitten-forecast",
@@ -662,46 +654,63 @@ async function loadFinancialPlanningKittenForecastRows(prisma, req, months, conf
     };
     let forecastCount = 0;
     let firstForecastDate = null;
-    let receivingDate = firstReceivingDate;
-    let birthDate = projectedBirthDate;
-    const projectedLitterDates = [...litterDates];
 
-    for (let index = 0; index < 24 && receivingDate && receivingDate < endDate; index += 1) {
-      const candidateBirthDate = parsePlanningDate(birthDate);
-      const adjustedBirthDate = adjustProjectedLitterBirthDate(birthDate, projectedLitterDates);
-      if (!adjustedBirthDate) break;
-      const birthWasAdjusted = candidateBirthDate && adjustedBirthDate.getTime() !== candidateBirthDate.getTime();
-      const adjustedReceivingDate = birthWasAdjusted
-        ? addPlanningMonthsAndDays(adjustedBirthDate, 4, 15)
-        : receivingDate;
-      if (!adjustedReceivingDate) break;
-
-      if (adjustedReceivingDate >= startDate) {
-        const monthKey = planningMonthKeyFromDate(adjustedReceivingDate);
-        if (monthKeys.has(monthKey)) {
-          const isConfirmedForecast = status === "CONFIRMADO" || status === "NAO_CONFIRMADO";
-          const referenceLabel = index === 0 ? baseLabel : "nascimento projetado";
-          const referenceDate = index === 0
-            ? (isConfirmedForecast ? projectedBirthDate : baseDate)
-            : adjustedBirthDate;
-          forecastRow.values[monthKey] += amountCents;
-          forecastRow.details.push(
-            `${referenceLabel}: ${formatDateOnlyLabel(referenceDate)} · recebimento: ${formatDateOnlyLabel(adjustedReceivingDate)}`
-          );
-          forecastCount += 1;
-          if (!firstForecastDate || adjustedReceivingDate < firstForecastDate) {
-            firstForecastDate = adjustedReceivingDate;
-          }
-          if (adjustedReceivingDate && adjustedReceivingDate.getTime() < forecastRow.dateTime) {
-            forecastRow.dateTime = adjustedReceivingDate.getTime();
-          }
-        }
+    function addForecastValue(receivingDate, referenceLabel, referenceDate) {
+      const target = planningReferenceMonthTarget(receivingDate, months, startDate, endDate, monthKeys);
+      if (!target) return;
+      forecastRow.values[target.monthKey] += amountCents;
+      forecastRow.details.push(
+        `${referenceLabel}: ${formatDateOnlyLabel(referenceDate)} · recebimento: ${formatDateOnlyLabel(receivingDate)}`
+      );
+      forecastCount += 1;
+      forecastRow.overdue = forecastRow.overdue || target.overdue;
+      if (target.overdue && !forecastRow.overdueMonthKey) {
+        forecastRow.overdueMonthKey = target.monthKey;
       }
+      if (!firstForecastDate || receivingDate < firstForecastDate) {
+        firstForecastDate = receivingDate;
+      }
+      if (receivingDate && receivingDate.getTime() < forecastRow.dateTime) {
+        forecastRow.dateTime = receivingDate.getTime();
+      }
+    }
 
-      projectedLitterDates.push(adjustedBirthDate);
+    if (status === "CONFIRMADO" || status === "NAO_CONFIRMADO") {
+      const matingReferenceDate = computePlanningReferenceMatingDate(plan?.matingStartDate, plan?.matingEndDate);
+      const dppDate = matingReferenceDate ? addPlanningDays(matingReferenceDate, 60) : null;
+      if (!dppDate) return [];
+      const projectedLitterDates = [...litterDates];
+      const adjustedDppDate = adjustProjectedLitterBirthDate(dppDate, projectedLitterDates);
+      if (!adjustedDppDate) return [];
+      projectedLitterDates.push(adjustedDppDate);
       projectedLitterDates.sort((a, b) => a - b);
-      receivingDate = addPlanningMonthsAndDays(adjustedReceivingDate, 6, 15);
-      birthDate = addPlanningMonthsAndDays(adjustedBirthDate, 6, 15);
+
+      addForecastValue(
+        addPlanningMonthsAndDays(adjustedDppDate, 4, 15),
+        "DPP",
+        adjustedDppDate
+      );
+
+      for (
+        let projectedDate = addPlanningMonthsAndDays(adjustedDppDate, 6, 15), index = 0;
+        projectedDate && projectedDate < endDate && index < 24;
+        index += 1
+      ) {
+        const adjustedProjectedDate = adjustProjectedLitterBirthDate(projectedDate, projectedLitterDates);
+        if (!adjustedProjectedDate) break;
+
+        addForecastValue(adjustedProjectedDate, "projeção após DPP", adjustedProjectedDate);
+        projectedLitterDates.push(adjustedProjectedDate);
+        projectedLitterDates.sort((a, b) => a - b);
+        projectedDate = addPlanningMonthsAndDays(adjustedProjectedDate, 6, 15);
+      }
+    } else {
+      if (!nextCrossDate) return [];
+      addForecastValue(
+        addPlanningMonthsAndDays(nextCrossDate, 6, 15),
+        "próxima cruza",
+        nextCrossDate
+      );
     }
 
     if (!forecastCount) return [];
