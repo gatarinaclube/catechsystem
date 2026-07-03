@@ -5,6 +5,13 @@ const DEFAULT_ACADEMY_PUBLIC_SETTINGS = {
   countdownTitle: "Próxima jornada Gatofilia",
   nextJourneyStartDate: "",
   registrationEndsDate: "",
+  presentationWelcomeVideoUrl: "",
+  presentationClosingVideoUrl: "",
+  presentationEcosystemImageUrl: "/uploads/academy/gatofilia-ecosystem-01.png",
+  presentationPixLabel: "PIX - R$ 2.000,00",
+  presentationCardLabel: "Cartão - 12x R$ 200,00",
+  presentationOfferTitle: "Exclusiva para os 10 primeiros inscritos",
+  presentationOfferNote: "Considerando os benefícios inclusos, uma parte significativa do investimento retorna em estrutura, tecnologia, associação e apoio prático.",
 };
 
 function normalizeSettings(value = {}) {
@@ -15,7 +22,27 @@ function normalizeSettings(value = {}) {
     countdownTitle: String(value.countdownTitle || DEFAULT_ACADEMY_PUBLIC_SETTINGS.countdownTitle).trim(),
     nextJourneyStartDate: normalizeDateInput(value.nextJourneyStartDate),
     registrationEndsDate: normalizeDateInput(value.registrationEndsDate),
+    presentationWelcomeVideoUrl: normalizeUrl(value.presentationWelcomeVideoUrl),
+    presentationClosingVideoUrl: normalizeUrl(value.presentationClosingVideoUrl),
+    presentationEcosystemImageUrl: normalizeUrl(value.presentationEcosystemImageUrl) || DEFAULT_ACADEMY_PUBLIC_SETTINGS.presentationEcosystemImageUrl,
+    presentationPixLabel: cleanText(value.presentationPixLabel, DEFAULT_ACADEMY_PUBLIC_SETTINGS.presentationPixLabel),
+    presentationCardLabel: cleanText(value.presentationCardLabel, DEFAULT_ACADEMY_PUBLIC_SETTINGS.presentationCardLabel),
+    presentationOfferTitle: cleanText(value.presentationOfferTitle, DEFAULT_ACADEMY_PUBLIC_SETTINGS.presentationOfferTitle),
+    presentationOfferNote: cleanText(value.presentationOfferNote, DEFAULT_ACADEMY_PUBLIC_SETTINGS.presentationOfferNote),
   };
+}
+
+function cleanText(value, fallback = "") {
+  const text = String(value || "").trim();
+  return text || fallback;
+}
+
+function normalizeUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (raw.startsWith("/uploads/academy/")) return raw;
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return "";
 }
 
 function normalizeDateInput(value) {

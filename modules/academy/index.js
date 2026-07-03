@@ -77,7 +77,17 @@ module.exports = (prisma) => {
   router.get("/academy/admin", academySession, academyAdmin, adminController.dashboard);
   router.post("/academy/admin/seed", academySession, academyAdmin, adminController.seedFoundation);
   router.get("/academy/admin/configuracoes", academySession, academyAdmin, adminController.publicSettings);
-  router.post("/academy/admin/configuracoes", academySession, academyAdmin, adminController.updatePublicSettings);
+  router.post(
+    "/academy/admin/configuracoes",
+    academySession,
+    academyAdmin,
+    academyUpload.fields([
+      { name: "presentationWelcomeVideo", maxCount: 1 },
+      { name: "presentationClosingVideo", maxCount: 1 },
+      { name: "presentationEcosystemImage", maxCount: 1 },
+    ]),
+    adminController.updatePublicSettings,
+  );
   router.get("/academy/admin/interesses", academySession, academyAdmin, adminController.interests);
   router.post("/academy/admin/interesses/:id/respondida", academySession, academyAdmin, adminController.markInterestResponded);
   router.post("/academy/admin/interesses/:id/nova", academySession, academyAdmin, adminController.markInterestNew);

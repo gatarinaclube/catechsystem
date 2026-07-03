@@ -7,6 +7,17 @@
     <link rel="stylesheet" href="/css/academy.css" />
   </head>
   <body class="gatofilia-public gatofilia-presentation-page">
+    <%
+      const presentationSettings = settings || {};
+      const welcomeVideoUrl = presentationSettings.presentationWelcomeVideoUrl || "";
+      const closingVideoUrl = presentationSettings.presentationClosingVideoUrl || "";
+      const ecosystemImageUrl = presentationSettings.presentationEcosystemImageUrl || "/uploads/academy/gatofilia-ecosystem-01.png";
+      const pixLabel = presentationSettings.presentationPixLabel || "PIX - R$ 2.000,00";
+      const cardLabel = presentationSettings.presentationCardLabel || "Cartão - 12x R$ 200,00";
+      const offerTitle = presentationSettings.presentationOfferTitle || "Exclusiva para os 10 primeiros inscritos";
+      const offerNote = presentationSettings.presentationOfferNote || "Considerando os benefícios inclusos, uma parte significativa do investimento retorna em estrutura, tecnologia, associação e apoio prático.";
+      const isVideoFile = function(url) { return /\.(mp4|webm)(\?.*)?$/i.test(String(url || "")); };
+    %>
     <header class="gatofilia-presentation-nav" id="gatofiliaNav">
       <a class="gatofilia-brand" href="/apresentacao" aria-label="Gatofilia">
         <img
@@ -54,11 +65,21 @@
           <h2>Antes de decidir, veja a Gatofilia por dentro.</h2>
           <p>Este espaço receberá o vídeo oficial de apresentação da jornada, valores, especialistas e próximos passos.</p>
         </div>
-        <div class="gatofilia-video-placeholder" aria-label="Espaço reservado para vídeo de boas-vindas">
-          <span>Vídeo de boas-vindas</span>
-          <strong>Em breve</strong>
-          <p>Apresentação da jornada, metodologia, especialistas e próximos passos.</p>
-        </div>
+        <% if (welcomeVideoUrl) { %>
+          <div class="gatofilia-video-frame">
+            <% if (isVideoFile(welcomeVideoUrl)) { %>
+              <video src="<%= welcomeVideoUrl %>" controls preload="metadata"></video>
+            <% } else { %>
+              <iframe src="<%= welcomeVideoUrl %>" title="Vídeo de boas-vindas Gatofilia" loading="lazy" allowfullscreen></iframe>
+            <% } %>
+          </div>
+        <% } else { %>
+          <div class="gatofilia-video-placeholder" aria-label="Espaço reservado para vídeo de boas-vindas">
+            <span>Vídeo de boas-vindas</span>
+            <strong>Em breve</strong>
+            <p>Apresentação da jornada, metodologia, especialistas e próximos passos.</p>
+          </div>
+        <% } %>
       </section>
 
       <section id="historia" class="gatofilia-section gatofilia-presentation-story reveal-on-scroll">
@@ -137,7 +158,7 @@
           </p>
         </div>
         <figure class="gatofilia-ecosystem-image">
-          <img src="/uploads/academy/gatofilia-ecosystem-01.png" alt="Ecossistema Gatofilia" width="1536" height="1536" loading="lazy" decoding="async" />
+          <img src="<%= ecosystemImageUrl %>" alt="Ecossistema Gatofilia" width="1536" height="1536" loading="lazy" decoding="async" />
         </figure>
       </section>
 
@@ -280,21 +301,18 @@
         </div>
         <div class="gatofilia-offer-card">
           <span>Oferta de lançamento</span>
-          <h3>Exclusiva para os 10 primeiros inscritos</h3>
+          <h3><%= offerTitle %></h3>
           <div class="gatofilia-price-grid">
             <article>
               <small>Cartão de crédito</small>
-              <strong>12x de R$ 200,00</strong>
+              <strong><%= cardLabel.replace(/^Cart[aã]o\\s*-\\s*/i, "") %></strong>
             </article>
             <article>
               <small>PIX à vista</small>
-              <strong>R$ 2.000,00</strong>
+              <strong><%= pixLabel.replace(/^PIX\\s*-\\s*/i, "") %></strong>
             </article>
           </div>
-          <p>
-            Considerando os benefícios inclusos, uma parte significativa do investimento retorna
-            em estrutura, tecnologia, associação e apoio prático.
-          </p>
+          <p><%= offerNote %></p>
           <a class="gatofilia-button primary" href="#inscricao">Garanta sua vaga</a>
         </div>
       </section>
@@ -391,8 +409,8 @@
           </label>
           <label class="full gatofilia-payment-choice">Forma de pagamento
             <div>
-              <label><input type="radio" name="paymentChoice" value="PIX - R$ 2.000,00" required /> PIX - R$ 2.000,00</label>
-              <label><input type="radio" name="paymentChoice" value="Cartão - 12x R$ 200,00" required /> Cartão - 12x R$ 200,00</label>
+              <label><input type="radio" name="paymentChoice" value="<%= pixLabel %>" required /> <%= pixLabel %></label>
+              <label><input type="radio" name="paymentChoice" value="<%= cardLabel %>" required /> <%= cardLabel %></label>
             </div>
           </label>
           <label class="full">Mensagem
@@ -441,11 +459,21 @@
           <h2>O próximo passo é decidir construir com conhecimento.</h2>
           <p>Este espaço receberá um vídeo final com orientação de inscrição, calendário e convite para a próxima jornada.</p>
         </div>
-        <div class="gatofilia-video-placeholder is-final" aria-label="Espaço reservado para vídeo de encerramento">
-          <span>Vídeo de encerramento</span>
-          <strong>Em breve</strong>
-          <p>Mensagem final, chamada para inscrição e próximos passos.</p>
-        </div>
+        <% if (closingVideoUrl) { %>
+          <div class="gatofilia-video-frame">
+            <% if (isVideoFile(closingVideoUrl)) { %>
+              <video src="<%= closingVideoUrl %>" controls preload="metadata"></video>
+            <% } else { %>
+              <iframe src="<%= closingVideoUrl %>" title="Vídeo de encerramento Gatofilia" loading="lazy" allowfullscreen></iframe>
+            <% } %>
+          </div>
+        <% } else { %>
+          <div class="gatofilia-video-placeholder is-final" aria-label="Espaço reservado para vídeo de encerramento">
+            <span>Vídeo de encerramento</span>
+            <strong>Em breve</strong>
+            <p>Mensagem final, chamada para inscrição e próximos passos.</p>
+          </div>
+        <% } %>
       </section>
     </main>
 

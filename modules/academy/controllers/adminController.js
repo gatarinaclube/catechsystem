@@ -29,6 +29,14 @@ function splitLeadsByStatus(leads) {
   };
 }
 
+function isPresentationLead(lead) {
+  return String(lead.message || "").includes("Dados para confirmação de inscrição:");
+}
+
+function academyUploadUrl(file) {
+  return file ? `/uploads/academy/${file.filename}` : "";
+}
+
 function lessonPayloadFromBody(body) {
   const status = body.status || ACADEMY_CONTENT_STATUSES.DRAFT;
   return {
@@ -167,7 +175,10 @@ module.exports = (prisma) => ({
         take: 100,
       }),
     ]);
-    const leadGroups = splitLeadsByStatus(leads);
+    const presentationLeads = leads.filter(isPresentationLead);
+    const publicLeads = leads.filter((lead) => !isPresentationLead(lead));
+    const leadGroups = splitLeadsByStatus(publicLeads);
+    const presentationLeadGroups = splitLeadsByStatus(presentationLeads);
 
     res.render("academy/admin/public-settings", {
       pageTitle: "Gatofilia Pública - Admin",
@@ -176,17 +187,32 @@ module.exports = (prisma) => ({
       settings,
       countdown: buildAcademyCountdown(settings),
       leads,
+      publicLeads,
+      presentationLeads,
+      presentationLeadGroups,
       ...leadGroups,
       saved: req.query.salvo === "1",
     });
   },
 
   updatePublicSettings: async (req, res) => {
+    const files = req.files || {};
+    const presentationWelcomeUpload = academyUploadUrl(files.presentationWelcomeVideo?.[0]);
+    const presentationClosingUpload = academyUploadUrl(files.presentationClosingVideo?.[0]);
+    const presentationImageUpload = academyUploadUrl(files.presentationEcosystemImage?.[0]);
+
     await saveAcademyPublicSettings(prisma, {
       countdownEnabled: toBool(req.body.countdownEnabled),
       countdownTitle: req.body.countdownTitle,
       nextJourneyStartDate: req.body.nextJourneyStartDate,
       registrationEndsDate: req.body.registrationEndsDate,
+      presentationWelcomeVideoUrl: presentationWelcomeUpload || req.body.presentationWelcomeVideoUrl,
+      presentationClosingVideoUrl: presentationClosingUpload || req.body.presentationClosingVideoUrl,
+      presentationEcosystemImageUrl: presentationImageUpload || req.body.presentationEcosystemImageUrl,
+      presentationPixLabel: req.body.presentationPixLabel,
+      presentationCardLabel: req.body.presentationCardLabel,
+      presentationOfferTitle: req.body.presentationOfferTitle,
+      presentationOfferNote: req.body.presentationOfferNote,
     });
 
     res.redirect("/academy/admin/configuracoes?salvo=1");

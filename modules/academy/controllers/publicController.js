@@ -240,6 +240,7 @@ module.exports = (prisma) => ({
     res.set("X-Robots-Tag", "noindex, nofollow");
     const publicSettings = await getAcademyPublicSettings(prisma);
     renderPublic(req, res, "presentation", {
+      settings: publicSettings,
       academyCountdown: buildAcademyCountdown(publicSettings),
       leadStatus: req.query.interesse || null,
       seo: {
@@ -265,6 +266,7 @@ module.exports = (prisma) => ({
     );
     const isPresentationInterest = req.path.startsWith("/apresentacao");
     const basePath = isPresentationInterest ? "/apresentacao" : (isGatofiliaHost ? "/" : (req.path.startsWith("/gatofilia") ? "/gatofilia" : "/academy"));
+    const formHash = isPresentationInterest ? "#inscricao" : "#pre-inscricao";
     const leadData = {
       firstName: cleanText(req.body.firstName, 120),
       lastName: cleanText(req.body.lastName, 120),
@@ -322,7 +324,7 @@ module.exports = (prisma) => ({
     }
 
     if (requiredFields.some((field) => !field)) {
-      return res.redirect(`${basePath}?interesse=erro#pre-inscricao`);
+      return res.redirect(`${basePath}?interesse=erro${formHash}`);
     }
 
     const whatsappPayload = JSON.stringify({
@@ -358,10 +360,10 @@ module.exports = (prisma) => ({
         },
       });
       await notifyGatofiliaLead(lead);
-      return res.redirect(`${basePath}?interesse=ok#pre-inscricao`);
+      return res.redirect(`${basePath}?interesse=ok${formHash}`);
     } catch (err) {
       console.error("Erro ao registrar lead Gatofilia:", err.message || err);
-      return res.redirect(`${basePath}?interesse=erro#pre-inscricao`);
+      return res.redirect(`${basePath}?interesse=erro${formHash}`);
     }
   },
 
