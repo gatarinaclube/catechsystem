@@ -6,6 +6,83 @@
 
     <link rel="stylesheet" href="/css/theme.css" />
     <link rel="stylesheet" href="/css/layout.css" />
+    <style>
+      .user-admin-section {
+        border: 1px solid var(--border-soft);
+        border-radius: 14px;
+        padding: 16px;
+        margin-bottom: 16px;
+        background: #fff;
+      }
+
+      .user-admin-section.is-muted {
+        background: #f8fafc;
+        opacity: 0.62;
+      }
+
+      .user-admin-section-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .user-admin-section-title {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 800;
+        color: var(--text-main);
+      }
+
+      .user-admin-section-sub {
+        margin-top: 3px;
+        font-size: 12px;
+        color: var(--text-muted);
+        line-height: 1.45;
+      }
+
+      .user-type-switch {
+        display: inline-grid;
+        grid-template-columns: repeat(2, minmax(130px, 1fr));
+        gap: 6px;
+        padding: 4px;
+        border-radius: 999px;
+        border: 1px solid var(--border-soft);
+        background: #f8fafc;
+      }
+
+      .user-type-switch label {
+        margin: 0;
+      }
+
+      .user-type-switch input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .user-type-switch span {
+        display: block;
+        border-radius: 999px;
+        padding: 9px 14px;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--text-muted);
+        cursor: pointer;
+      }
+
+      .user-type-switch input:checked + span {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .readonly-grid input[readonly] {
+        background: #f8fafc;
+        color: var(--text-muted);
+      }
+    </style>
   </head>
   <body>
     <div class="shell">
@@ -30,8 +107,13 @@
           <!-- FORMULÁRIO COMPLETO -->
           <form method="post" action="/users/<%= userDetail.id %>">
             <!-- INFORMAÇÕES BÁSICAS / CADASTRAIS -->
-            <section style="margin-bottom:16px;">
-              <h3 class="section-title">Informações do usuário</h3>
+            <section class="user-admin-section">
+              <div class="user-admin-section-header">
+                <div>
+                  <h3 class="user-admin-section-title">Informações do usuário</h3>
+                  <div class="user-admin-section-sub">Dados cadastrais principais do acesso.</div>
+                </div>
+              </div>
 
 
               <div class="grid-3">
@@ -244,8 +326,13 @@
             </section>
 
             <!-- CONTROLE DE APROVAÇÃO -->
-            <section style="margin-bottom:16px;">
-              <h3 class="section-title">Situação do cadastro</h3>
+            <section class="user-admin-section">
+              <div class="user-admin-section-header">
+                <div>
+                  <h3 class="user-admin-section-title">Situação do cadastro</h3>
+                  <div class="user-admin-section-sub">Controle manual de ativação, restrição e observações internas.</div>
+                </div>
+              </div>
 
 
                 <div class="grid-3" style="margin-top:10px;">
@@ -258,7 +345,7 @@
                     value="INDEFERIDO"
                     <%= (userDetail.approvalStatus === "INDEFERIDO" || !userDetail.approvalStatus) ? "selected" : "" %>
                   >
-                    Indeferido (Novo cadastro)
+                    Inativo (bloqueado pelo administrador)
                   </option>
                   <option
                     value="DEFERIDO"
@@ -274,9 +361,9 @@
                   </option>
                 </select>
                 <small style="font-size:11px; color:var(--text-muted);">
-                  • Indeferido: fica na lista "Novo Cadastro" e não pode fazer login.<br/>
-                  • Deferido: vai para "Ativos" e pode fazer login normalmente.<br/>
-                  • Restrições: vai para "Inativos" e não pode fazer login.
+                  • Inativo: não pode fazer login até ser reativado pelo administrador.<br/>
+                  • Ativo: pode acessar normalmente, respeitando vencimento de teste ou plano.<br/>
+                  • Restrições: fica bloqueado por comando administrativo.
                 </small>
               </div>
               </div>
@@ -298,9 +385,23 @@
             </section>
 
             <section style="margin-bottom:16px;">
-              <h3 class="section-title">Origem, plano e pagamento</h3>
-              <div class="content-sub" style="margin-top:4px;">
-                O campo <strong>Perfil</strong> define os acessos do sistema. A <strong>Origem</strong> separa solicitações de associação dos planos comerciais.
+              <div class="user-admin-section-header">
+                <div>
+                  <h3 class="user-admin-section-title">Origem, plano e pagamento</h3>
+                  <div class="user-admin-section-sub">
+                    Separe usuários comerciais PetGus de usuários associados Gatarina. O quadro correspondente fica destacado conforme o tipo selecionado.
+                  </div>
+                </div>
+                <div class="user-type-switch" aria-label="Tipo de usuário">
+                  <label>
+                    <input type="radio" name="userTypeVisual" value="NON_ASSOCIATE" <%= userDetail.accountOrigin !== "ASSOCIATE" ? "checked" : "" %> />
+                    <span>Usuário Comercial</span>
+                  </label>
+                  <label>
+                    <input type="radio" name="userTypeVisual" value="ASSOCIATE" <%= userDetail.accountOrigin === "ASSOCIATE" ? "checked" : "" %> />
+                    <span>Usuário Associado</span>
+                  </label>
+                </div>
               </div>
               <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
                 <button class="btn" type="button" id="startTrialButton">
@@ -310,7 +411,15 @@
                   Preenche automaticamente como plano não associado, Premium em teste, cadastro ativo e fim do teste em 7 dias.
                 </small>
               </div>
-              <div class="grid-3" style="margin-top:10px;">
+
+              <div class="user-admin-section" id="commercialUserBox" style="margin-top:12px;">
+                <div class="user-admin-section-header">
+                  <div>
+                    <h4 class="user-admin-section-title" style="font-size:15px;">Usuário Comercial</h4>
+                    <div class="user-admin-section-sub">Usado para teste grátis, contratação e pagamentos dos planos PetGus.</div>
+                  </div>
+                </div>
+                <div class="grid-3" style="margin-top:10px;">
                 <div class="field">
                   <label class="field-label" for="accountOrigin">Origem do cadastro</label>
                   <select id="accountOrigin" name="accountOrigin">
@@ -344,7 +453,7 @@
                   </select>
                 </div>
               </div>
-              <div class="grid-3" style="margin-top:10px;">
+                <div class="grid-3" style="margin-top:10px;">
                 <div class="field">
                   <label class="field-label" for="trialEndsAt">Vencimento do acesso</label>
                   <input
@@ -363,7 +472,7 @@
                   />
                 </div>
               </div>
-              <div class="grid-3" style="margin-top:10px;">
+                <div class="grid-3 readonly-grid" style="margin-top:10px;">
                 <div class="field">
                   <label class="field-label">Cliente Asaas</label>
                   <input type="text" value="<%= userDetail.asaasCustomerId || '-' %>" readonly />
@@ -382,6 +491,31 @@
                   <a class="btn" href="<%= userDetail.asaasPaymentUrl %>" target="_blank" rel="noopener">Abrir cobrança Asaas</a>
                 </div>
               <% } %>
+              </div>
+
+              <div class="user-admin-section" id="associateUserBox">
+                <div class="user-admin-section-header">
+                  <div>
+                    <h4 class="user-admin-section-title" style="font-size:15px;">Usuário Associado</h4>
+                    <div class="user-admin-section-sub">Usado para solicitações de associação Gatarina e planos de associado.</div>
+                  </div>
+                </div>
+                <div class="grid-3 readonly-grid">
+                  <div class="field">
+                    <label class="field-label">Origem esperada</label>
+                    <input type="text" value="Solicitação de associação Gatarina" readonly />
+                  </div>
+                  <div class="field">
+                    <label class="field-label">Planos de associado</label>
+                    <input type="text" value="Associado Básico, Associado Master ou Associado Premium" readonly />
+                  </div>
+                  <div class="field">
+                    <label class="field-label">Pagamento</label>
+                    <input type="text" value="Associação, anuidade e liberação conforme confirmação" readonly />
+                  </div>
+                </div>
+              </div>
+
               <small style="font-size:11px; color:var(--text-muted);">
                 Plano não associado: o pagamento altera automaticamente status e perfil comercial. Solicitação de associação: o pagamento libera como Associado Master/Premium até 31/07, e o administrador pode ajustar o perfil depois.
               </small>
@@ -442,7 +576,48 @@
           setValue("trialEndsAt", `${yyyy}-${mm}-${dd}`);
           setValue("role", "PREMIUM");
           setValue("approvalStatus", "DEFERIDO");
+          refreshOriginBoxes("NON_ASSOCIATE");
         });
+
+        const accountOrigin = document.getElementById("accountOrigin");
+        const typeRadios = document.querySelectorAll("input[name='userTypeVisual']");
+        const commercialBox = document.getElementById("commercialUserBox");
+        const associateBox = document.getElementById("associateUserBox");
+
+        function refreshOriginBoxes(origin) {
+          const isAssociate = origin === "ASSOCIATE";
+          if (accountOrigin) accountOrigin.value = origin || "NON_ASSOCIATE";
+          if (commercialBox) commercialBox.classList.toggle("is-muted", isAssociate);
+          if (associateBox) associateBox.classList.toggle("is-muted", !isAssociate);
+          typeRadios.forEach((radio) => {
+            radio.checked = radio.value === (isAssociate ? "ASSOCIATE" : "NON_ASSOCIATE");
+          });
+        }
+
+        typeRadios.forEach((radio) => {
+          radio.addEventListener("change", function () {
+            if (!radio.checked) return;
+            refreshOriginBoxes(radio.value);
+            if (radio.value === "ASSOCIATE") {
+              setValue("selectedPlan", "ASSOCIADO_A");
+              setValue("subscriptionStatus", "PENDING_ASSOCIATION_PAYMENT");
+              setValue("role", "ASSOCIADO_A");
+              setValue("approvalStatus", "DEFERIDO");
+            } else {
+              setValue("selectedPlan", "PREMIUM");
+              setValue("subscriptionStatus", "TRIALING");
+              setValue("role", "PREMIUM");
+              setValue("approvalStatus", "DEFERIDO");
+            }
+          });
+        });
+
+        if (accountOrigin) {
+          accountOrigin.addEventListener("change", function () {
+            refreshOriginBoxes(accountOrigin.value);
+          });
+          refreshOriginBoxes(accountOrigin.value || "NON_ASSOCIATE");
+        }
       })();
     </script>
   </body>

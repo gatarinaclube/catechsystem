@@ -53,7 +53,10 @@ const {
 } = require("./utils/asaas");
 const {
   notifyNewUser,
+  notifyUserAccessStatusChange,
+  notifyUserPlanChange,
   notifyUserRegistrationConfirmation,
+  notifyUserSubscriptionStatusChange,
 } = require("./utils/adminNotifications");
 const { generateLitterAdminBundle, generateLitterUserPDF } = require("./modules/pdf/litterPdf");
 const { generateTransferPDF } = require("./modules/pdf/transferPdf");
@@ -824,6 +827,9 @@ async function handleSystemLogin(req, res, loginKind) {
             },
           })
         : user;
+      if (paymentStatus === "EXPIRED") {
+        await notifyUserSubscriptionStatusChange(updatedUser, user.subscriptionStatus, updatedUser.subscriptionStatus);
+      }
 
       clearAdminViewAs(req);
       req.session.userId = updatedUser.id;
@@ -835,7 +841,7 @@ async function handleSystemLogin(req, res, loginKind) {
     if (user.approvalStatus && user.approvalStatus !== "DEFERIDO") {
       return res.render("login", loginViewOptions(loginKind, {
         error:
-          "Seu cadastro ainda não foi aprovado ou está com restrições, entre em contato com o Administrador.",
+          "Seu cadastro está inativo ou com restrições. Entre em contato com o administrador.",
       }));
     }
 
@@ -1549,7 +1555,7 @@ const createdUser = await prisma.user.create({
     password: passwordHash,
     role: ROLES.ASSOCIADO_A,
     clubs: clubsValue,
-    approvalStatus: "INDEFERIDO",
+    approvalStatus: "DEFERIDO",
     accountOrigin: "ASSOCIATE",
     selectedPlan: ROLES.ASSOCIADO_A,
     subscriptionStatus: "PENDING_ASSOCIATION_PAYMENT",
@@ -1718,6 +1724,9 @@ app.post("/planos/:plan/cadastro", async (req, res) => {
         trialEndsAt,
       },
     });
+
+    await notifyNewUser(prisma, createdUser);
+    await notifyUserRegistrationConfirmation(createdUser);
 
     req.session.userId = createdUser.id;
     req.session.userRole = normalizeRole(createdUser.role);
@@ -1943,7 +1952,7 @@ app.post("/webhooks/asaas", async (req, res) => {
       const billingMode = normalizeBillingMode(reference?.billingMode || "MONTHLY_PIX");
       if (String(reference?.billingMode || "").toUpperCase() === "ASSOCIATION_INITIAL") {
         const associationRole = normalizeAssociationPlan(reference?.planKey);
-        await prisma.user.update({
+        const updatedUser = await prisma.user.update({
           where: { id: user.id },
           data: {
             role: associationRole,
@@ -1958,10 +1967,13 @@ app.post("/webhooks/asaas", async (req, res) => {
             asaasLastEvent: `${eventName}_ASSOCIATION_INITIAL`,
           },
         });
+        await notifyUserAccessStatusChange(updatedUser, user.approvalStatus, updatedUser.approvalStatus);
+        await notifyUserSubscriptionStatusChange(updatedUser, user.subscriptionStatus, updatedUser.subscriptionStatus);
+        await notifyUserPlanChange(updatedUser, user.selectedPlan || user.role, updatedUser.selectedPlan || updatedUser.role);
         return res.sendStatus(200);
       }
 
-      await prisma.user.update({
+      const updatedUser = await prisma.user.update({
         where: { id: user.id },
         data: {
           role: nextRole,
@@ -1976,14 +1988,18 @@ app.post("/webhooks/asaas", async (req, res) => {
           asaasLastEvent: `${eventName}_${billingMode}`,
         },
       });
+      await notifyUserAccessStatusChange(updatedUser, user.approvalStatus, updatedUser.approvalStatus);
+      await notifyUserSubscriptionStatusChange(updatedUser, user.subscriptionStatus, updatedUser.subscriptionStatus);
+      await notifyUserPlanChange(updatedUser, user.selectedPlan || user.role, updatedUser.selectedPlan || updatedUser.role);
     } else if (restrictEvents.has(eventName)) {
-      await prisma.user.update({
+      const updatedUser = await prisma.user.update({
         where: { id: user.id },
         data: {
           subscriptionStatus: eventName === "PAYMENT_OVERDUE" ? "PENDING" : "CANCELED",
           asaasLastEvent: eventName,
         },
       });
+      await notifyUserSubscriptionStatusChange(updatedUser, user.subscriptionStatus, updatedUser.subscriptionStatus);
     } else {
       await prisma.user.update({
         where: { id: user.id },
@@ -2017,7 +2033,7 @@ app.get("/dashboard", requireAuth, async (req, res) => {
     const paymentStatus = commercialPaymentStatus(user);
     if (paymentStatus) {
       if (paymentStatus === "EXPIRED") {
-        await prisma.user.update({
+        const updatedUser = await prisma.user.update({
           where: { id: user.id },
           data: {
             approvalStatus: "DEFERIDO",
@@ -2025,6 +2041,7 @@ app.get("/dashboard", requireAuth, async (req, res) => {
             asaasPaymentUrl: null,
           },
         });
+        await notifyUserSubscriptionStatusChange(updatedUser, user.subscriptionStatus, updatedUser.subscriptionStatus);
       }
       return res.redirect("/billing/pay");
     }
@@ -2625,7 +2642,7 @@ app.post("/meus-dados", requireAuth, async (req, res) => {
         cep,
         phones,
         email: normalizedEmail,
-        approvalStatus: "INDEFERIDO",
+        approvalStatus: "DEFERIDO",
       },
     });
 

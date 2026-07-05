@@ -55,7 +55,7 @@ model User {
   fifeCatteryName String?
 
   // Status de aprovação
-  approvalStatus      ApprovalStatus @default(INDEFERIDO)
+  approvalStatus      ApprovalStatus @default(DEFERIDO)
   adminNotes          String?
   accountOrigin       String?
   selectedPlan        String?

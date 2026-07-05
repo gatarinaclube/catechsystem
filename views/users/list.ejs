@@ -6,6 +6,107 @@
 
     <link rel="stylesheet" href="/css/theme.css" />
     <link rel="stylesheet" href="/css/layout.css" />
+    <style>
+      .user-list-item {
+        align-items: center;
+        gap: 14px;
+        min-height: 54px;
+      }
+
+      .user-list-main {
+        min-width: 220px;
+      }
+
+      .user-list-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .user-quick-form {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 8px;
+        justify-content: flex-end;
+        align-items: center;
+        max-width: none;
+        margin: 0;
+      }
+
+      .quick-pill {
+        height: 34px;
+        border-radius: 999px;
+        border: 1px solid var(--border-soft);
+        padding: 0 30px 0 12px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      }
+
+      .quick-pill:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.18);
+      }
+
+      .quick-pill-role {
+        min-width: 150px;
+        background: #ffffff;
+        color: var(--text-main);
+      }
+
+      .quick-pill-status {
+        min-width: 112px;
+      }
+
+      .quick-status-DEFERIDO {
+        background: #dcfce7;
+        border-color: #86efac;
+        color: #166534;
+      }
+
+      .quick-status-INDEFERIDO {
+        background: #fef3c7;
+        border-color: #fcd34d;
+        color: #92400e;
+      }
+
+      .quick-status-RESTRICOES {
+        background: #fee2e2;
+        border-color: #fca5a5;
+        color: #991b1b;
+      }
+
+      .quick-gatofilia-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        min-width: 78px;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .quick-gatofilia-toggle input {
+        width: 14px;
+        height: 14px;
+      }
+
+      .quick-save-state {
+        min-width: 42px;
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+
+      .quick-save-state.is-ok {
+        color: #15803d;
+      }
+
+      .quick-save-state.is-error {
+        color: #b91c1c;
+      }
+    </style>
   </head>
   <body>
     <div class="shell">
@@ -80,32 +181,16 @@
                 <ul class="list">
                   <% group.users.forEach(function(u) { %>
                     <% const status = u.approvalStatus || "INDEFERIDO"; %>
-                    <li class="item">
-                      <div>
+                    <li class="item user-list-item">
+                      <div class="user-list-main">
                         <a class="item-link" href="/users/<%= u.id %>">
                           <%= u.name || "(sem nome)" %>
                         </a>
                         <div class="item-sub">
-                          Email: <%= u.email || "-" %>
-                          <% if (status !== "RESTRICOES") { %>
-                            • Perfil: <%= u.roleLabel || "Usuário" %>
-                          <% } %>
-                          <% if (u.createdAt && status === "INDEFERIDO") { %>
-                            • Cadastro: <%= new Date(u.createdAt).toLocaleString('pt-BR') %>
-                          <% } %>
-                          <% if (u.gatofiliaAccess) { %>
-                            • Gatofilia liberado
-                          <% } %>
+                          <%= u.email || "-" %>
                         </div>
                       </div>
-                      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
-                        <% if (status === "DEFERIDO") { %>
-                          <span class="badge-status badge-status--active">Ativo</span>
-                        <% } else if (status === "RESTRICOES") { %>
-                          <span class="badge-status badge-status--inactive">Restrição</span>
-                        <% } else { %>
-                          <span class="badge-status badge-status--new">Novo cadastro</span>
-                        <% } %>
+                      <div class="user-list-actions">
                         <% if (u.role !== 'ADMIN') { %>
                           <form method="post" action="/users/<%= u.id %>/view-as" style="margin:0;">
                             <button
@@ -140,5 +225,62 @@
         </div>
       </main>
     </div>
+    <script>
+      (function () {
+        const statusClasses = ["quick-status-DEFERIDO", "quick-status-INDEFERIDO", "quick-status-RESTRICOES"];
+
+        function refreshStatusClass(select) {
+          select.classList.remove(...statusClasses);
+          select.classList.add(`quick-status-${select.value || "INDEFERIDO"}`);
+        }
+
+        async function saveQuickForm(form) {
+          const state = form.querySelector("[data-quick-save-state]");
+          const statusSelect = form.querySelector("[name='approvalStatus']");
+          if (state) {
+            state.textContent = "Salvando...";
+            state.className = "quick-save-state";
+          }
+
+          try {
+            const payload = new URLSearchParams(new FormData(form));
+            const response = await fetch(form.action, {
+              method: "POST",
+              headers: {
+                "Accept": "application/json",
+                "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+              },
+              body: payload.toString(),
+            });
+
+            if (!response.ok) throw new Error("Falha ao salvar");
+            if (statusSelect) refreshStatusClass(statusSelect);
+            if (state) {
+              state.textContent = "Salvo";
+              state.className = "quick-save-state is-ok";
+              window.setTimeout(() => {
+                state.textContent = "";
+                state.className = "quick-save-state";
+              }, 1800);
+            }
+          } catch (err) {
+            if (state) {
+              state.textContent = "Erro";
+              state.className = "quick-save-state is-error";
+            }
+          }
+        }
+
+        document.querySelectorAll("[data-user-quick-form]").forEach((form) => {
+          form.addEventListener("submit", (event) => {
+            event.preventDefault();
+            saveQuickForm(form);
+          });
+          form.querySelectorAll("select,input[type='checkbox']").forEach((field) => {
+            field.addEventListener("change", () => saveQuickForm(form));
+          });
+        });
+      })();
+    </script>
   </body>
 </html>

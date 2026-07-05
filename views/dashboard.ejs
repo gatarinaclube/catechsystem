@@ -84,15 +84,15 @@
 
 <% if (access && access.isAdmin && usersPendingApprovalCount > 0) { %>
   <div class="content-card" style="border-left: 4px solid #dc2626; margin-bottom: 20px;">
-    <div class="content-title">👤 Novos cadastros</div>
+    <div class="content-title">👤 Usuários inativos</div>
     <div class="content-sub">
       Existem
       <strong><%= usersPendingApprovalCount %></strong>
-      usuário(s) aguardando análise de cadastro.
+      usuário(s) inativo(s) por comando administrativo.
     </div>
     <div style="margin-top:10px;">
       <a href="/users" class="btn btn-danger">
-        Analisar cadastros →
+        Gerenciar usuários →
       </a>
     </div>
   </div>

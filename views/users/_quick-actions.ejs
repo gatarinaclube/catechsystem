@@ -1,9 +1,14 @@
 <form
   method="post"
   action="/users/<%= u.id %>/quick-update"
-  style="display:flex; flex-wrap:nowrap; gap:8px; justify-content:flex-end; align-items:center; max-width:none;"
+  class="user-quick-form"
+  data-user-quick-form
 >
-  <select name="approvalStatus" style="width:126px; min-width:126px;">
+  <select
+    name="approvalStatus"
+    class="quick-pill quick-pill-status quick-status-<%= u.approvalStatus || 'INDEFERIDO' %>"
+    aria-label="Status do cadastro"
+  >
     <% approvalOptions.forEach(function(option) { %>
       <option
         value="<%= option.value %>"
@@ -14,7 +19,7 @@
     <% }) %>
   </select>
 
-  <select name="role" style="width:132px; min-width:132px;">
+  <select name="role" class="quick-pill quick-pill-role" aria-label="Perfil do usuário">
     <% roleOptions.forEach(function(option) { %>
       <option
         value="<%= option.value %>"
@@ -27,17 +32,14 @@
 
   <label
     title="Liberar acesso interno à Gatofilia"
-    style="display:inline-flex; align-items:center; gap:5px; min-width:86px; font-size:12px; color:var(--text-muted);"
+    class="quick-gatofilia-toggle"
   >
     <input
       type="checkbox"
       name="gatofiliaAccess"
       <%= u.gatofiliaAccess ? "checked" : "" %>
-      style="width:14px; height:14px;"
     />
     Gatofilia
   </label>
-
-  <button type="submit" class="btn btn-primary">Salvar</button>
-  <a href="/users/<%= u.id %>" class="btn">Detalhes</a>
+  <span class="quick-save-state" data-quick-save-state></span>
 </form>

@@ -2,6 +2,11 @@
 const express = require("express");
 const { ROLES, getRoleLabel, normalizeRole, isAdminRole } = require("../utils/access");
 const { formatCpfCnpj, formatPhone } = require("../utils/format");
+const {
+  notifyUserAccessStatusChange,
+  notifyUserPlanChange,
+  notifyUserSubscriptionStatusChange,
+} = require("../utils/adminNotifications");
 
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
@@ -15,7 +20,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     { value: ROLES.ADMIN, label: getRoleLabel(ROLES.ADMIN) },
   ];
   const approvalOptions = [
-    { value: "INDEFERIDO", label: "Novo cadastro" },
+    { value: "INDEFERIDO", label: "Inativo" },
     { value: "DEFERIDO", label: "Ativo" },
     { value: "RESTRICOES", label: "Restrição" },
   ];
@@ -52,7 +57,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         { key: "associado_a", title: getRoleLabel(ROLES.ASSOCIADO_A), users: [] },
         { key: "basic", title: getRoleLabel(ROLES.BASIC), users: [] },
         { key: "associado_b", title: getRoleLabel(ROLES.ASSOCIADO_B), users: [] },
-        { key: "inactive", title: "Inativo", users: [] },
+        { key: "inactive", title: "Inativos / restrições", users: [] },
       ];
       const groupByRole = new Map(
         userGroups
@@ -70,7 +75,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         };
         const status = u.approvalStatus || "INDEFERIDO";
 
-        if (status === "RESTRICOES") {
+        if (status === "RESTRICOES" || status === "INDEFERIDO") {
           inactiveGroup.users.push(userWithRole);
         } else {
           const group = groupByRole.get(normalizedRole) || groupByRole.get(ROLES.BASIC);
@@ -217,16 +222,23 @@ router.post("/users/:id", requireAuth, requirePermission("admin.users"), async (
     const normalizedEmail = String(email || "").trim().toLowerCase();
 
     // Normaliza status para os 3 valores definidos
-    let finalStatus = "INDEFERIDO";
+    let finalStatus = "DEFERIDO";
     if (approvalStatus === "DEFERIDO") {
       finalStatus = "DEFERIDO";
+    } else if (approvalStatus === "INDEFERIDO") {
+      finalStatus = "INDEFERIDO";
     } else if (approvalStatus === "RESTRICOES") {
       finalStatus = "RESTRICOES";
     }
 
     const existingUser = await prisma.user.findUnique({
       where: { id: targetId },
-      select: { role: true, approvalStatus: true },
+      select: {
+        role: true,
+        approvalStatus: true,
+        selectedPlan: true,
+        subscriptionStatus: true,
+      },
     });
 
     const emailOwner = normalizedEmail
@@ -240,7 +252,7 @@ router.post("/users/:id", requireAuth, requirePermission("admin.users"), async (
       return res.status(400).send("Este e-mail já está sendo usado por outro usuário.");
     }
 
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: targetId },
       data: {
         name,
@@ -269,6 +281,16 @@ router.post("/users/:id", requireAuth, requirePermission("admin.users"), async (
           hasFifeCattery === "YES" ? fifeCatteryName : null,
       },
     });
+
+    if (isAdmin) {
+      await notifyUserAccessStatusChange(updatedUser, existingUser?.approvalStatus, updatedUser.approvalStatus);
+      await notifyUserSubscriptionStatusChange(updatedUser, existingUser?.subscriptionStatus, updatedUser.subscriptionStatus);
+      if (existingUser?.selectedPlan !== updatedUser.selectedPlan || existingUser?.role !== updatedUser.role) {
+        const previousPlan = existingUser?.selectedPlan !== updatedUser.selectedPlan ? existingUser?.selectedPlan : existingUser?.role;
+        const nextPlan = existingUser?.selectedPlan !== updatedUser.selectedPlan ? updatedUser.selectedPlan : updatedUser.role;
+        await notifyUserPlanChange(updatedUser, previousPlan, nextPlan);
+      }
+    }
 
     res.redirect(`/users/${targetId}`);
   } catch (err) {
@@ -301,9 +323,11 @@ router.post(
         return res.status(404).send("Usuário não encontrado.");
       }
 
-      let finalStatus = "INDEFERIDO";
+      let finalStatus = "DEFERIDO";
       if (req.body.approvalStatus === "DEFERIDO") {
         finalStatus = "DEFERIDO";
+      } else if (req.body.approvalStatus === "INDEFERIDO") {
+        finalStatus = "INDEFERIDO";
       } else if (req.body.approvalStatus === "RESTRICOES") {
         finalStatus = "RESTRICOES";
       }
@@ -323,7 +347,7 @@ router.post(
         }
       }
 
-      await prisma.user.update({
+      const updatedUser = await prisma.user.update({
         where: { id: targetId },
         data: {
           role: nextRole,
@@ -332,9 +356,28 @@ router.post(
         },
       });
 
+      await notifyUserAccessStatusChange(updatedUser, targetUser.approvalStatus, updatedUser.approvalStatus);
+      if (targetUser.selectedPlan !== updatedUser.selectedPlan || targetUser.role !== updatedUser.role) {
+        const previousPlan = targetUser.selectedPlan !== updatedUser.selectedPlan ? targetUser.selectedPlan : targetUser.role;
+        const nextPlan = targetUser.selectedPlan !== updatedUser.selectedPlan ? updatedUser.selectedPlan : updatedUser.role;
+        await notifyUserPlanChange(updatedUser, previousPlan, nextPlan);
+      }
+
+      if (req.headers.accept?.includes("application/json") || req.headers["content-type"]?.includes("application/json")) {
+        return res.json({
+          ok: true,
+          role: nextRole,
+          approvalStatus: finalStatus,
+          gatofiliaAccess: req.body.gatofiliaAccess === "on" || req.body.gatofiliaAccess === "true",
+        });
+      }
+
       res.redirect("/users");
     } catch (err) {
       console.error("Erro na atualização rápida do usuário:", err);
+      if (req.headers.accept?.includes("application/json") || req.headers["content-type"]?.includes("application/json")) {
+        return res.status(500).json({ ok: false, error: "Erro ao atualizar usuário" });
+      }
       res.status(500).send("Erro ao atualizar usuário");
     }
   }
