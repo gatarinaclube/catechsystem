@@ -748,7 +748,8 @@ body {
 }
 
 .gatofilia-presentation-page .gatofilia-band-light .gatofilia-section-heading p:not(.gatofilia-eyebrow),
-.gatofilia-presentation-page .gatofilia-band-light .gatofilia-interest-copy p:not(.gatofilia-eyebrow) {
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-interest-copy p:not(.gatofilia-eyebrow),
+.gatofilia-presentation-page .gatofilia-band-light .gatofilia-section-note {
   color: #51483b;
 }
 

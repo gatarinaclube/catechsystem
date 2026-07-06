@@ -92,6 +92,45 @@
     syncPresentationLocation();
   }
 
+  const faq = document.querySelector("[data-ranked-faq]");
+  if (faq) {
+    const storageKey = "gatofiliaPresentationFaqViews";
+    const readStats = () => {
+      try {
+        return JSON.parse(localStorage.getItem(storageKey) || "{}") || {};
+      } catch (err) {
+        return {};
+      }
+    };
+    const writeStats = (stats) => {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(stats));
+      } catch (err) {
+        // Navegadores com storage bloqueado apenas mantem a ordem original.
+      }
+    };
+    const sortFaq = () => {
+      const stats = readStats();
+      Array.from(faq.querySelectorAll("[data-faq-item]"))
+        .sort((a, b) => {
+          const aViews = Number(stats[a.dataset.faqKey] || 0);
+          const bViews = Number(stats[b.dataset.faqKey] || 0);
+          return bViews - aViews;
+        })
+        .forEach((item) => faq.appendChild(item));
+    };
+    faq.addEventListener("toggle", (event) => {
+      const item = event.target.closest?.("[data-faq-item]");
+      if (!item || !item.open) return;
+      const stats = readStats();
+      stats[item.dataset.faqKey] = Number(stats[item.dataset.faqKey] || 0) + 1;
+      writeStats(stats);
+      sortFaq();
+      item.open = true;
+    }, true);
+    sortFaq();
+  }
+
   if ("IntersectionObserver" in window) {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {

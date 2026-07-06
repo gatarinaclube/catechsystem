@@ -214,6 +214,39 @@
         <p class="gatofilia-section-note">Investir em conhecimento sempre custa menos do que aprender apenas com os próprios erros.</p>
       </section>
 
+      <% if (typeof academyCountdown !== "undefined" && academyCountdown && academyCountdown.enabled) { %>
+        <section class="gatofilia-countdown reveal-on-scroll" aria-label="Prazos da próxima jornada Gatofilia">
+          <div class="gatofilia-countdown-copy">
+            <span>Próxima turma</span>
+            <h2><%= academyCountdown.title %></h2>
+            <p>
+              As vagas são limitadas para manter uma experiência próxima, estratégica e aplicada à realidade de cada criador.
+            </p>
+          </div>
+
+          <div class="gatofilia-countdown-grid">
+            <% academyCountdown.items.forEach(function(item) { %>
+              <article>
+                <p><%= item.isPast ? item.pastLabel : item.label %></p>
+                <div>
+                  <% if (item.isPast) { %>
+                    <strong>encerrado</strong>
+                  <% } else if (item.isToday) { %>
+                    <strong>hoje</strong>
+                  <% } else { %>
+                    <strong><%= item.days %></strong>
+                    <small><%= item.days === 1 ? "dia" : "dias" %></small>
+                  <% } %>
+                </div>
+                <em><%= item.date %></em>
+              </article>
+            <% }) %>
+          </div>
+
+          <a href="#inscricao">Garantir minha inscrição</a>
+        </section>
+      <% } %>
+
       <section id="inscricao" class="gatofilia-interest reveal-on-scroll">
         <div class="gatofilia-interest-copy">
           <p class="gatofilia-eyebrow">Próximos passos</p>
@@ -307,28 +340,6 @@
         </form>
       </section>
 
-      <section class="gatofilia-section gatofilia-band-light reveal-on-scroll">
-        <div class="gatofilia-section-heading centered compact">
-          <p class="gatofilia-eyebrow">Perguntas frequentes</p>
-          <h2>Informações importantes antes de confirmar sua participação.</h2>
-        </div>
-        <div class="gatofilia-faq">
-          <% [
-            ["Preciso já possuir um gatil?", "Não. A jornada foi desenvolvida para quem deseja iniciar da forma correta e também para criadores que já possuem gatil e desejam evoluir."],
-            ["A jornada é indicada para todas as raças?", "Sim. Os fundamentos de criação responsável são aplicáveis a diferentes raças felinas."],
-            ["As aulas ficam gravadas?", "Sim. Todo o conteúdo ficará disponível na plataforma durante o período de acesso."],
-            ["Receberei certificado?", "Sim. Ao concluir a jornada, você receberá o certificado emitido pela Gatofilia."],
-            ["A jornada possui suporte?", "Sim. Além do conteúdo, os alunos terão acesso à comunidade exclusiva para troca de experiências."],
-            ["As vagas são limitadas?", "Sim. Cada turma possui vagas limitadas para preservar a proximidade e qualidade da experiência."]
-          ].forEach(function(item) { %>
-            <details>
-              <summary><%= item[0] %></summary>
-              <p><%= item[1] %></p>
-            </details>
-          <% }) %>
-        </div>
-      </section>
-
       <section class="gatofilia-section gatofilia-closing-video reveal-on-scroll">
         <div class="gatofilia-section-heading centered compact">
           <p class="gatofilia-eyebrow">Encerramento</p>
@@ -350,6 +361,39 @@
             <p>Mensagem final.</p>
           </div>
         <% } %>
+      </section>
+
+      <section class="gatofilia-section gatofilia-band-light reveal-on-scroll">
+        <div class="gatofilia-section-heading centered compact">
+          <p class="gatofilia-eyebrow">Perguntas frequentes</p>
+          <h2>Informações importantes antes de confirmar sua participação.</h2>
+        </div>
+        <div class="gatofilia-faq" data-ranked-faq>
+          <% [
+            ["Preciso já possuir um gatil?", "Não. A trilha de conhecimento da nossa jornada foi desenvolvida tanto para quem deseja iniciar da forma correta quanto para criadores que já possuem um gatil e desejam evoluir seus programas de criação."],
+            ["A jornada é indicada para criadores de todas as raças?", "Sim. Os conhecimentos abordados são aplicáveis à criação responsável de qualquer raça felina. Quando houver conteúdos específicos, eles serão identificados durante a jornada."],
+            ["As aulas ficam gravadas?", "Sim. Todo o conteúdo estará disponível na plataforma para que você possa estudar no seu ritmo durante o período de acesso."],
+            ["Receberei certificado?", "Sim. Ao concluir a jornada, você receberá um certificado de conclusão emitido pela Gatofilia."],
+            ["Como funciona a visita técnica?", "A visita ao Gatil TomiFerr Bengal é um benefício opcional e poderá ser realizada conforme disponibilidade, agenda e critérios previamente definidos."],
+            ["Quanto tempo terei acesso à plataforma?", "Você terá acesso à plataforma Gatofilia por 1 ano, além de acesso e utilização Premium ao sistema de gestão de gatil."],
+            ["A jornada possui suporte?", "Sim. Além do conteúdo da plataforma, os alunos terão acesso à comunidade exclusiva para troca de experiências e atualização contínua."],
+            ["Preciso ter conhecimentos prévios sobre felinocultura?", "Não. A jornada foi estruturada para acompanhar desde quem está iniciando até criadores experientes que desejam aperfeiçoar seus conhecimentos."],
+            ["A jornada ensina apenas teoria?", "Não. Todo o conteúdo é baseado na experiência prática adquirida ao longo de mais de 13 anos de criação, competições internacionais, exportações e gestão de um gatil profissional."],
+            ["O conteúdo é voltado apenas para exposições?", "Não. Embora a trilha de conhecimentos aborde exposições felinas e os padrões internacionais, o foco principal é desenvolver criadores completos, preparados para construir programas de criação responsáveis, sustentáveis e de excelência."],
+            ["Quanto custa?", "O investimento será divulgado aos interessados durante o processo de pré-inscrição. Dessa forma, conseguimos apresentar todas as informações sobre a jornada, esclarecer dúvidas e orientar cada participante conforme seu momento e objetivos."],
+            ["Quantos encontros ao vivo acontecerão?", "A jornada contará com 8 encontros online e ao vivo, permitindo maior interação entre alunos e mediadores. Todos os encontros serão gravados e disponibilizados na plataforma para que você possa assistir posteriormente, caso não consiga participar ao vivo."],
+            ["Qual é a carga horária?", "A jornada possui aproximadamente 16 horas de conteúdo, distribuídas entre 8 encontros online ao vivo, aulas gravadas, materiais complementares, estudos práticos e acesso contínuo à plataforma Gatofilia."],
+            ["Durante os encontros haverá interação?", "Sim. Os encontros foram planejados para serem participativos. Durante as aulas ao vivo, os mediadores responderão dúvidas e perguntas relacionadas ao conteúdo que estiver sendo abordado naquele momento."],
+            ["As vagas são limitadas?", "Sim. Cada turma terá no máximo 10 participantes, garantindo um acompanhamento mais próximo, maior interação e uma experiência de aprendizagem mais personalizada."],
+            ["Existe processo de seleção?", "Sim. Buscamos formar turmas comprometidas com a criação responsável e com os princípios éticos da Gatofilia."],
+            ["Quando começa a próxima turma?", "As turmas são abertas periodicamente e possuem vagas limitadas. Ao realizar a pré-inscrição, você será um dos primeiros a receber informações sobre datas, cronograma e abertura das matrículas."]
+          ].forEach(function(item) { %>
+            <details data-faq-item data-faq-key="<%= item[0] %>">
+              <summary><%= item[0] %></summary>
+              <p><%= item[1] %></p>
+            </details>
+          <% }) %>
+        </div>
       </section>
     </main>
 
