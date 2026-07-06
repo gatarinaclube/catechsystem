@@ -111,8 +111,14 @@
             ["Nutrição", "Alimentação por fase de vida, suplementação e manejo nutricional."],
             ["Reprodução", "Planejamento, gestação, parto e desenvolvimento neonatal."],
             ["Manejo e bem-estar", "Biossegurança, comportamento, socialização e rotina do gatil."],
+            ["Bem-estar Animal", "Comportamento felino, socialização, enriquecimento ambiental."],
             ["Gestão profissional", "Documentos, finanças, indicadores, clientes e processos."],
-            ["Exposições e exportação", "Federações, títulos, campanhas, logística e protocolos internacionais."]
+            ["Marketing e Posicionamento", "Redes sociais, Relacionamento com clientes."],
+            ["Estrutura da Felinocultura", "Federações, entidades internacionais, regulamentos."],
+            ["Exposições", "Títulos, campanhas, estratégias."],
+            ["Exportação Internacional", "Documentação, logística e protocolos sanitários."]
+            ["Planejamento Estratégico", "Crescimento sustentável, melhoramento genético, longo prazo."]
+            ["Certificação", "Conclusão da jornada e emissão do certificado."]
           ].forEach(function(item, index) { %>
             <article>
               <span><%= String(index + 1).padStart(2, "0") %></span>
@@ -195,12 +201,12 @@
         </div>
         <div class="gatofilia-cost-grid">
           <% [
-            "Um cruzamento mal planejado pode comprometer anos de seleção genética.",
-            "Uma doença prevenível pode gerar sofrimento, despesas e interrupção do programa.",
-            "Um erro na escolha de reprodutor pode impactar toda uma linhagem.",
-            "Falhas na gestação ou no desenvolvimento neonatal podem resultar em perdas irreparáveis.",
-            "Documentação incorreta pode impedir exportações ou atrasar processos internacionais.",
-            "A falta de organização pode fazer informações importantes se perderem."
+            "Um único filhote perdido durante a gestação, parto ou período neonatal pode representar um prejuízo maior do que todo o investimento nesta jornada.",
+            "Um acasalamento mal planejado pode comprometer anos de seleção genética e gerar uma ninhada muito abaixo do potencial esperado.",
+            "A escolha inadequada de um reprodutor pode impactar toda uma linhagem e exigir anos para corrigir o programa de criação.",
+            "Erros em manejo, nutrição ou protocolos sanitários aumentam o risco de doenças, tratamentos, perdas reprodutivas e despesas veterinárias.",
+            "Falhas na documentação podem atrasar ou impedir exportações, transferências e registros, comprometendo negociações importantes.",
+            "A falta de organização faz com que informações sobre saúde, reprodução, vacinas, exames e genealogia se percam ao longo do tempo, dificultando a gestão do gatil."
           ].forEach(function(item) { %>
             <article><span>•</span><p><%= item %></p></article>
           <% }) %>
