@@ -218,6 +218,41 @@
   font-size: 0;
 }
 
+.microchip-admin-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.microchip-admin-summary > div {
+  border: 1px solid rgba(0, 111, 168, 0.14);
+  border-radius: 12px;
+  padding: 14px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.microchip-admin-summary strong {
+  display: block;
+  color: #006fa8;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.microchip-admin-summary span {
+  display: block;
+  margin-top: 6px;
+  color: #566579;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+@media (max-width: 760px) {
+  .microchip-admin-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
 .microchip-collapsible[open] .microchip-summary-indicator::before {
   font-size: 12px;
 }

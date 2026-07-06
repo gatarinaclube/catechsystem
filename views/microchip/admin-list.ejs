@@ -9,6 +9,37 @@
     <link rel="stylesheet" href="/css/microchip.css" />
   </head>
   <body>
+    <%
+      function sourceLabel(source) {
+        if (source === 'INTERNAL') return 'Cadastro interno';
+        if (source === 'INVENTORY') return 'Estoque do usuário';
+        return 'Cadastro público';
+      }
+
+      function renderMicrochipRows(items, emptyMessage) {
+    %>
+      <% if (!items.length) { %>
+        <tr><td colspan="6"><%= emptyMessage %></td></tr>
+      <% } %>
+      <% items.forEach((item) => { %>
+        <tr>
+          <td><%= item.ownerName %></td>
+          <td><%= item.animalName %></td>
+          <td><%= formatMicrochip(item.microchip) %></td>
+          <td><%= sourceLabel(item.source) %></td>
+          <td><%= statusLabels[item.status] || item.status %></td>
+          <td>
+            <% if (item.href) { %>
+              <a class="btn btn-light btn-sm" href="<%= item.href %>">Abrir</a>
+            <% } else { %>
+              <span class="content-sub">Reservado</span>
+            <% } %>
+          </td>
+        </tr>
+      <% }) %>
+    <%
+      }
+    %>
     <div class="shell">
       <%- include('../partials/sidebar', { user, currentPath }) %>
       <main class="main">
@@ -34,8 +65,29 @@
           </section>
 
           <section class="content-card microchip-admin-card">
-            <div class="content-title">Cadastros encontrados</div>
-            <div class="content-sub">Clique em abrir para conferir os dados do animal, proprietário e contatos recebidos.</div>
+            <div class="content-title">Resumo dos cadastros</div>
+            <div class="content-sub">A busca considera cadastros internos do sistema e registros externos da página pública.</div>
+            <div class="microchip-admin-summary">
+              <div>
+                <strong><%= internalRegistrations.length %></strong>
+                <span>Internos do sistema</span>
+              </div>
+              <div>
+                <strong><%= publicRegistrations.length %></strong>
+                <span>Externos da página pública</span>
+              </div>
+              <div>
+                <strong><%= registrations.length %></strong>
+                <span>Total localizado</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="content-card microchip-admin-card">
+            <div class="content-title">Cadastros internos do sistema</div>
+            <div class="content-sub">
+              Animais cadastrados pelos usuários em módulos internos do PetGus, incluindo microchips reservados em estoque.
+            </div>
             <div class="table-responsive microchip-admin-table-wrap">
             <table class="data-table">
               <thead>
@@ -49,27 +101,31 @@
                 </tr>
               </thead>
               <tbody>
-                <% if (!registrations.length) { %>
-                  <tr><td colspan="6">Nenhum cadastro localizado.</td></tr>
-                <% } %>
-                <% registrations.forEach((item) => { %>
-                  <tr>
-                    <td><%= item.ownerName %></td>
-                    <td><%= item.animalName %></td>
-                    <td><%= formatMicrochip(item.microchip) %></td>
-                    <td>
-                      <%= item.source === 'INTERNAL' ? 'Cadastro interno' : (item.source === 'INVENTORY' ? 'Estoque do usuário' : 'Cadastro público') %>
-                    </td>
-                    <td><%= statusLabels[item.status] || item.status %></td>
-                    <td>
-                      <% if (item.href) { %>
-                        <a class="btn btn-light btn-sm" href="<%= item.href %>">Abrir</a>
-                      <% } else { %>
-                        <span class="content-sub">Reservado</span>
-                      <% } %>
-                    </td>
-                  </tr>
-                <% }) %>
+                <% renderMicrochipRows(internalRegistrations, "Nenhum cadastro interno localizado."); %>
+              </tbody>
+            </table>
+            </div>
+          </section>
+
+          <section class="content-card microchip-admin-card">
+            <div class="content-title">Cadastros externos da página pública</div>
+            <div class="content-sub">
+              Animais cadastrados diretamente pela página pública de microchip, com dados do proprietário protegidos para gestão do administrador.
+            </div>
+            <div class="table-responsive microchip-admin-table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Proprietário</th>
+                  <th>Animal</th>
+                  <th>Microchip</th>
+                  <th>Origem</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% renderMicrochipRows(publicRegistrations, "Nenhum cadastro externo localizado."); %>
               </tbody>
             </table>
             </div>

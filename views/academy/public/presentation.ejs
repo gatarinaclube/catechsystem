@@ -31,7 +31,6 @@
         />
       </a>
       <nav aria-label="Navegação da apresentação">
-        <a href="#historia">História</a>
         <a href="#ecosistema">Ecossistema</a>
         <a href="#jornada">Jornada</a>
         <a href="#investimento">Investimento</a>
@@ -64,7 +63,8 @@
         <div class="gatofilia-section-heading centered compact">
           <p class="gatofilia-eyebrow">Boas-vindas</p>
           <h2>Antes de decidir, veja a Gatofilia por dentro.</h2>
-          <p>Este espaço receberá o vídeo oficial de apresentação da jornada, valores, especialistas e próximos passos.</p>
+          <p>Conheça a Jornada Gatofilia em detalhes: nossa metodologia, os conteúdos que serão abordados, os especialistas convidados, o investimento e tudo o que você precisa para decidir se esta jornada é para você.
+</p>
         </div>
         <% if (welcomeVideoUrl) { %>
           <div class="gatofilia-video-frame">
@@ -81,72 +81,6 @@
             <p>Apresentação da jornada, metodologia, especialistas e próximos passos.</p>
           </div>
         <% } %>
-      </section>
-
-      <section id="historia" class="gatofilia-section gatofilia-presentation-story gatofilia-band-light reveal-on-scroll">
-        <div class="gatofilia-section-heading">
-          <p class="gatofilia-eyebrow">Por que criamos a Gatofilia</p>
-          <h2>A Gatofilia nasceu da nossa própria história.</h2>
-        </div>
-        <div class="gatofilia-presentation-text-grid">
-          <article>
-            <p>
-              Há mais de 13 anos vivemos a felinocultura diariamente. Nesse período, colecionamos
-              experiências, aprendizados e muitos desafios. Como praticamente todo criador,
-              iniciamos nossa jornada sem encontrar uma formação estruturada.
-            </p>
-            <p>
-              Aprendíamos conversando com outros criadores, pesquisando em diferentes fontes,
-              participando de eventos e, muitas vezes, descobrindo o caminho da forma mais difícil: errando.
-            </p>
-          </article>
-          <article>
-            <p>
-              Alguns desses erros pareciam pequenos no momento, mas acabaram trazendo grandes
-              consequências. Impactaram o bem-estar dos nossos gatos, exigiram investimentos
-              inesperados e ensinaram que, na criação responsável, conhecimento não é um diferencial: é uma necessidade.
-            </p>
-            <p>
-              Foi essa busca constante que nos levou além das fronteiras do Brasil, passando por
-              exposições, competições internacionais, exportações e pelo reconhecimento World Winner FIFe.
-            </p>
-          </article>
-        </div>
-        <div class="gatofilia-presentation-proof">
-          <span>13+ anos de experiência</span>
-          <span>World Winner FIFe</span>
-          <span>Exportações internacionais</span>
-          <span>PetGus + Gatarina</span>
-        </div>
-      </section>
-
-      <section class="gatofilia-section gatofilia-problem reveal-on-scroll">
-        <div class="gatofilia-section-heading">
-          <p class="gatofilia-eyebrow">O problema da felinocultura</p>
-          <h2>Criar com responsabilidade exige muito mais do que amor pelos gatos.</h2>
-          <p>
-            Sem uma trilha estruturada, muitos criadores aprendem por tentativa e erro,
-            repetem orientações conflitantes e só descobrem as consequências quando o problema já aconteceu.
-          </p>
-        </div>
-        <div class="gatofilia-problem-grid">
-          <% [
-            "Cruzamentos realizados sem planejamento genético.",
-            "Doenças que poderiam ser prevenidas com protocolos adequados.",
-            "Falta de organização das informações e registros do gatil.",
-            "Dificuldades financeiras causadas pela ausência de planejamento.",
-            "Manejo inadequado de reprodutores, matrizes e filhotes.",
-            "Insegurança na hora de comercializar filhotes e atender tutores.",
-            "Pouco conhecimento sobre registros, exposições e regulamentações.",
-            "Decisões importantes baseadas apenas em tentativa e erro."
-          ].forEach(function(item) { %>
-            <article><span>!</span><p><%= item %></p></article>
-          <% }) %>
-        </div>
-        <p class="gatofilia-section-note">
-          Na maioria das vezes, a culpa não é do criador. O problema é a falta de oportunidades completas,
-          organizadas e baseadas na experiência prática.
-        </p>
       </section>
 
       <section id="ecosistema" class="gatofilia-section gatofilia-ecosystem gatofilia-band-light reveal-on-scroll">
@@ -189,92 +123,11 @@
         </div>
       </section>
 
-      <section class="gatofilia-section gatofilia-operation gatofilia-band-light reveal-on-scroll">
-        <div class="gatofilia-section-heading centered compact">
-          <p class="gatofilia-eyebrow">Como funciona</p>
-          <h2>Teoria, prática e acompanhamento contínuo para aplicar o conhecimento no seu gatil.</h2>
-        </div>
-        <div class="gatofilia-operation-grid">
-          <% [
-            ["Encontros ao vivo", "8 encontros online e ao vivo, com aproximadamente 2 horas cada, perguntas e discussão de casos."],
-            ["Plataforma de aprendizagem", "Aulas gravadas disponíveis para revisão no seu próprio ritmo."],
-            ["Material complementar", "Materiais de apoio, referências técnicas e estudos complementares."],
-            ["Comunidade exclusiva", "Grupo de participantes para conexões, dúvidas e troca de experiências."],
-            ["PetGus Premium", "1 ano de acesso ao sistema de gestão de gatis para aplicar a organização na prática."],
-            ["Atualizações contínuas", "Novos conteúdos e materiais relevantes durante o período de acesso."],
-            ["Certificação", "Certificado de Conclusão da Gatofilia ao cumprir os requisitos da jornada."]
-          ].forEach(function(item, index) { %>
-            <article class="<%= index === 4 ? 'is-featured' : '' %>">
-              <span><%= String(index + 1).padStart(2, "0") %></span>
-              <h3><%= item[0] %></h3>
-              <p><%= item[1] %></p>
-            </article>
-          <% }) %>
-        </div>
-      </section>
-
-      <section class="gatofilia-section gatofilia-difference reveal-on-scroll">
-        <div class="gatofilia-section-heading centered compact">
-          <p class="gatofilia-eyebrow">O diferencial</p>
-          <h2>A Gatofilia foi criada para entregar transformação, não apenas informação.</h2>
-        </div>
-        <div class="gatofilia-comparison">
-          <div class="gatofilia-comparison-head">
-            <strong>Formação tradicional</strong>
-            <strong>Ecossistema Gatofilia</strong>
-          </div>
-          <% [
-            ["Apenas aulas gravadas", "Encontros ao vivo e conteúdo disponível para revisão"],
-            ["Conteúdo teórico", "Aplicação prática voltada à realidade do gatil"],
-            ["Aprendizado isolado", "Comunidade exclusiva de criadores e especialistas"],
-            ["Pouco acompanhamento", "Troca de experiências e suporte durante toda a jornada"],
-            ["Foco apenas em conhecimento", "Conhecimento, planejamento, gestão e evolução contínua"],
-            ["Sem ferramentas práticas", "1 ano de acesso ao PetGus Premium para gestão profissional"],
-            ["Conteúdo estático", "Atualizações constantes durante o período de acesso"],
-            ["Visão limitada da criação", "Experiência prática em genética, exposições, gestão e exportação"]
-          ].forEach(function(row) { %>
-            <div class="gatofilia-comparison-row">
-              <span><i>×</i><%= row[0] %></span>
-              <span><i>✓</i><%= row[1] %></span>
-            </div>
-          <% }) %>
-        </div>
-      </section>
-
-      <section class="gatofilia-section gatofilia-audience gatofilia-band-light reveal-on-scroll">
-        <div class="gatofilia-section-heading centered compact">
-          <p class="gatofilia-eyebrow">Quem deveria participar</p>
-          <h2>Excelência não acontece por acaso. Ela é construída.</h2>
-        </div>
-        <div class="gatofilia-audience-grid">
-          <article class="is-positive">
-            <h3>Esta jornada é para você se...</h3>
-            <ul>
-              <li>Deseja iniciar com uma base sólida.</li>
-              <li>Já possui gatil e quer tomar decisões com mais segurança.</li>
-              <li>Busca aperfeiçoar processos e atualizar conhecimentos.</li>
-              <li>É veterinário, estudante, expositor ou apaixonado por felinos.</li>
-              <li>Deseja transformar seu gatil em um projeto sustentável e profissional.</li>
-            </ul>
-          </article>
-          <article class="is-negative">
-            <h3>Talvez não seja para você se...</h3>
-            <ul>
-              <li>Procura resultados rápidos sem dedicação.</li>
-              <li>Não pretende estudar ou colocar o conhecimento em prática.</li>
-              <li>Não vê valor em atualização constante.</li>
-              <li>Não valoriza ética, bem-estar animal e criação responsável.</li>
-              <li>Busca apenas informações isoladas, sem projeto de longo prazo.</li>
-            </ul>
-          </article>
-        </div>
-      </section>
-
       <section class="gatofilia-section gatofilia-presentation-guests reveal-on-scroll">
         <div class="gatofilia-section-heading centered compact">
           <p class="gatofilia-eyebrow">Especialistas convidados</p>
           <h2>Conhecimento ampliado por profissionais convidados.</h2>
-          <p>Esta área está preparada para receber os especialistas confirmados e convidados da jornada.</p>
+          <p>Conheça alguns dos profissionais que contribuirão com a Jornada Gatofilia, trazendo experiência prática, conhecimento técnico e atuação reconhecida na felinocultura e medicina felina.</p>
         </div>
         <div class="gatofilia-presentation-guest-grid">
           <% if (presentationGuests.length) { %>
@@ -297,7 +150,7 @@
                 <% } %>
                 <% if (guest.experiences && guest.experiences.length) { %>
                   <div class="gatofilia-guest-list">
-                    <strong>Experiência</strong>
+                    <strong>Experiência/Conhecimento</strong>
                     <ul>
                       <% guest.experiences.forEach(function(item) { %>
                         <li><%= item %></li>
@@ -484,7 +337,7 @@
         <div class="gatofilia-section-heading centered compact">
           <p class="gatofilia-eyebrow">Encerramento</p>
           <h2>O próximo passo é decidir construir com conhecimento.</h2>
-          <p>Este espaço receberá um vídeo final com orientação de inscrição, calendário e convite para a próxima jornada.</p>
+          <p>Cada grande gatil começou com uma decisão. Esperamos você na próxima turma da Jornada Gatofilia.</p>
         </div>
         <% if (closingVideoUrl) { %>
           <div class="gatofilia-video-frame">
@@ -498,7 +351,7 @@
           <div class="gatofilia-video-placeholder is-final" aria-label="Espaço reservado para vídeo de encerramento">
             <span>Vídeo de encerramento</span>
             <strong>Em breve</strong>
-            <p>Mensagem final, chamada para inscrição e próximos passos.</p>
+            <p>Mensagem final.</p>
           </div>
         <% } %>
       </section>

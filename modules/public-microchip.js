@@ -663,11 +663,15 @@ module.exports = function publicMicrochipRouterFactory(prisma, requireAuth, requ
       try {
         const q = String(req.query.q || "").trim();
         const registrations = await buildAdminMicrochipEntries(prisma, q);
+        const internalRegistrations = registrations.filter((item) => item.source === "INTERNAL" || item.source === "INVENTORY");
+        const publicRegistrations = registrations.filter((item) => item.source === "PUBLIC");
 
         res.render("microchip/admin-list", {
           user: req.user,
           currentPath: req.path,
           registrations,
+          internalRegistrations,
+          publicRegistrations,
           query: q,
           statusLabels: STATUS_LABELS,
           formatMicrochip,
