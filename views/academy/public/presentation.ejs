@@ -123,7 +123,7 @@
         </div>
       </section>
 
-      <section class="gatofilia-section gatofilia-presentation-guests reveal-on-scroll">
+      <section class="gatofilia-section gatofilia-presentation-guests gatofilia-band-light reveal-on-scroll">
         <div class="gatofilia-section-heading centered compact">
           <p class="gatofilia-eyebrow">Especialistas convidados</p>
           <h2>Conhecimento ampliado por profissionais convidados.</h2>
@@ -139,24 +139,14 @@
                   <p class="gatofilia-guest-education"><%= guest.education %></p>
                 <% } %>
                 <% if (guest.specializations && guest.specializations.length) { %>
-                  <div class="gatofilia-guest-list">
-                    <strong>Especialização</strong>
-                    <ul>
-                      <% guest.specializations.forEach(function(item) { %>
-                        <li><%= item %></li>
-                      <% }) %>
-                    </ul>
-                  </div>
+                  <% guest.specializations.forEach(function(item) { %>
+                    <p class="gatofilia-guest-story"><%= item %></p>
+                  <% }) %>
                 <% } %>
                 <% if (guest.experiences && guest.experiences.length) { %>
-                  <div class="gatofilia-guest-list">
-                    <strong>Experiência/Conhecimento</strong>
-                    <ul>
-                      <% guest.experiences.forEach(function(item) { %>
-                        <li><%= item %></li>
-                      <% }) %>
-                    </ul>
-                  </div>
+                  <% guest.experiences.forEach(function(item) { %>
+                    <p class="gatofilia-guest-story"><%= item %></p>
+                  <% }) %>
                 <% } %>
               </article>
             <% }) %>
@@ -170,7 +160,7 @@
         </div>
       </section>
 
-      <section id="investimento" class="gatofilia-section gatofilia-investment gatofilia-band-light reveal-on-scroll">
+      <section id="investimento" class="gatofilia-section gatofilia-investment reveal-on-scroll">
         <div class="gatofilia-section-heading centered compact">
           <p class="gatofilia-eyebrow">Bônus exclusivos e investimento</p>
           <h2>Você não estará adquirindo apenas uma jornada de conhecimento.</h2>
@@ -197,7 +187,7 @@
         </div>
       </section>
 
-      <section class="gatofilia-section gatofilia-cost reveal-on-scroll">
+      <section class="gatofilia-section gatofilia-cost gatofilia-band-light reveal-on-scroll">
         <div class="gatofilia-section-heading">
           <p class="gatofilia-eyebrow">O custo de não fazer</p>
           <h2>Na felinocultura, os maiores prejuízos raramente acontecem por falta de dedicação.</h2>
@@ -218,7 +208,7 @@
         <p class="gatofilia-section-note">Investir em conhecimento sempre custa menos do que aprender apenas com os próprios erros.</p>
       </section>
 
-      <section id="inscricao" class="gatofilia-interest gatofilia-band-light reveal-on-scroll">
+      <section id="inscricao" class="gatofilia-interest reveal-on-scroll">
         <div class="gatofilia-interest-copy">
           <p class="gatofilia-eyebrow">Próximos passos</p>
           <h2>Gostaria de participar?</h2>
@@ -311,7 +301,7 @@
         </form>
       </section>
 
-      <section class="gatofilia-section reveal-on-scroll">
+      <section class="gatofilia-section gatofilia-band-light reveal-on-scroll">
         <div class="gatofilia-section-heading centered compact">
           <p class="gatofilia-eyebrow">Perguntas frequentes</p>
           <h2>Informações importantes antes de confirmar sua participação.</h2>
@@ -333,7 +323,7 @@
         </div>
       </section>
 
-      <section class="gatofilia-section gatofilia-closing-video gatofilia-band-light reveal-on-scroll">
+      <section class="gatofilia-section gatofilia-closing-video reveal-on-scroll">
         <div class="gatofilia-section-heading centered compact">
           <p class="gatofilia-eyebrow">Encerramento</p>
           <h2>O próximo passo é decidir construir com conhecimento.</h2>

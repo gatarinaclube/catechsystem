@@ -944,6 +944,10 @@ body {
   font-weight: 750;
 }
 
+.gatofilia-guest-story {
+  margin-top: 12px !important;
+}
+
 .gatofilia-guest-list {
   margin-top: 18px;
   padding-top: 16px;
