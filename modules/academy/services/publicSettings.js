@@ -14,23 +14,29 @@ const DEFAULT_ACADEMY_PUBLIC_SETTINGS = {
   presentationOfferNote: "Considerando os benefícios inclusos, uma parte significativa do investimento retorna em estrutura, tecnologia, associação e apoio prático.",
   presentationGuests: [
     {
+      sortOrder: 1,
       status: "Confirmado",
       name: "Médicos-veterinários",
       education: "Saúde felina",
+      story: "",
       specializations: ["Reprodução", "Neonatologia", "Manejo preventivo"],
       experiences: ["Atuação prática em saúde, reprodução e protocolos de criação."],
     },
     {
+      sortOrder: 2,
       status: "Convidado",
       name: "Criadores experientes",
       education: "Felinocultura prática",
+      story: "",
       specializations: ["Seleção", "Exposições", "Desenvolvimento de raça"],
       experiences: ["Vivência em seleção, pista e desenvolvimento de programas de criação."],
     },
     {
+      sortOrder: 3,
       status: "Convidado",
       name: "Profissionais de gestão",
       education: "Gestão e posicionamento",
+      story: "",
       specializations: ["Organização", "Marca", "Processos"],
       experiences: ["Apoio em organização, comercialização e processos para gatis."],
     },
@@ -84,14 +90,17 @@ function normalizeGuests(value) {
   if (!Array.isArray(source)) return [];
 
   return source
-    .map((guest) => ({
+    .map((guest, index) => ({
+      sortOrder: Number.isFinite(Number(guest?.sortOrder)) ? Number(guest.sortOrder) : index + 1,
       status: cleanText(guest?.status, "Convidado") === "Confirmado" ? "Confirmado" : "Convidado",
       name: cleanText(guest?.name, ""),
       education: cleanText(guest?.education, ""),
+      story: cleanText(guest?.story, ""),
       specializations: normalizeList(guest?.specializations),
       experiences: normalizeList(guest?.experiences),
     }))
-    .filter((guest) => guest.name || guest.education || guest.specializations.length || guest.experiences.length);
+    .filter((guest) => guest.name || guest.education || guest.story || guest.specializations.length || guest.experiences.length)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
 function normalizeDateInput(value) {

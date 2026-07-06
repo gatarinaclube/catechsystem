@@ -43,16 +43,20 @@ function formArray(value) {
 }
 
 function presentationGuestsFromBody(body) {
+  const sortOrders = formArray(body.presentationGuestSortOrder);
   const statuses = formArray(body.presentationGuestStatus);
   const names = formArray(body.presentationGuestName);
   const educations = formArray(body.presentationGuestEducation);
+  const stories = formArray(body.presentationGuestStory);
   const specializations = formArray(body.presentationGuestSpecializations);
   const experiences = formArray(body.presentationGuestExperiences);
 
   return names.map((name, index) => ({
+    sortOrder: sortOrders[index],
     status: statuses[index],
     name,
     education: educations[index],
+    story: stories[index],
     specializations: specializations[index],
     experiences: experiences[index],
   }));

@@ -132,19 +132,19 @@
         <div class="gatofilia-presentation-guest-grid">
           <% if (presentationGuests.length) { %>
             <% presentationGuests.forEach(function(guest) { %>
+              <%
+                const guestStoryLines = guest.story
+                  ? String(guest.story).split(/\r?\n/).map(function(item) { return item.trim(); }).filter(Boolean)
+                  : [].concat(guest.specializations || [], guest.experiences || []);
+              %>
               <article class="<%= guest.status === 'Confirmado' ? 'is-confirmed' : '' %>">
                 <span><%= guest.status || 'Convidado' %></span>
                 <h3><%= guest.name || 'Profissional convidado' %></h3>
                 <% if (guest.education) { %>
                   <p class="gatofilia-guest-education"><%= guest.education %></p>
                 <% } %>
-                <% if (guest.specializations && guest.specializations.length) { %>
-                  <% guest.specializations.forEach(function(item) { %>
-                    <p class="gatofilia-guest-story"><%= item %></p>
-                  <% }) %>
-                <% } %>
-                <% if (guest.experiences && guest.experiences.length) { %>
-                  <% guest.experiences.forEach(function(item) { %>
+                <% if (guestStoryLines.length) { %>
+                  <% guestStoryLines.forEach(function(item) { %>
                     <p class="gatofilia-guest-story"><%= item %></p>
                   <% }) %>
                 <% } %>
