@@ -138,6 +138,28 @@
       });
     }, { threshold: 0.12 });
     document.querySelectorAll(".reveal-on-scroll").forEach((element) => observer.observe(element));
+
+    const navLinks = Array.from(document.querySelectorAll(".gatofilia-presentation-nav nav a[href^='#']"));
+    const navTargets = navLinks
+      .map((link) => document.querySelector(link.getAttribute("href")))
+      .filter(Boolean);
+    if (navLinks.length && navTargets.length) {
+      const setActiveNav = (id) => {
+        navLinks.forEach((link) => {
+          link.classList.toggle("is-active", link.getAttribute("href") === `#${id}`);
+        });
+      };
+      const navObserver = new IntersectionObserver((entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible?.target?.id) setActiveNav(visible.target.id);
+      }, {
+        rootMargin: "-28% 0px -58% 0px",
+        threshold: [0.12, 0.35, 0.6],
+      });
+      navTargets.forEach((target) => navObserver.observe(target));
+    }
   } else {
     document.querySelectorAll(".reveal-on-scroll").forEach((element) => element.classList.add("is-visible"));
   }

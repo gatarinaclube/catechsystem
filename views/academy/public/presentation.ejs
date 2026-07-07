@@ -47,24 +47,23 @@
             Uma jornada para criadores e futuros criadores que desejam construir um gatil
             com responsabilidade, planejamento, gestão e visão de excelência.
           </p>
-          <div class="gatofilia-actions">
-            <a class="gatofilia-button primary" href="#inscricao">Solicitar confirmação da inscrição</a>
-            <a class="gatofilia-button secondary" href="#ecosistema">Entender a proposta</a>
-          </div>
         </div>
         <div class="gatofilia-presentation-hero-card reveal-on-scroll">
           <span>Próxima turma</span>
           <strong>Vagas limitadas</strong>
-          <p>Conteúdo, comunidade, PetGus Premium, materiais, bônus e acompanhamento em uma única jornada.</p>
+          <p>Conhecimento, gestão, tecnologia e comunidade integrados para desenvolver a próxima geração de criadores.</p>
         </div>
       </section>
 
       <section class="gatofilia-section gatofilia-welcome reveal-on-scroll">
         <div class="gatofilia-section-heading centered compact">
           <p class="gatofilia-eyebrow">Boas-vindas</p>
-          <h2>Antes de decidir, veja a Gatofilia por dentro.</h2>
-          <p>Conheça a Jornada Gatofilia em detalhes: nossa metodologia, os conteúdos que serão abordados, os especialistas convidados, o investimento e tudo o que você precisa para decidir se esta jornada é para você.
-</p>
+          <h2>Conheça mais sobre a Jornada Gatofilia.</h2>
+          <p>
+            Antes de conhecer todos os detalhes da Jornada Gatofilia, convidamos você a assistir a esta breve apresentação.
+            Nela, compartilhamos nossa história, o propósito que deu origem ao projeto e como esta jornada foi desenvolvida
+            para formar criadores mais preparados, responsáveis e comprometidos com a excelência.
+          </p>
         </div>
         <% if (welcomeVideoUrl) { %>
           <div class="gatofilia-video-frame">
@@ -251,7 +250,7 @@
         <div class="gatofilia-interest-copy">
           <p class="gatofilia-eyebrow">Próximos passos</p>
           <h2>Gostaria de participar?</h2>
-          <p>Preencha os dados para solicitar a confirmação da sua inscrição. Nossa equipe entrará em contato para validar os próximos passos.</p>
+          <p>Preencha os dados para solicitar a sua inscrição. Nossa equipe entrará em contato para validar os próximos passos.</p>
         </div>
 
         <form method="post" action="/apresentacao/interesse" class="gatofilia-form gatofilia-interest-form" data-gatofilia-interest-form data-presentation-interest-form data-lead-status="<%= leadStatus || '' %>">
@@ -366,7 +365,7 @@
       <section class="gatofilia-section gatofilia-band-light reveal-on-scroll">
         <div class="gatofilia-section-heading centered compact">
           <p class="gatofilia-eyebrow">Perguntas frequentes</p>
-          <h2>Informações importantes antes de confirmar sua participação.</h2>
+          <h2>Ainda tem dúvidas?</h2>
         </div>
         <div class="gatofilia-faq" data-ranked-faq>
           <% [

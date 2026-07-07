@@ -603,6 +603,10 @@ body {
     linear-gradient(180deg, #101010, #171717 52%, #0e0e0e);
 }
 
+.gatofilia-presentation-page [id] {
+  scroll-margin-top: 118px;
+}
+
 .gatofilia-presentation-nav {
   position: sticky;
   top: 0;
@@ -639,7 +643,8 @@ body {
   text-transform: uppercase;
 }
 
-.gatofilia-presentation-nav nav a:hover {
+.gatofilia-presentation-nav nav a:hover,
+.gatofilia-presentation-nav nav a.is-active {
   color: #c8a35a;
 }
 
@@ -664,8 +669,8 @@ body {
   max-width: 980px;
   margin: 0;
   color: #f8f8f8;
-  font-size: clamp(54px, 8vw, 128px);
-  line-height: 0.94;
+  font-size: clamp(42px, 6.4vw, 96px);
+  line-height: 0.98;
 }
 
 .gatofilia-presentation-hero p {
@@ -891,6 +896,10 @@ body {
   background:
     linear-gradient(145deg, rgba(248, 248, 248, 0.07), rgba(248, 248, 248, 0.025)),
     #151515;
+  transition:
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    transform 0.22s ease;
 }
 
 .gatofilia-presentation-modules span,
@@ -938,6 +947,17 @@ body {
 .gatofilia-presentation-guest-grid article.is-confirmed {
   border-color: rgba(224, 180, 83, 0.72);
   box-shadow: inset 0 0 0 1px rgba(224, 180, 83, 0.18);
+}
+
+@media (hover: hover) {
+  .gatofilia-presentation-modules article:hover,
+  .gatofilia-operation-grid article:hover,
+  .gatofilia-presentation-guest-grid article:hover,
+  .gatofilia-cost-grid article:hover {
+    border-color: rgba(224, 180, 83, 0.5);
+    box-shadow: 0 22px 56px rgba(0, 0, 0, 0.22);
+    transform: translateY(-3px);
+  }
 }
 
 .gatofilia-guest-education {
@@ -2573,7 +2593,8 @@ body {
   }
 
   .gatofilia-presentation-hero h1 {
-    font-size: clamp(44px, 14vw, 66px);
+    font-size: clamp(36px, 11vw, 54px);
+    line-height: 1.03;
   }
 
   .gatofilia-presentation-proof,
