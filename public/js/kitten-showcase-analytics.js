@@ -103,6 +103,17 @@
       track("click", tracked.dataset.analyticsClick, tracked.getAttribute("href") || "");
     }
 
+    const youtubePlay = event.target.closest("[data-youtube-play]");
+    if (youtubePlay) {
+      const player = youtubePlay.closest("[data-youtube-player]");
+      const embed = player?.dataset.youtubeEmbed || "";
+      if (player && embed) {
+        const separator = embed.includes("?") ? "&" : "?";
+        player.innerHTML = `<iframe src="${embed}${separator}autoplay=1" title="Vídeo do gatil" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+        track("video_play", "Vídeo do gatil", embed);
+      }
+    }
+
     const gallery = event.target.closest(".gallery-trigger");
     if (gallery) {
       track("gallery_open", gallery.getAttribute("aria-label") || "Abriu foto", `Foto ${Number(gallery.dataset.index || 0) + 1}`);

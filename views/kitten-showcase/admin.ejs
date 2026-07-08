@@ -74,6 +74,10 @@
                 <span>Leads recentes</span>
                 <strong data-analytics-ranking="leads"><%= analytics.rankings && analytics.rankings.leadVisits ? analytics.rankings.leadVisits.length : 0 %></strong>
               </div>
+              <div>
+                <span>Play no vídeo</span>
+                <strong data-analytics-ranking="youtube"><%= analytics.rankings ? analytics.rankings.youtubeViews : 0 %></strong>
+              </div>
             </div>
             <div class="showcase-analytics-ranking-grid">
               <div>
@@ -114,6 +118,20 @@
                     <div class="showcase-analytics-row">
                       <strong><%= visit.place %></strong>
                       <span><%= visit.durationLabel %> · <%= visit.browserLabel %> · <%= visit.clicks %> clique(s)</span>
+                    </div>
+                  <% }) %>
+                </div>
+              </div>
+              <div>
+                <div class="content-sub">Visualizações do vídeo</div>
+                <div id="showcaseYoutubeVisits" class="showcase-analytics-list">
+                  <% if (!analytics.rankings || !analytics.rankings.youtubeVisits.length) { %>
+                    <div class="empty">Nenhum play no vídeo registrado ainda.</div>
+                  <% } %>
+                  <% (analytics.rankings ? analytics.rankings.youtubeVisits : []).forEach(function(visit) { %>
+                    <div class="showcase-analytics-row">
+                      <strong><%= visit.place %></strong>
+                      <span><%= visit.durationLabel %> · <%= visit.browserLabel %> · <%= visit.views %> play(s)</span>
                     </div>
                   <% }) %>
                 </div>
@@ -343,6 +361,21 @@
                 <% if (showcase.aboutPdfPath) { %>
                   <small>PDF atual anexado. Envie outro apenas se desejar substituir.</small>
                 <% } %>
+              </div>
+              <div class="field" style="margin-top:12px;">
+                <label class="field-label" for="aboutYoutubeUrl">Vídeo do YouTube</label>
+                <input id="aboutYoutubeUrl" type="url" placeholder="https://www.youtube.com/watch?v=..." value="<%= showcase.aboutYoutubeUrl || '' %>" />
+                <small>Opcional. O vídeo aparecerá na página pública logo após o PDF.</small>
+              </div>
+              <div class="field" style="margin-top:12px;">
+                <label class="field-label" for="aboutYoutubeCaption">Legenda do vídeo</label>
+                <input id="aboutYoutubeCaption" type="text" placeholder="Ex.: Conheça nossa estrutura e rotina de criação" value="<%= showcase.aboutYoutubeCaption || '' %>" />
+                <small>Opcional. Se vazio, nenhuma legenda será exibida.</small>
+              </div>
+              <div class="field" style="margin-top:12px;">
+                <label class="field-label" for="aboutYoutubeText">Texto após o vídeo</label>
+                <textarea id="aboutYoutubeText" rows="3" placeholder="Ex.: Entre em contato para conhecer os filhotes disponíveis e nossa forma de acompanhamento."><%= showcase.aboutYoutubeText || '' %></textarea>
+                <small>Opcional. Se vazio, nada será exibido após o vídeo.</small>
               </div>
             </div>
           </details>

@@ -218,6 +218,28 @@
             <a href="<%= showcase.aboutPdfPath %>" target="_blank" rel="noopener noreferrer" data-analytics-click="Apresentação em PDF">Abrir apresentação em PDF</a>
             </div>
           <% } %>
+          <% if (showcase.aboutYoutubeEmbedUrl) { %>
+            <% if (showcase.aboutYoutubeCaption) { %>
+              <p class="public-youtube-caption"><%= showcase.aboutYoutubeCaption %></p>
+            <% } %>
+            <div
+              class="public-youtube-viewer"
+              data-youtube-player
+              data-youtube-embed="<%= showcase.aboutYoutubeEmbedUrl %>"
+              data-analytics-view="Vídeo do gatil"
+            >
+              <button type="button" class="public-youtube-play" data-youtube-play aria-label="Assistir vídeo do gatil">
+                <% if (showcase.aboutYoutubeThumbnailUrl) { %>
+                  <img src="<%= showcase.aboutYoutubeThumbnailUrl %>" alt="" loading="lazy" decoding="async" />
+                <% } %>
+                <span aria-hidden="true">▶</span>
+                <strong>Assistir vídeo do gatil</strong>
+              </button>
+            </div>
+            <% if (showcase.aboutYoutubeText) { %>
+              <p class="public-youtube-text"><%= showcase.aboutYoutubeText %></p>
+            <% } %>
+          <% } %>
         </section>
       <% } %>
 

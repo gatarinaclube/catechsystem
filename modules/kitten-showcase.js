@@ -164,6 +164,40 @@ function slugify(value) {
     .slice(0, 60);
 }
 
+function youtubeVideoId(value) {
+  const raw = compact(value);
+  if (!raw) return "";
+  try {
+    const url = new URL(raw);
+    const host = url.hostname.replace(/^www\./i, "").toLowerCase();
+    if (host === "youtu.be") return compact(url.pathname.replace(/^\//, "")).split("/")[0] || "";
+    if (host.endsWith("youtube.com")) {
+      if (url.pathname.startsWith("/shorts/")) return compact(url.pathname.split("/")[2]);
+      if (url.pathname.startsWith("/embed/")) return compact(url.pathname.split("/")[2]);
+      return compact(url.searchParams.get("v"));
+    }
+  } catch {
+    const match = raw.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{6,})/i);
+    return match ? match[1] : "";
+  }
+  return "";
+}
+
+function normalizeYoutubeUrl(value) {
+  const id = youtubeVideoId(value);
+  return id ? `https://www.youtube.com/watch?v=${id}` : "";
+}
+
+function youtubeEmbedUrl(value) {
+  const id = youtubeVideoId(value);
+  return id ? `https://www.youtube.com/embed/${id}?rel=0` : "";
+}
+
+function youtubeThumbnailUrl(value) {
+  const id = youtubeVideoId(value);
+  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : "";
+}
+
 function formatDateInput(date) {
   if (!date) return "";
   const parsed = new Date(date);
@@ -563,6 +597,9 @@ function emptyShowcase(settings, user) {
     paymentText: "",
     aboutText: "",
     aboutPdfPath: "",
+    aboutYoutubeUrl: "",
+    aboutYoutubeCaption: "",
+    aboutYoutubeText: "",
     evolutionText: "",
     published: false,
     litters: [],
@@ -585,6 +622,11 @@ function shapeShowcase(showcase, settings, user) {
     paymentText: showcase.paymentText || "",
     aboutText: showcase.aboutText || "",
     aboutPdfPath: showcase.aboutPdfPath || "",
+    aboutYoutubeUrl: showcase.aboutYoutubeUrl || "",
+    aboutYoutubeCaption: showcase.aboutYoutubeCaption || "",
+    aboutYoutubeText: showcase.aboutYoutubeText || "",
+    aboutYoutubeEmbedUrl: youtubeEmbedUrl(showcase.aboutYoutubeUrl),
+    aboutYoutubeThumbnailUrl: youtubeThumbnailUrl(showcase.aboutYoutubeUrl),
     evolutionText: showcase.evolutionText || "",
     evolutionComparisons: (showcase.evolutionComparisons || []).map((comparison) => ({
       ...comparison,
@@ -652,6 +694,7 @@ async function renderPublicShowcase(prisma, req, res, next, rawSlug) {
     });
 
     if (!showcase || !showcase.published) return next();
+    const publicShowcase = shapeShowcase(showcase, showcase.owner?.settings || null, showcase.owner);
 
     const litters = showcase.litters.map((litter) => {
       const counters = { M: 0, F: 0 };
@@ -672,7 +715,7 @@ async function renderPublicShowcase(prisma, req, res, next, rawSlug) {
     );
 
     return res.render("kitten-showcase/public", {
-      showcase,
+      showcase: publicShowcase,
       settings: showcase.owner?.settings || null,
       litters,
       seo,
@@ -684,7 +727,7 @@ async function renderPublicShowcase(prisma, req, res, next, rawSlug) {
         showcase.paymentCardInstallments ||
         compact(showcase.paymentText)
       ),
-      hasAboutInfo: Boolean(compact(showcase.aboutText) || compact(showcase.aboutPdfPath)),
+      hasAboutInfo: Boolean(compact(showcase.aboutText) || compact(showcase.aboutPdfPath) || compact(showcase.aboutYoutubeUrl)),
       hasEvolutionInfo: Boolean(
         showcase.evolutionComparisons.length &&
         showcase.evolutionComparisons.some((item) => item.reservePhoto && item.deliveryPhoto && item.oneYearPhoto)
@@ -860,11 +903,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         events: [],
         rankings: {
           whatsappClicks: 0,
+          youtubeViews: 0,
           averageDurationLabel: "0s",
           topActions: [],
           topKittens: [],
           topPlaces: [],
           leadVisits: [],
+          youtubeVisits: [],
         },
         totals: { active: 0, today: 0, total: 0 },
       };
@@ -941,6 +986,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const kittenMap = new Map();
     const placeMap = new Map();
     let whatsappClicks = 0;
+    let youtubeViews = 0;
 
     rankingEvents.forEach((event) => {
       const label = event.label || event.type || "";
@@ -950,6 +996,10 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         if (/whats/i.test(label)) {
           whatsappClicks += 1;
         }
+      }
+      if (event.type === "video_play") {
+        youtubeViews += 1;
+        increment(actionMap, label || "Vídeo do gatil");
       }
       if (event.type === "view_section" && /^Filhote:/i.test(label)) {
         increment(kittenMap, label.replace(/^Filhote:\s*/i, ""));
@@ -973,6 +1023,18 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         startedAtLabel: formatDateTime(session.startedAt),
         clicks: (session.events || []).filter((event) => /whats/i.test(event.label || "")).length,
       }));
+    const youtubeVisits = recentSessions
+      .filter((session) => (session.events || []).some((event) => event.type === "video_play"))
+      .sort((a, b) => Number(b.durationSeconds || 0) - Number(a.durationSeconds || 0))
+      .slice(0, 5)
+      .map((session) => ({
+        id: session.id,
+        place: placeLabel(session),
+        browserLabel: session.browserLabel || "Navegador",
+        durationLabel: formatDuration(session.durationSeconds),
+        startedAtLabel: formatDateTime(session.startedAt),
+        views: (session.events || []).filter((event) => event.type === "video_play").length,
+      }));
 
     return {
       active: activeSessions.map(shapeSession),
@@ -988,11 +1050,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       })),
       rankings: {
         whatsappClicks,
+        youtubeViews,
         averageDurationLabel: formatDuration(averageDuration),
         topActions: topList(actionMap),
         topKittens: topList(kittenMap),
         topPlaces: topList(placeMap),
         leadVisits,
+        youtubeVisits,
       },
       totals: {
         active: activeSessions.length,
@@ -1201,6 +1265,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               paymentText: compact(payload.paymentText),
               aboutText: compact(payload.aboutText),
               aboutPdfPath: aboutPdfUpload || compact(payload.aboutPdfPath),
+              aboutYoutubeUrl: normalizeYoutubeUrl(payload.aboutYoutubeUrl),
+              aboutYoutubeCaption: compact(payload.aboutYoutubeCaption),
+              aboutYoutubeText: compact(payload.aboutYoutubeText),
               evolutionText: compact(payload.evolutionText),
               published: payload.published === true,
             },
@@ -1226,6 +1293,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
               paymentText: compact(payload.paymentText),
               aboutText: compact(payload.aboutText),
               aboutPdfPath: aboutPdfUpload || compact(payload.aboutPdfPath),
+              aboutYoutubeUrl: normalizeYoutubeUrl(payload.aboutYoutubeUrl),
+              aboutYoutubeCaption: compact(payload.aboutYoutubeCaption),
+              aboutYoutubeText: compact(payload.aboutYoutubeText),
               evolutionText: compact(payload.evolutionText),
               published: payload.published === true,
             },

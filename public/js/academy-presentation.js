@@ -125,8 +125,6 @@
       const stats = readStats();
       stats[item.dataset.faqKey] = Number(stats[item.dataset.faqKey] || 0) + 1;
       writeStats(stats);
-      sortFaq();
-      item.open = true;
     }, true);
     sortFaq();
   }

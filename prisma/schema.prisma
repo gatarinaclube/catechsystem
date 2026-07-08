@@ -500,6 +500,9 @@ model CatteryKittenShowcase {
   paymentText             String?
   aboutText               String?
   aboutPdfPath            String?
+  aboutYoutubeUrl         String?
+  aboutYoutubeCaption     String?
+  aboutYoutubeText        String?
   evolutionText           String?
   published               Boolean  @default(false)
   createdAt               DateTime @default(now())

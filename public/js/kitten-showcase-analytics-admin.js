@@ -7,6 +7,7 @@
   const topKittensRoot = document.getElementById("showcaseTopKittens");
   const topCitiesRoot = document.getElementById("showcaseTopCities");
   const leadVisitsRoot = document.getElementById("showcaseLeadVisits");
+  const youtubeVisitsRoot = document.getElementById("showcaseYoutubeVisits");
   if (!refreshButton || !activeRoot || !eventsRoot || !eventsPager || !recentRoot) return;
 
   let latestData = { events: [] };
@@ -92,9 +93,11 @@
 
   function renderRankings(rankings = {}) {
     const whatsappTotal = document.querySelector('[data-analytics-ranking="whatsapp"]');
+    const youtubeTotal = document.querySelector('[data-analytics-ranking="youtube"]');
     const durationTotal = document.querySelector('[data-analytics-ranking="duration"]');
     const leadsTotal = document.querySelector('[data-analytics-ranking="leads"]');
     if (whatsappTotal) whatsappTotal.textContent = rankings.whatsappClicks || 0;
+    if (youtubeTotal) youtubeTotal.textContent = rankings.youtubeViews || 0;
     if (durationTotal) durationTotal.textContent = rankings.averageDurationLabel || "0s";
     if (leadsTotal) leadsTotal.textContent = rankings.leadVisits?.length || 0;
 
@@ -117,6 +120,15 @@
           `${visit.durationLabel} · ${visit.browserLabel} · ${visit.clicks} clique(s)`
         )).join("")
         : empty("Nenhum clique em WhatsApp registrado ainda.");
+    }
+
+    if (youtubeVisitsRoot) {
+      youtubeVisitsRoot.innerHTML = rankings.youtubeVisits?.length
+        ? rankings.youtubeVisits.map((visit) => simpleRow(
+          visit.place,
+          `${visit.durationLabel} · ${visit.browserLabel} · ${visit.views} play(s)`
+        )).join("")
+        : empty("Nenhum play no vídeo registrado ainda.");
     }
   }
 
