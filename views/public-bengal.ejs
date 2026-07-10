@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><%= seo?.title || 'Gato Bengal | PetGus' %></title>
+    <meta name="description" content="<%= seo?.description || 'Guia completo sobre gato Bengal.' %>" />
+    <% if (seo?.keywords) { %><meta name="keywords" content="<%= seo.keywords %>" /><% } %>
+    <link rel="canonical" href="<%= seo?.canonicalUrl || 'https://www.petgus.com.br/bengal' %>" />
+    <meta property="og:type" content="<%= seo?.type || 'article' %>" />
+    <meta property="og:title" content="<%= seo?.title || 'Gato Bengal' %>" />
+    <meta property="og:description" content="<%= seo?.description || 'Guia completo sobre gato Bengal.' %>" />
+    <meta property="og:url" content="<%= seo?.canonicalUrl || 'https://www.petgus.com.br/bengal' %>" />
+    <meta property="og:image" content="<%= seo?.imageUrl || 'https://www.petgus.com.br/logos/petgus-wide.png' %>" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="<%= seo?.title || 'Gato Bengal' %>" />
+    <meta name="twitter:description" content="<%= seo?.description || 'Guia completo sobre gato Bengal.' %>" />
+    <meta name="twitter:image" content="<%= seo?.imageUrl || 'https://www.petgus.com.br/logos/petgus-wide.png' %>" />
+    <% if (typeof structuredData !== 'undefined' && structuredData) { %>
+      <script type="application/ld+json"><%- JSON.stringify(structuredData) %></script>
+    <% } %>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/public-home.css" />
+  </head>
+  <body class="public-site-body bengal-page">
+    <header class="public-site-header">
+      <a class="public-site-brand" href="/">
+        <img src="/logos/petgus-wide.png" alt="PetGus" />
+      </a>
+      <nav class="public-site-nav" aria-label="Menu principal">
+        <a href="/">Inicial</a>
+        <a href="/bengal" aria-current="page">Bengal</a>
+        <a href="/planos">Planos</a>
+        <a href="/microchip"><span aria-hidden="true">⌕</span> Microchip</a>
+        <a href="/login">Login</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="bengal-hero">
+        <div class="bengal-hero-copy">
+          <span class="public-eyebrow">Guia da raça Bengal</span>
+          <h1>Gato Bengal: beleza selvagem, criação responsável e cuidados essenciais.</h1>
+          <p>
+            Um guia completo para quem pesquisa sobre a raça Bengal, deseja conhecer seu temperamento,
+            entender os cuidados básicos e saber o que observar antes de escolher um filhote ou um gatil.
+          </p>
+          <div class="bengal-hero-actions">
+            <a class="public-primary-button" href="#como-escolher">Como escolher um filhote</a>
+            <a class="public-secondary-button" href="#faq-bengal">Dúvidas frequentes</a>
+          </div>
+        </div>
+
+        <aside class="bengal-hero-card" aria-label="Resumo da raça Bengal">
+          <span>Raça Bengal</span>
+          <strong>ativo, inteligente e muito interativo</strong>
+          <p>Ideal para tutores que valorizam brincadeiras, ambiente enriquecido e convivência próxima.</p>
+          <div>
+            <em>Origem híbrida histórica</em>
+            <em>Pelagem marcante</em>
+            <em>Alta energia</em>
+          </div>
+        </aside>
+      </section>
+
+      <section class="bengal-overview" id="sobre">
+        <article>
+          <span class="public-eyebrow">Sobre a raça</span>
+          <h2>O que é um gato Bengal?</h2>
+          <p>
+            O Bengal é uma raça felina conhecida pela aparência exótica, pelagem com manchas, rosetas
+            ou padrão marmorizado, além de um comportamento geralmente ativo, curioso e participativo.
+            É uma raça que chama atenção pela estética, mas que precisa ser escolhida com responsabilidade.
+          </p>
+          <p>
+            Quem procura por <strong>gato Bengal</strong>, <strong>filhote Bengal</strong>,
+            <strong>gatil Bengal</strong> ou <strong>criador Bengal</strong> deve avaliar muito mais do que a beleza:
+            saúde, socialização, documentação, manejo, contrato e acompanhamento do criador são fundamentais.
+          </p>
+        </article>
+
+        <div class="bengal-trait-grid">
+          <div><strong>Energia</strong><span>Alta, com necessidade de brincadeiras e estímulos.</span></div>
+          <div><strong>Interação</strong><span>Costuma gostar de participar da rotina da casa.</span></div>
+          <div><strong>Ambiente</strong><span>Arranhadores, prateleiras, brinquedos e enriquecimento ajudam muito.</span></div>
+          <div><strong>Cuidados</strong><span>Vacinas, exames, vermifugação, nutrição e acompanhamento veterinário.</span></div>
+        </div>
+      </section>
+
+      <section class="bengal-section bengal-dark" id="temperamento">
+        <div class="bengal-section-heading">
+          <span class="public-eyebrow">Temperamento Bengal</span>
+          <h2>Um gato para quem gosta de presença, movimento e inteligência.</h2>
+          <p>
+            O Bengal costuma ser descrito como um gato curioso, atlético e atento ao ambiente. Muitos Bengals gostam
+            de interação, brincadeiras, exploração vertical e atividades que desafiem corpo e mente.
+          </p>
+        </div>
+        <div class="bengal-card-grid">
+          <article>
+            <span>01</span>
+            <h3>Curioso</h3>
+            <p>Explora ambientes, observa movimento e precisa de rotina com estímulos.</p>
+          </article>
+          <article>
+            <span>02</span>
+            <h3>Ativo</h3>
+            <p>Não é uma raça para ficar sem brincadeiras ou enriquecimento ambiental.</p>
+          </article>
+          <article>
+            <span>03</span>
+            <h3>Social</h3>
+            <p>Quando bem socializado, pode criar forte vínculo com a família.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="bengal-section" id="cuidados">
+        <div class="bengal-section-heading">
+          <span class="public-eyebrow">Cuidados com Bengal</span>
+          <h2>Saúde, manejo e rotina fazem diferença.</h2>
+          <p>
+            A beleza da raça precisa caminhar junto com criação responsável. Um Bengal bem cuidado depende de
+            seleção consciente, ambiente adequado, alimentação de qualidade e acompanhamento profissional.
+          </p>
+        </div>
+        <div class="bengal-care-list">
+          <article><strong>Ambiente enriquecido</strong><p>Prateleiras, brinquedos, arranhadores e momentos de interação diária.</p></article>
+          <article><strong>Controle sanitário</strong><p>Vacinação, vermifugação, exames e histórico bem documentado.</p></article>
+          <article><strong>Socialização</strong><p>Contato positivo, rotina segura e adaptação respeitosa ao novo lar.</p></article>
+          <article><strong>Procedência</strong><p>Informações claras sobre pais, documentação, contrato e acompanhamento.</p></article>
+        </div>
+      </section>
+
+      <section class="bengal-section bengal-search-section" id="como-escolher">
+        <div class="bengal-section-heading">
+          <span class="public-eyebrow">Filhote Bengal</span>
+          <h2>Como escolher um filhote Bengal com segurança?</h2>
+          <p>
+            Antes de decidir pelo filhote, avalie o criador. Bons criadores não vendem apenas um gato:
+            orientam, documentam, acompanham e preservam a saúde e o bem-estar dos animais.
+          </p>
+        </div>
+        <div class="bengal-checklist">
+          <div><span>✓</span> Verifique se o criador oferece contrato e informações claras.</div>
+          <div><span>✓</span> Pergunte sobre idade de entrega, vacinas, vermifugação e microchip.</div>
+          <div><span>✓</span> Solicite informações sobre pais, genealogia, saúde e socialização.</div>
+          <div><span>✓</span> Observe se há transparência sobre valores, reserva e acompanhamento.</div>
+          <div><span>✓</span> Desconfie de pressa excessiva, ausência de documentação ou falta de orientação.</div>
+        </div>
+      </section>
+
+      <section class="bengal-section bengal-dark">
+        <div class="bengal-section-heading">
+          <span class="public-eyebrow">Para criadores Bengal</span>
+          <h2>Um gatil Bengal forte também precisa de gestão.</h2>
+          <p>
+            Quem cria Bengal precisa acompanhar genealogia, ninhadas, acasalamentos, vacinas, exames, compradores,
+            contratos, entregas, financeiro e divulgação dos filhotes. O PetGus foi desenvolvido para organizar essa rotina.
+          </p>
+        </div>
+        <div class="bengal-cta-panel">
+          <div>
+            <strong>PetGus para gatis</strong>
+            <span>Organize ninhadas, filhotes, documentos, vitrine pública, CRM e financeiro em um só lugar.</span>
+          </div>
+          <a class="public-primary-button" href="/planos">Conhecer planos</a>
+        </div>
+      </section>
+
+      <section class="bengal-section" id="faq-bengal">
+        <div class="bengal-section-heading">
+          <span class="public-eyebrow">FAQ Bengal</span>
+          <h2>Perguntas frequentes sobre gato Bengal.</h2>
+        </div>
+        <div class="bengal-faq">
+          <% faqItems.forEach(function(item) { %>
+            <details>
+              <summary><%= item.question %></summary>
+              <p><%= item.answer %></p>
+            </details>
+          <% }) %>
+        </div>
+      </section>
+    </main>
+
+    <footer class="public-site-footer">
+      <p>© 2026 Developed by PetGus & Partners</p>
+      <p>PetGus - gestão profissional para criadores.</p>
+    </footer>
+  </body>
+</html>

@@ -995,6 +995,117 @@ app.get("/", (req, res) => {
   });
 });
 
+app.get("/bengal", (req, res) => {
+  const pageUrl = "https://www.petgus.com.br/bengal";
+  const pageTitle = "Gato Bengal: guia completo da raça, temperamento, cuidados e criação";
+  const pageDescription =
+    "Conheça a raça Bengal: origem, temperamento, cuidados, saúde, criação responsável, como escolher um filhote Bengal e o que observar ao procurar um gatil.";
+  const faqItems = [
+    {
+      question: "O gato Bengal é indicado para qualquer família?",
+      answer:
+        "O Bengal costuma ser ativo, curioso e muito interativo. Pode ser excelente para famílias que gostam de brincar, enriquecer o ambiente e conviver com um gato participativo. Para quem procura um gato muito calmo e independente, talvez outra raça combine melhor.",
+    },
+    {
+      question: "Bengal precisa de cuidados especiais?",
+      answer:
+        "Precisa principalmente de ambiente enriquecido, rotina de brincadeiras, acompanhamento veterinário, vacinação, vermifugação, exames e alimentação adequada. O cuidado mais importante é oferecer estímulo físico e mental.",
+    },
+    {
+      question: "Como escolher um filhote Bengal?",
+      answer:
+        "Procure criadores responsáveis, peça informações sobre pais, saúde, registro, idade de entrega, socialização, contrato, exames e acompanhamento. Um filhote deve ser entregue com segurança, documentação e orientação clara ao tutor.",
+    },
+    {
+      question: "Todo Bengal tem o mesmo padrão de pelagem?",
+      answer:
+        "Não. A raça pode apresentar variações de padrão e cor, como manchas, rosetas e mármore, conforme a seleção genética e o padrão aceito pelas entidades felinas. O mais importante é saúde, temperamento e procedência.",
+    },
+    {
+      question: "O que pesquisar antes de escolher um gatil Bengal?",
+      answer:
+        "Pesquise histórico do criador, participação em entidades felinas, informações sobre manejo, documentação, exames, contrato, acompanhamento pós-venda e transparência sobre os gatos utilizados na criação.",
+    },
+  ];
+  const structuredData = [
+    organizationSchema(),
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      headline: pageTitle,
+      description: pageDescription,
+      mainEntityOfPage: pageUrl,
+      image: "https://www.petgus.com.br/logos/petgus-wide.png",
+      author: {
+        "@type": "Organization",
+        name: "PetGus",
+      },
+      publisher: {
+        "@type": "Organization",
+        name: "PetGus",
+        logo: {
+          "@type": "ImageObject",
+          url: "https://www.petgus.com.br/logos/petgus-wide.png",
+        },
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Início",
+          item: "https://www.petgus.com.br/",
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Gato Bengal",
+          item: pageUrl,
+        },
+      ],
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: faqItems.map((item) => ({
+        "@type": "Question",
+        name: item.question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: item.answer,
+        },
+      })),
+    },
+  ];
+
+  res.render("public-bengal", {
+    user: req.user,
+    faqItems,
+    seo: baseSeo({
+      title: pageTitle,
+      description: pageDescription,
+      path: "/bengal",
+      image: "/logos/petgus-wide.png",
+      keywords: [
+        "gato Bengal",
+        "raça Bengal",
+        "filhote Bengal",
+        "gatil Bengal",
+        "criador Bengal",
+        "Bengal preço",
+        "gato Bengal cuidados",
+        "temperamento Bengal",
+        "Bengal filhotes",
+        "gato de raça Bengal",
+      ],
+    }),
+    structuredData,
+  });
+});
+
 app.get("/planos", (req, res) => {
   res.render("public-plans", {
     user: req.user,
@@ -1071,6 +1182,7 @@ app.get("/sitemap.xml", async (req, res, next) => {
     });
     const staticUrls = [
       { loc: "/", priority: "1.0" },
+      { loc: "/bengal", priority: "0.9" },
       { loc: "/planos", priority: "0.8" },
       { loc: "/microchip", priority: "0.9" },
     ];
