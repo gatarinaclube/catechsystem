@@ -97,12 +97,19 @@ function removeContractFileFromDisk(contractFile) {
 
 function buildOwnershipInfo(req, existingKitten = null) {
   const currentInfo = safeJsonParse(existingKitten?.newOwnerInfoJson);
-  const contractLink = String(req.body.ownerContractLink || "").trim();
+  const hasContractLinkField = Object.prototype.hasOwnProperty.call(req.body, "ownerContractLink");
+  const contractLink = hasContractLinkField ? String(req.body.ownerContractLink || "").trim() : null;
+  const deleteContractLink = req.body.ownerContractLinkDelete === "1";
   const deleteContractFile = req.body.ownerContractFileDelete === "1";
   const nextInfo = {
     ...currentInfo,
-    contractLink: contractLink || null,
   };
+
+  if (deleteContractLink) {
+    delete nextInfo.contractLink;
+  } else if (hasContractLinkField) {
+    nextInfo.contractLink = contractLink || null;
+  }
 
   if (deleteContractFile) {
     delete nextInfo.contractFile;

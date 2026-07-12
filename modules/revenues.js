@@ -479,6 +479,15 @@ function buildRevenueData(body, existing = null) {
 
   async function syncKittenOwnerFromSale(tx, kittenId, client) {
     if (!kittenId || !client) return;
+    const existingKitten = await tx.cat.findUnique({
+      where: { id: kittenId },
+      select: { newOwnerInfoJson: true },
+    });
+    const currentOwnerInfo = safeJsonParse(existingKitten?.newOwnerInfoJson, {});
+    const nextOwnerInfo = {
+      ...currentOwnerInfo,
+      ...clientOwnerInfo(client),
+    };
 
     await tx.cat.update({
       where: { id: kittenId },
@@ -487,7 +496,7 @@ function buildRevenueData(body, existing = null) {
         currentOwnerId: null,
         ownershipSource: "SALE",
         ownershipType: "OWNER",
-        newOwnerInfoJson: JSON.stringify(clientOwnerInfo(client)),
+        newOwnerInfoJson: JSON.stringify(nextOwnerInfo),
         sold: true,
         kittenAvailabilityStatus: "RESERVED",
       },
