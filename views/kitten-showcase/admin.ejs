@@ -287,7 +287,8 @@
                   </div>
                   <div class="field">
                     <label class="field-label" for="whatsappUrl">WhatsApp</label>
-                    <input id="whatsappUrl" type="text" placeholder="DDD + número ou link" value="<%= showcase.whatsappUrl || '' %>" />
+                    <input id="whatsappUrl" type="text" inputmode="tel" placeholder="(XX) XXXXX-XXXX" value="<%= showcase.whatsappUrl || '' %>" />
+                    <div class="section-note" style="margin-top:6px;">Para números do Brasil, informe apenas DDD + número. O PetGus adiciona +55 automaticamente.</div>
                   </div>
                 </div>
 

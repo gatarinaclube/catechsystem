@@ -506,11 +506,39 @@ function normalizeUrl(value) {
   return `https://${text}`;
 }
 
+function normalizeBrazilianWhatsappDigits(value) {
+  let digits = String(value || "").replace(/\D/g, "");
+  if (!digits) return "";
+
+  if (digits.startsWith("00")) {
+    digits = digits.replace(/^00+/, "");
+  }
+
+  if ((digits.length === 11 || digits.length === 12) && digits.startsWith("0")) {
+    digits = digits.slice(1);
+  }
+
+  if ((digits.length === 10 || digits.length === 11) && !digits.startsWith("55")) {
+    return `55${digits}`;
+  }
+
+  return digits;
+}
+
 function normalizeWhatsappUrl(value) {
   const text = compact(value);
   if (!text) return null;
-  if (/^https?:\/\//i.test(text)) return text;
-  const digits = text.replace(/\D/g, "");
+  if (/^https?:\/\//i.test(text)) {
+    try {
+      const url = new URL(text);
+      const host = url.hostname.replace(/^www\./i, "").toLowerCase();
+      const isWhatsappHost = host === "wa.me" || host.endsWith("whatsapp.com");
+      if (!isWhatsappHost) return text;
+    } catch {
+      return text;
+    }
+  }
+  const digits = normalizeBrazilianWhatsappDigits(text);
   if (digits) return `https://wa.me/${digits}`;
   return normalizeUrl(text);
 }
@@ -619,6 +647,9 @@ function shapeShowcase(showcase, settings, user) {
     cardColor: showcase.cardColor || fallback.cardColor,
     textColor: showcase.textColor || fallback.textColor,
     accentColor: showcase.accentColor || fallback.accentColor,
+    websiteUrl: normalizeUrl(showcase.websiteUrl),
+    instagramUrl: normalizeUrl(showcase.instagramUrl),
+    whatsappUrl: normalizeWhatsappUrl(showcase.whatsappUrl),
     paymentText: showcase.paymentText || "",
     aboutText: showcase.aboutText || "",
     aboutPdfPath: showcase.aboutPdfPath || "",

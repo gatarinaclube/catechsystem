@@ -9,6 +9,7 @@
   const addLitterButton = document.getElementById("addLitterButton");
   const addComparisonButton = document.getElementById("addComparisonButton");
   const slugInput = document.getElementById("slug");
+  const whatsappInput = document.getElementById("whatsappUrl");
   const publicLinkButton = document.getElementById("publicLinkButton");
   const paymentCardInstallments = document.getElementById("paymentCardInstallments");
   const paymentInstallmentsField = document.getElementById("paymentInstallmentsField");
@@ -99,6 +100,22 @@
     themePreview.style.setProperty("--preview-card", card);
     themePreview.style.setProperty("--preview-text", text);
     themePreview.style.setProperty("--preview-accent", accent);
+  }
+
+  function shouldFormatWhatsapp(value) {
+    const text = String(value || "").trim();
+    return !/^https?:\/\//i.test(text) && !/[a-z]/i.test(text);
+  }
+
+  function formatBrazilianPhone(value) {
+    const digits = String(value || "").replace(/\D/g, "").slice(0, 11);
+    if (!digits) return "";
+    if (digits.length <= 2) return `(${digits}`;
+    if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    if (digits.length <= 10) {
+      return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+    }
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
   }
 
   function litterLimitReached() {
@@ -776,6 +793,12 @@
   slugInput.addEventListener("input", updatePublicLink);
   paymentCardInstallments.addEventListener("change", syncPaymentInstallments);
   themeColorInputs.forEach((input) => input.addEventListener("input", syncThemePreview));
+  if (whatsappInput) {
+    whatsappInput.addEventListener("input", () => {
+      if (!shouldFormatWhatsapp(whatsappInput.value)) return;
+      whatsappInput.value = formatBrazilianPhone(whatsappInput.value);
+    });
+  }
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const prepared = await Promise.all(
