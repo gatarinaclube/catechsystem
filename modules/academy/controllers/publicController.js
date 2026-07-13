@@ -59,6 +59,22 @@ function renderPublic(req, res, view, locals = {}) {
   });
 }
 
+function portalArticles(settings) {
+  const featured = Array.isArray(settings.portalFeatured) ? settings.portalFeatured : [];
+  const rows = Array.isArray(settings.portalNewsRows) ? settings.portalNewsRows : [];
+  return [
+    ...featured,
+    ...rows.map((row) => row.left).filter(Boolean),
+  ].filter((article) => article?.slug && !article.externalUrl);
+}
+
+function articleUrl(article) {
+  if (!article) return "#";
+  if (article.externalUrl) return article.externalUrl;
+  if (!article.slug) return "#";
+  return `/materia/${article.slug}`;
+}
+
 async function notifyGatofiliaLead(lead) {
   const adminTo = gatofiliaEmailAddress();
   const smtpConfig = gatofiliaSmtpConfig();
@@ -108,13 +124,56 @@ async function notifyGatofiliaLead(lead) {
 }
 
 module.exports = (prisma) => ({
+  portal: async (req, res) => {
+    const publicSettings = await getAcademyPublicSettings(prisma);
+    renderPublic(req, res, "portal", {
+      settings: publicSettings,
+      articleUrl,
+      seo: {
+        path: "/",
+        title: "Gatofilia | Felinocultura, Notícias e Jornada para Criadores",
+        description: "Portal Gatofilia com notícias, matérias, conteúdo para criadores de gatos, felinocultura, gestão de gatil, raças felinas e a Jornada Gatofilia.",
+        image: publicSettings.portalBannerA?.imageUrl || "/uploads/academy/gatofilia-main-logo-620.png",
+        keywords: [
+          "gatofilia",
+          "felinocultura",
+          "criadores de gatos",
+          "gatil",
+          "raças de gatos",
+          "criação responsável de gatos",
+          "notícias sobre gatos",
+          "jornada gatofilia",
+        ],
+      },
+    });
+  },
+
+  portalArticle: async (req, res, next) => {
+    const publicSettings = await getAcademyPublicSettings(prisma);
+    const article = portalArticles(publicSettings).find((item) => item.slug === req.params.slug);
+    if (!article) return next();
+
+    renderPublic(req, res, "portal-article", {
+      settings: publicSettings,
+      article,
+      seo: {
+        path: `/materia/${article.slug}`,
+        type: "article",
+        title: `${article.title} | Gatofilia`,
+        description: article.subtitle || article.caption || "Matéria Gatofilia para criadores e interessados em felinocultura.",
+        image: article.imageUrl || publicSettings.portalLogoUrl,
+        keywords: ["gatofilia", "felinocultura", "criadores de gatos", "gatil", article.category].filter(Boolean),
+      },
+    });
+  },
+
   home: async (req, res) => {
     const [academy, publicSettings] = await Promise.all([
       getAcademyContext(prisma, req),
       getAcademyPublicSettings(prisma),
     ]);
     const catalog = await getPublishedCatalog(prisma, academy.level);
-    const homePath = "/";
+    const homePath = req.path === "/jornada" ? "/jornada" : (req.path === "/academy" ? "/academy" : "/");
     renderPublic(req, res, "home", {
       academy,
       catalog,
@@ -265,7 +324,9 @@ module.exports = (prisma) => ({
       gatofiliaDomains.some((domain) => host === domain || host === `www.${domain}`)
     );
     const isPresentationInterest = req.path.startsWith("/apresentacao");
-    const basePath = isPresentationInterest ? "/apresentacao" : (isGatofiliaHost ? "/" : (req.path.startsWith("/gatofilia") ? "/gatofilia" : "/academy"));
+    const basePath = isPresentationInterest
+      ? "/apresentacao"
+      : (req.path.startsWith("/jornada") ? "/jornada" : (isGatofiliaHost ? "/" : (req.path.startsWith("/gatofilia") ? "/gatofilia" : "/academy")));
     const formHash = isPresentationInterest ? "#inscricao" : "#pre-inscricao";
     const leadData = {
       firstName: cleanText(req.body.firstName, 120),
@@ -496,14 +557,15 @@ module.exports = (prisma) => ({
     const lastmod = new Date();
     const urls = [
       sitemapUrl(absoluteUrl(req, "/"), lastmod, "1.0"),
-      sitemapUrl(absoluteUrl(req, "/#inicio"), lastmod, "0.9"),
-      sitemapUrl(absoluteUrl(req, "/#quem-somos"), lastmod, "0.8"),
-      sitemapUrl(absoluteUrl(req, "/#jornada"), lastmod, "0.8"),
-      sitemapUrl(absoluteUrl(req, "/#metodo"), lastmod, "0.8"),
-      sitemapUrl(absoluteUrl(req, "/#beneficios"), lastmod, "0.8"),
-      sitemapUrl(absoluteUrl(req, "/#faq"), lastmod, "0.7"),
-      sitemapUrl(absoluteUrl(req, "/#pre-inscricao"), lastmod, "0.9"),
-      sitemapUrl(absoluteUrl(req, "/#contato"), lastmod, "0.6"),
+      sitemapUrl(absoluteUrl(req, "/jornada"), lastmod, "0.9"),
+      sitemapUrl(absoluteUrl(req, "/jornada#inicio"), lastmod, "0.8"),
+      sitemapUrl(absoluteUrl(req, "/jornada#quem-somos"), lastmod, "0.8"),
+      sitemapUrl(absoluteUrl(req, "/jornada#jornada"), lastmod, "0.8"),
+      sitemapUrl(absoluteUrl(req, "/jornada#metodo"), lastmod, "0.8"),
+      sitemapUrl(absoluteUrl(req, "/jornada#beneficios"), lastmod, "0.8"),
+      sitemapUrl(absoluteUrl(req, "/jornada#faq"), lastmod, "0.7"),
+      sitemapUrl(absoluteUrl(req, "/jornada#pre-inscricao"), lastmod, "0.9"),
+      sitemapUrl(absoluteUrl(req, "/jornada#contato"), lastmod, "0.6"),
     ];
 
     res.type("application/xml").send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join("\n")}\n</urlset>`);
@@ -512,8 +574,8 @@ module.exports = (prisma) => ({
   robots: (req, res) => {
     res.type("text/plain").send([
       "User-agent: *",
-      "Allow: /academy",
-      "Allow: /gatofilia",
+      "Allow: /",
+      "Allow: /jornada",
       "Disallow: /academy/app",
       "Disallow: /academy/admin",
       "Disallow: /academy/especialista",

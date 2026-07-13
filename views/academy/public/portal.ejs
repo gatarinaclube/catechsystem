@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <%- include("../partials/seo", { seo, pageTitle }) %>
+    <link rel="stylesheet" href="/css/academy.css" />
+  </head>
+  <body class="gatofilia-public gatofilia-portal title-<%= settings.portalTitleSize || 'medium' %>" style="--portal-font: '<%= settings.portalFontFamily || 'Inter' %>';">
+    <header class="gatofilia-portal-header">
+      <a class="gatofilia-portal-logo" href="/" aria-label="Gatofilia">
+        <img src="<%= settings.portalLogoUrl || '/uploads/academy/gatofilia-main-logo-360.png' %>" alt="Gatofilia" width="360" height="180" decoding="async" />
+      </a>
+      <button class="gatofilia-menu-toggle" type="button" aria-controls="gatofiliaPortalMenu" aria-expanded="false">
+        <span></span><span></span><span></span><strong>Menu</strong>
+      </button>
+      <nav id="gatofiliaPortalMenu" aria-label="Menu Gatofilia">
+        <a href="/">Início</a>
+        <a href="#noticias">Notícias</a>
+        <a href="#materias">Matérias</a>
+        <a href="#patrocinadores">Patrocinadores</a>
+        <a href="/jornada">Jornada</a>
+        <a href="/gatofilia/login">Login</a>
+      </nav>
+    </header>
+
+    <main class="gatofilia-portal-main">
+      <% const bannerA = settings.portalBannerA || {}; %>
+      <section class="gatofilia-ad gatofilia-ad-a" aria-label="Banner A">
+        <% if (bannerA.imageUrl) { %>
+          <a href="<%= bannerA.linkUrl || '#' %>" <%= bannerA.linkUrl ? 'target="_blank" rel="noopener"' : '' %>>
+            <img src="<%= bannerA.imageUrl %>" alt="<%= bannerA.altText || 'Banner A' %>" width="1440" height="320" loading="eager" decoding="async" />
+          </a>
+        <% } else { %>
+          <div>Banner A</div>
+        <% } %>
+      </section>
+
+      <section id="noticias" class="gatofilia-featured-news">
+        <% const featured = (settings.portalFeatured || []).slice(0, 3); %>
+        <% const mainArticle = featured[0] || {}; %>
+        <a class="gatofilia-featured-main" href="<%= articleUrl(mainArticle) %>" <%= mainArticle.externalUrl ? 'target="_blank" rel="noopener"' : '' %>>
+          <div class="gatofilia-news-media">
+            <% if (mainArticle.videoUrl) { %>
+              <iframe src="<%= mainArticle.videoUrl %>" title="<%= mainArticle.title || 'Vídeo Gatofilia' %>" loading="lazy" allowfullscreen></iframe>
+            <% } else if (mainArticle.imageUrl) { %>
+              <img src="<%= mainArticle.imageUrl %>" alt="<%= mainArticle.title || 'Matéria Gatofilia' %>" width="900" height="560" loading="lazy" decoding="async" />
+            <% } else { %>
+              <div class="gatofilia-news-placeholder">Destaque</div>
+            <% } %>
+          </div>
+          <p><%= mainArticle.category || 'Destaque' %></p>
+          <h1><%= mainArticle.title || 'Gatofilia' %></h1>
+          <span><%= mainArticle.subtitle || mainArticle.caption || 'Conteúdo em destaque para criadores e interessados em felinocultura.' %></span>
+        </a>
+
+        <div class="gatofilia-featured-side">
+          <% featured.slice(1, 3).forEach(function(article) { %>
+            <a href="<%= articleUrl(article) %>" <%= article.externalUrl ? 'target="_blank" rel="noopener"' : '' %>>
+              <div class="gatofilia-news-media small">
+                <% if (article.imageUrl) { %>
+                  <img src="<%= article.imageUrl %>" alt="<%= article.title %>" width="520" height="310" loading="lazy" decoding="async" />
+                <% } else { %>
+                  <div class="gatofilia-news-placeholder">Notícia</div>
+                <% } %>
+              </div>
+              <p><%= article.category || 'Gatofilia' %></p>
+              <h2><%= article.title %></h2>
+              <span><%= article.subtitle || article.caption || '' %></span>
+            </a>
+          <% }) %>
+        </div>
+      </section>
+
+      <section id="patrocinadores" class="gatofilia-ad-grid gatofilia-ad-grid-b" aria-label="Banners B">
+        <% (settings.portalBannerB || []).forEach(function(banner) { %>
+          <article class="gatofilia-ad gatofilia-ad-b">
+            <% if (banner.imageUrl) { %>
+              <a href="<%= banner.linkUrl || '#' %>" <%= banner.linkUrl ? 'target="_blank" rel="noopener"' : '' %>>
+                <img src="<%= banner.imageUrl %>" alt="<%= banner.altText || 'Banner B' %>" width="700" height="250" loading="lazy" decoding="async" />
+              </a>
+            <% } else { %>
+              <div>Banner B</div>
+            <% } %>
+          </article>
+        <% }) %>
+      </section>
+
+      <section id="materias" class="gatofilia-news-layout">
+        <div class="gatofilia-news-list">
+          <% (settings.portalNewsRows || []).forEach(function(row) { %>
+            <% const article = row.left || {}; %>
+            <article class="gatofilia-news-row">
+              <a class="gatofilia-news-image" href="<%= articleUrl(article) %>" <%= article.externalUrl ? 'target="_blank" rel="noopener"' : '' %>>
+                <% if (article.imageUrl) { %>
+                  <img src="<%= article.imageUrl %>" alt="<%= article.title || 'Matéria Gatofilia' %>" width="680" height="420" loading="lazy" decoding="async" />
+                <% } else { %>
+                  <div class="gatofilia-news-placeholder">Matéria</div>
+                <% } %>
+              </a>
+              <div>
+                <p><%= article.category || 'Matéria' %></p>
+                <a href="<%= articleUrl(article) %>" <%= article.externalUrl ? 'target="_blank" rel="noopener"' : '' %>>
+                  <h2><%= article.title || 'Nova matéria Gatofilia' %></h2>
+                </a>
+                <span><%= article.caption || article.subtitle || '' %></span>
+              </div>
+            </article>
+          <% }) %>
+        </div>
+
+        <aside class="gatofilia-side-text">
+          <% (settings.portalNewsRows || []).forEach(function(row) { %>
+            <% if (row.right && (row.right.title || row.right.text)) { %>
+              <article>
+                <h3><%= row.right.title %></h3>
+                <p><%= row.right.text %></p>
+                <% if (row.right.externalUrl) { %>
+                  <a href="<%= row.right.externalUrl %>" target="_blank" rel="noopener">Ler mais</a>
+                <% } %>
+              </article>
+            <% } %>
+          <% }) %>
+        </aside>
+      </section>
+
+      <section class="gatofilia-ad-grid gatofilia-ad-grid-c" aria-label="Banners C">
+        <% (settings.portalBannerC || []).forEach(function(banner) { %>
+          <article class="gatofilia-ad gatofilia-ad-c">
+            <% if (banner.imageUrl) { %>
+              <a href="<%= banner.linkUrl || '#' %>" <%= banner.linkUrl ? 'target="_blank" rel="noopener"' : '' %>>
+                <img src="<%= banner.imageUrl %>" alt="<%= banner.altText || 'Banner C' %>" width="460" height="150" loading="lazy" decoding="async" />
+              </a>
+            <% } else { %>
+              <div>Banner C</div>
+            <% } %>
+          </article>
+        <% }) %>
+      </section>
+    </main>
+
+    <footer class="gatofilia-portal-footer">
+      <img src="<%= settings.portalLogoUrl || '/uploads/academy/gatofilia-main-logo-360.png' %>" alt="Gatofilia" width="260" height="140" loading="lazy" decoding="async" />
+      <p>Conteúdo, felinocultura e jornada para criadores.</p>
+      <a href="mailto:contato@gatofilia.com.br">contato@gatofilia.com.br</a>
+    </footer>
+
+    <script>
+      (() => {
+        const button = document.querySelector(".gatofilia-menu-toggle");
+        const menu = document.getElementById("gatofiliaPortalMenu");
+        if (!button || !menu) return;
+        button.addEventListener("click", () => {
+          const isOpen = menu.classList.toggle("is-open");
+          button.setAttribute("aria-expanded", String(isOpen));
+        });
+      })();
+    </script>
+  </body>
+</html>

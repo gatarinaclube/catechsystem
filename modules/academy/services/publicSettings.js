@@ -12,6 +12,74 @@ const DEFAULT_ACADEMY_PUBLIC_SETTINGS = {
   presentationCardLabel: "Cartão - 12x R$ 200,00",
   presentationOfferTitle: "Exclusiva para os 10 primeiros inscritos",
   presentationOfferNote: "Considerando os benefícios inclusos, uma parte significativa do investimento retorna em estrutura, tecnologia, associação e apoio prático.",
+  portalLogoUrl: "/uploads/academy/gatofilia-main-logo-360.png",
+  portalFontFamily: "Inter",
+  portalTitleSize: "medium",
+  portalBannerA: {
+    imageUrl: "",
+    linkUrl: "",
+    altText: "Banner A",
+  },
+  portalFeatured: [
+    {
+      slug: "gatofilia-jornada",
+      title: "Gatofilia: conhecimento para criadores que desejam evoluir",
+      subtitle: "Uma jornada para transformar criação, gestão e excelência em uma rotina mais profissional.",
+      category: "Destaque",
+      imageUrl: "",
+      videoUrl: "",
+      externalUrl: "",
+      body: "A Gatofilia reúne educação, experiência prática, comunidade e tecnologia para apoiar criadores em todas as etapas da felinocultura.",
+    },
+    {
+      slug: "gestao-de-gatil",
+      title: "Gestão profissional para gatis modernos",
+      subtitle: "Organização, indicadores e processos para tomar decisões com mais segurança.",
+      category: "Gestão",
+      imageUrl: "",
+      videoUrl: "",
+      externalUrl: "",
+      body: "A profissionalização de um gatil passa por registros claros, acompanhamento de rotina, planejamento financeiro e visão estratégica.",
+    },
+    {
+      slug: "criacao-responsavel",
+      title: "Criação responsável começa pelo conhecimento",
+      subtitle: "Saúde, bem-estar, genética e ética como base de um programa sólido.",
+      category: "Felinocultura",
+      imageUrl: "",
+      videoUrl: "",
+      externalUrl: "",
+      body: "Criar com responsabilidade exige estudo contínuo, escolha criteriosa de reprodutores e compromisso real com os animais.",
+    },
+  ],
+  portalBannerB: [
+    { imageUrl: "", linkUrl: "", altText: "Banner B" },
+    { imageUrl: "", linkUrl: "", altText: "Banner B" },
+  ],
+  portalNewsRows: [
+    {
+      left: {
+        slug: "excelencia-na-felinocultura",
+        title: "Excelência na felinocultura",
+        caption: "Conteúdos, notícias e referências para criadores que buscam evolução.",
+        category: "Matéria",
+        imageUrl: "",
+        videoUrl: "",
+        externalUrl: "",
+        body: "Use este espaço para publicar uma matéria completa, compartilhar uma notícia, destacar um criador, apresentar uma raça ou direcionar o leitor para uma página externa.",
+      },
+      right: {
+        title: "Agenda e avisos",
+        text: "Espaço para textos curtos, comunicados, chamadas de eventos, notas institucionais ou links importantes.",
+        externalUrl: "",
+      },
+    },
+  ],
+  portalBannerC: [
+    { imageUrl: "", linkUrl: "", altText: "Banner C" },
+    { imageUrl: "", linkUrl: "", altText: "Banner C" },
+    { imageUrl: "", linkUrl: "", altText: "Banner C" },
+  ],
   presentationGuests: [
     {
       sortOrder: 1,
@@ -58,6 +126,14 @@ function normalizeSettings(value = {}) {
     presentationCardLabel: cleanText(value.presentationCardLabel, DEFAULT_ACADEMY_PUBLIC_SETTINGS.presentationCardLabel),
     presentationOfferTitle: cleanText(value.presentationOfferTitle, DEFAULT_ACADEMY_PUBLIC_SETTINGS.presentationOfferTitle),
     presentationOfferNote: cleanText(value.presentationOfferNote, DEFAULT_ACADEMY_PUBLIC_SETTINGS.presentationOfferNote),
+    portalLogoUrl: normalizeUrl(value.portalLogoUrl) || DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalLogoUrl,
+    portalFontFamily: normalizeFontFamily(value.portalFontFamily),
+    portalTitleSize: normalizeTitleSize(value.portalTitleSize),
+    portalBannerA: normalizeBanner(value.portalBannerA, DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalBannerA),
+    portalFeatured: normalizeArticles(value.portalFeatured, DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalFeatured).slice(0, 3),
+    portalBannerB: normalizeBanners(value.portalBannerB, DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalBannerB, 2),
+    portalNewsRows: normalizeNewsRows(value.portalNewsRows, DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalNewsRows),
+    portalBannerC: normalizeBanners(value.portalBannerC, DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalBannerC, 3),
     presentationGuests: normalizeGuests(value.presentationGuests),
   };
 }
@@ -71,8 +147,83 @@ function normalizeUrl(value) {
   const raw = String(value || "").trim();
   if (!raw) return "";
   if (raw.startsWith("/uploads/academy/")) return raw;
+  if (raw.startsWith("/logos/")) return raw;
   if (/^https?:\/\//i.test(raw)) return raw;
   return "";
+}
+
+function normalizeFontFamily(value) {
+  const raw = String(value || "").trim();
+  return ["Inter", "Lora", "Merriweather", "Playfair Display", "Georgia"].includes(raw) ? raw : DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalFontFamily;
+}
+
+function normalizeTitleSize(value) {
+  const raw = String(value || "").trim();
+  return ["compact", "medium", "large"].includes(raw) ? raw : DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalTitleSize;
+}
+
+function slugify(value, fallback = "materia") {
+  const slug = String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 90);
+  return slug || fallback;
+}
+
+function normalizeBanner(value = {}, fallback = {}) {
+  return {
+    imageUrl: normalizeUrl(value.imageUrl) || normalizeUrl(fallback.imageUrl),
+    linkUrl: normalizeUrl(value.linkUrl) || normalizeUrl(fallback.linkUrl),
+    altText: cleanText(value.altText, fallback.altText || ""),
+  };
+}
+
+function normalizeBanners(value, fallback, size) {
+  const source = Array.isArray(value) ? value : fallback;
+  return Array.from({ length: size }, (_, index) => normalizeBanner(source[index] || {}, fallback[index] || {}));
+}
+
+function normalizeArticle(value = {}, fallback = {}, index = 0) {
+  const title = cleanText(value.title, fallback.title || "");
+  const article = {
+    slug: slugify(value.slug || title || fallback.slug, `materia-${index + 1}`),
+    title,
+    subtitle: cleanText(value.subtitle, fallback.subtitle || ""),
+    caption: cleanText(value.caption, fallback.caption || ""),
+    category: cleanText(value.category, fallback.category || ""),
+    imageUrl: normalizeUrl(value.imageUrl) || normalizeUrl(fallback.imageUrl),
+    videoUrl: normalizeUrl(value.videoUrl) || normalizeUrl(fallback.videoUrl),
+    externalUrl: normalizeUrl(value.externalUrl) || normalizeUrl(fallback.externalUrl),
+    body: cleanText(value.body, fallback.body || "", 9000),
+  };
+  if (!article.title && !article.subtitle && !article.imageUrl && !article.videoUrl && !article.body) return null;
+  return article;
+}
+
+function normalizeArticles(value, fallback = []) {
+  const source = Array.isArray(value) ? value : fallback;
+  return source
+    .map((item, index) => normalizeArticle(item, fallback[index] || {}, index))
+    .filter(Boolean);
+}
+
+function normalizeNewsRows(value, fallback = []) {
+  const source = Array.isArray(value) ? value : fallback;
+  return source
+    .map((row, index) => {
+      const left = normalizeArticle(row?.left || {}, fallback[index]?.left || {}, index);
+      const right = {
+        title: cleanText(row?.right?.title, fallback[index]?.right?.title || ""),
+        text: cleanText(row?.right?.text, fallback[index]?.right?.text || "", 4000),
+        externalUrl: normalizeUrl(row?.right?.externalUrl) || normalizeUrl(fallback[index]?.right?.externalUrl),
+      };
+      if (!left && !right.title && !right.text) return null;
+      return { left: left || normalizeArticle({}, {}, index), right };
+    })
+    .filter(Boolean);
 }
 
 function normalizeList(value) {

@@ -8,7 +8,7 @@
   </head>
   <body class="gatofilia-public">
     <header class="gatofilia-nav" id="gatofiliaNav">
-      <a class="gatofilia-brand" href="<%= currentPublicPath === '/' ? '/' : '/academy' %>" aria-label="Gatofilia">
+      <a class="gatofilia-brand" href="<%= currentPublicPath === '/jornada' ? '/jornada' : (currentPublicPath === '/' ? '/' : '/academy') %>" aria-label="Gatofilia">
         <img
           src="/uploads/academy/gatofilia-main-logo-360.png"
           srcset="/uploads/academy/gatofilia-main-logo-360.png 1x, /uploads/academy/gatofilia-main-logo-620.png 2x"
@@ -380,7 +380,7 @@
           </p>
         </div>
 
-        <form method="post" action="<%= currentPublicPath === '/gatofilia' ? '/gatofilia/interesse' : '/academy/interesse' %>" class="gatofilia-form gatofilia-interest-form" data-gatofilia-interest-form data-lead-status="<%= leadStatus || '' %>">
+        <form method="post" action="<%= currentPublicPath === '/jornada' ? '/jornada/interesse' : (currentPublicPath === '/gatofilia' ? '/gatofilia/interesse' : '/academy/interesse') %>" class="gatofilia-form gatofilia-interest-form" data-gatofilia-interest-form data-lead-status="<%= leadStatus || '' %>">
           <div class="gatofilia-form-intro">
             <span>Pré-inscrição</span>
             <strong class="gatofilia-form-intro-copy">Preencha sua pré-inscrição sem compromisso. Entraremos em contato para apresentar todos os detalhes da jornada, investimento, cronograma e esclarecer suas dúvidas.</strong>

@@ -3038,3 +3038,418 @@ body {
     height: clamp(38px, 10vw, 52px);
   }
 }
+
+/* Gatofilia editorial portal */
+.gatofilia-portal {
+  background: #f7f4ed;
+  color: #1f2933;
+  font-family: var(--portal-font, Inter), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.gatofilia-portal-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px clamp(18px, 4vw, 68px);
+  border-bottom: 1px solid rgba(177, 129, 43, 0.18);
+  background: rgba(17, 17, 17, 0.92);
+  backdrop-filter: blur(18px);
+}
+
+.gatofilia-portal-logo img {
+  display: block;
+  width: auto;
+  height: clamp(54px, 7vw, 96px);
+  object-fit: contain;
+}
+
+.gatofilia-portal-header nav {
+  display: flex;
+  align-items: center;
+  gap: clamp(14px, 2vw, 28px);
+}
+
+.gatofilia-portal-header nav a {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.gatofilia-portal-header nav a:hover {
+  color: #d9b55c;
+}
+
+.gatofilia-portal-main {
+  width: min(1420px, calc(100% - 36px));
+  margin: 28px auto 0;
+}
+
+.gatofilia-ad {
+  overflow: hidden;
+  border: 1px solid rgba(177, 129, 43, 0.28);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(32, 30, 26, 0.08), rgba(177, 129, 43, 0.1));
+  box-shadow: 0 18px 48px rgba(21, 17, 12, 0.08);
+}
+
+.gatofilia-ad a,
+.gatofilia-ad img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.gatofilia-ad img {
+  object-fit: cover;
+}
+
+.gatofilia-ad > div {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: rgba(31, 41, 51, 0.42);
+  font-size: clamp(22px, 4vw, 48px);
+  font-weight: 950;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.gatofilia-ad-a {
+  aspect-ratio: 5 / 1;
+}
+
+.gatofilia-featured-news {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+  gap: 26px;
+  margin-top: 28px;
+}
+
+.gatofilia-featured-main,
+.gatofilia-featured-side a,
+.gatofilia-news-row,
+.gatofilia-side-text article,
+.gatofilia-article {
+  border: 1px solid rgba(177, 129, 43, 0.16);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 18px 48px rgba(21, 17, 12, 0.07);
+}
+
+.gatofilia-featured-main,
+.gatofilia-featured-side a {
+  display: block;
+  border-radius: 22px;
+  padding: 16px;
+}
+
+.gatofilia-featured-side {
+  display: grid;
+  gap: 18px;
+}
+
+.gatofilia-news-media {
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 16px;
+  background: #171717;
+}
+
+.gatofilia-news-media.small {
+  aspect-ratio: 16 / 8.8;
+}
+
+.gatofilia-news-media img,
+.gatofilia-news-media iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  object-fit: cover;
+}
+
+.gatofilia-news-placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(222, 174, 80, 0.22), transparent 34%),
+    linear-gradient(135deg, #161616, #2a241a);
+  color: #d9b55c;
+  font-size: clamp(18px, 3vw, 38px);
+  font-weight: 950;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.gatofilia-featured-main p,
+.gatofilia-featured-side p,
+.gatofilia-news-row p {
+  margin: 16px 0 8px;
+  color: #a97824;
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.gatofilia-featured-main h1,
+.gatofilia-featured-side h2,
+.gatofilia-news-row h2,
+.gatofilia-article h1 {
+  margin: 0;
+  color: #171717;
+  font-family: Georgia, "Times New Roman", serif;
+  line-height: 0.98;
+}
+
+.gatofilia-featured-main h1 {
+  font-size: clamp(36px, 5vw, 76px);
+}
+
+.gatofilia-portal.title-compact .gatofilia-featured-main h1 {
+  font-size: clamp(30px, 4.2vw, 58px);
+}
+
+.gatofilia-portal.title-large .gatofilia-featured-main h1 {
+  font-size: clamp(42px, 6vw, 92px);
+}
+
+.gatofilia-featured-side h2,
+.gatofilia-news-row h2 {
+  font-size: clamp(24px, 2.8vw, 38px);
+}
+
+.gatofilia-featured-main span,
+.gatofilia-featured-side span,
+.gatofilia-news-row span {
+  display: block;
+  margin-top: 12px;
+  color: rgba(31, 41, 51, 0.72);
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.gatofilia-ad-grid {
+  display: grid;
+  gap: 22px;
+  margin-top: 28px;
+}
+
+.gatofilia-ad-grid-b {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.gatofilia-ad-b {
+  aspect-ratio: 2.45 / 1;
+}
+
+.gatofilia-news-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.34fr);
+  gap: 30px;
+  margin-top: 34px;
+}
+
+.gatofilia-news-list {
+  display: grid;
+  gap: 22px;
+}
+
+.gatofilia-news-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.46fr) minmax(0, 1fr);
+  gap: 22px;
+  align-items: center;
+  padding: 16px;
+  border-radius: 22px;
+}
+
+.gatofilia-news-image {
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  border-radius: 16px;
+  background: #171717;
+}
+
+.gatofilia-news-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gatofilia-side-text {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+}
+
+.gatofilia-side-text article {
+  border-radius: 22px;
+  padding: 24px;
+}
+
+.gatofilia-side-text h3 {
+  margin: 0 0 12px;
+  font-size: 22px;
+  font-weight: 950;
+}
+
+.gatofilia-side-text p {
+  margin: 0;
+  color: rgba(31, 41, 51, 0.72);
+  line-height: 1.7;
+  white-space: pre-line;
+}
+
+.gatofilia-side-text a {
+  display: inline-block;
+  margin-top: 16px;
+  color: #a97824;
+  font-weight: 950;
+}
+
+.gatofilia-ad-grid-c {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 42px;
+}
+
+.gatofilia-ad-c {
+  aspect-ratio: 3 / 1;
+}
+
+.gatofilia-portal-footer {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 42px 20px;
+  border-top: 1px solid rgba(177, 129, 43, 0.18);
+  background: #111111;
+  color: rgba(255, 255, 255, 0.72);
+  text-align: center;
+}
+
+.gatofilia-portal-footer img {
+  width: min(220px, 56vw);
+  height: auto;
+}
+
+.gatofilia-portal-footer a {
+  color: #d9b55c;
+  font-weight: 900;
+}
+
+.gatofilia-article-page {
+  width: min(980px, calc(100% - 34px));
+  margin: 42px auto;
+}
+
+.gatofilia-article {
+  border-radius: 28px;
+  padding: clamp(24px, 5vw, 58px);
+}
+
+.gatofilia-back-link {
+  color: #a97824;
+  font-weight: 950;
+}
+
+.gatofilia-article h1 {
+  margin-top: 18px;
+  font-size: clamp(40px, 6vw, 82px);
+}
+
+.gatofilia-article-subtitle {
+  color: rgba(31, 41, 51, 0.72);
+  font-size: clamp(18px, 2.2vw, 24px);
+  line-height: 1.5;
+}
+
+.gatofilia-article-media {
+  overflow: hidden;
+  margin: 30px 0;
+  aspect-ratio: 16 / 9;
+  border-radius: 22px;
+  background: #171717;
+}
+
+.gatofilia-article-media img,
+.gatofilia-article-media iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  object-fit: cover;
+}
+
+.gatofilia-article-body p {
+  color: rgba(31, 41, 51, 0.82);
+  font-size: 19px;
+  line-height: 1.85;
+}
+
+@media (max-width: 900px) {
+  .gatofilia-portal-header {
+    padding: 14px 18px;
+  }
+
+  .gatofilia-portal-header .gatofilia-menu-toggle {
+    display: inline-grid;
+  }
+
+  .gatofilia-portal-header nav {
+    position: fixed;
+    top: 86px;
+    right: 14px;
+    left: 14px;
+    display: none;
+    grid-template-columns: 1fr;
+    gap: 0;
+    overflow: hidden;
+    border: 1px solid rgba(217, 181, 92, 0.22);
+    border-radius: 20px;
+    background: rgba(17, 17, 17, 0.97);
+  }
+
+  .gatofilia-portal-header nav.is-open {
+    display: grid;
+  }
+
+  .gatofilia-portal-header nav a {
+    padding: 16px 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .gatofilia-portal-main {
+    width: min(100% - 24px, 720px);
+    margin-top: 18px;
+  }
+
+  .gatofilia-ad-a {
+    aspect-ratio: 2.8 / 1;
+  }
+
+  .gatofilia-featured-news,
+  .gatofilia-news-layout,
+  .gatofilia-news-row,
+  .gatofilia-ad-grid-b,
+  .gatofilia-ad-grid-c {
+    grid-template-columns: 1fr;
+  }
+
+  .gatofilia-news-row {
+    gap: 14px;
+  }
+
+  .gatofilia-ad-b,
+  .gatofilia-ad-c {
+    aspect-ratio: 2.7 / 1;
+  }
+}

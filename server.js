@@ -970,7 +970,7 @@ app.use(async (req, res, next) => {
 app.get("/", (req, res) => {
   const host = req.hostname;
   if (gatofiliaHostMatches(host)) {
-    return academyPublicController.home(req, res);
+    return academyPublicController.portal(req, res);
   }
 
   res.render("public-home", {
@@ -1149,14 +1149,15 @@ app.get("/sitemap.xml", async (req, res, next) => {
       const lastmod = new Date();
       const gatofiliaUrls = [
         { loc: "/", priority: "1.0", lastmod },
-        { loc: "/#inicio", priority: "0.9", lastmod },
-        { loc: "/#quem-somos", priority: "0.8", lastmod },
-        { loc: "/#jornada", priority: "0.8", lastmod },
-        { loc: "/#metodo", priority: "0.8", lastmod },
-        { loc: "/#beneficios", priority: "0.8", lastmod },
-        { loc: "/#faq", priority: "0.7", lastmod },
-        { loc: "/#pre-inscricao", priority: "0.9", lastmod },
-        { loc: "/#contato", priority: "0.6", lastmod },
+        { loc: "/jornada", priority: "0.9", lastmod },
+        { loc: "/jornada#inicio", priority: "0.8", lastmod },
+        { loc: "/jornada#quem-somos", priority: "0.8", lastmod },
+        { loc: "/jornada#jornada", priority: "0.8", lastmod },
+        { loc: "/jornada#metodo", priority: "0.8", lastmod },
+        { loc: "/jornada#beneficios", priority: "0.8", lastmod },
+        { loc: "/jornada#faq", priority: "0.7", lastmod },
+        { loc: "/jornada#pre-inscricao", priority: "0.9", lastmod },
+        { loc: "/jornada#contato", priority: "0.6", lastmod },
       ];
       const xml = [
         '<?xml version="1.0" encoding="UTF-8"?>',

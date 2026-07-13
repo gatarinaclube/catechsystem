@@ -37,6 +37,15 @@ function academyUploadUrl(file) {
   return file ? `/uploads/academy/${file.filename}` : "";
 }
 
+function filesByField(files) {
+  if (!Array.isArray(files)) return files || {};
+  return files.reduce((acc, file) => {
+    if (!acc[file.fieldname]) acc[file.fieldname] = [];
+    acc[file.fieldname].push(file);
+    return acc;
+  }, {});
+}
+
 function formArray(value) {
   if (Array.isArray(value)) return value;
   return value === undefined ? [] : [value];
@@ -60,6 +69,64 @@ function presentationGuestsFromBody(body) {
     specializations: specializations[index],
     experiences: experiences[index],
   }));
+}
+
+function fileUrlAt(files, field, index = 0) {
+  const file = files?.[field]?.[index];
+  return academyUploadUrl(file);
+}
+
+function arrayAt(value, index, fallback = "") {
+  const list = formArray(value);
+  return list[index] !== undefined ? list[index] : fallback;
+}
+
+function portalArticleFromBody(body, files, prefix, index, fileField) {
+  return {
+    slug: arrayAt(body[`${prefix}Slug`], index),
+    title: arrayAt(body[`${prefix}Title`], index),
+    subtitle: arrayAt(body[`${prefix}Subtitle`], index),
+    caption: arrayAt(body[`${prefix}Caption`], index),
+    category: arrayAt(body[`${prefix}Category`], index),
+    imageUrl: fileUrlAt(files, fileField, index) || arrayAt(body[`${prefix}ImageUrl`], index),
+    videoUrl: arrayAt(body[`${prefix}VideoUrl`], index),
+    externalUrl: arrayAt(body[`${prefix}ExternalUrl`], index),
+    body: arrayAt(body[`${prefix}Body`], index),
+  };
+}
+
+function portalSettingsFromBody(body, files) {
+  const featuredCount = Math.max(3, formArray(body.portalFeaturedTitle).length);
+  const newsCount = Math.max(1, formArray(body.portalNewsLeftTitle).length);
+  return {
+    portalLogoUrl: fileUrlAt(files, "portalLogo") || body.portalLogoUrl,
+    portalFontFamily: body.portalFontFamily,
+    portalTitleSize: body.portalTitleSize,
+    portalBannerA: {
+      imageUrl: fileUrlAt(files, "portalBannerA") || body.portalBannerAImageUrl,
+      linkUrl: body.portalBannerALinkUrl,
+      altText: body.portalBannerAAltText,
+    },
+    portalFeatured: Array.from({ length: featuredCount }, (_, index) => portalArticleFromBody(body, files, "portalFeatured", index, `portalFeaturedImage${index}`)),
+    portalBannerB: Array.from({ length: 2 }, (_, index) => ({
+      imageUrl: fileUrlAt(files, `portalBannerB${index}`) || arrayAt(body.portalBannerBImageUrl, index),
+      linkUrl: arrayAt(body.portalBannerBLinkUrl, index),
+      altText: arrayAt(body.portalBannerBAltText, index, "Banner B"),
+    })),
+    portalNewsRows: Array.from({ length: newsCount }, (_, index) => ({
+      left: portalArticleFromBody(body, files, "portalNewsLeft", index, `portalNewsImage${index}`),
+      right: {
+        title: arrayAt(body.portalNewsRightTitle, index),
+        text: arrayAt(body.portalNewsRightText, index),
+        externalUrl: arrayAt(body.portalNewsRightExternalUrl, index),
+      },
+    })),
+    portalBannerC: Array.from({ length: 3 }, (_, index) => ({
+      imageUrl: fileUrlAt(files, `portalBannerC${index}`) || arrayAt(body.portalBannerCImageUrl, index),
+      linkUrl: arrayAt(body.portalBannerCLinkUrl, index),
+      altText: arrayAt(body.portalBannerCAltText, index, "Banner C"),
+    })),
+  };
 }
 
 function lessonPayloadFromBody(body) {
@@ -221,12 +288,13 @@ module.exports = (prisma) => ({
   },
 
   updatePublicSettings: async (req, res) => {
-    const files = req.files || {};
+    const files = filesByField(req.files || {});
     const presentationWelcomeUpload = academyUploadUrl(files.presentationWelcomeVideo?.[0]);
     const presentationClosingUpload = academyUploadUrl(files.presentationClosingVideo?.[0]);
     const presentationImageUpload = academyUploadUrl(files.presentationEcosystemImage?.[0]);
 
     await saveAcademyPublicSettings(prisma, {
+      ...portalSettingsFromBody(req.body, files),
       countdownEnabled: toBool(req.body.countdownEnabled),
       countdownTitle: req.body.countdownTitle,
       nextJourneyStartDate: req.body.nextJourneyStartDate,

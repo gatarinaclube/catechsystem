@@ -11,7 +11,8 @@
       <nav class="flex flex-wrap items-center justify-between gap-3">
         <a href="/academy/admin" class="font-black">← Admin Gatofilia</a>
         <div class="flex flex-wrap gap-3">
-          <a href="/academy" target="_blank" rel="noopener" class="text-sm font-bold text-[#31513d]">Ver página pública</a>
+          <a href="/" target="_blank" rel="noopener" class="text-sm font-bold text-[#31513d]">Ver nova home</a>
+          <a href="/jornada" target="_blank" rel="noopener" class="text-sm font-bold text-[#31513d]">Ver Jornada</a>
           <a href="/dashboard" class="text-sm font-bold text-[#31513d]">PetGus</a>
         </div>
       </nav>
@@ -242,6 +243,159 @@
             <div class="rounded-2xl bg-white p-4 text-sm text-slate-600">
               Deixe uma data em branco caso não queira mostrar aquele prazo específico. Se desativar o contador, nada será exibido na página pública.
             </div>
+
+            <details class="rounded-3xl border border-slate-200 bg-white p-4" open>
+              <summary class="cursor-pointer text-sm font-black uppercase tracking-[0.18em] text-[#31513d]">
+                Nova página principal Gatofilia
+              </summary>
+              <div class="mt-5 grid gap-5">
+                <div class="rounded-2xl bg-[#fff9ed] p-4 text-sm text-slate-600">
+                  Página pública em <strong>gatofilia.com.br</strong>. A página antiga da jornada ficará em <strong>/jornada</strong>.
+                  Tamanhos sugeridos: Banner A 1440x320, Banner B 700x250, Banner C 460x150, matérias 900x560.
+                </div>
+
+                <div class="grid gap-4 md:grid-cols-2">
+                  <label class="grid gap-2 text-sm font-bold text-slate-700">
+                    Fonte principal
+                    <select name="portalFontFamily" class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]">
+                      <% ['Inter', 'Lora', 'Merriweather', 'Playfair Display', 'Georgia'].forEach(function(font) { %>
+                        <option value="<%= font %>" <%= settings.portalFontFamily === font ? 'selected' : '' %>><%= font %></option>
+                      <% }) %>
+                    </select>
+                  </label>
+                  <label class="grid gap-2 text-sm font-bold text-slate-700">
+                    Tamanho dos títulos
+                    <select name="portalTitleSize" class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]">
+                      <option value="compact" <%= settings.portalTitleSize === 'compact' ? 'selected' : '' %>>Compacto</option>
+                      <option value="medium" <%= settings.portalTitleSize !== 'compact' && settings.portalTitleSize !== 'large' ? 'selected' : '' %>>Médio</option>
+                      <option value="large" <%= settings.portalTitleSize === 'large' ? 'selected' : '' %>>Grande</option>
+                    </select>
+                  </label>
+                </div>
+
+                <label class="grid gap-2 text-sm font-bold text-slate-700">
+                  Logo do cabeçalho
+                  <input type="hidden" name="portalLogoUrl" value="<%= settings.portalLogoUrl || '' %>" />
+                  <% if (settings.portalLogoUrl) { %>
+                    <img src="<%= settings.portalLogoUrl %>" alt="Logo atual" class="max-h-24 w-fit rounded-2xl bg-slate-900 p-3" />
+                  <% } %>
+                  <input type="file" name="portalLogo" accept="image/png,image/jpeg,image/webp,image/gif" class="rounded-2xl border border-dashed border-slate-300 bg-white p-3 text-sm font-bold" />
+                </label>
+
+                <% const bannerA = settings.portalBannerA || {}; %>
+                <section class="rounded-3xl border border-[#d6a84f]/30 bg-[#fff9ed] p-4">
+                  <p class="text-xs font-black uppercase tracking-[0.18em] text-[#8c651f]">Banner A</p>
+                  <div class="mt-4 grid gap-4">
+                    <input type="hidden" name="portalBannerAImageUrl" value="<%= bannerA.imageUrl || '' %>" />
+                    <% if (bannerA.imageUrl) { %><img src="<%= bannerA.imageUrl %>" alt="Banner A atual" class="aspect-[5/1] w-full rounded-2xl object-cover" /><% } %>
+                    <input type="file" name="portalBannerA" accept="image/png,image/jpeg,image/webp,image/gif" class="rounded-2xl border border-dashed border-slate-300 bg-white p-3 text-sm font-bold" />
+                    <div class="grid gap-4 md:grid-cols-2">
+                      <label class="grid gap-2 text-sm font-bold text-slate-700">Link do banner<input name="portalBannerALinkUrl" value="<%= bannerA.linkUrl || '' %>" class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]" /></label>
+                      <label class="grid gap-2 text-sm font-bold text-slate-700">Texto alternativo<input name="portalBannerAAltText" value="<%= bannerA.altText || 'Banner A' %>" class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]" /></label>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                  <p class="text-xs font-black uppercase tracking-[0.18em] text-[#31513d]">Destaques principais</p>
+                  <div class="mt-4 grid gap-4">
+                    <% const featured = (settings.portalFeatured || []).slice(0, 3); %>
+                    <% featured.forEach(function(article, index) { %>
+                      <details class="rounded-3xl border border-slate-200 bg-white p-4" <%= index === 0 ? 'open' : '' %>>
+                        <summary class="cursor-pointer text-base font-black">Destaque <%= index + 1 %> · <%= article.title || 'Sem título' %></summary>
+                        <div class="mt-4 grid gap-4">
+                          <input type="hidden" name="portalFeaturedImageUrl" value="<%= article.imageUrl || '' %>" />
+                          <input type="hidden" name="portalFeaturedSlug" value="<%= article.slug || '' %>" />
+                          <% if (article.imageUrl) { %><img src="<%= article.imageUrl %>" alt="" class="aspect-video w-full rounded-2xl object-cover" /><% } %>
+                          <input type="file" name="portalFeaturedImage<%= index %>" accept="image/png,image/jpeg,image/webp,image/gif" class="rounded-2xl border border-dashed border-slate-300 bg-white p-3 text-sm font-bold" />
+                          <div class="grid gap-4 md:grid-cols-2">
+                            <label class="grid gap-2 text-sm font-bold text-slate-700">Título<input name="portalFeaturedTitle" value="<%= article.title || '' %>" class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]" /></label>
+                            <label class="grid gap-2 text-sm font-bold text-slate-700">Categoria<input name="portalFeaturedCategory" value="<%= article.category || '' %>" class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]" /></label>
+                          </div>
+                          <label class="grid gap-2 text-sm font-bold text-slate-700">Resumo<input name="portalFeaturedSubtitle" value="<%= article.subtitle || '' %>" class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]" /></label>
+                          <div class="grid gap-4 md:grid-cols-2">
+                            <label class="grid gap-2 text-sm font-bold text-slate-700">Vídeo incorporado/URL<input name="portalFeaturedVideoUrl" value="<%= article.videoUrl || '' %>" class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]" /></label>
+                            <label class="grid gap-2 text-sm font-bold text-slate-700">Link externo<input name="portalFeaturedExternalUrl" value="<%= article.externalUrl || '' %>" class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]" /></label>
+                          </div>
+                          <label class="grid gap-2 text-sm font-bold text-slate-700">Matéria completa<textarea name="portalFeaturedBody" rows="5" class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]"><%= article.body || '' %></textarea></label>
+                          <input type="hidden" name="portalFeaturedCaption" value="<%= article.caption || '' %>" />
+                        </div>
+                      </details>
+                    <% }) %>
+                  </div>
+                </section>
+
+                <section class="rounded-3xl border border-slate-200 bg-white p-4">
+                  <p class="text-xs font-black uppercase tracking-[0.18em] text-[#31513d]">Banners B</p>
+                  <div class="mt-4 grid gap-4 md:grid-cols-2">
+                    <% (settings.portalBannerB || []).forEach(function(banner, index) { %>
+                      <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                        <input type="hidden" name="portalBannerBImageUrl" value="<%= banner.imageUrl || '' %>" />
+                        <% if (banner.imageUrl) { %><img src="<%= banner.imageUrl %>" alt="" class="aspect-[2.45/1] w-full rounded-xl object-cover" /><% } %>
+                        <input type="file" name="portalBannerB<%= index %>" accept="image/png,image/jpeg,image/webp,image/gif" class="mt-3 w-full rounded-2xl border border-dashed border-slate-300 bg-white p-3 text-sm font-bold" />
+                        <label class="mt-3 grid gap-2 text-sm font-bold text-slate-700">Link<input name="portalBannerBLinkUrl" value="<%= banner.linkUrl || '' %>" class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]" /></label>
+                        <input type="hidden" name="portalBannerBAltText" value="<%= banner.altText || 'Banner B' %>" />
+                      </div>
+                    <% }) %>
+                  </div>
+                </section>
+
+                <section class="rounded-3xl border border-[#d6a84f]/30 bg-[#fff9ed] p-4">
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <p class="text-xs font-black uppercase tracking-[0.18em] text-[#8c651f]">Matérias em colunas</p>
+                    <button type="button" data-add-portal-row class="rounded-2xl bg-[#31513d] px-4 py-2 text-sm font-black text-white">+ Matéria</button>
+                  </div>
+                  <div class="mt-4 grid gap-4" data-portal-rows>
+                    <% const newsRows = settings.portalNewsRows && settings.portalNewsRows.length ? settings.portalNewsRows : [{ left: {}, right: {} }]; %>
+                    <% newsRows.forEach(function(row, index) { const left = row.left || {}; const right = row.right || {}; %>
+                      <details class="rounded-3xl border border-slate-200 bg-white p-4" data-portal-row <%= index === 0 ? 'open' : '' %>>
+                        <summary class="cursor-pointer text-base font-black">Matéria <%= index + 1 %> · <%= left.title || 'Sem título' %></summary>
+                        <div class="mt-4 grid gap-4">
+                          <input type="hidden" name="portalNewsLeftImageUrl" value="<%= left.imageUrl || '' %>" />
+                          <input type="hidden" name="portalNewsLeftSlug" value="<%= left.slug || '' %>" />
+                          <% if (left.imageUrl) { %><img src="<%= left.imageUrl %>" alt="" class="aspect-video w-full rounded-2xl object-cover" /><% } %>
+                          <input type="file" name="portalNewsImage<%= index %>" accept="image/png,image/jpeg,image/webp,image/gif" class="rounded-2xl border border-dashed border-slate-300 bg-white p-3 text-sm font-bold" />
+                          <div class="grid gap-4 md:grid-cols-2">
+                            <label class="grid gap-2 text-sm font-bold text-slate-700">Título esquerdo<input name="portalNewsLeftTitle" value="<%= left.title || '' %>" class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]" /></label>
+                            <label class="grid gap-2 text-sm font-bold text-slate-700">Categoria<input name="portalNewsLeftCategory" value="<%= left.category || '' %>" class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]" /></label>
+                          </div>
+                          <label class="grid gap-2 text-sm font-bold text-slate-700">Legenda<input name="portalNewsLeftCaption" value="<%= left.caption || left.subtitle || '' %>" class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]" /></label>
+                          <input type="hidden" name="portalNewsLeftSubtitle" value="<%= left.subtitle || '' %>" />
+                          <div class="grid gap-4 md:grid-cols-2">
+                            <label class="grid gap-2 text-sm font-bold text-slate-700">Vídeo/URL<input name="portalNewsLeftVideoUrl" value="<%= left.videoUrl || '' %>" class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]" /></label>
+                            <label class="grid gap-2 text-sm font-bold text-slate-700">Link externo<input name="portalNewsLeftExternalUrl" value="<%= left.externalUrl || '' %>" class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]" /></label>
+                          </div>
+                          <label class="grid gap-2 text-sm font-bold text-slate-700">Matéria completa<textarea name="portalNewsLeftBody" rows="5" class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]"><%= left.body || '' %></textarea></label>
+                          <div class="rounded-2xl bg-slate-50 p-4">
+                            <p class="text-xs font-black uppercase tracking-widest text-slate-400">Coluna direita - texto</p>
+                            <div class="mt-3 grid gap-3">
+                              <label class="grid gap-2 text-sm font-bold text-slate-700">Título<input name="portalNewsRightTitle" value="<%= right.title || '' %>" class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]" /></label>
+                              <label class="grid gap-2 text-sm font-bold text-slate-700">Texto<textarea name="portalNewsRightText" rows="4" class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]"><%= right.text || '' %></textarea></label>
+                              <label class="grid gap-2 text-sm font-bold text-slate-700">Link externo<input name="portalNewsRightExternalUrl" value="<%= right.externalUrl || '' %>" class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]" /></label>
+                            </div>
+                          </div>
+                        </div>
+                      </details>
+                    <% }) %>
+                  </div>
+                </section>
+
+                <section class="rounded-3xl border border-slate-200 bg-white p-4">
+                  <p class="text-xs font-black uppercase tracking-[0.18em] text-[#31513d]">Banners C</p>
+                  <div class="mt-4 grid gap-4 md:grid-cols-3">
+                    <% (settings.portalBannerC || []).forEach(function(banner, index) { %>
+                      <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                        <input type="hidden" name="portalBannerCImageUrl" value="<%= banner.imageUrl || '' %>" />
+                        <% if (banner.imageUrl) { %><img src="<%= banner.imageUrl %>" alt="" class="aspect-[3/1] w-full rounded-xl object-cover" /><% } %>
+                        <input type="file" name="portalBannerC<%= index %>" accept="image/png,image/jpeg,image/webp,image/gif" class="mt-3 w-full rounded-2xl border border-dashed border-slate-300 bg-white p-3 text-sm font-bold" />
+                        <label class="mt-3 grid gap-2 text-sm font-bold text-slate-700">Link<input name="portalBannerCLinkUrl" value="<%= banner.linkUrl || '' %>" class="rounded-2xl border border-slate-200 bg-white p-3 text-base font-semibold outline-none focus:border-[#d6a84f]" /></label>
+                        <input type="hidden" name="portalBannerCAltText" value="<%= banner.altText || 'Banner C' %>" />
+                      </div>
+                    <% }) %>
+                  </div>
+                </section>
+              </div>
+            </details>
 
             <button class="rounded-2xl bg-[#31513d] px-5 py-3 font-black text-white shadow-sm">
               Salvar configurações
@@ -534,6 +688,38 @@
       </section>
     </main>
     <script>
+      (() => {
+        const portalRows = document.querySelector("[data-portal-rows]");
+        const addPortalRow = document.querySelector("[data-add-portal-row]");
+        if (portalRows && addPortalRow) {
+          const refreshPortalRows = () => {
+            portalRows.querySelectorAll("[data-portal-row]").forEach((row, index) => {
+              const title = row.querySelector('input[name="portalNewsLeftTitle"]')?.value?.trim() || "Sem título";
+              const summary = row.querySelector("summary");
+              const fileInput = row.querySelector('input[type="file"][name^="portalNewsImage"]');
+              if (fileInput) fileInput.name = `portalNewsImage${index}`;
+              if (summary) summary.textContent = `Matéria ${index + 1} · ${title}`;
+            });
+          };
+
+          addPortalRow.addEventListener("click", () => {
+            const template = portalRows.querySelector("[data-portal-row]");
+            if (!template) return;
+            const clone = template.cloneNode(true);
+            clone.querySelectorAll("input, textarea").forEach((field) => {
+              field.value = "";
+            });
+            clone.querySelectorAll("img").forEach((image) => image.remove());
+            if ("open" in clone) clone.open = true;
+            portalRows.appendChild(clone);
+            refreshPortalRows();
+          });
+
+          portalRows.addEventListener("input", refreshPortalRows);
+          refreshPortalRows();
+        }
+      })();
+
       (() => {
         const list = document.querySelector("[data-presentation-guests]");
         const addButton = document.querySelector("[data-add-presentation-guest]");

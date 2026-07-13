@@ -33,16 +33,32 @@ module.exports = (prisma) => {
       host === "www.gatofilia.com.br" ||
       gatofiliaDomains.some((domain) => host === domain || host === `www.${domain}`)
     );
-    const basePath = isGatofiliaHost ? "/" : "/academy";
+    const basePath = isGatofiliaHost ? "/jornada" : "/academy";
     return res.redirect(301, `${basePath}#${anchor}`);
   };
 
-  router.get("/academy", publicController.home);
+  router.get("/academy", (req, res, next) => {
+    const host = String(req.hostname || "").toLowerCase().replace(/:\d+$/, "");
+    const gatofiliaDomains = String(process.env.GATOFILIA_DOMAINS || "")
+      .split(",")
+      .map((domain) => domain.trim().toLowerCase())
+      .filter(Boolean);
+    const isGatofiliaHost = (
+      host === "gatofilia.com.br" ||
+      host === "www.gatofilia.com.br" ||
+      gatofiliaDomains.some((domain) => host === domain || host === `www.${domain}`)
+    );
+    if (isGatofiliaHost) return res.redirect(301, "/jornada");
+    return publicController.home(req, res, next);
+  });
+  router.get("/jornada", publicController.home);
   router.get("/gatofilia", publicController.home);
+  router.get("/materia/:slug", publicController.portalArticle);
   router.get("/apresentacaoa", (req, res) => res.redirect(301, "/apresentacao"));
   router.get("/apresentacao", publicController.presentation);
   router.get("/academy/apresentacao", publicController.presentation);
   router.post("/apresentacao/interesse", publicController.interest);
+  router.post("/jornada/interesse", publicController.interest);
   router.post("/gatofilia/interesse", publicController.interest);
   router.post("/academy/interesse", publicController.interest);
   router.get("/academy/sobre", publicAnchorRedirect("quem-somos"));
@@ -81,11 +97,7 @@ module.exports = (prisma) => {
     "/academy/admin/configuracoes",
     academySession,
     academyAdmin,
-    academyUpload.fields([
-      { name: "presentationWelcomeVideo", maxCount: 1 },
-      { name: "presentationClosingVideo", maxCount: 1 },
-      { name: "presentationEcosystemImage", maxCount: 1 },
-    ]),
+    academyUpload.any(),
     adminController.updatePublicSettings,
   );
   router.get("/academy/admin/interesses", academySession, academyAdmin, adminController.interests);
