@@ -143,6 +143,7 @@
           { href: "/admin/financeiro", match: "/admin/financeiro", icon: "💳", label: "Financeiro técnico", allowed: access && access.canManageFinanceSettings, hideWhenDenied: true, preferenceKey: "financeSettings" },
           { href: "/admin/perfis-limites", match: "/admin/perfis-limites", icon: "🧩", label: "Limites por Perfil", allowed: access && access.canManageProfileRules, hideWhenDenied: true },
           { href: "/admin/petgus-publica", match: "/admin/petgus-publica", icon: "🌐", label: "PetGus Pública", allowed: access && access.isAdmin, hideWhenDenied: true },
+          { href: "/academy/admin/configuracoes", match: "/academy/admin/configuracoes", icon: "🎓", label: "Editor Gatofilia", allowed: access && access.isAdmin && access.canAccessAcademy, hideWhenDenied: true },
         ];
       %>
       <% if (access && access.isAdmin && adminItems.some((item) => item.allowed !== false)) { %>
@@ -166,7 +167,6 @@
         { href: "/admin/treatments", match: "/admin/treatments", icon: "💊", label: "Tratamento", allowed: access && access.canAccessTreatmentsAdmin, preferenceKey: "treatments" },
         { href: "/admin/exams", match: "/admin/exams", icon: "🩺", label: "Exames", allowed: access && access.canAccessExamsAdmin, preferenceKey: "exams" },
         { href: "/admin/history", match: "/admin/history", icon: "📚", label: "Histórico", allowed: access && access.canAccessHistoryAdmin, preferenceKey: "history" },
-        { href: "/academy/admin/configuracoes", match: "/academy/admin/configuracoes", icon: "🎓", label: "Editor Gatofilia", allowed: access && access.isAdmin && access.canAccessAcademy, hideWhenDenied: true },
         ];
       %>
       <details class="menu-section" <%= isSectionActive(catteryItems) ? "open" : "" %>>
