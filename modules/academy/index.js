@@ -92,6 +92,14 @@ module.exports = (prisma) => {
 
   router.get("/academy/admin", academySession, academyAdmin, adminController.dashboard);
   router.post("/academy/admin/seed", academySession, academyAdmin, adminController.seedFoundation);
+  router.get("/academy/admin/gatofilia-news", academySession, academyAdmin, adminController.portalSettings);
+  router.post(
+    "/academy/admin/gatofilia-news",
+    academySession,
+    academyAdmin,
+    academyUpload.any(),
+    adminController.updatePortalSettings,
+  );
   router.get("/academy/admin/configuracoes", academySession, academyAdmin, adminController.publicSettings);
   router.post(
     "/academy/admin/configuracoes",

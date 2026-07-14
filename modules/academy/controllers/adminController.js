@@ -273,7 +273,7 @@ module.exports = (prisma) => ({
     const presentationLeadGroups = splitLeadsByStatus(presentationLeads);
 
     res.render("academy/admin/public-settings", {
-      pageTitle: "Gatofilia Pública - Admin",
+      pageTitle: "Editor Jornada Gatofilia - Admin",
       user: req.user,
       academy: await getAcademyContext(prisma, req),
       settings,
@@ -287,14 +287,39 @@ module.exports = (prisma) => ({
     });
   },
 
+  portalSettings: async (req, res) => {
+    const settings = await getAcademyPublicSettings(prisma);
+
+    res.render("academy/admin/portal-settings", {
+      pageTitle: "Gatofilia News - Admin",
+      user: req.user,
+      academy: await getAcademyContext(prisma, req),
+      settings,
+      saved: req.query.salvo === "1",
+    });
+  },
+
+  updatePortalSettings: async (req, res) => {
+    const currentSettings = await getAcademyPublicSettings(prisma);
+    const files = filesByField(req.files || {});
+
+    await saveAcademyPublicSettings(prisma, {
+      ...currentSettings,
+      ...portalSettingsFromBody(req.body, files),
+    });
+
+    res.redirect("/academy/admin/gatofilia-news?salvo=1");
+  },
+
   updatePublicSettings: async (req, res) => {
+    const currentSettings = await getAcademyPublicSettings(prisma);
     const files = filesByField(req.files || {});
     const presentationWelcomeUpload = academyUploadUrl(files.presentationWelcomeVideo?.[0]);
     const presentationClosingUpload = academyUploadUrl(files.presentationClosingVideo?.[0]);
     const presentationImageUpload = academyUploadUrl(files.presentationEcosystemImage?.[0]);
 
     await saveAcademyPublicSettings(prisma, {
-      ...portalSettingsFromBody(req.body, files),
+      ...currentSettings,
       countdownEnabled: toBool(req.body.countdownEnabled),
       countdownTitle: req.body.countdownTitle,
       nextJourneyStartDate: req.body.nextJourneyStartDate,

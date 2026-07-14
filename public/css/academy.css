@@ -3337,6 +3337,10 @@ body {
   text-align: center;
 }
 
+.gatofilia-portal-footer p {
+  margin: 0;
+}
+
 .gatofilia-portal-footer img {
   width: min(220px, 56vw);
   height: auto;
@@ -3432,16 +3436,22 @@ body {
     margin-top: 18px;
   }
 
-  .gatofilia-ad-a {
-    aspect-ratio: 2.8 / 1;
-  }
-
   .gatofilia-featured-news,
   .gatofilia-news-layout,
-  .gatofilia-news-row,
-  .gatofilia-ad-grid-b,
-  .gatofilia-ad-grid-c {
+  .gatofilia-news-row {
     grid-template-columns: 1fr;
+  }
+
+  .gatofilia-ad-grid {
+    gap: 10px;
+  }
+
+  .gatofilia-ad-grid-b {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gatofilia-ad-grid-c {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .gatofilia-news-row {
@@ -3450,6 +3460,26 @@ body {
 
   .gatofilia-ad-b,
   .gatofilia-ad-c {
-    aspect-ratio: 2.7 / 1;
+    min-height: 58px;
+    border-radius: 12px;
+  }
+
+  .gatofilia-ad-b {
+    aspect-ratio: 2.45 / 1;
+  }
+
+  .gatofilia-ad-c {
+    aspect-ratio: 3 / 1;
+  }
+
+  .gatofilia-ad-b > div,
+  .gatofilia-ad-c > div {
+    font-size: clamp(10px, 3vw, 18px);
+    letter-spacing: 0.08em;
+  }
+
+  .gatofilia-portal-footer {
+    justify-items: center;
+    text-align: center;
   }
 }

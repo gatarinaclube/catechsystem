@@ -75,7 +75,8 @@
             "Gestão de Microchip": "Área administrativa para localizar cadastros públicos de microchip, conferir dados do tutor e registrar contatos sobre animais encontrados.",
             "Financeiro técnico": "Configuração administrativa dos valores comerciais, associação e APIs Asaas de produção e teste.",
             "Limites por Perfil": "Configuração administrativa dos limites e permissões dos planos Básico, Master e Premium. As tabelas públicas e Meu Cadastro usam estas regras automaticamente.",
-            "Editor Gatofilia": "Configuração administrativa das páginas públicas da Gatofilia, incluindo portal, apresentação, profissionais, contador de prazo e interessados.",
+            "Editor Gatofilia News": "Edição da página inicial gatofilia.com.br com banners, matérias, notícias, patrocinadores e links.",
+            "Editor Jornada Gatofilia": "Edição da página gatofilia.com.br/jornada, apresentação reservada, contador, profissionais e interessados.",
             "Financeiro": "Área administrativa do gatil com receitas, despesas, contas, clientes, fornecedores e produtos/serviços.",
             "Reprodutores": "Cadastro e gestão de padreadores, matrizes e gatos reprodutores do gatil.",
             "Ninhadas": "Registro operacional das ninhadas, estatísticas de parto, filhotes e acompanhamento da reprodução.",
@@ -143,7 +144,8 @@
           { href: "/admin/financeiro", match: "/admin/financeiro", icon: "💳", label: "Financeiro técnico", allowed: access && access.canManageFinanceSettings, hideWhenDenied: true, preferenceKey: "financeSettings" },
           { href: "/admin/perfis-limites", match: "/admin/perfis-limites", icon: "🧩", label: "Limites por Perfil", allowed: access && access.canManageProfileRules, hideWhenDenied: true },
           { href: "/admin/petgus-publica", match: "/admin/petgus-publica", icon: "🌐", label: "PetGus Pública", allowed: access && access.isAdmin, hideWhenDenied: true },
-          { href: "/academy/admin/configuracoes", match: "/academy/admin/configuracoes", icon: "🎓", label: "Editor Gatofilia", allowed: access && access.isAdmin && access.canAccessAcademy, hideWhenDenied: true },
+          { href: "/academy/admin/gatofilia-news", match: "/academy/admin/gatofilia-news", icon: "📰", label: "Editor Gatofilia News", allowed: access && access.isAdmin && access.canAccessAcademy, hideWhenDenied: true },
+          { href: "/academy/admin/configuracoes", match: "/academy/admin/configuracoes", icon: "🎓", label: "Editor Jornada Gatofilia", allowed: access && access.isAdmin && access.canAccessAcademy, hideWhenDenied: true },
         ];
       %>
       <% if (access && access.isAdmin && adminItems.some((item) => item.allowed !== false)) { %>
