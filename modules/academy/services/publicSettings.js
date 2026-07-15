@@ -15,6 +15,12 @@ const DEFAULT_ACADEMY_PUBLIC_SETTINGS = {
   portalLogoUrl: "/uploads/academy/gatofilia-main-logo-360.png",
   portalFontFamily: "Inter",
   portalTitleSize: "medium",
+  portalTextColor: "#1f2933",
+  portalHeadingColor: "#171717",
+  portalAccentColor: "#a97824",
+  portalHeadingWeight: "900",
+  portalHeadingItalic: false,
+  portalCarouselSeconds: 7,
   portalBannerA: {
     imageUrl: "",
     linkUrl: "",
@@ -29,6 +35,7 @@ const DEFAULT_ACADEMY_PUBLIC_SETTINGS = {
       imageUrl: "",
       videoUrl: "",
       externalUrl: "",
+      placement: "featured",
       body: "A Gatofilia reúne educação, experiência prática, comunidade e tecnologia para apoiar criadores em todas as etapas da felinocultura.",
     },
     {
@@ -39,6 +46,7 @@ const DEFAULT_ACADEMY_PUBLIC_SETTINGS = {
       imageUrl: "",
       videoUrl: "",
       externalUrl: "",
+      placement: "side",
       body: "A profissionalização de um gatil passa por registros claros, acompanhamento de rotina, planejamento financeiro e visão estratégica.",
     },
     {
@@ -49,6 +57,7 @@ const DEFAULT_ACADEMY_PUBLIC_SETTINGS = {
       imageUrl: "",
       videoUrl: "",
       externalUrl: "",
+      placement: "side",
       body: "Criar com responsabilidade exige estudo contínuo, escolha criteriosa de reprodutores e compromisso real com os animais.",
     },
   ],
@@ -66,6 +75,7 @@ const DEFAULT_ACADEMY_PUBLIC_SETTINGS = {
         imageUrl: "",
         videoUrl: "",
         externalUrl: "",
+        placement: "list",
         body: "Use este espaço para publicar uma matéria completa, compartilhar uma notícia, destacar um criador, apresentar uma raça ou direcionar o leitor para uma página externa.",
       },
       right: {
@@ -129,11 +139,21 @@ function normalizeSettings(value = {}) {
     portalLogoUrl: normalizeUrl(value.portalLogoUrl) || DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalLogoUrl,
     portalFontFamily: normalizeFontFamily(value.portalFontFamily),
     portalTitleSize: normalizeTitleSize(value.portalTitleSize),
+    portalTextColor: normalizeHexColor(value.portalTextColor, DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalTextColor),
+    portalHeadingColor: normalizeHexColor(value.portalHeadingColor, DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalHeadingColor),
+    portalAccentColor: normalizeHexColor(value.portalAccentColor, DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalAccentColor),
+    portalHeadingWeight: normalizeHeadingWeight(value.portalHeadingWeight),
+    portalHeadingItalic: value.portalHeadingItalic === true,
+    portalCarouselSeconds: normalizeCarouselSeconds(value.portalCarouselSeconds),
     portalBannerA: normalizeBanner(value.portalBannerA, DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalBannerA),
-    portalFeatured: normalizeArticles(value.portalFeatured, DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalFeatured).slice(0, 3),
+    portalFeatured: normalizeArticles(value.portalFeatured, DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalFeatured),
     portalBannerB: normalizeBanners(value.portalBannerB, DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalBannerB, 2),
     portalNewsRows: normalizeNewsRows(value.portalNewsRows, DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalNewsRows),
-    portalBannerC: normalizeBanners(value.portalBannerC, DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalBannerC, 3),
+    portalBannerC: normalizeBanners(
+      value.portalBannerC,
+      DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalBannerC,
+      Math.max(3, Array.isArray(value.portalBannerC) ? value.portalBannerC.length : DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalBannerC.length),
+    ),
     presentationGuests: normalizeGuests(value.presentationGuests),
   };
 }
@@ -159,7 +179,28 @@ function normalizeFontFamily(value) {
 
 function normalizeTitleSize(value) {
   const raw = String(value || "").trim();
-  return ["compact", "medium", "large"].includes(raw) ? raw : DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalTitleSize;
+  return ["compact", "small", "medium", "large"].includes(raw) ? raw : DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalTitleSize;
+}
+
+function normalizeHexColor(value, fallback) {
+  const raw = String(value || "").trim();
+  return /^#[0-9a-f]{6}$/i.test(raw) ? raw : fallback;
+}
+
+function normalizeHeadingWeight(value) {
+  const raw = String(value || "").trim();
+  return ["600", "700", "800", "900"].includes(raw) ? raw : DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalHeadingWeight;
+}
+
+function normalizeCarouselSeconds(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalCarouselSeconds;
+  return Math.min(20, Math.max(3, Math.round(number)));
+}
+
+function normalizePlacement(value, fallback = "list") {
+  const raw = String(value || "").trim();
+  return ["featured", "side", "list", "archive"].includes(raw) ? raw : fallback;
 }
 
 function slugify(value, fallback = "materia") {
@@ -197,6 +238,7 @@ function normalizeArticle(value = {}, fallback = {}, index = 0) {
     imageUrl: normalizeUrl(value.imageUrl) || normalizeUrl(fallback.imageUrl),
     videoUrl: normalizeUrl(value.videoUrl) || normalizeUrl(fallback.videoUrl),
     externalUrl: normalizeUrl(value.externalUrl) || normalizeUrl(fallback.externalUrl),
+    placement: normalizePlacement(value.placement, fallback.placement || "list"),
     body: cleanText(value.body, fallback.body || "", 9000),
   };
   if (!article.title && !article.subtitle && !article.imageUrl && !article.videoUrl && !article.body) return null;

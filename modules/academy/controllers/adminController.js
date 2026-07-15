@@ -88,20 +88,28 @@ function portalArticleFromBody(body, files, prefix, index, fileField) {
     subtitle: arrayAt(body[`${prefix}Subtitle`], index),
     caption: arrayAt(body[`${prefix}Caption`], index),
     category: arrayAt(body[`${prefix}Category`], index),
-    imageUrl: fileUrlAt(files, fileField, index) || arrayAt(body[`${prefix}ImageUrl`], index),
+    imageUrl: fileUrlAt(files, fileField) || arrayAt(body[`${prefix}ImageUrl`], index),
     videoUrl: arrayAt(body[`${prefix}VideoUrl`], index),
     externalUrl: arrayAt(body[`${prefix}ExternalUrl`], index),
+    placement: arrayAt(body[`${prefix}Placement`], index),
     body: arrayAt(body[`${prefix}Body`], index),
   };
 }
 
 function portalSettingsFromBody(body, files) {
-  const featuredCount = Math.max(3, formArray(body.portalFeaturedTitle).length);
+  const featuredCount = Math.max(1, formArray(body.portalFeaturedTitle).length);
   const newsCount = Math.max(1, formArray(body.portalNewsLeftTitle).length);
+  const bannerCCount = Math.max(3, formArray(body.portalBannerCImageUrl).length, formArray(body.portalBannerCLinkUrl).length);
   return {
     portalLogoUrl: fileUrlAt(files, "portalLogo") || body.portalLogoUrl,
     portalFontFamily: body.portalFontFamily,
     portalTitleSize: body.portalTitleSize,
+    portalTextColor: body.portalTextColor,
+    portalHeadingColor: body.portalHeadingColor,
+    portalAccentColor: body.portalAccentColor,
+    portalHeadingWeight: body.portalHeadingWeight,
+    portalHeadingItalic: toBool(body.portalHeadingItalic),
+    portalCarouselSeconds: body.portalCarouselSeconds,
     portalBannerA: {
       imageUrl: fileUrlAt(files, "portalBannerA") || body.portalBannerAImageUrl,
       linkUrl: body.portalBannerALinkUrl,
@@ -121,7 +129,7 @@ function portalSettingsFromBody(body, files) {
         externalUrl: arrayAt(body.portalNewsRightExternalUrl, index),
       },
     })),
-    portalBannerC: Array.from({ length: 3 }, (_, index) => ({
+    portalBannerC: Array.from({ length: bannerCCount }, (_, index) => ({
       imageUrl: fileUrlAt(files, `portalBannerC${index}`) || arrayAt(body.portalBannerCImageUrl, index),
       linkUrl: arrayAt(body.portalBannerCLinkUrl, index),
       altText: arrayAt(body.portalBannerCAltText, index, "Banner C"),

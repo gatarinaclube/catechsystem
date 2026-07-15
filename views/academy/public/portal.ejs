@@ -6,7 +6,10 @@
     <%- include("../partials/seo", { seo, pageTitle }) %>
     <link rel="stylesheet" href="/css/academy.css" />
   </head>
-  <body class="gatofilia-public gatofilia-portal title-<%= settings.portalTitleSize || 'medium' %>" style="--portal-font: '<%= settings.portalFontFamily || 'Inter' %>';">
+  <body
+    class="gatofilia-public gatofilia-portal title-<%= settings.portalTitleSize || 'medium' %>"
+    style="--portal-font: '<%= settings.portalFontFamily || 'Inter' %>'; --portal-text: <%= settings.portalTextColor || '#1f2933' %>; --portal-heading: <%= settings.portalHeadingColor || '#171717' %>; --portal-accent: <%= settings.portalAccentColor || '#a97824' %>; --portal-heading-weight: <%= settings.portalHeadingWeight || '900' %>; --portal-heading-style: <%= settings.portalHeadingItalic ? 'italic' : 'normal' %>;"
+  >
     <header class="gatofilia-portal-header">
       <a class="gatofilia-portal-logo" href="/" aria-label="Gatofilia">
         <img src="<%= settings.portalLogoUrl || '/uploads/academy/gatofilia-main-logo-360.png' %>" alt="Gatofilia" width="360" height="180" decoding="async" />
@@ -33,26 +36,44 @@
         <% } %>
       </section>
 
+      <% const portalRows = settings.portalNewsRows || []; %>
+      <% const rowArticles = portalRows.map(function(row) { return row.left || {}; }).filter(function(article) { return article.title || article.imageUrl || article.body || article.externalUrl; }); %>
+      <% const allArticles = (settings.portalFeatured || []).concat(rowArticles); %>
+      <% let featuredArticles = allArticles.filter(function(article) { return (article.placement || 'featured') === 'featured'; }); %>
+      <% if (!featuredArticles.length && allArticles.length) featuredArticles = [allArticles[0]]; %>
+      <% const sideArticles = allArticles.filter(function(article) { return article.placement === 'side'; }); %>
+      <% const listArticles = allArticles.filter(function(article) { return article.placement === 'list'; }); %>
+      <% const archiveArticles = allArticles.filter(function(article) { return article.placement === 'archive'; }); %>
+
       <section id="noticias" class="gatofilia-featured-news">
-        <% const featured = (settings.portalFeatured || []).slice(0, 3); %>
-        <% const mainArticle = featured[0] || {}; %>
-        <a class="gatofilia-featured-main" href="<%= articleUrl(mainArticle) %>" <%= mainArticle.externalUrl ? 'target="_blank" rel="noopener"' : '' %>>
-          <div class="gatofilia-news-media">
-            <% if (mainArticle.videoUrl) { %>
-              <iframe src="<%= mainArticle.videoUrl %>" title="<%= mainArticle.title || 'Vídeo Gatofilia' %>" loading="lazy" allowfullscreen></iframe>
-            <% } else if (mainArticle.imageUrl) { %>
-              <img src="<%= mainArticle.imageUrl %>" alt="<%= mainArticle.title || 'Matéria Gatofilia' %>" width="900" height="560" loading="lazy" decoding="async" />
-            <% } else { %>
-              <div class="gatofilia-news-placeholder">Destaque</div>
-            <% } %>
-          </div>
-          <p><%= mainArticle.category || 'Destaque' %></p>
-          <h1><%= mainArticle.title || 'Gatofilia' %></h1>
-          <span><%= mainArticle.subtitle || mainArticle.caption || 'Conteúdo em destaque para criadores e interessados em felinocultura.' %></span>
-        </a>
+        <div class="gatofilia-featured-carousel" data-featured-carousel data-interval="<%= Number(settings.portalCarouselSeconds || 7) * 1000 %>">
+          <% featuredArticles.forEach(function(mainArticle, index) { %>
+            <a class="gatofilia-featured-main <%= index === 0 ? 'is-active' : '' %>" href="<%= articleUrl(mainArticle) %>" <%= mainArticle.externalUrl ? 'target="_blank" rel="noopener"' : '' %> data-featured-slide>
+              <div class="gatofilia-news-media">
+                <% if (mainArticle.videoUrl) { %>
+                  <iframe src="<%= mainArticle.videoUrl %>" title="<%= mainArticle.title || 'Vídeo Gatofilia' %>" loading="lazy" allowfullscreen></iframe>
+                <% } else if (mainArticle.imageUrl) { %>
+                  <img src="<%= mainArticle.imageUrl %>" alt="<%= mainArticle.title || 'Matéria Gatofilia' %>" width="900" height="560" loading="lazy" decoding="async" />
+                <% } else { %>
+                  <div class="gatofilia-news-placeholder">Destaque</div>
+                <% } %>
+              </div>
+              <p><%= mainArticle.category || 'Destaque' %></p>
+              <h1><%= mainArticle.title || 'Gatofilia' %></h1>
+              <span><%= mainArticle.subtitle || mainArticle.caption || 'Conteúdo em destaque para criadores e interessados em felinocultura.' %></span>
+            </a>
+          <% }) %>
+          <% if (featuredArticles.length > 1) { %>
+            <div class="gatofilia-carousel-dots" aria-label="Destaques">
+              <% featuredArticles.forEach(function(article, index) { %>
+                <button type="button" class="<%= index === 0 ? 'is-active' : '' %>" data-featured-dot aria-label="Abrir destaque <%= index + 1 %>"></button>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
 
         <div class="gatofilia-featured-side">
-          <% featured.slice(1, 3).forEach(function(article) { %>
+          <% sideArticles.slice(0, 4).forEach(function(article) { %>
             <a href="<%= articleUrl(article) %>" <%= article.externalUrl ? 'target="_blank" rel="noopener"' : '' %>>
               <div class="gatofilia-news-media small">
                 <% if (article.imageUrl) { %>
@@ -85,8 +106,7 @@
 
       <section id="materias" class="gatofilia-news-layout">
         <div class="gatofilia-news-list">
-          <% (settings.portalNewsRows || []).forEach(function(row) { %>
-            <% const article = row.left || {}; %>
+          <% listArticles.forEach(function(article) { %>
             <article class="gatofilia-news-row">
               <a class="gatofilia-news-image" href="<%= articleUrl(article) %>" <%= article.externalUrl ? 'target="_blank" rel="noopener"' : '' %>>
                 <% if (article.imageUrl) { %>
@@ -107,7 +127,7 @@
         </div>
 
         <aside class="gatofilia-side-text">
-          <% (settings.portalNewsRows || []).forEach(function(row) { %>
+          <% portalRows.forEach(function(row) { %>
             <% if (row.right && (row.right.title || row.right.text)) { %>
               <article>
                 <h3><%= row.right.title %></h3>
@@ -118,6 +138,21 @@
               </article>
             <% } %>
           <% }) %>
+          <% if (archiveArticles.length) { %>
+            <article class="gatofilia-archive-list">
+              <h3>Matérias antigas</h3>
+              <ul>
+                <% archiveArticles.forEach(function(article) { %>
+                  <li>
+                    <a href="<%= articleUrl(article) %>" <%= article.externalUrl ? 'target="_blank" rel="noopener"' : '' %>>
+                      <span><%= article.category || 'Arquivo' %></span>
+                      <strong><%= article.title %></strong>
+                    </a>
+                  </li>
+                <% }) %>
+              </ul>
+            </article>
+          <% } %>
         </aside>
       </section>
 
@@ -151,6 +186,23 @@
           const isOpen = menu.classList.toggle("is-open");
           button.setAttribute("aria-expanded", String(isOpen));
         });
+      })();
+
+      (() => {
+        const carousel = document.querySelector("[data-featured-carousel]");
+        if (!carousel) return;
+        const slides = Array.from(carousel.querySelectorAll("[data-featured-slide]"));
+        const dots = Array.from(carousel.querySelectorAll("[data-featured-dot]"));
+        if (slides.length <= 1) return;
+        const interval = Math.max(3000, Number(carousel.dataset.interval || 7000));
+        let active = 0;
+        const show = (index) => {
+          active = index % slides.length;
+          slides.forEach((slide, itemIndex) => slide.classList.toggle("is-active", itemIndex === active));
+          dots.forEach((dot, itemIndex) => dot.classList.toggle("is-active", itemIndex === active));
+        };
+        dots.forEach((dot, index) => dot.addEventListener("click", () => show(index)));
+        window.setInterval(() => show(active + 1), interval);
       })();
     </script>
   </body>

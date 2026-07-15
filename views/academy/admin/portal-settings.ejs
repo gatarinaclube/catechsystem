@@ -15,10 +15,14 @@
         border: 1px solid rgba(49, 81, 61, 0.18);
       }
       .portal-preview {
-        font-family: <%= settings.portalFontFamily || 'Inter, system-ui, sans-serif' %>;
+        color: <%= settings.portalTextColor || '#1f2933' %>;
+        font-family: "<%= settings.portalFontFamily || 'Inter' %>", system-ui, sans-serif;
       }
       .portal-preview-title {
-        font-size: <%= settings.portalTitleSize === 'large' ? '1.2rem' : settings.portalTitleSize === 'small' ? '.9rem' : '1rem' %>;
+        color: <%= settings.portalHeadingColor || '#31513d' %>;
+        font-size: <%= settings.portalTitleSize === 'large' ? '1.2rem' : settings.portalTitleSize === 'compact' ? '.86rem' : '1rem' %>;
+        font-style: <%= settings.portalHeadingItalic ? 'italic' : 'normal' %>;
+        font-weight: <%= settings.portalHeadingWeight || '900' %>;
       }
     </style>
   </head>
@@ -67,14 +71,49 @@
               <label class="grid gap-2 text-sm font-bold text-slate-700">
                 Tamanho dos títulos
                 <select name="portalTitleSize" class="rounded-2xl border border-slate-200 bg-white p-3">
-                  <option value="small" <%= settings.portalTitleSize === 'small' ? 'selected' : '' %>>Compacto</option>
+                  <option value="compact" <%= settings.portalTitleSize === 'compact' ? 'selected' : '' %>>Compacto</option>
                   <option value="medium" <%= !settings.portalTitleSize || settings.portalTitleSize === 'medium' ? 'selected' : '' %>>Médio</option>
                   <option value="large" <%= settings.portalTitleSize === 'large' ? 'selected' : '' %>>Maior</option>
                 </select>
               </label>
-              <label class="grid gap-2 text-sm font-bold text-slate-700 md:col-span-3">
+              <label class="grid gap-2 text-sm font-bold text-slate-700">
                 Fonte principal
-                <input name="portalFontFamily" value="<%= settings.portalFontFamily || 'Inter, system-ui, sans-serif' %>" class="rounded-2xl border border-slate-200 bg-white p-3" />
+                <select name="portalFontFamily" class="rounded-2xl border border-slate-200 bg-white p-3">
+                  <% ['Inter', 'Lora', 'Merriweather', 'Playfair Display', 'Georgia'].forEach(function(font) { %>
+                    <option value="<%= font %>" <%= settings.portalFontFamily === font ? 'selected' : '' %>><%= font %></option>
+                  <% }) %>
+                </select>
+              </label>
+              <label class="grid gap-2 text-sm font-bold text-slate-700">
+                Cor do texto
+                <input type="color" name="portalTextColor" value="<%= settings.portalTextColor || '#1f2933' %>" class="h-[50px] rounded-2xl border border-slate-200 bg-white p-2" />
+              </label>
+              <label class="grid gap-2 text-sm font-bold text-slate-700">
+                Cor dos títulos
+                <input type="color" name="portalHeadingColor" value="<%= settings.portalHeadingColor || '#171717' %>" class="h-[50px] rounded-2xl border border-slate-200 bg-white p-2" />
+              </label>
+              <label class="grid gap-2 text-sm font-bold text-slate-700">
+                Cor de destaque
+                <input type="color" name="portalAccentColor" value="<%= settings.portalAccentColor || '#a97824' %>" class="h-[50px] rounded-2xl border border-slate-200 bg-white p-2" />
+              </label>
+              <label class="grid gap-2 text-sm font-bold text-slate-700">
+                Peso dos títulos
+                <select name="portalHeadingWeight" class="rounded-2xl border border-slate-200 bg-white p-3">
+                  <% [['600','Semi negrito'],['700','Negrito'],['800','Extra negrito'],['900','Máximo destaque']].forEach(function(item) { %>
+                    <option value="<%= item[0] %>" <%= String(settings.portalHeadingWeight || '900') === item[0] ? 'selected' : '' %>><%= item[1] %></option>
+                  <% }) %>
+                </select>
+              </label>
+              <label class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 text-sm font-bold text-slate-700">
+                <input type="checkbox" name="portalHeadingItalic" <%= settings.portalHeadingItalic ? 'checked' : '' %> class="h-5 w-5 accent-[#31513d]" />
+                Títulos em itálico
+              </label>
+              <label class="grid gap-2 text-sm font-bold text-slate-700">
+                Troca do carrossel
+                <div class="flex items-center gap-2">
+                  <input type="number" min="3" max="20" name="portalCarouselSeconds" value="<%= settings.portalCarouselSeconds || 7 %>" class="w-full rounded-2xl border border-slate-200 bg-white p-3" />
+                  <span class="text-xs font-black uppercase text-slate-400">seg.</span>
+                </div>
               </label>
             </div>
           </section>
@@ -113,10 +152,15 @@
                 <% }) %>
               </div>
 
-              <div class="grid gap-4 md:grid-cols-3">
-                <% const bannersC = settings.portalBannerC || []; %>
-                <% [0,1,2].forEach(function(index) { const banner = bannersC[index] || {}; %>
-                  <details class="rounded-3xl border border-slate-200 p-4">
+              <div>
+                <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+                  <h3 class="text-lg font-black">Banners C</h3>
+                  <button type="button" data-add-banner-c class="rounded-2xl border border-[#31513d] px-4 py-2 text-sm font-black text-[#31513d]">+ Banner C</button>
+                </div>
+                <div class="grid gap-4 md:grid-cols-3" data-banner-c-list>
+                <% const bannersC = settings.portalBannerC && settings.portalBannerC.length ? settings.portalBannerC : [{}, {}, {}]; %>
+                <% bannersC.forEach(function(banner, index) { %>
+                  <details class="rounded-3xl border border-slate-200 p-4" data-banner-c-card>
                     <summary class="cursor-pointer text-lg font-black">Banner C <%= index + 1 %></summary>
                     <div class="mt-4 grid gap-3">
                       <input type="hidden" name="portalBannerCImageUrl" value="<%= banner.imageUrl || '' %>" />
@@ -127,27 +171,40 @@
                     </div>
                   </details>
                 <% }) %>
+                </div>
               </div>
             </div>
           </section>
 
           <section class="rounded-[2rem] bg-white p-6 shadow-sm">
             <p class="text-xs font-black uppercase tracking-[0.22em] text-[#b88b38]">Topo editorial</p>
-            <h2 class="mt-2 text-2xl font-black">Matéria principal e destaques</h2>
-            <div class="mt-5 grid gap-4">
-              <% const featured = settings.portalFeatured || []; %>
-              <% [0,1,2].forEach(function(index) { const item = featured[index] || {}; %>
-                <details class="rounded-3xl border border-slate-200 p-4" <%= index === 0 ? 'open' : '' %>>
-                  <summary class="cursor-pointer text-lg font-black"><%= index === 0 ? 'Matéria principal' : `Destaque lateral ${index}` %></summary>
+            <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
+              <h2 class="text-2xl font-black">Matéria principal e destaques</h2>
+              <button type="button" data-add-featured class="rounded-2xl border border-[#31513d] px-4 py-2 text-sm font-black text-[#31513d]">+ Destaque/matéria</button>
+            </div>
+            <p class="mt-2 text-sm text-slate-500">
+              Use a posição para mandar a mesma matéria para o carrossel, destaque lateral, lista principal ou arquivo de matérias antigas.
+            </p>
+            <div class="mt-5 grid gap-4" data-featured-list>
+              <% const featured = settings.portalFeatured && settings.portalFeatured.length ? settings.portalFeatured : [{}]; %>
+              <% featured.forEach(function(item, index) { %>
+                <details class="rounded-3xl border border-slate-200 p-4" data-featured-card <%= index === 0 ? 'open' : '' %>>
+                  <summary class="cursor-pointer text-lg font-black">Destaque/matéria <%= index + 1 %> · <%= item.title || 'Sem título' %></summary>
                   <div class="mt-4 grid gap-3 md:grid-cols-2">
                     <input type="hidden" name="portalFeaturedImageUrl" value="<%= item.imageUrl || '' %>" />
                     <input name="portalFeaturedTitle" value="<%= item.title || '' %>" placeholder="Título" class="rounded-2xl border border-slate-200 bg-white p-3 md:col-span-2" />
                     <input name="portalFeaturedCategory" value="<%= item.category || '' %>" placeholder="Categoria" class="rounded-2xl border border-slate-200 bg-white p-3" />
+                    <select name="portalFeaturedPlacement" class="rounded-2xl border border-slate-200 bg-white p-3">
+                      <option value="featured" <%= (item.placement || 'featured') === 'featured' ? 'selected' : '' %>>Destaque/carrossel</option>
+                      <option value="side" <%= item.placement === 'side' ? 'selected' : '' %>>Destaque lateral</option>
+                      <option value="list" <%= item.placement === 'list' ? 'selected' : '' %>>Matérias em lista</option>
+                      <option value="archive" <%= item.placement === 'archive' ? 'selected' : '' %>>Matérias antigas</option>
+                    </select>
                     <input name="portalFeaturedSlug" value="<%= item.slug || '' %>" placeholder="Slug da página interna" class="rounded-2xl border border-slate-200 bg-white p-3" />
+                    <input name="portalFeaturedVideoUrl" value="<%= item.videoUrl || '' %>" placeholder="Link de vídeo opcional" class="rounded-2xl border border-slate-200 bg-white p-3" />
                     <textarea name="portalFeaturedSubtitle" rows="2" placeholder="Resumo na home" class="rounded-2xl border border-slate-200 bg-white p-3 md:col-span-2"><%= item.subtitle || '' %></textarea>
                     <% if (item.imageUrl) { %><img src="<%= item.imageUrl %>" alt="Imagem atual" class="admin-upload-live-preview md:col-span-2" /><% } %>
                     <input type="file" name="portalFeaturedImage<%= index %>" accept="image/*" class="rounded-2xl border border-slate-200 bg-white p-3 md:col-span-2" />
-                    <input name="portalFeaturedVideoUrl" value="<%= item.videoUrl || '' %>" placeholder="Link de vídeo opcional" class="rounded-2xl border border-slate-200 bg-white p-3" />
                     <input name="portalFeaturedExternalUrl" value="<%= item.externalUrl || '' %>" placeholder="Link externo opcional" class="rounded-2xl border border-slate-200 bg-white p-3" />
                     <textarea name="portalFeaturedBody" rows="5" placeholder="Matéria completa" class="rounded-2xl border border-slate-200 bg-white p-3 md:col-span-2"><%= item.body || '' %></textarea>
                     <input type="hidden" name="portalFeaturedCaption" value="<%= item.caption || '' %>" />
@@ -175,6 +232,12 @@
                       <input type="hidden" name="portalNewsLeftImageUrl" value="<%= left.imageUrl || '' %>" />
                       <input name="portalNewsLeftTitle" value="<%= left.title || '' %>" placeholder="Título da matéria" class="rounded-2xl border border-slate-200 bg-white p-3" />
                       <input name="portalNewsLeftCategory" value="<%= left.category || '' %>" placeholder="Categoria" class="rounded-2xl border border-slate-200 bg-white p-3" />
+                      <select name="portalNewsLeftPlacement" class="rounded-2xl border border-slate-200 bg-white p-3">
+                        <option value="list" <%= (left.placement || 'list') === 'list' ? 'selected' : '' %>>Matérias em lista</option>
+                        <option value="featured" <%= left.placement === 'featured' ? 'selected' : '' %>>Destaque/carrossel</option>
+                        <option value="side" <%= left.placement === 'side' ? 'selected' : '' %>>Destaque lateral</option>
+                        <option value="archive" <%= left.placement === 'archive' ? 'selected' : '' %>>Matérias antigas</option>
+                      </select>
                       <input name="portalNewsLeftSlug" value="<%= left.slug || '' %>" placeholder="Slug da página interna" class="rounded-2xl border border-slate-200 bg-white p-3" />
                       <input name="portalNewsLeftCaption" value="<%= left.caption || '' %>" placeholder="Legenda" class="rounded-2xl border border-slate-200 bg-white p-3" />
                       <% if (left.imageUrl) { %><img src="<%= left.imageUrl %>" alt="Imagem atual" class="admin-upload-live-preview" /><% } %>
@@ -277,8 +340,10 @@
     </main>
 
     <script>
-      (() => {
-        document.querySelectorAll('input[type="file"][accept*="image"]').forEach((input) => {
+      const attachImagePreview = (scope = document) => {
+        scope.querySelectorAll('input[type="file"][accept*="image"]').forEach((input) => {
+          if (input.dataset.previewReady === "true") return;
+          input.dataset.previewReady = "true";
           input.addEventListener("change", () => {
             const file = input.files && input.files[0];
             if (!file) return;
@@ -293,6 +358,88 @@
             preview.src = url;
           });
         });
+      };
+
+      (() => {
+        attachImagePreview();
+      })();
+
+      (() => {
+        const featuredList = document.querySelector("[data-featured-list]");
+        const addFeatured = document.querySelector("[data-add-featured]");
+        if (!featuredList || !addFeatured) return;
+
+        const refreshFeatured = () => {
+          featuredList.querySelectorAll("[data-featured-card]").forEach((card, index) => {
+            const title = card.querySelector('input[name="portalFeaturedTitle"]')?.value?.trim() || "Sem título";
+            const summary = card.querySelector("summary");
+            const fileInput = card.querySelector('input[type="file"][name^="portalFeaturedImage"]');
+            if (fileInput) fileInput.name = `portalFeaturedImage${index}`;
+            if (summary) summary.textContent = `Destaque/matéria ${index + 1} · ${title}`;
+          });
+        };
+
+        addFeatured.addEventListener("click", () => {
+          const template = featuredList.querySelector("[data-featured-card]");
+          if (!template) return;
+          const clone = template.cloneNode(true);
+          clone.querySelectorAll("input, textarea").forEach((field) => {
+            if (field.type === "file") {
+              field.value = "";
+              delete field.dataset.previewReady;
+              return;
+            }
+            field.value = "";
+          });
+          clone.querySelectorAll("select").forEach((field) => {
+            field.value = "list";
+          });
+          clone.querySelectorAll("img").forEach((image) => image.remove());
+          if ("open" in clone) clone.open = true;
+          featuredList.appendChild(clone);
+          attachImagePreview(clone);
+          refreshFeatured();
+        });
+
+        featuredList.addEventListener("input", refreshFeatured);
+        featuredList.addEventListener("change", refreshFeatured);
+        refreshFeatured();
+      })();
+
+      (() => {
+        const bannerCList = document.querySelector("[data-banner-c-list]");
+        const addBannerC = document.querySelector("[data-add-banner-c]");
+        if (!bannerCList || !addBannerC) return;
+
+        const refreshBannerC = () => {
+          bannerCList.querySelectorAll("[data-banner-c-card]").forEach((card, index) => {
+            const summary = card.querySelector("summary");
+            const fileInput = card.querySelector('input[type="file"][name^="portalBannerC"]');
+            if (fileInput) fileInput.name = `portalBannerC${index}`;
+            if (summary) summary.textContent = `Banner C ${index + 1}`;
+          });
+        };
+
+        addBannerC.addEventListener("click", () => {
+          const template = bannerCList.querySelector("[data-banner-c-card]");
+          if (!template) return;
+          const clone = template.cloneNode(true);
+          clone.querySelectorAll("input").forEach((field) => {
+            if (field.type === "file") {
+              field.value = "";
+              delete field.dataset.previewReady;
+              return;
+            }
+            field.value = field.name === "portalBannerCAltText" ? "Banner C" : "";
+          });
+          clone.querySelectorAll("img").forEach((image) => image.remove());
+          if ("open" in clone) clone.open = true;
+          bannerCList.appendChild(clone);
+          attachImagePreview(clone);
+          refreshBannerC();
+        });
+
+        refreshBannerC();
       })();
 
       (() => {
@@ -315,11 +462,20 @@
           if (!template) return;
           const clone = template.cloneNode(true);
           clone.querySelectorAll("input, textarea").forEach((field) => {
+            if (field.type === "file") {
+              field.value = "";
+              delete field.dataset.previewReady;
+              return;
+            }
             field.value = "";
+          });
+          clone.querySelectorAll("select").forEach((field) => {
+            field.value = "list";
           });
           clone.querySelectorAll("img").forEach((image) => image.remove());
           if ("open" in clone) clone.open = true;
           portalRows.appendChild(clone);
+          attachImagePreview(clone);
           refreshPortalRows();
         });
 
