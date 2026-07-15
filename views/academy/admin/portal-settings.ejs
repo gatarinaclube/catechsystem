@@ -190,7 +190,7 @@
                       <summary class="cursor-pointer text-lg font-black">Banner A <%= index + 1 %></summary>
                       <div class="mt-4 grid gap-3">
                         <input type="hidden" name="portalBannerAImageUrl" value="<%= banner.imageUrl || '' %>" />
-                        <% if (banner.imageUrl) { %><div class="admin-upload-preview-frame"><img src="<%= banner.imageUrl %>" alt="Banner A atual" class="admin-upload-live-preview" style="object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%; --banner-scale: <%= Number(banner.scale || 100) / 100 %>;" data-position-preview /></div><% } %>
+                        <% if (banner.imageUrl) { %><div class="admin-upload-preview-frame"><img src="<%= banner.imageUrl %>" alt="Banner A atual" class="admin-upload-live-preview" style="object-fit: <%= banner.fit === 'contain' ? 'contain' : 'cover' %>; object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%; --banner-scale: <%= Number(banner.scale || 100) / 100 %>;" data-position-preview /></div><% } %>
                         <input type="file" name="portalBannerA<%= index %>" accept="image/*" class="rounded-2xl border border-slate-200 bg-white p-3" />
                         <div class="banner-position-controls grid gap-3 rounded-2xl bg-slate-50 p-3">
                           <p class="text-xs font-black uppercase tracking-widest text-slate-400">Enquadramento da imagem</p>
@@ -204,7 +204,14 @@
                           </label>
                           <label class="grid gap-2 text-sm font-bold text-slate-600">
                             <span class="banner-control-heading">Escala <span class="banner-control-value" data-scale-label><%= banner.scale ?? 100 %>%</span></span>
-                            <input type="range" min="100" max="200" name="portalBannerAScale" value="<%= banner.scale ?? 100 %>" data-position-scale class="accent-[#31513d]" />
+                            <input type="range" min="50" max="200" name="portalBannerAScale" value="<%= banner.scale ?? 100 %>" data-position-scale class="accent-[#31513d]" />
+                          </label>
+                          <label class="grid gap-2 text-sm font-bold text-slate-600">
+                            Ajuste ao quadro
+                            <select name="portalBannerAFit" data-position-fit class="rounded-2xl border border-slate-200 bg-white p-3">
+                              <option value="cover" <%= banner.fit === 'contain' ? '' : 'selected' %>>Preencher quadro</option>
+                              <option value="contain" <%= banner.fit === 'contain' ? 'selected' : '' %>>Mostrar imagem inteira</option>
+                            </select>
                           </label>
                         </div>
                         <input name="portalBannerALinkUrl" value="<%= banner.linkUrl || '' %>" placeholder="Link ao clicar" class="rounded-2xl border border-slate-200 bg-white p-3" />
@@ -224,7 +231,7 @@
                     <summary class="cursor-pointer text-lg font-black">Banner B <%= index + 1 %></summary>
                     <div class="mt-4 grid gap-3">
                       <input type="hidden" name="portalBannerBImageUrl" value="<%= banner.imageUrl || '' %>" />
-                      <% if (banner.imageUrl) { %><div class="admin-upload-preview-frame"><img src="<%= banner.imageUrl %>" alt="Banner B atual" class="admin-upload-live-preview" style="object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%; --banner-scale: <%= Number(banner.scale || 100) / 100 %>;" data-position-preview /></div><% } %>
+                      <% if (banner.imageUrl) { %><div class="admin-upload-preview-frame"><img src="<%= banner.imageUrl %>" alt="Banner B atual" class="admin-upload-live-preview" style="object-fit: <%= banner.fit === 'contain' ? 'contain' : 'cover' %>; object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%; --banner-scale: <%= Number(banner.scale || 100) / 100 %>;" data-position-preview /></div><% } %>
                       <input type="file" name="portalBannerB<%= index %>" accept="image/*" class="rounded-2xl border border-slate-200 bg-white p-3" />
                       <div class="banner-position-controls grid gap-3 rounded-2xl bg-slate-50 p-3">
                         <p class="text-xs font-black uppercase tracking-widest text-slate-400">Enquadramento da imagem</p>
@@ -238,7 +245,14 @@
                         </label>
                         <label class="grid gap-2 text-sm font-bold text-slate-600">
                           <span class="banner-control-heading">Escala <span class="banner-control-value" data-scale-label><%= banner.scale ?? 100 %>%</span></span>
-                          <input type="range" min="100" max="200" name="portalBannerBScale" value="<%= banner.scale ?? 100 %>" data-position-scale class="accent-[#31513d]" />
+                          <input type="range" min="50" max="200" name="portalBannerBScale" value="<%= banner.scale ?? 100 %>" data-position-scale class="accent-[#31513d]" />
+                        </label>
+                        <label class="grid gap-2 text-sm font-bold text-slate-600">
+                          Ajuste ao quadro
+                          <select name="portalBannerBFit" data-position-fit class="rounded-2xl border border-slate-200 bg-white p-3">
+                            <option value="cover" <%= banner.fit === 'contain' ? '' : 'selected' %>>Preencher quadro</option>
+                            <option value="contain" <%= banner.fit === 'contain' ? 'selected' : '' %>>Mostrar imagem inteira</option>
+                          </select>
                         </label>
                       </div>
                       <input name="portalBannerBLinkUrl" value="<%= banner.linkUrl || '' %>" placeholder="Link ao clicar" class="rounded-2xl border border-slate-200 bg-white p-3" />
@@ -261,7 +275,7 @@
                     <summary class="cursor-pointer text-lg font-black">Banner C <%= index + 1 %></summary>
                     <div class="mt-4 grid gap-3">
                       <input type="hidden" name="portalBannerCImageUrl" value="<%= banner.imageUrl || '' %>" />
-                      <% if (banner.imageUrl) { %><div class="admin-upload-preview-frame banner-c-preview-frame"><img src="<%= banner.imageUrl %>" alt="Banner C atual" class="admin-upload-live-preview banner-c-preview" style="object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%; --banner-scale: <%= Number(banner.scale || 100) / 100 %>;" data-position-preview /></div><% } %>
+                      <% if (banner.imageUrl) { %><div class="admin-upload-preview-frame banner-c-preview-frame"><img src="<%= banner.imageUrl %>" alt="Banner C atual" class="admin-upload-live-preview banner-c-preview" style="object-fit: <%= banner.fit === 'contain' ? 'contain' : 'cover' %>; object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%; --banner-scale: <%= Number(banner.scale || 100) / 100 %>;" data-position-preview /></div><% } %>
                       <input type="file" name="portalBannerC<%= index %>" accept="image/*" class="rounded-2xl border border-slate-200 bg-white p-3" />
                       <div class="banner-position-controls grid gap-3 rounded-2xl bg-slate-50 p-3">
                         <p class="text-xs font-black uppercase tracking-widest text-slate-400">Enquadramento da imagem</p>
@@ -275,7 +289,14 @@
                         </label>
                         <label class="grid gap-2 text-sm font-bold text-slate-600">
                           <span class="banner-control-heading">Escala <span class="banner-control-value" data-scale-label><%= banner.scale ?? 100 %>%</span></span>
-                          <input type="range" min="100" max="200" name="portalBannerCScale" value="<%= banner.scale ?? 100 %>" data-position-scale class="accent-[#31513d]" />
+                          <input type="range" min="50" max="200" name="portalBannerCScale" value="<%= banner.scale ?? 100 %>" data-position-scale class="accent-[#31513d]" />
+                        </label>
+                        <label class="grid gap-2 text-sm font-bold text-slate-600">
+                          Ajuste ao quadro
+                          <select name="portalBannerCFit" data-position-fit class="rounded-2xl border border-slate-200 bg-white p-3">
+                            <option value="cover" <%= banner.fit === 'contain' ? '' : 'selected' %>>Preencher quadro</option>
+                            <option value="contain" <%= banner.fit === 'contain' ? 'selected' : '' %>>Mostrar imagem inteira</option>
+                          </select>
                         </label>
                       </div>
                       <input name="portalBannerCLinkUrl" value="<%= banner.linkUrl || '' %>" placeholder="Link ao clicar" class="rounded-2xl border border-slate-200 bg-white p-3" />
@@ -394,7 +415,7 @@
               <% const previewBannersA = Array.isArray(settings.portalBannerA) ? settings.portalBannerA : [settings.portalBannerA || {}, {}]; %>
               <% [0,1].forEach(function(index) { const banner = previewBannersA[index] || {}; %>
                 <% if (banner.imageUrl) { %>
-                  <img src="<%= banner.imageUrl %>" alt="Banner A" class="h-20 w-full rounded-xl object-cover" style="object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%; transform: scale(<%= Number(banner.scale || 100) / 100 %>);" />
+                  <img src="<%= banner.imageUrl %>" alt="Banner A" class="h-20 w-full rounded-xl object-cover" style="object-fit: <%= banner.fit === 'contain' ? 'contain' : 'cover' %>; object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%; transform: scale(<%= Number(banner.scale || 100) / 100 %>);" />
                 <% } else { %>
                   <div class="grid h-20 place-items-center rounded-xl bg-[#f7f3ea] text-xs font-black text-slate-400">Banner A</div>
                 <% } %>
@@ -430,7 +451,7 @@
             <div class="grid grid-cols-3 gap-2 border-t border-slate-100 p-4">
               <% (settings.portalBannerB || [{},{},{}]).slice(0,3).forEach(function(banner, index) { %>
                 <% if (banner.imageUrl) { %>
-                  <img src="<%= banner.imageUrl %>" alt="Banner B" class="h-12 w-full rounded-xl object-cover" style="object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%; transform: scale(<%= Number(banner.scale || 100) / 100 %>);" />
+                  <img src="<%= banner.imageUrl %>" alt="Banner B" class="h-12 w-full rounded-xl object-cover" style="object-fit: <%= banner.fit === 'contain' ? 'contain' : 'cover' %>; object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%; transform: scale(<%= Number(banner.scale || 100) / 100 %>);" />
                 <% } else { %>
                   <div class="grid h-12 place-items-center rounded-xl bg-[#f7f3ea] text-[10px] font-black text-slate-400">B <%= index + 1 %></div>
                 <% } %>
@@ -502,6 +523,7 @@
         const x = scope.querySelector("[data-position-x]")?.value || 50;
         const y = scope.querySelector("[data-position-y]")?.value || 50;
         const scale = scope.querySelector("[data-position-scale]")?.value || 100;
+        const fit = scope.querySelector("[data-position-fit]")?.value || "cover";
         const xLabel = scope.querySelector("[data-position-x-label]");
         const yLabel = scope.querySelector("[data-position-y-label]");
         const scaleLabel = scope.querySelector("[data-scale-label]");
@@ -510,13 +532,18 @@
         if (scaleLabel) scaleLabel.textContent = `${scale}%`;
         if (preview) {
           preview.style.objectPosition = `${x}% ${y}%`;
+          preview.style.objectFit = fit;
           preview.style.setProperty("--banner-scale", String(Number(scale) / 100));
         }
       };
 
       (() => {
         document.addEventListener("input", (event) => {
-          if (!event.target.matches("[data-position-x], [data-position-y], [data-position-scale]")) return;
+          if (!event.target.matches("[data-position-x], [data-position-y], [data-position-scale], [data-position-fit]")) return;
+          applyPosition(findBannerEditor(event.target));
+        });
+        document.addEventListener("change", (event) => {
+          if (!event.target.matches("[data-position-fit]")) return;
           applyPosition(findBannerEditor(event.target));
         });
       })();
@@ -597,6 +624,9 @@
               return;
             }
             field.value = field.name === "portalBannerCAltText" ? "Banner C" : "";
+          });
+          clone.querySelectorAll("[data-position-fit]").forEach((field) => {
+            field.value = "cover";
           });
           clone.querySelectorAll(".admin-upload-preview-frame").forEach((frame) => frame.remove());
           clone.querySelectorAll("img").forEach((image) => image.remove());

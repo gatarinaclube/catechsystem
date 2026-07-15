@@ -31,7 +31,7 @@
           <article class="gatofilia-ad gatofilia-ad-a">
             <% if (banner.imageUrl) { %>
               <a href="<%= banner.linkUrl || '#' %>" <%= banner.linkUrl ? 'target="_blank" rel="noopener"' : '' %>>
-                <img src="<%= banner.imageUrl %>" alt="<%= banner.altText || 'Banner A' %>" width="900" height="260" loading="eager" decoding="async" style="object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%; --banner-scale: <%= Number(banner.scale || 100) / 100 %>;" />
+                <img src="<%= banner.imageUrl %>" alt="<%= banner.altText || 'Banner A' %>" width="900" height="260" loading="eager" decoding="async" style="object-fit: <%= banner.fit === 'contain' ? 'contain' : 'cover' %>; object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%; --banner-scale: <%= Number(banner.scale || 100) / 100 %>;" />
               </a>
             <% } else { %>
               <div>Banner A</div>
@@ -99,7 +99,7 @@
           <article class="gatofilia-ad gatofilia-ad-b">
             <% if (banner.imageUrl) { %>
               <a href="<%= banner.linkUrl || '#' %>" <%= banner.linkUrl ? 'target="_blank" rel="noopener"' : '' %>>
-                <img src="<%= banner.imageUrl %>" alt="<%= banner.altText || 'Banner B' %>" width="580" height="180" loading="lazy" decoding="async" style="object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%; --banner-scale: <%= Number(banner.scale || 100) / 100 %>;" />
+                <img src="<%= banner.imageUrl %>" alt="<%= banner.altText || 'Banner B' %>" width="580" height="180" loading="lazy" decoding="async" style="object-fit: <%= banner.fit === 'contain' ? 'contain' : 'cover' %>; object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%; --banner-scale: <%= Number(banner.scale || 100) / 100 %>;" />
               </a>
             <% } else { %>
               <div>Banner B</div>
@@ -165,7 +165,7 @@
           <article class="gatofilia-ad gatofilia-ad-c">
             <% if (banner.imageUrl) { %>
               <a href="<%= banner.linkUrl || '#' %>" <%= banner.linkUrl ? 'target="_blank" rel="noopener"' : '' %>>
-                <img src="<%= banner.imageUrl %>" alt="<%= banner.altText || 'Banner C' %>" width="420" height="130" loading="lazy" decoding="async" style="object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%; --banner-scale: <%= Number(banner.scale || 100) / 100 %>;" />
+                <img src="<%= banner.imageUrl %>" alt="<%= banner.altText || 'Banner C' %>" width="420" height="130" loading="lazy" decoding="async" style="object-fit: <%= banner.fit === 'contain' ? 'contain' : 'cover' %>; object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%; --banner-scale: <%= Number(banner.scale || 100) / 100 %>;" />
               </a>
             <% } else { %>
               <div>Banner C</div>

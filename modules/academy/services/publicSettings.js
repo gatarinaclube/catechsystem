@@ -223,6 +223,7 @@ function normalizeBanner(value = {}, fallback = {}) {
     positionX: normalizePercent(value.positionX, fallback.positionX ?? 50),
     positionY: normalizePercent(value.positionY, fallback.positionY ?? 50),
     scale: normalizeScale(value.scale, fallback.scale ?? 100),
+    fit: normalizeBannerFit(value.fit, fallback.fit || "cover"),
   };
 }
 
@@ -235,7 +236,12 @@ function normalizePercent(value, fallback = 50) {
 function normalizeScale(value, fallback = 100) {
   const number = Number(value);
   if (!Number.isFinite(number)) return fallback;
-  return Math.min(200, Math.max(100, Math.round(number)));
+  return Math.min(200, Math.max(50, Math.round(number)));
+}
+
+function normalizeBannerFit(value, fallback = "cover") {
+  const raw = String(value || "").trim().toLowerCase();
+  return ["cover", "contain"].includes(raw) ? raw : fallback;
 }
 
 function normalizeBanners(value, fallback, size) {

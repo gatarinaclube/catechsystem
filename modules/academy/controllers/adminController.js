@@ -117,6 +117,7 @@ function portalSettingsFromBody(body, files) {
       positionX: arrayAt(body.portalBannerAPositionX, index, 50),
       positionY: arrayAt(body.portalBannerAPositionY, index, 50),
       scale: arrayAt(body.portalBannerAScale, index, 100),
+      fit: arrayAt(body.portalBannerAFit, index, "cover"),
     })),
     portalFeatured: Array.from({ length: featuredCount }, (_, index) => portalArticleFromBody(body, files, "portalFeatured", index, `portalFeaturedImage${index}`)),
     portalBannerB: Array.from({ length: 3 }, (_, index) => ({
@@ -126,6 +127,7 @@ function portalSettingsFromBody(body, files) {
       positionX: arrayAt(body.portalBannerBPositionX, index, 50),
       positionY: arrayAt(body.portalBannerBPositionY, index, 50),
       scale: arrayAt(body.portalBannerBScale, index, 100),
+      fit: arrayAt(body.portalBannerBFit, index, "cover"),
     })),
     portalNewsRows: Array.from({ length: newsCount }, (_, index) => ({
       left: portalArticleFromBody(body, files, "portalNewsLeft", index, `portalNewsImage${index}`),
@@ -142,6 +144,7 @@ function portalSettingsFromBody(body, files) {
       positionX: arrayAt(body.portalBannerCPositionX, index, 50),
       positionY: arrayAt(body.portalBannerCPositionY, index, 50),
       scale: arrayAt(body.portalBannerCScale, index, 100),
+      fit: arrayAt(body.portalBannerCFit, index, "cover"),
     })),
   };
 }
