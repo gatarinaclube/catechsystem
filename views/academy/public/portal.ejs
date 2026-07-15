@@ -43,11 +43,11 @@
       <% const portalRows = settings.portalNewsRows || []; %>
       <% const rowArticles = portalRows.map(function(row) { return row.left || {}; }).filter(function(article) { return article.title || article.imageUrl || article.body || article.externalUrl; }); %>
       <% const allArticles = (settings.portalFeatured || []).concat(rowArticles); %>
-      <% let featuredArticles = allArticles.filter(function(article) { return (article.placement || 'featured') === 'featured'; }); %>
-      <% if (!featuredArticles.length && allArticles.length) featuredArticles = [allArticles[0]]; %>
-      <% const sideArticles = allArticles.filter(function(article) { return article.placement === 'side'; }); %>
-      <% const listArticles = allArticles.filter(function(article) { return article.placement === 'list'; }); %>
-      <% const archiveArticles = allArticles.filter(function(article) { return article.placement === 'archive'; }); %>
+      <% const orderArticles = function(items) { return items.slice().sort(function(a, b) { return Number(a.sortOrder || 999) - Number(b.sortOrder || 999); }); }; %>
+      <% let featuredArticles = orderArticles(allArticles.filter(function(article) { return (article.placement || 'featured') === 'featured'; })); %>
+      <% const sideArticles = orderArticles(allArticles.filter(function(article) { return article.placement === 'side'; })); %>
+      <% const listArticles = orderArticles(allArticles.filter(function(article) { return article.placement === 'list'; })); %>
+      <% const archiveArticles = orderArticles(allArticles.filter(function(article) { return article.placement === 'archive'; })); %>
 
       <section id="noticias" class="gatofilia-featured-news">
         <div class="gatofilia-featured-carousel" data-featured-carousel data-interval="<%= Number(settings.portalCarouselSeconds || 7) * 1000 %>">

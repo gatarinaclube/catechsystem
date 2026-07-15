@@ -114,6 +114,19 @@
           Configurações da Gatofilia News salvas com sucesso.
         </div>
       <% } %>
+      <%
+        const articleTargetGroups = [
+          { placement: 'featured', label: 'Matéria principal', count: 1 },
+          { placement: 'side', label: 'Destaque lateral', count: 2 },
+          { placement: 'list', label: 'Matéria em lista', count: 200 },
+          { placement: 'archive', label: 'Matéria antiga', count: 200 },
+        ];
+        function articleTargetValue(item, index, fallbackPlacement) {
+          const placement = item.placement || fallbackPlacement || 'list';
+          const sortOrder = Number(item.sortOrder || index + 1);
+          return `${placement}:${sortOrder}`;
+        }
+      %>
 
       <section class="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_440px] lg:items-start">
         <form method="post" action="/academy/admin/gatofilia-news" enctype="multipart/form-data" class="grid gap-6">
@@ -327,7 +340,10 @@
               <button type="button" data-add-featured class="rounded-2xl border border-[#31513d] px-4 py-2 text-sm font-black text-[#31513d]">+ Destaque/matéria</button>
             </div>
             <p class="mt-2 text-sm text-slate-500">
-              Use a posição para mandar a mesma matéria para o carrossel, destaque lateral, lista principal ou arquivo de matérias antigas.
+              Use o campo <strong>Local e ordem</strong> para mandar a mesma matéria para o carrossel, destaque lateral, lista principal ou arquivo de matérias antigas. Ela muda de lugar sem duplicar.
+            </p>
+            <p class="mt-1 text-xs font-bold text-slate-400">
+              Limites: 1 matéria principal, 2 destaques laterais, matérias em lista e antigas sem limite prático.
             </p>
             <div class="mt-5 grid gap-4" data-featured-list>
               <% const featured = settings.portalFeatured && settings.portalFeatured.length ? settings.portalFeatured : [{}]; %>
@@ -338,12 +354,18 @@
                     <input type="hidden" name="portalFeaturedImageUrl" value="<%= item.imageUrl || '' %>" />
                     <input name="portalFeaturedTitle" value="<%= item.title || '' %>" placeholder="Título" class="rounded-2xl border border-slate-200 bg-white p-3 md:col-span-2" />
                     <input name="portalFeaturedCategory" value="<%= item.category || '' %>" placeholder="Categoria" class="rounded-2xl border border-slate-200 bg-white p-3" />
-                    <select name="portalFeaturedPlacement" class="rounded-2xl border border-slate-200 bg-white p-3">
-                      <option value="featured" <%= (item.placement || 'featured') === 'featured' ? 'selected' : '' %>>Destaque/carrossel</option>
-                      <option value="side" <%= item.placement === 'side' ? 'selected' : '' %>>Destaque lateral</option>
-                      <option value="list" <%= item.placement === 'list' ? 'selected' : '' %>>Matérias em lista</option>
-                      <option value="archive" <%= item.placement === 'archive' ? 'selected' : '' %>>Matérias antigas</option>
-                    </select>
+                    <label class="grid gap-2 text-sm font-bold text-slate-700">
+                      Local e ordem
+                      <select name="portalFeaturedTarget" class="rounded-2xl border border-slate-200 bg-white p-3" data-article-target>
+                        <% articleTargetGroups.forEach(function(group) { %>
+                          <% for (let optionIndex = 1; optionIndex <= group.count; optionIndex += 1) { const optionValue = `${group.placement}:${optionIndex}`; %>
+                            <option value="<%= optionValue %>" <%= articleTargetValue(item, index, 'featured') === optionValue ? 'selected' : '' %>>
+                              <%= group.label %> <%= String(optionIndex).padStart(2, '0') %>
+                            </option>
+                          <% } %>
+                        <% }) %>
+                      </select>
+                    </label>
                     <input name="portalFeaturedSlug" value="<%= item.slug || '' %>" placeholder="Slug da página interna" class="rounded-2xl border border-slate-200 bg-white p-3" />
                     <input name="portalFeaturedVideoUrl" value="<%= item.videoUrl || '' %>" placeholder="Link de vídeo opcional" class="rounded-2xl border border-slate-200 bg-white p-3" />
                     <textarea name="portalFeaturedSubtitle" rows="2" placeholder="Resumo na home" class="rounded-2xl border border-slate-200 bg-white p-3 md:col-span-2"><%= item.subtitle || '' %></textarea>
@@ -423,12 +445,18 @@
                       <input type="hidden" name="portalNewsLeftImageUrl" value="<%= left.imageUrl || '' %>" />
                       <input name="portalNewsLeftTitle" value="<%= left.title || '' %>" placeholder="Título da matéria" class="rounded-2xl border border-slate-200 bg-white p-3" />
                       <input name="portalNewsLeftCategory" value="<%= left.category || '' %>" placeholder="Categoria" class="rounded-2xl border border-slate-200 bg-white p-3" />
-                      <select name="portalNewsLeftPlacement" class="rounded-2xl border border-slate-200 bg-white p-3">
-                        <option value="list" <%= (left.placement || 'list') === 'list' ? 'selected' : '' %>>Matérias em lista</option>
-                        <option value="featured" <%= left.placement === 'featured' ? 'selected' : '' %>>Destaque/carrossel</option>
-                        <option value="side" <%= left.placement === 'side' ? 'selected' : '' %>>Destaque lateral</option>
-                        <option value="archive" <%= left.placement === 'archive' ? 'selected' : '' %>>Matérias antigas</option>
-                      </select>
+                      <label class="grid gap-2 text-sm font-bold text-slate-700">
+                        Local e ordem
+                        <select name="portalNewsLeftTarget" class="rounded-2xl border border-slate-200 bg-white p-3" data-article-target>
+                          <% articleTargetGroups.forEach(function(group) { %>
+                            <% for (let optionIndex = 1; optionIndex <= group.count; optionIndex += 1) { const optionValue = `${group.placement}:${optionIndex}`; %>
+                              <option value="<%= optionValue %>" <%= articleTargetValue(left, index, 'list') === optionValue ? 'selected' : '' %>>
+                                <%= group.label %> <%= String(optionIndex).padStart(2, '0') %>
+                              </option>
+                            <% } %>
+                          <% }) %>
+                        </select>
+                      </label>
                       <input name="portalNewsLeftSlug" value="<%= left.slug || '' %>" placeholder="Slug da página interna" class="rounded-2xl border border-slate-200 bg-white p-3" />
                       <input name="portalNewsLeftCaption" value="<%= left.caption || '' %>" placeholder="Legenda" class="rounded-2xl border border-slate-200 bg-white p-3" />
                       <div class="grid gap-3" data-position-editor>
@@ -664,10 +692,34 @@
         const featuredList = document.querySelector("[data-featured-list]");
         const addFeatured = document.querySelector("[data-add-featured]");
         if (!featuredList || !addFeatured) return;
+        const targetLimits = { featured: 1, side: 2 };
+
+        const targetPlacement = (value) => String(value || "").split(":")[0];
+
+        const updateArticleTargetAvailability = () => {
+          const selects = Array.from(document.querySelectorAll("[data-article-target]"));
+          const counts = selects.reduce((acc, select) => {
+            const placement = targetPlacement(select.value);
+            acc[placement] = (acc[placement] || 0) + 1;
+            return acc;
+          }, {});
+
+          selects.forEach((select) => {
+            const currentPlacement = targetPlacement(select.value);
+            select.querySelectorAll("option").forEach((option) => {
+              const placement = targetPlacement(option.value);
+              const limit = targetLimits[placement];
+              option.disabled = Boolean(limit && placement !== currentPlacement && (counts[placement] || 0) >= limit);
+            });
+          });
+        };
+        window.updateArticleTargetAvailability = updateArticleTargetAvailability;
 
         const refreshFeatured = () => {
           featuredList.querySelectorAll("[data-featured-card]").forEach((card, index) => {
             const title = card.querySelector('input[name="portalFeaturedTitle"]')?.value?.trim() || "Sem título";
+            const targetSelect = card.querySelector("[data-article-target]");
+            const targetLabel = targetSelect?.selectedOptions?.[0]?.textContent?.trim() || `Destaque/matéria ${index + 1}`;
             const summary = card.querySelector("summary");
             const fileInput = card.querySelector('input[type="file"][name^="portalFeaturedImage"]');
             if (fileInput) fileInput.name = `portalFeaturedImage${index}`;
@@ -679,13 +731,15 @@
               if (urlField) urlField.name = `portalFeaturedBodyImageUrl${index}_${slot}`;
               if (captionField) captionField.name = `portalFeaturedBodyImageCaption${index}_${slot}`;
             });
-            if (summary) summary.textContent = `Destaque/matéria ${index + 1} · ${title}`;
+            if (summary) summary.textContent = `${targetLabel} · ${title}`;
           });
+          updateArticleTargetAvailability();
         };
 
         addFeatured.addEventListener("click", () => {
           const template = featuredList.querySelector("[data-featured-card]");
           if (!template) return;
+          const nextIndex = featuredList.querySelectorAll("[data-featured-card]").length + 1;
           const clone = template.cloneNode(true);
           clone.querySelectorAll("input, textarea").forEach((field) => {
             if (field.type === "file") {
@@ -696,7 +750,11 @@
             field.value = "";
           });
           clone.querySelectorAll("select").forEach((field) => {
-            field.value = field.matches("[data-position-fit]") ? "cover" : "list";
+            if (field.matches("[data-position-fit]")) {
+              field.value = "cover";
+            } else if (field.matches("[data-article-target]")) {
+              field.value = `list:${nextIndex}`;
+            }
           });
           clone.querySelectorAll(".admin-upload-preview-frame").forEach((frame) => frame.remove());
           clone.querySelectorAll("img").forEach((image) => image.remove());
@@ -767,6 +825,8 @@
         const refreshPortalRows = () => {
           portalRows.querySelectorAll("[data-portal-row]").forEach((row, index) => {
             const title = row.querySelector('input[name="portalNewsLeftTitle"]')?.value?.trim() || "Sem título";
+            const targetSelect = row.querySelector("[data-article-target]");
+            const targetLabel = targetSelect?.selectedOptions?.[0]?.textContent?.trim() || `Matéria ${index + 1}`;
             const summary = row.querySelector("summary");
             const fileInput = row.querySelector('input[type="file"][name^="portalNewsImage"]');
             if (fileInput) fileInput.name = `portalNewsImage${index}`;
@@ -778,13 +838,15 @@
               if (urlField) urlField.name = `portalNewsLeftBodyImageUrl${index}_${slot}`;
               if (captionField) captionField.name = `portalNewsLeftBodyImageCaption${index}_${slot}`;
             });
-            if (summary) summary.textContent = `Matéria ${index + 1} · ${title}`;
+            if (summary) summary.textContent = `${targetLabel} · ${title}`;
           });
+          window.updateArticleTargetAvailability?.();
         };
 
         addPortalRow.addEventListener("click", () => {
           const template = portalRows.querySelector("[data-portal-row]");
           if (!template) return;
+          const nextIndex = portalRows.querySelectorAll("[data-portal-row]").length + 1;
           const clone = template.cloneNode(true);
           clone.querySelectorAll("input, textarea").forEach((field) => {
             if (field.type === "file") {
@@ -795,7 +857,11 @@
             field.value = "";
           });
           clone.querySelectorAll("select").forEach((field) => {
-            field.value = field.matches("[data-position-fit]") ? "cover" : "list";
+            if (field.matches("[data-position-fit]")) {
+              field.value = "cover";
+            } else if (field.matches("[data-article-target]")) {
+              field.value = `list:${Math.min(nextIndex, 200)}`;
+            }
           });
           clone.querySelectorAll(".admin-upload-preview-frame").forEach((frame) => frame.remove());
           clone.querySelectorAll("img").forEach((image) => image.remove());
@@ -809,6 +875,7 @@
         });
 
         portalRows.addEventListener("input", refreshPortalRows);
+        portalRows.addEventListener("change", refreshPortalRows);
         refreshPortalRows();
       })();
     </script>

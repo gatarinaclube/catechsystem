@@ -75,6 +75,141 @@ function articleUrl(article) {
   return `/materia/${article.slug}`;
 }
 
+function seoAbsoluteUrl(req, value) {
+  const raw = String(value || "").trim();
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return absoluteUrl(req, raw || "/");
+}
+
+const SEO_STOPWORDS = new Set([
+  "a",
+  "ao",
+  "aos",
+  "as",
+  "com",
+  "como",
+  "da",
+  "das",
+  "de",
+  "do",
+  "dos",
+  "e",
+  "em",
+  "entre",
+  "essa",
+  "esse",
+  "esta",
+  "este",
+  "para",
+  "pela",
+  "pelo",
+  "por",
+  "que",
+  "se",
+  "sua",
+  "seu",
+  "um",
+  "uma",
+  "os",
+  "o",
+  "na",
+  "no",
+  "nas",
+  "nos",
+]);
+
+function stripMarkdown(value) {
+  return String(value || "")
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function extractBoldPhrases(value) {
+  const matches = String(value || "").matchAll(/\*\*(.+?)\*\*/g);
+  return Array.from(matches)
+    .map((match) => stripMarkdown(match[1]))
+    .filter((item) => item.length >= 3);
+}
+
+function extractSeoTerms(value, limit = 18) {
+  const text = stripMarkdown(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  const words = text.match(/[a-z0-9]{3,}/g) || [];
+  const scores = new Map();
+  words.forEach((word) => {
+    if (SEO_STOPWORDS.has(word)) return;
+    scores.set(word, (scores.get(word) || 0) + 1);
+  });
+  return Array.from(scores.entries())
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, limit)
+    .map(([word]) => word);
+}
+
+function uniqueSeoList(values, limit = 30) {
+  const seen = new Set();
+  return values
+    .flat()
+    .map((item) => stripMarkdown(item))
+    .filter(Boolean)
+    .filter((item) => {
+      const key = item.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, limit);
+}
+
+function articleSeoKeywords(article) {
+  const base = [
+    "gatofilia",
+    "felinocultura",
+    "criadores de gatos",
+    "gatil",
+    "criação de gatos",
+    "criação responsável de gatos",
+    "gestão de gatil",
+    "raças de gatos",
+    article.category,
+    article.title,
+  ];
+  const highlighted = extractBoldPhrases(article.body);
+  const contentTerms = extractSeoTerms([
+    article.title,
+    article.subtitle,
+    article.caption,
+    article.category,
+    article.body,
+  ].join(" "));
+  return uniqueSeoList([...base, ...highlighted, ...contentTerms], 34);
+}
+
+function portalSeoKeywords(settings) {
+  const articles = portalArticles(settings);
+  const articleTerms = articles.flatMap((article) => [
+    article.title,
+    article.category,
+    ...extractBoldPhrases(article.body),
+    ...extractSeoTerms(`${article.title || ""} ${article.subtitle || ""} ${article.caption || ""} ${article.body || ""}`, 8),
+  ]);
+  return uniqueSeoList([
+    "gatofilia",
+    "felinocultura",
+    "criadores de gatos",
+    "gatil",
+    "raças de gatos",
+    "criação responsável de gatos",
+    "notícias sobre gatos",
+    "jornada gatofilia",
+    "gestão de gatil",
+    ...articleTerms,
+  ], 42);
+}
+
 async function notifyGatofiliaLead(lead) {
   const adminTo = gatofiliaEmailAddress();
   const smtpConfig = gatofiliaSmtpConfig();
@@ -137,16 +272,7 @@ module.exports = (prisma) => ({
         title: "Gatofilia | Felinocultura, Notícias e Jornada para Criadores",
         description: "Portal Gatofilia com notícias, matérias, conteúdo para criadores de gatos, felinocultura, gestão de gatil, raças felinas e a Jornada Gatofilia.",
         image: portalSeoBanner || "/uploads/academy/gatofilia-main-logo-620.png",
-        keywords: [
-          "gatofilia",
-          "felinocultura",
-          "criadores de gatos",
-          "gatil",
-          "raças de gatos",
-          "criação responsável de gatos",
-          "notícias sobre gatos",
-          "jornada gatofilia",
-        ],
+        keywords: portalSeoKeywords(publicSettings),
       },
     });
   },
@@ -163,9 +289,29 @@ module.exports = (prisma) => ({
         path: `/materia/${article.slug}`,
         type: "article",
         title: `${article.title} | Gatofilia`,
-        description: article.subtitle || article.caption || "Matéria Gatofilia para criadores e interessados em felinocultura.",
+        description: stripMarkdown(article.subtitle || article.caption || article.body || "Matéria Gatofilia para criadores e interessados em felinocultura.").slice(0, 160),
         image: article.imageUrl || publicSettings.portalLogoUrl,
-        keywords: ["gatofilia", "felinocultura", "criadores de gatos", "gatil", article.category].filter(Boolean),
+        keywords: articleSeoKeywords(article),
+        jsonLd: [
+          {
+            "@context": "https://schema.org",
+            "@type": "Article",
+            headline: article.title,
+            description: stripMarkdown(article.subtitle || article.caption || article.body || "").slice(0, 200),
+            image: seoAbsoluteUrl(req, article.imageUrl || publicSettings.portalLogoUrl || "/uploads/academy/gatofilia-main-logo-620.png"),
+            mainEntityOfPage: absoluteUrl(req, `/materia/${article.slug}`),
+            publisher: {
+              "@type": "Organization",
+              name: "Gatofilia",
+              logo: {
+                "@type": "ImageObject",
+                url: seoAbsoluteUrl(req, publicSettings.portalLogoUrl || "/uploads/academy/gatofilia-main-logo-360.png"),
+              },
+            },
+            keywords: articleSeoKeywords(article).join(", "),
+            inLanguage: "pt-BR",
+          },
+        ],
       },
     });
   },

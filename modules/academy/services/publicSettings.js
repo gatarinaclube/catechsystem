@@ -244,6 +244,12 @@ function normalizeBannerFit(value, fallback = "cover") {
   return ["cover", "contain"].includes(raw) ? raw : fallback;
 }
 
+function normalizeSortOrder(value, fallback = 0) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return Number(fallback) || 0;
+  return Math.max(0, Math.round(number));
+}
+
 function normalizeBanners(value, fallback, size) {
   const source = Array.isArray(value) ? value : fallback;
   return Array.from({ length: size }, (_, index) => normalizeBanner(source[index] || {}, fallback[index] || {}));
@@ -273,6 +279,7 @@ function normalizeArticle(value = {}, fallback = {}, index = 0) {
     videoUrl: normalizeUrl(value.videoUrl) || normalizeUrl(fallback.videoUrl),
     externalUrl: normalizeUrl(value.externalUrl) || normalizeUrl(fallback.externalUrl),
     placement: normalizePlacement(value.placement, fallback.placement || "list"),
+    sortOrder: normalizeSortOrder(value.sortOrder, fallback.sortOrder ?? index + 1),
     body: cleanText(value.body, fallback.body || "", 9000),
   };
   if (!article.title && !article.subtitle && !article.imageUrl && !article.videoUrl && !article.body) return null;

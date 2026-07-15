@@ -81,7 +81,27 @@ function arrayAt(value, index, fallback = "") {
   return list[index] !== undefined ? list[index] : fallback;
 }
 
+function parseArticleTarget(value, fallbackPlacement = "", fallbackSortOrder = "") {
+  const raw = String(value || "").trim();
+  const match = raw.match(/^(featured|side|list|archive):(\d+)$/);
+  if (match) {
+    return {
+      placement: match[1],
+      sortOrder: Number(match[2]),
+    };
+  }
+  return {
+    placement: fallbackPlacement,
+    sortOrder: fallbackSortOrder,
+  };
+}
+
 function portalArticleFromBody(body, files, prefix, index, fileField) {
+  const target = parseArticleTarget(
+    arrayAt(body[`${prefix}Target`], index),
+    arrayAt(body[`${prefix}Placement`], index),
+    arrayAt(body[`${prefix}SortOrder`], index, index + 1),
+  );
   return {
     slug: arrayAt(body[`${prefix}Slug`], index),
     title: arrayAt(body[`${prefix}Title`], index),
@@ -99,7 +119,8 @@ function portalArticleFromBody(body, files, prefix, index, fileField) {
     })),
     videoUrl: arrayAt(body[`${prefix}VideoUrl`], index),
     externalUrl: arrayAt(body[`${prefix}ExternalUrl`], index),
-    placement: arrayAt(body[`${prefix}Placement`], index),
+    placement: target.placement,
+    sortOrder: target.sortOrder,
     body: arrayAt(body[`${prefix}Body`], index),
   };
 }
@@ -108,6 +129,41 @@ function portalSettingsFromBody(body, files) {
   const featuredCount = Math.max(1, formArray(body.portalFeaturedTitle).length);
   const newsCount = Math.max(1, formArray(body.portalNewsLeftTitle).length);
   const bannerCCount = Math.max(4, formArray(body.portalBannerCImageUrl).length, formArray(body.portalBannerCLinkUrl).length);
+  const rawFeaturedArticles = Array.from({ length: featuredCount }, (_, index) =>
+    portalArticleFromBody(body, files, "portalFeatured", index, `portalFeaturedImage${index}`),
+  );
+  const rawNewsRows = Array.from({ length: newsCount }, (_, index) => ({
+    left: portalArticleFromBody(body, files, "portalNewsLeft", index, `portalNewsImage${index}`),
+    right: {
+      title: arrayAt(body.portalNewsRightTitle, index),
+      text: arrayAt(body.portalNewsRightText, index),
+      externalUrl: arrayAt(body.portalNewsRightExternalUrl, index),
+    },
+  }));
+  const placementOrder = { featured: 0, side: 1, list: 2, archive: 3 };
+  const sortedPortalArticles = [...rawFeaturedArticles, ...rawNewsRows.map((row) => row.left)].sort((a, b) => {
+    const placementA = placementOrder[a.placement] ?? placementOrder.list;
+    const placementB = placementOrder[b.placement] ?? placementOrder.list;
+    if (placementA !== placementB) return placementA - placementB;
+    return Number(a.sortOrder || 999) - Number(b.sortOrder || 999);
+  });
+  const placementLimits = { featured: 1, side: 2 };
+  const placementCounts = {};
+  const allPortalArticles = sortedPortalArticles.map((article) => {
+    const placement = article.placement || "list";
+    placementCounts[placement] = (placementCounts[placement] || 0) + 1;
+    if (placementLimits[placement] && placementCounts[placement] > placementLimits[placement]) {
+      return { ...article, placement: "list" };
+    }
+    return article;
+  }).sort((a, b) => {
+    const placementA = placementOrder[a.placement] ?? placementOrder.list;
+    const placementB = placementOrder[b.placement] ?? placementOrder.list;
+    if (placementA !== placementB) return placementA - placementB;
+    return Number(a.sortOrder || 999) - Number(b.sortOrder || 999);
+  });
+  const nonFeaturedArticles = allPortalArticles.filter((article) => article.placement !== "featured");
+  const rightBlocks = rawNewsRows.map((row) => row.right);
   return {
     portalLogoUrl: fileUrlAt(files, "portalLogo") || body.portalLogoUrl,
     portalFontFamily: body.portalFontFamily,
@@ -127,7 +183,7 @@ function portalSettingsFromBody(body, files) {
       scale: arrayAt(body.portalBannerAScale, index, 100),
       fit: arrayAt(body.portalBannerAFit, index, "cover"),
     })),
-    portalFeatured: Array.from({ length: featuredCount }, (_, index) => portalArticleFromBody(body, files, "portalFeatured", index, `portalFeaturedImage${index}`)),
+    portalFeatured: allPortalArticles.filter((article) => article.placement === "featured"),
     portalBannerB: Array.from({ length: 3 }, (_, index) => ({
       imageUrl: fileUrlAt(files, `portalBannerB${index}`) || arrayAt(body.portalBannerBImageUrl, index),
       linkUrl: arrayAt(body.portalBannerBLinkUrl, index),
@@ -137,13 +193,9 @@ function portalSettingsFromBody(body, files) {
       scale: arrayAt(body.portalBannerBScale, index, 100),
       fit: arrayAt(body.portalBannerBFit, index, "cover"),
     })),
-    portalNewsRows: Array.from({ length: newsCount }, (_, index) => ({
-      left: portalArticleFromBody(body, files, "portalNewsLeft", index, `portalNewsImage${index}`),
-      right: {
-        title: arrayAt(body.portalNewsRightTitle, index),
-        text: arrayAt(body.portalNewsRightText, index),
-        externalUrl: arrayAt(body.portalNewsRightExternalUrl, index),
-      },
+    portalNewsRows: nonFeaturedArticles.map((article, index) => ({
+      left: article,
+      right: rightBlocks[index] || {},
     })),
     portalBannerC: Array.from({ length: bannerCCount }, (_, index) => ({
       imageUrl: fileUrlAt(files, `portalBannerC${index}`) || arrayAt(body.portalBannerCImageUrl, index),
