@@ -265,6 +265,11 @@ function normalizeArticle(value = {}, fallback = {}, index = 0) {
     caption: cleanText(value.caption, fallback.caption || ""),
     category: cleanText(value.category, fallback.category || ""),
     imageUrl: normalizeUrl(value.imageUrl) || normalizeUrl(fallback.imageUrl),
+    imagePositionX: normalizePercent(value.imagePositionX, fallback.imagePositionX ?? 50),
+    imagePositionY: normalizePercent(value.imagePositionY, fallback.imagePositionY ?? 50),
+    imageScale: normalizeScale(value.imageScale, fallback.imageScale ?? 100),
+    imageFit: normalizeBannerFit(value.imageFit, fallback.imageFit || "cover"),
+    bodyImages: normalizeArticleImages(value.bodyImages, fallback.bodyImages),
     videoUrl: normalizeUrl(value.videoUrl) || normalizeUrl(fallback.videoUrl),
     externalUrl: normalizeUrl(value.externalUrl) || normalizeUrl(fallback.externalUrl),
     placement: normalizePlacement(value.placement, fallback.placement || "list"),
@@ -272,6 +277,16 @@ function normalizeArticle(value = {}, fallback = {}, index = 0) {
   };
   if (!article.title && !article.subtitle && !article.imageUrl && !article.videoUrl && !article.body) return null;
   return article;
+}
+
+function normalizeArticleImages(value, fallback = []) {
+  const source = Array.isArray(value) ? value : fallback;
+  return source
+    .map((item) => ({
+      imageUrl: normalizeUrl(item?.imageUrl),
+      caption: cleanText(item?.caption, ""),
+    }))
+    .filter((item) => item.imageUrl);
 }
 
 function normalizeArticles(value, fallback = []) {

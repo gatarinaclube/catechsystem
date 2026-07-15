@@ -57,7 +57,7 @@
                 <% if (mainArticle.videoUrl) { %>
                   <iframe src="<%= mainArticle.videoUrl %>" title="<%= mainArticle.title || 'Vídeo Gatofilia' %>" loading="lazy" allowfullscreen></iframe>
                 <% } else if (mainArticle.imageUrl) { %>
-                  <img src="<%= mainArticle.imageUrl %>" alt="<%= mainArticle.title || 'Matéria Gatofilia' %>" width="900" height="560" loading="lazy" decoding="async" />
+                  <img src="<%= mainArticle.imageUrl %>" alt="<%= mainArticle.title || 'Matéria Gatofilia' %>" width="900" height="560" loading="lazy" decoding="async" style="object-fit: <%= mainArticle.imageFit === 'contain' ? 'contain' : 'cover' %>; object-position: <%= mainArticle.imagePositionX ?? 50 %>% <%= mainArticle.imagePositionY ?? 50 %>%; --article-image-scale: <%= Number(mainArticle.imageScale || 100) / 100 %>;" />
                 <% } else { %>
                   <div class="gatofilia-news-placeholder">Destaque</div>
                 <% } %>
@@ -81,7 +81,7 @@
             <a href="<%= articleUrl(article) %>" <%= article.externalUrl ? 'target="_blank" rel="noopener"' : '' %>>
               <div class="gatofilia-news-media small">
                 <% if (article.imageUrl) { %>
-                  <img src="<%= article.imageUrl %>" alt="<%= article.title %>" width="520" height="310" loading="lazy" decoding="async" />
+                  <img src="<%= article.imageUrl %>" alt="<%= article.title %>" width="520" height="310" loading="lazy" decoding="async" style="object-fit: <%= article.imageFit === 'contain' ? 'contain' : 'cover' %>; object-position: <%= article.imagePositionX ?? 50 %>% <%= article.imagePositionY ?? 50 %>%; --article-image-scale: <%= Number(article.imageScale || 100) / 100 %>;" />
                 <% } else { %>
                   <div class="gatofilia-news-placeholder">Notícia</div>
                 <% } %>
@@ -114,7 +114,7 @@
             <article class="gatofilia-news-row">
               <a class="gatofilia-news-image" href="<%= articleUrl(article) %>" <%= article.externalUrl ? 'target="_blank" rel="noopener"' : '' %>>
                 <% if (article.imageUrl) { %>
-                  <img src="<%= article.imageUrl %>" alt="<%= article.title || 'Matéria Gatofilia' %>" width="680" height="420" loading="lazy" decoding="async" />
+                  <img src="<%= article.imageUrl %>" alt="<%= article.title || 'Matéria Gatofilia' %>" width="680" height="420" loading="lazy" decoding="async" style="object-fit: <%= article.imageFit === 'contain' ? 'contain' : 'cover' %>; object-position: <%= article.imagePositionX ?? 50 %>% <%= article.imagePositionY ?? 50 %>%; --article-image-scale: <%= Number(article.imageScale || 100) / 100 %>;" />
                 <% } else { %>
                   <div class="gatofilia-news-placeholder">Matéria</div>
                 <% } %>

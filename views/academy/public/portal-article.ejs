@@ -6,7 +6,10 @@
     <%- include("../partials/seo", { seo, pageTitle }) %>
     <link rel="stylesheet" href="/css/academy.css" />
   </head>
-  <body class="gatofilia-public gatofilia-portal">
+  <body
+    class="gatofilia-public gatofilia-portal title-<%= settings.portalTitleSize || 'medium' %>"
+    style="--portal-font: '<%= settings.portalFontFamily || 'Inter' %>'; --portal-text: <%= settings.portalTextColor || '#1f2933' %>; --portal-heading: <%= settings.portalHeadingColor || '#171717' %>; --portal-accent: <%= settings.portalAccentColor || '#a97824' %>; --portal-heading-weight: <%= settings.portalHeadingWeight || '900' %>; --portal-heading-style: <%= settings.portalHeadingItalic ? 'italic' : 'normal' %>;"
+  >
     <header class="gatofilia-portal-header">
       <a class="gatofilia-portal-logo" href="/" aria-label="Gatofilia">
         <img src="<%= settings.portalLogoUrl || '/uploads/academy/gatofilia-main-logo-360.png' %>" alt="Gatofilia" width="360" height="180" decoding="async" />
@@ -30,14 +33,40 @@
           <div class="gatofilia-article-media"><iframe src="<%= article.videoUrl %>" title="<%= article.title %>" loading="lazy" allowfullscreen></iframe></div>
         <% } else if (article.imageUrl) { %>
           <figure class="gatofilia-article-media">
-            <img src="<%= article.imageUrl %>" alt="<%= article.title %>" width="1200" height="760" loading="eager" decoding="async" />
+            <img src="<%= article.imageUrl %>" alt="<%= article.title %>" width="1200" height="760" loading="eager" decoding="async" style="object-fit: <%= article.imageFit === 'contain' ? 'contain' : 'cover' %>; object-position: <%= article.imagePositionX ?? 50 %>% <%= article.imagePositionY ?? 50 %>%; --article-image-scale: <%= Number(article.imageScale || 100) / 100 %>;" />
           </figure>
         <% } %>
         <div class="gatofilia-article-body">
+          <%
+            function renderArticleText(paragraph) {
+              return String(paragraph || '')
+                .trim()
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br />');
+            }
+          %>
           <% String(article.body || '').split(/\n{2,}/).forEach(function(paragraph) { %>
-            <% if (paragraph.trim()) { %><p><%= paragraph.trim() %></p><% } %>
+            <% if (paragraph.trim()) { %><p><%- renderArticleText(paragraph) %></p><% } %>
           <% }) %>
         </div>
+        <% const bodyImages = Array.isArray(article.bodyImages) ? article.bodyImages : []; %>
+        <% if (bodyImages.length) { %>
+          <div class="gatofilia-article-inline-images">
+            <% bodyImages.forEach(function(image) { %>
+              <figure>
+                <img src="<%= image.imageUrl %>" alt="<%= image.caption || article.title %>" loading="lazy" decoding="async" />
+                <% if (image.caption) { %>
+                  <figcaption><%= image.caption %></figcaption>
+                <% } %>
+              </figure>
+            <% }) %>
+          </div>
+        <% } %>
       </article>
     </main>
   </body>
