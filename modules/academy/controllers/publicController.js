@@ -126,6 +126,9 @@ async function notifyGatofiliaLead(lead) {
 module.exports = (prisma) => ({
   portal: async (req, res) => {
     const publicSettings = await getAcademyPublicSettings(prisma);
+    const portalSeoBanner = Array.isArray(publicSettings.portalBannerA)
+      ? publicSettings.portalBannerA.find((banner) => banner?.imageUrl)?.imageUrl
+      : publicSettings.portalBannerA?.imageUrl;
     renderPublic(req, res, "portal", {
       settings: publicSettings,
       articleUrl,
@@ -133,7 +136,7 @@ module.exports = (prisma) => ({
         path: "/",
         title: "Gatofilia | Felinocultura, Notícias e Jornada para Criadores",
         description: "Portal Gatofilia com notícias, matérias, conteúdo para criadores de gatos, felinocultura, gestão de gatil, raças felinas e a Jornada Gatofilia.",
-        image: publicSettings.portalBannerA?.imageUrl || "/uploads/academy/gatofilia-main-logo-620.png",
+        image: portalSeoBanner || "/uploads/academy/gatofilia-main-logo-620.png",
         keywords: [
           "gatofilia",
           "felinocultura",

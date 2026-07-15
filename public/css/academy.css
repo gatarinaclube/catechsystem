@@ -3121,10 +3121,6 @@ body {
   text-transform: uppercase;
 }
 
-.gatofilia-ad-a {
-  aspect-ratio: 16 / 3;
-}
-
 .gatofilia-featured-news {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
@@ -3293,12 +3289,17 @@ body {
   margin-top: 28px;
 }
 
-.gatofilia-ad-grid-b {
+.gatofilia-ad-grid-a {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.gatofilia-ad-grid-b {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.gatofilia-ad-a,
 .gatofilia-ad-b {
-  aspect-ratio: 2.45 / 1;
+  aspect-ratio: 45 / 13;
 }
 
 .gatofilia-news-layout {
@@ -3402,12 +3403,12 @@ body {
 }
 
 .gatofilia-ad-grid-c {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-bottom: 42px;
 }
 
 .gatofilia-ad-c {
-  aspect-ratio: 3 / 1;
+  aspect-ratio: 42 / 13;
 }
 
 .gatofilia-portal-footer {
@@ -3530,35 +3531,47 @@ body {
     gap: 10px;
   }
 
-  .gatofilia-ad-grid-b {
+  .gatofilia-ad-grid-a {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .gatofilia-ad-grid-c {
+  .gatofilia-ad-grid-b {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .gatofilia-ad-grid-c {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .gatofilia-news-row {
     gap: 14px;
   }
 
+  .gatofilia-ad-a,
   .gatofilia-ad-b,
   .gatofilia-ad-c {
-    min-height: 58px;
     border-radius: 12px;
   }
 
+  .gatofilia-ad-a {
+    min-height: 54px;
+    aspect-ratio: 45 / 13;
+  }
+
   .gatofilia-ad-b {
-    aspect-ratio: 2.45 / 1;
+    min-height: 42px;
+    aspect-ratio: 45 / 13;
   }
 
   .gatofilia-ad-c {
-    aspect-ratio: 3 / 1;
+    min-height: 32px;
+    aspect-ratio: 42 / 13;
   }
 
+  .gatofilia-ad-a > div,
   .gatofilia-ad-b > div,
   .gatofilia-ad-c > div {
-    font-size: clamp(10px, 3vw, 18px);
+    font-size: clamp(8px, 2.2vw, 16px);
     letter-spacing: 0.08em;
   }
 

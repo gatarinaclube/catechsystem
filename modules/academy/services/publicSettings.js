@@ -21,11 +21,10 @@ const DEFAULT_ACADEMY_PUBLIC_SETTINGS = {
   portalHeadingWeight: "900",
   portalHeadingItalic: false,
   portalCarouselSeconds: 7,
-  portalBannerA: {
-    imageUrl: "",
-    linkUrl: "",
-    altText: "Banner A",
-  },
+  portalBannerA: [
+    { imageUrl: "", linkUrl: "", altText: "Banner A" },
+    { imageUrl: "", linkUrl: "", altText: "Banner A" },
+  ],
   portalFeatured: [
     {
       slug: "gatofilia-jornada",
@@ -64,6 +63,7 @@ const DEFAULT_ACADEMY_PUBLIC_SETTINGS = {
   portalBannerB: [
     { imageUrl: "", linkUrl: "", altText: "Banner B" },
     { imageUrl: "", linkUrl: "", altText: "Banner B" },
+    { imageUrl: "", linkUrl: "", altText: "Banner B" },
   ],
   portalNewsRows: [
     {
@@ -86,6 +86,7 @@ const DEFAULT_ACADEMY_PUBLIC_SETTINGS = {
     },
   ],
   portalBannerC: [
+    { imageUrl: "", linkUrl: "", altText: "Banner C" },
     { imageUrl: "", linkUrl: "", altText: "Banner C" },
     { imageUrl: "", linkUrl: "", altText: "Banner C" },
     { imageUrl: "", linkUrl: "", altText: "Banner C" },
@@ -145,14 +146,14 @@ function normalizeSettings(value = {}) {
     portalHeadingWeight: normalizeHeadingWeight(value.portalHeadingWeight),
     portalHeadingItalic: value.portalHeadingItalic === true,
     portalCarouselSeconds: normalizeCarouselSeconds(value.portalCarouselSeconds),
-    portalBannerA: normalizeBanner(value.portalBannerA, DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalBannerA),
+    portalBannerA: normalizePortalBannerA(value.portalBannerA),
     portalFeatured: normalizeArticles(value.portalFeatured, DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalFeatured),
-    portalBannerB: normalizeBanners(value.portalBannerB, DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalBannerB, 2),
+    portalBannerB: normalizeBanners(value.portalBannerB, DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalBannerB, 3),
     portalNewsRows: normalizeNewsRows(value.portalNewsRows, DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalNewsRows),
     portalBannerC: normalizeBanners(
       value.portalBannerC,
       DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalBannerC,
-      Math.max(3, Array.isArray(value.portalBannerC) ? value.portalBannerC.length : DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalBannerC.length),
+      Math.max(4, Array.isArray(value.portalBannerC) ? value.portalBannerC.length : DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalBannerC.length),
     ),
     presentationGuests: normalizeGuests(value.presentationGuests),
   };
@@ -225,6 +226,13 @@ function normalizeBanner(value = {}, fallback = {}) {
 function normalizeBanners(value, fallback, size) {
   const source = Array.isArray(value) ? value : fallback;
   return Array.from({ length: size }, (_, index) => normalizeBanner(source[index] || {}, fallback[index] || {}));
+}
+
+function normalizePortalBannerA(value) {
+  const fallback = DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalBannerA;
+  if (Array.isArray(value)) return normalizeBanners(value, fallback, 2);
+  if (value && typeof value === "object") return normalizeBanners([value, {}], fallback, 2);
+  return normalizeBanners(fallback, fallback, 2);
 }
 
 function normalizeArticle(value = {}, fallback = {}, index = 0) {

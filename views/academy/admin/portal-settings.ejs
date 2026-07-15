@@ -121,24 +121,35 @@
           <section class="rounded-[2rem] bg-white p-6 shadow-sm">
             <p class="text-xs font-black uppercase tracking-[0.22em] text-[#b88b38]">Banners</p>
             <h2 class="mt-2 text-2xl font-black">Patrocinadores</h2>
-            <p class="mt-2 text-sm text-slate-500">Tamanhos sugeridos: Banner A 1920x360px (16:3), Banner B 900x260px, Banner C 580x180px.</p>
+            <p class="mt-2 text-sm text-slate-500">
+              Tamanhos sugeridos: Banner A 900x260px (2 colunas), Banner B 580x180px (3 colunas), Banner C 420x130px (4 colunas).
+            </p>
 
             <div class="mt-5 grid gap-4">
-              <% const bannerA = settings.portalBannerA || {}; %>
-              <details open class="rounded-3xl border border-slate-200 p-4">
-                <summary class="cursor-pointer text-lg font-black">Banner A</summary>
-                <div class="mt-4 grid gap-3">
-                  <input type="hidden" name="portalBannerAImageUrl" value="<%= bannerA.imageUrl || '' %>" />
-                  <% if (bannerA.imageUrl) { %><img src="<%= bannerA.imageUrl %>" alt="Banner A atual" class="admin-upload-live-preview" /><% } %>
-                  <input type="file" name="portalBannerA" accept="image/*" class="rounded-2xl border border-slate-200 bg-white p-3" />
-                  <input name="portalBannerALinkUrl" value="<%= bannerA.linkUrl || '' %>" placeholder="Link ao clicar" class="rounded-2xl border border-slate-200 bg-white p-3" />
-                  <input name="portalBannerAAltText" value="<%= bannerA.altText || 'Banner A' %>" placeholder="Texto alternativo" class="rounded-2xl border border-slate-200 bg-white p-3" />
+              <div>
+                <h3 class="mb-3 text-lg font-black">Banners A</h3>
+                <div class="grid gap-4 md:grid-cols-2">
+                  <% const bannersA = Array.isArray(settings.portalBannerA) ? settings.portalBannerA : [settings.portalBannerA || {}, {}]; %>
+                  <% [0,1].forEach(function(index) { const banner = bannersA[index] || {}; %>
+                    <details open class="rounded-3xl border border-slate-200 p-4">
+                      <summary class="cursor-pointer text-lg font-black">Banner A <%= index + 1 %></summary>
+                      <div class="mt-4 grid gap-3">
+                        <input type="hidden" name="portalBannerAImageUrl" value="<%= banner.imageUrl || '' %>" />
+                        <% if (banner.imageUrl) { %><img src="<%= banner.imageUrl %>" alt="Banner A atual" class="admin-upload-live-preview" /><% } %>
+                        <input type="file" name="portalBannerA<%= index %>" accept="image/*" class="rounded-2xl border border-slate-200 bg-white p-3" />
+                        <input name="portalBannerALinkUrl" value="<%= banner.linkUrl || '' %>" placeholder="Link ao clicar" class="rounded-2xl border border-slate-200 bg-white p-3" />
+                        <input name="portalBannerAAltText" value="<%= banner.altText || 'Banner A' %>" placeholder="Texto alternativo" class="rounded-2xl border border-slate-200 bg-white p-3" />
+                      </div>
+                    </details>
+                  <% }) %>
                 </div>
-              </details>
+              </div>
 
-              <div class="grid gap-4 md:grid-cols-2">
+              <div>
+                <h3 class="mb-3 text-lg font-black">Banners B</h3>
+                <div class="grid gap-4 md:grid-cols-3">
                 <% const bannersB = settings.portalBannerB || []; %>
-                <% [0,1].forEach(function(index) { const banner = bannersB[index] || {}; %>
+                <% [0,1,2].forEach(function(index) { const banner = bannersB[index] || {}; %>
                   <details class="rounded-3xl border border-slate-200 p-4">
                     <summary class="cursor-pointer text-lg font-black">Banner B <%= index + 1 %></summary>
                     <div class="mt-4 grid gap-3">
@@ -150,6 +161,7 @@
                     </div>
                   </details>
                 <% }) %>
+                </div>
               </div>
 
               <div>
@@ -157,8 +169,8 @@
                   <h3 class="text-lg font-black">Banners C</h3>
                   <button type="button" data-add-banner-c class="rounded-2xl border border-[#31513d] px-4 py-2 text-sm font-black text-[#31513d]">+ Banner C</button>
                 </div>
-                <div class="grid gap-4 md:grid-cols-3" data-banner-c-list>
-                <% const bannersC = settings.portalBannerC && settings.portalBannerC.length ? settings.portalBannerC : [{}, {}, {}]; %>
+                <div class="grid gap-4 md:grid-cols-4" data-banner-c-list>
+                <% const bannersC = settings.portalBannerC && settings.portalBannerC.length ? settings.portalBannerC : [{}, {}, {}, {}]; %>
                 <% bannersC.forEach(function(banner, index) { %>
                   <details class="rounded-3xl border border-slate-200 p-4" data-banner-c-card>
                     <summary class="cursor-pointer text-lg font-black">Banner C <%= index + 1 %></summary>
@@ -278,11 +290,16 @@
               <span class="text-xs font-black uppercase tracking-widest text-slate-400">News</span>
             </div>
 
-            <% if (settings.portalBannerA && settings.portalBannerA.imageUrl) { %>
-              <img src="<%= settings.portalBannerA.imageUrl %>" alt="Banner A" class="h-24 w-full object-cover" />
-            <% } else { %>
-              <div class="grid h-24 place-items-center bg-[#f7f3ea] text-sm font-black text-slate-400">Banner A</div>
-            <% } %>
+            <div class="grid grid-cols-2 gap-2 p-3">
+              <% const previewBannersA = Array.isArray(settings.portalBannerA) ? settings.portalBannerA : [settings.portalBannerA || {}, {}]; %>
+              <% [0,1].forEach(function(index) { const banner = previewBannersA[index] || {}; %>
+                <% if (banner.imageUrl) { %>
+                  <img src="<%= banner.imageUrl %>" alt="Banner A" class="h-20 w-full rounded-xl object-cover" />
+                <% } else { %>
+                  <div class="grid h-20 place-items-center rounded-xl bg-[#f7f3ea] text-xs font-black text-slate-400">Banner A</div>
+                <% } %>
+              <% }) %>
+            </div>
 
             <div class="grid gap-3 p-4 md:grid-cols-[1.4fr_1fr]">
               <% const previewFeatured = settings.portalFeatured || []; %>
@@ -310,12 +327,12 @@
               </div>
             </div>
 
-            <div class="grid gap-3 border-t border-slate-100 p-4 md:grid-cols-2">
-              <% (settings.portalBannerB || [{},{}]).slice(0,2).forEach(function(banner, index) { %>
+            <div class="grid grid-cols-3 gap-2 border-t border-slate-100 p-4">
+              <% (settings.portalBannerB || [{},{},{}]).slice(0,3).forEach(function(banner, index) { %>
                 <% if (banner.imageUrl) { %>
-                  <img src="<%= banner.imageUrl %>" alt="Banner B" class="h-16 w-full rounded-xl object-cover" />
+                  <img src="<%= banner.imageUrl %>" alt="Banner B" class="h-12 w-full rounded-xl object-cover" />
                 <% } else { %>
-                  <div class="grid h-16 place-items-center rounded-xl bg-[#f7f3ea] text-xs font-black text-slate-400">Banner B <%= index + 1 %></div>
+                  <div class="grid h-12 place-items-center rounded-xl bg-[#f7f3ea] text-[10px] font-black text-slate-400">B <%= index + 1 %></div>
                 <% } %>
               <% }) %>
             </div>

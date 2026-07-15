@@ -99,7 +99,7 @@ function portalArticleFromBody(body, files, prefix, index, fileField) {
 function portalSettingsFromBody(body, files) {
   const featuredCount = Math.max(1, formArray(body.portalFeaturedTitle).length);
   const newsCount = Math.max(1, formArray(body.portalNewsLeftTitle).length);
-  const bannerCCount = Math.max(3, formArray(body.portalBannerCImageUrl).length, formArray(body.portalBannerCLinkUrl).length);
+  const bannerCCount = Math.max(4, formArray(body.portalBannerCImageUrl).length, formArray(body.portalBannerCLinkUrl).length);
   return {
     portalLogoUrl: fileUrlAt(files, "portalLogo") || body.portalLogoUrl,
     portalFontFamily: body.portalFontFamily,
@@ -110,13 +110,13 @@ function portalSettingsFromBody(body, files) {
     portalHeadingWeight: body.portalHeadingWeight,
     portalHeadingItalic: toBool(body.portalHeadingItalic),
     portalCarouselSeconds: body.portalCarouselSeconds,
-    portalBannerA: {
-      imageUrl: fileUrlAt(files, "portalBannerA") || body.portalBannerAImageUrl,
-      linkUrl: body.portalBannerALinkUrl,
-      altText: body.portalBannerAAltText,
-    },
+    portalBannerA: Array.from({ length: 2 }, (_, index) => ({
+      imageUrl: fileUrlAt(files, `portalBannerA${index}`) || arrayAt(body.portalBannerAImageUrl, index),
+      linkUrl: arrayAt(body.portalBannerALinkUrl, index),
+      altText: arrayAt(body.portalBannerAAltText, index, "Banner A"),
+    })),
     portalFeatured: Array.from({ length: featuredCount }, (_, index) => portalArticleFromBody(body, files, "portalFeatured", index, `portalFeaturedImage${index}`)),
-    portalBannerB: Array.from({ length: 2 }, (_, index) => ({
+    portalBannerB: Array.from({ length: 3 }, (_, index) => ({
       imageUrl: fileUrlAt(files, `portalBannerB${index}`) || arrayAt(body.portalBannerBImageUrl, index),
       linkUrl: arrayAt(body.portalBannerBLinkUrl, index),
       altText: arrayAt(body.portalBannerBAltText, index, "Banner B"),
