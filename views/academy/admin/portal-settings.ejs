@@ -8,11 +8,66 @@
     <style>
       .admin-upload-live-preview {
         margin-top: 0.75rem;
+        display: block;
         width: 100%;
-        max-height: 180px;
+        aspect-ratio: 45 / 13;
+        max-height: none;
         object-fit: cover;
+        object-position: 50% 50%;
+        transform: scale(var(--banner-scale, 1));
         border-radius: 1rem;
         border: 1px solid rgba(49, 81, 61, 0.18);
+        background: #0f172a;
+      }
+      .admin-upload-preview-frame {
+        margin-top: 0.75rem;
+        width: 100%;
+        aspect-ratio: 45 / 13;
+        overflow: hidden;
+        border-radius: 1rem;
+        border: 1px solid rgba(49, 81, 61, 0.18);
+        background: #0f172a;
+      }
+      .admin-upload-preview-frame.banner-c-preview-frame {
+        aspect-ratio: 42 / 13;
+      }
+      .admin-upload-preview-frame .admin-upload-live-preview {
+        margin-top: 0;
+        height: 100%;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+      }
+      .admin-upload-live-preview.banner-c-preview {
+        aspect-ratio: 42 / 13;
+      }
+      .banner-position-controls {
+        overflow: hidden;
+      }
+      .banner-position-controls input[type="range"] {
+        width: 100%;
+      }
+      .banner-control-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+      }
+      .banner-control-value {
+        border-radius: 999px;
+        background: #fff;
+        padding: 0.15rem 0.55rem;
+        color: #31513d;
+        font-size: 0.72rem;
+        font-weight: 900;
+      }
+      [data-banner-editor],
+      [data-banner-editor] input {
+        min-width: 0;
+      }
+      [data-banner-editor] input[type="file"] {
+        max-width: 100%;
+        font-size: 0.82rem;
       }
       .portal-preview {
         color: <%= settings.portalTextColor || '#1f2933' %>;
@@ -131,21 +186,25 @@
                 <div class="grid gap-4 md:grid-cols-2">
                   <% const bannersA = Array.isArray(settings.portalBannerA) ? settings.portalBannerA : [settings.portalBannerA || {}, {}]; %>
                   <% [0,1].forEach(function(index) { const banner = bannersA[index] || {}; %>
-                    <details open class="rounded-3xl border border-slate-200 p-4">
+                    <details open class="rounded-3xl border border-slate-200 p-4" data-banner-editor>
                       <summary class="cursor-pointer text-lg font-black">Banner A <%= index + 1 %></summary>
                       <div class="mt-4 grid gap-3">
                         <input type="hidden" name="portalBannerAImageUrl" value="<%= banner.imageUrl || '' %>" />
-                        <% if (banner.imageUrl) { %><img src="<%= banner.imageUrl %>" alt="Banner A atual" class="admin-upload-live-preview" style="object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%;" data-position-preview /><% } %>
+                        <% if (banner.imageUrl) { %><div class="admin-upload-preview-frame"><img src="<%= banner.imageUrl %>" alt="Banner A atual" class="admin-upload-live-preview" style="object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%; --banner-scale: <%= Number(banner.scale || 100) / 100 %>;" data-position-preview /></div><% } %>
                         <input type="file" name="portalBannerA<%= index %>" accept="image/*" class="rounded-2xl border border-slate-200 bg-white p-3" />
-                        <div class="grid gap-3 rounded-2xl bg-slate-50 p-3">
+                        <div class="banner-position-controls grid gap-3 rounded-2xl bg-slate-50 p-3">
                           <p class="text-xs font-black uppercase tracking-widest text-slate-400">Enquadramento da imagem</p>
                           <label class="grid gap-2 text-sm font-bold text-slate-600">
-                            Horizontal
+                            <span class="banner-control-heading">Horizontal <span class="banner-control-value" data-position-x-label><%= banner.positionX ?? 50 %>%</span></span>
                             <input type="range" min="0" max="100" name="portalBannerAPositionX" value="<%= banner.positionX ?? 50 %>" data-position-x class="accent-[#31513d]" />
                           </label>
                           <label class="grid gap-2 text-sm font-bold text-slate-600">
-                            Vertical
+                            <span class="banner-control-heading">Vertical <span class="banner-control-value" data-position-y-label><%= banner.positionY ?? 50 %>%</span></span>
                             <input type="range" min="0" max="100" name="portalBannerAPositionY" value="<%= banner.positionY ?? 50 %>" data-position-y class="accent-[#31513d]" />
+                          </label>
+                          <label class="grid gap-2 text-sm font-bold text-slate-600">
+                            <span class="banner-control-heading">Escala <span class="banner-control-value" data-scale-label><%= banner.scale ?? 100 %>%</span></span>
+                            <input type="range" min="100" max="200" name="portalBannerAScale" value="<%= banner.scale ?? 100 %>" data-position-scale class="accent-[#31513d]" />
                           </label>
                         </div>
                         <input name="portalBannerALinkUrl" value="<%= banner.linkUrl || '' %>" placeholder="Link ao clicar" class="rounded-2xl border border-slate-200 bg-white p-3" />
@@ -161,21 +220,25 @@
                 <div class="grid gap-4 md:grid-cols-3">
                 <% const bannersB = settings.portalBannerB || []; %>
                 <% [0,1,2].forEach(function(index) { const banner = bannersB[index] || {}; %>
-                  <details class="rounded-3xl border border-slate-200 p-4">
+                  <details class="rounded-3xl border border-slate-200 p-4" data-banner-editor>
                     <summary class="cursor-pointer text-lg font-black">Banner B <%= index + 1 %></summary>
                     <div class="mt-4 grid gap-3">
                       <input type="hidden" name="portalBannerBImageUrl" value="<%= banner.imageUrl || '' %>" />
-                      <% if (banner.imageUrl) { %><img src="<%= banner.imageUrl %>" alt="Banner B atual" class="admin-upload-live-preview" style="object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%;" data-position-preview /><% } %>
+                      <% if (banner.imageUrl) { %><div class="admin-upload-preview-frame"><img src="<%= banner.imageUrl %>" alt="Banner B atual" class="admin-upload-live-preview" style="object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%; --banner-scale: <%= Number(banner.scale || 100) / 100 %>;" data-position-preview /></div><% } %>
                       <input type="file" name="portalBannerB<%= index %>" accept="image/*" class="rounded-2xl border border-slate-200 bg-white p-3" />
-                      <div class="grid gap-3 rounded-2xl bg-slate-50 p-3">
+                      <div class="banner-position-controls grid gap-3 rounded-2xl bg-slate-50 p-3">
                         <p class="text-xs font-black uppercase tracking-widest text-slate-400">Enquadramento da imagem</p>
                         <label class="grid gap-2 text-sm font-bold text-slate-600">
-                          Horizontal
+                          <span class="banner-control-heading">Horizontal <span class="banner-control-value" data-position-x-label><%= banner.positionX ?? 50 %>%</span></span>
                           <input type="range" min="0" max="100" name="portalBannerBPositionX" value="<%= banner.positionX ?? 50 %>" data-position-x class="accent-[#31513d]" />
                         </label>
                         <label class="grid gap-2 text-sm font-bold text-slate-600">
-                          Vertical
+                          <span class="banner-control-heading">Vertical <span class="banner-control-value" data-position-y-label><%= banner.positionY ?? 50 %>%</span></span>
                           <input type="range" min="0" max="100" name="portalBannerBPositionY" value="<%= banner.positionY ?? 50 %>" data-position-y class="accent-[#31513d]" />
+                        </label>
+                        <label class="grid gap-2 text-sm font-bold text-slate-600">
+                          <span class="banner-control-heading">Escala <span class="banner-control-value" data-scale-label><%= banner.scale ?? 100 %>%</span></span>
+                          <input type="range" min="100" max="200" name="portalBannerBScale" value="<%= banner.scale ?? 100 %>" data-position-scale class="accent-[#31513d]" />
                         </label>
                       </div>
                       <input name="portalBannerBLinkUrl" value="<%= banner.linkUrl || '' %>" placeholder="Link ao clicar" class="rounded-2xl border border-slate-200 bg-white p-3" />
@@ -194,21 +257,25 @@
                 <div class="grid gap-4 md:grid-cols-4" data-banner-c-list>
                 <% const bannersC = settings.portalBannerC && settings.portalBannerC.length ? settings.portalBannerC : [{}, {}, {}, {}]; %>
                 <% bannersC.forEach(function(banner, index) { %>
-                  <details class="rounded-3xl border border-slate-200 p-4" data-banner-c-card>
+                  <details class="rounded-3xl border border-slate-200 p-4" data-banner-c-card data-banner-editor>
                     <summary class="cursor-pointer text-lg font-black">Banner C <%= index + 1 %></summary>
                     <div class="mt-4 grid gap-3">
                       <input type="hidden" name="portalBannerCImageUrl" value="<%= banner.imageUrl || '' %>" />
-                      <% if (banner.imageUrl) { %><img src="<%= banner.imageUrl %>" alt="Banner C atual" class="admin-upload-live-preview" style="object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%;" data-position-preview /><% } %>
+                      <% if (banner.imageUrl) { %><div class="admin-upload-preview-frame banner-c-preview-frame"><img src="<%= banner.imageUrl %>" alt="Banner C atual" class="admin-upload-live-preview banner-c-preview" style="object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%; --banner-scale: <%= Number(banner.scale || 100) / 100 %>;" data-position-preview /></div><% } %>
                       <input type="file" name="portalBannerC<%= index %>" accept="image/*" class="rounded-2xl border border-slate-200 bg-white p-3" />
-                      <div class="grid gap-3 rounded-2xl bg-slate-50 p-3">
+                      <div class="banner-position-controls grid gap-3 rounded-2xl bg-slate-50 p-3">
                         <p class="text-xs font-black uppercase tracking-widest text-slate-400">Enquadramento da imagem</p>
                         <label class="grid gap-2 text-sm font-bold text-slate-600">
-                          Horizontal
+                          <span class="banner-control-heading">Horizontal <span class="banner-control-value" data-position-x-label><%= banner.positionX ?? 50 %>%</span></span>
                           <input type="range" min="0" max="100" name="portalBannerCPositionX" value="<%= banner.positionX ?? 50 %>" data-position-x class="accent-[#31513d]" />
                         </label>
                         <label class="grid gap-2 text-sm font-bold text-slate-600">
-                          Vertical
+                          <span class="banner-control-heading">Vertical <span class="banner-control-value" data-position-y-label><%= banner.positionY ?? 50 %>%</span></span>
                           <input type="range" min="0" max="100" name="portalBannerCPositionY" value="<%= banner.positionY ?? 50 %>" data-position-y class="accent-[#31513d]" />
+                        </label>
+                        <label class="grid gap-2 text-sm font-bold text-slate-600">
+                          <span class="banner-control-heading">Escala <span class="banner-control-value" data-scale-label><%= banner.scale ?? 100 %>%</span></span>
+                          <input type="range" min="100" max="200" name="portalBannerCScale" value="<%= banner.scale ?? 100 %>" data-position-scale class="accent-[#31513d]" />
                         </label>
                       </div>
                       <input name="portalBannerCLinkUrl" value="<%= banner.linkUrl || '' %>" placeholder="Link ao clicar" class="rounded-2xl border border-slate-200 bg-white p-3" />
@@ -327,7 +394,7 @@
               <% const previewBannersA = Array.isArray(settings.portalBannerA) ? settings.portalBannerA : [settings.portalBannerA || {}, {}]; %>
               <% [0,1].forEach(function(index) { const banner = previewBannersA[index] || {}; %>
                 <% if (banner.imageUrl) { %>
-                  <img src="<%= banner.imageUrl %>" alt="Banner A" class="h-20 w-full rounded-xl object-cover" style="object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%;" />
+                  <img src="<%= banner.imageUrl %>" alt="Banner A" class="h-20 w-full rounded-xl object-cover" style="object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%; transform: scale(<%= Number(banner.scale || 100) / 100 %>);" />
                 <% } else { %>
                   <div class="grid h-20 place-items-center rounded-xl bg-[#f7f3ea] text-xs font-black text-slate-400">Banner A</div>
                 <% } %>
@@ -363,7 +430,7 @@
             <div class="grid grid-cols-3 gap-2 border-t border-slate-100 p-4">
               <% (settings.portalBannerB || [{},{},{}]).slice(0,3).forEach(function(banner, index) { %>
                 <% if (banner.imageUrl) { %>
-                  <img src="<%= banner.imageUrl %>" alt="Banner B" class="h-12 w-full rounded-xl object-cover" style="object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%;" />
+                  <img src="<%= banner.imageUrl %>" alt="Banner B" class="h-12 w-full rounded-xl object-cover" style="object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%; transform: scale(<%= Number(banner.scale || 100) / 100 %>);" />
                 <% } else { %>
                   <div class="grid h-12 place-items-center rounded-xl bg-[#f7f3ea] text-[10px] font-black text-slate-400">B <%= index + 1 %></div>
                 <% } %>
@@ -390,6 +457,8 @@
     </main>
 
     <script>
+      const findBannerEditor = (element) => element?.closest("[data-banner-editor]") || element?.closest("details");
+
       const attachImagePreview = (scope = document) => {
         scope.querySelectorAll('input[type="file"][accept*="image"]').forEach((input) => {
           if (input.dataset.previewReady === "true") return;
@@ -398,16 +467,31 @@
             const file = input.files && input.files[0];
             if (!file) return;
             const url = URL.createObjectURL(file);
-            let preview = input.parentElement?.querySelector(".admin-upload-live-preview");
+            const bannerEditor = input.closest("[data-banner-editor]");
+            const editor = bannerEditor || findBannerEditor(input);
+            let preview = bannerEditor?.querySelector("[data-position-preview]") || input.parentElement?.querySelector(".admin-upload-live-preview");
             if (!preview) {
               preview = document.createElement("img");
               preview.className = "admin-upload-live-preview";
+              if (input.name && input.name.startsWith("portalBannerC")) {
+                preview.classList.add("banner-c-preview");
+              }
               preview.alt = "Prévia da nova imagem selecionada";
-              preview.dataset.positionPreview = "true";
-              input.insertAdjacentElement("afterend", preview);
+              if (bannerEditor) {
+                const frame = document.createElement("div");
+                frame.className = "admin-upload-preview-frame";
+                if (input.name && input.name.startsWith("portalBannerC")) {
+                  frame.classList.add("banner-c-preview-frame");
+                }
+                preview.dataset.positionPreview = "true";
+                frame.appendChild(preview);
+                input.insertAdjacentElement("beforebegin", frame);
+              } else {
+                input.insertAdjacentElement("afterend", preview);
+              }
             }
-            applyPosition(input.parentElement);
             preview.src = url;
+            if (bannerEditor) applyPosition(editor || input.parentElement);
           });
         });
       };
@@ -417,13 +501,23 @@
         const preview = scope.querySelector("[data-position-preview]");
         const x = scope.querySelector("[data-position-x]")?.value || 50;
         const y = scope.querySelector("[data-position-y]")?.value || 50;
-        if (preview) preview.style.objectPosition = `${x}% ${y}%`;
+        const scale = scope.querySelector("[data-position-scale]")?.value || 100;
+        const xLabel = scope.querySelector("[data-position-x-label]");
+        const yLabel = scope.querySelector("[data-position-y-label]");
+        const scaleLabel = scope.querySelector("[data-scale-label]");
+        if (xLabel) xLabel.textContent = `${x}%`;
+        if (yLabel) yLabel.textContent = `${y}%`;
+        if (scaleLabel) scaleLabel.textContent = `${scale}%`;
+        if (preview) {
+          preview.style.objectPosition = `${x}% ${y}%`;
+          preview.style.setProperty("--banner-scale", String(Number(scale) / 100));
+        }
       };
 
       (() => {
         document.addEventListener("input", (event) => {
-          if (!event.target.matches("[data-position-x], [data-position-y]")) return;
-          applyPosition(event.target.closest(".grid.gap-3")?.parentElement || event.target.closest("details"));
+          if (!event.target.matches("[data-position-x], [data-position-y], [data-position-scale]")) return;
+          applyPosition(findBannerEditor(event.target));
         });
       })();
 
@@ -461,6 +555,7 @@
           clone.querySelectorAll("select").forEach((field) => {
             field.value = "list";
           });
+          clone.querySelectorAll(".admin-upload-preview-frame").forEach((frame) => frame.remove());
           clone.querySelectorAll("img").forEach((image) => image.remove());
           if ("open" in clone) clone.open = true;
           featuredList.appendChild(clone);
@@ -498,15 +593,17 @@
               return;
             }
             if (field.type === "range") {
-              field.value = "50";
+              field.value = field.matches("[data-position-scale]") ? "100" : "50";
               return;
             }
             field.value = field.name === "portalBannerCAltText" ? "Banner C" : "";
           });
+          clone.querySelectorAll(".admin-upload-preview-frame").forEach((frame) => frame.remove());
           clone.querySelectorAll("img").forEach((image) => image.remove());
           if ("open" in clone) clone.open = true;
           bannerCList.appendChild(clone);
           attachImagePreview(clone);
+          applyPosition(clone);
           refreshBannerC();
         });
 

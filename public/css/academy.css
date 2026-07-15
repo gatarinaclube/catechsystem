@@ -3107,6 +3107,8 @@ body {
 
 .gatofilia-ad img {
   object-fit: cover;
+  transform: scale(var(--banner-scale, 1));
+  transform-origin: center;
 }
 
 .gatofilia-ad > div {

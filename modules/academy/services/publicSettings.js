@@ -222,6 +222,7 @@ function normalizeBanner(value = {}, fallback = {}) {
     altText: cleanText(value.altText, fallback.altText || ""),
     positionX: normalizePercent(value.positionX, fallback.positionX ?? 50),
     positionY: normalizePercent(value.positionY, fallback.positionY ?? 50),
+    scale: normalizeScale(value.scale, fallback.scale ?? 100),
   };
 }
 
@@ -229,6 +230,12 @@ function normalizePercent(value, fallback = 50) {
   const number = Number(value);
   if (!Number.isFinite(number)) return fallback;
   return Math.min(100, Math.max(0, Math.round(number)));
+}
+
+function normalizeScale(value, fallback = 100) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.min(200, Math.max(100, Math.round(number)));
 }
 
 function normalizeBanners(value, fallback, size) {
