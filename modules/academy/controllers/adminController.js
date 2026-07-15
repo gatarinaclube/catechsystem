@@ -114,12 +114,16 @@ function portalSettingsFromBody(body, files) {
       imageUrl: fileUrlAt(files, `portalBannerA${index}`) || arrayAt(body.portalBannerAImageUrl, index),
       linkUrl: arrayAt(body.portalBannerALinkUrl, index),
       altText: arrayAt(body.portalBannerAAltText, index, "Banner A"),
+      positionX: arrayAt(body.portalBannerAPositionX, index, 50),
+      positionY: arrayAt(body.portalBannerAPositionY, index, 50),
     })),
     portalFeatured: Array.from({ length: featuredCount }, (_, index) => portalArticleFromBody(body, files, "portalFeatured", index, `portalFeaturedImage${index}`)),
     portalBannerB: Array.from({ length: 3 }, (_, index) => ({
       imageUrl: fileUrlAt(files, `portalBannerB${index}`) || arrayAt(body.portalBannerBImageUrl, index),
       linkUrl: arrayAt(body.portalBannerBLinkUrl, index),
       altText: arrayAt(body.portalBannerBAltText, index, "Banner B"),
+      positionX: arrayAt(body.portalBannerBPositionX, index, 50),
+      positionY: arrayAt(body.portalBannerBPositionY, index, 50),
     })),
     portalNewsRows: Array.from({ length: newsCount }, (_, index) => ({
       left: portalArticleFromBody(body, files, "portalNewsLeft", index, `portalNewsImage${index}`),
@@ -133,6 +137,8 @@ function portalSettingsFromBody(body, files) {
       imageUrl: fileUrlAt(files, `portalBannerC${index}`) || arrayAt(body.portalBannerCImageUrl, index),
       linkUrl: arrayAt(body.portalBannerCLinkUrl, index),
       altText: arrayAt(body.portalBannerCAltText, index, "Banner C"),
+      positionX: arrayAt(body.portalBannerCPositionX, index, 50),
+      positionY: arrayAt(body.portalBannerCPositionY, index, 50),
     })),
   };
 }

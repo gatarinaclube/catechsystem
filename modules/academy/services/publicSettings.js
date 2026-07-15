@@ -220,7 +220,15 @@ function normalizeBanner(value = {}, fallback = {}) {
     imageUrl: normalizeUrl(value.imageUrl) || normalizeUrl(fallback.imageUrl),
     linkUrl: normalizeUrl(value.linkUrl) || normalizeUrl(fallback.linkUrl),
     altText: cleanText(value.altText, fallback.altText || ""),
+    positionX: normalizePercent(value.positionX, fallback.positionX ?? 50),
+    positionY: normalizePercent(value.positionY, fallback.positionY ?? 50),
   };
+}
+
+function normalizePercent(value, fallback = 50) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.min(100, Math.max(0, Math.round(number)));
 }
 
 function normalizeBanners(value, fallback, size) {

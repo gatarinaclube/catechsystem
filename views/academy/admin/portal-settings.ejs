@@ -135,8 +135,19 @@
                       <summary class="cursor-pointer text-lg font-black">Banner A <%= index + 1 %></summary>
                       <div class="mt-4 grid gap-3">
                         <input type="hidden" name="portalBannerAImageUrl" value="<%= banner.imageUrl || '' %>" />
-                        <% if (banner.imageUrl) { %><img src="<%= banner.imageUrl %>" alt="Banner A atual" class="admin-upload-live-preview" /><% } %>
+                        <% if (banner.imageUrl) { %><img src="<%= banner.imageUrl %>" alt="Banner A atual" class="admin-upload-live-preview" style="object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%;" data-position-preview /><% } %>
                         <input type="file" name="portalBannerA<%= index %>" accept="image/*" class="rounded-2xl border border-slate-200 bg-white p-3" />
+                        <div class="grid gap-3 rounded-2xl bg-slate-50 p-3">
+                          <p class="text-xs font-black uppercase tracking-widest text-slate-400">Enquadramento da imagem</p>
+                          <label class="grid gap-2 text-sm font-bold text-slate-600">
+                            Horizontal
+                            <input type="range" min="0" max="100" name="portalBannerAPositionX" value="<%= banner.positionX ?? 50 %>" data-position-x class="accent-[#31513d]" />
+                          </label>
+                          <label class="grid gap-2 text-sm font-bold text-slate-600">
+                            Vertical
+                            <input type="range" min="0" max="100" name="portalBannerAPositionY" value="<%= banner.positionY ?? 50 %>" data-position-y class="accent-[#31513d]" />
+                          </label>
+                        </div>
                         <input name="portalBannerALinkUrl" value="<%= banner.linkUrl || '' %>" placeholder="Link ao clicar" class="rounded-2xl border border-slate-200 bg-white p-3" />
                         <input name="portalBannerAAltText" value="<%= banner.altText || 'Banner A' %>" placeholder="Texto alternativo" class="rounded-2xl border border-slate-200 bg-white p-3" />
                       </div>
@@ -154,8 +165,19 @@
                     <summary class="cursor-pointer text-lg font-black">Banner B <%= index + 1 %></summary>
                     <div class="mt-4 grid gap-3">
                       <input type="hidden" name="portalBannerBImageUrl" value="<%= banner.imageUrl || '' %>" />
-                      <% if (banner.imageUrl) { %><img src="<%= banner.imageUrl %>" alt="Banner B atual" class="admin-upload-live-preview" /><% } %>
+                      <% if (banner.imageUrl) { %><img src="<%= banner.imageUrl %>" alt="Banner B atual" class="admin-upload-live-preview" style="object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%;" data-position-preview /><% } %>
                       <input type="file" name="portalBannerB<%= index %>" accept="image/*" class="rounded-2xl border border-slate-200 bg-white p-3" />
+                      <div class="grid gap-3 rounded-2xl bg-slate-50 p-3">
+                        <p class="text-xs font-black uppercase tracking-widest text-slate-400">Enquadramento da imagem</p>
+                        <label class="grid gap-2 text-sm font-bold text-slate-600">
+                          Horizontal
+                          <input type="range" min="0" max="100" name="portalBannerBPositionX" value="<%= banner.positionX ?? 50 %>" data-position-x class="accent-[#31513d]" />
+                        </label>
+                        <label class="grid gap-2 text-sm font-bold text-slate-600">
+                          Vertical
+                          <input type="range" min="0" max="100" name="portalBannerBPositionY" value="<%= banner.positionY ?? 50 %>" data-position-y class="accent-[#31513d]" />
+                        </label>
+                      </div>
                       <input name="portalBannerBLinkUrl" value="<%= banner.linkUrl || '' %>" placeholder="Link ao clicar" class="rounded-2xl border border-slate-200 bg-white p-3" />
                       <input type="hidden" name="portalBannerBAltText" value="<%= banner.altText || 'Banner B' %>" />
                     </div>
@@ -176,8 +198,19 @@
                     <summary class="cursor-pointer text-lg font-black">Banner C <%= index + 1 %></summary>
                     <div class="mt-4 grid gap-3">
                       <input type="hidden" name="portalBannerCImageUrl" value="<%= banner.imageUrl || '' %>" />
-                      <% if (banner.imageUrl) { %><img src="<%= banner.imageUrl %>" alt="Banner C atual" class="admin-upload-live-preview" /><% } %>
+                      <% if (banner.imageUrl) { %><img src="<%= banner.imageUrl %>" alt="Banner C atual" class="admin-upload-live-preview" style="object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%;" data-position-preview /><% } %>
                       <input type="file" name="portalBannerC<%= index %>" accept="image/*" class="rounded-2xl border border-slate-200 bg-white p-3" />
+                      <div class="grid gap-3 rounded-2xl bg-slate-50 p-3">
+                        <p class="text-xs font-black uppercase tracking-widest text-slate-400">Enquadramento da imagem</p>
+                        <label class="grid gap-2 text-sm font-bold text-slate-600">
+                          Horizontal
+                          <input type="range" min="0" max="100" name="portalBannerCPositionX" value="<%= banner.positionX ?? 50 %>" data-position-x class="accent-[#31513d]" />
+                        </label>
+                        <label class="grid gap-2 text-sm font-bold text-slate-600">
+                          Vertical
+                          <input type="range" min="0" max="100" name="portalBannerCPositionY" value="<%= banner.positionY ?? 50 %>" data-position-y class="accent-[#31513d]" />
+                        </label>
+                      </div>
                       <input name="portalBannerCLinkUrl" value="<%= banner.linkUrl || '' %>" placeholder="Link ao clicar" class="rounded-2xl border border-slate-200 bg-white p-3" />
                       <input type="hidden" name="portalBannerCAltText" value="<%= banner.altText || 'Banner C' %>" />
                     </div>
@@ -294,7 +327,7 @@
               <% const previewBannersA = Array.isArray(settings.portalBannerA) ? settings.portalBannerA : [settings.portalBannerA || {}, {}]; %>
               <% [0,1].forEach(function(index) { const banner = previewBannersA[index] || {}; %>
                 <% if (banner.imageUrl) { %>
-                  <img src="<%= banner.imageUrl %>" alt="Banner A" class="h-20 w-full rounded-xl object-cover" />
+                  <img src="<%= banner.imageUrl %>" alt="Banner A" class="h-20 w-full rounded-xl object-cover" style="object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%;" />
                 <% } else { %>
                   <div class="grid h-20 place-items-center rounded-xl bg-[#f7f3ea] text-xs font-black text-slate-400">Banner A</div>
                 <% } %>
@@ -330,7 +363,7 @@
             <div class="grid grid-cols-3 gap-2 border-t border-slate-100 p-4">
               <% (settings.portalBannerB || [{},{},{}]).slice(0,3).forEach(function(banner, index) { %>
                 <% if (banner.imageUrl) { %>
-                  <img src="<%= banner.imageUrl %>" alt="Banner B" class="h-12 w-full rounded-xl object-cover" />
+                  <img src="<%= banner.imageUrl %>" alt="Banner B" class="h-12 w-full rounded-xl object-cover" style="object-position: <%= banner.positionX ?? 50 %>% <%= banner.positionY ?? 50 %>%;" />
                 <% } else { %>
                   <div class="grid h-12 place-items-center rounded-xl bg-[#f7f3ea] text-[10px] font-black text-slate-400">B <%= index + 1 %></div>
                 <% } %>
@@ -370,12 +403,29 @@
               preview = document.createElement("img");
               preview.className = "admin-upload-live-preview";
               preview.alt = "Prévia da nova imagem selecionada";
+              preview.dataset.positionPreview = "true";
               input.insertAdjacentElement("afterend", preview);
             }
+            applyPosition(input.parentElement);
             preview.src = url;
           });
         });
       };
+
+      const applyPosition = (scope) => {
+        if (!scope) return;
+        const preview = scope.querySelector("[data-position-preview]");
+        const x = scope.querySelector("[data-position-x]")?.value || 50;
+        const y = scope.querySelector("[data-position-y]")?.value || 50;
+        if (preview) preview.style.objectPosition = `${x}% ${y}%`;
+      };
+
+      (() => {
+        document.addEventListener("input", (event) => {
+          if (!event.target.matches("[data-position-x], [data-position-y]")) return;
+          applyPosition(event.target.closest(".grid.gap-3")?.parentElement || event.target.closest("details"));
+        });
+      })();
 
       (() => {
         attachImagePreview();
@@ -445,6 +495,10 @@
             if (field.type === "file") {
               field.value = "";
               delete field.dataset.previewReady;
+              return;
+            }
+            if (field.type === "range") {
+              field.value = "50";
               return;
             }
             field.value = field.name === "portalBannerCAltText" ? "Banner C" : "";
