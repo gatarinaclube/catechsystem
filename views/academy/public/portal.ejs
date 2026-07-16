@@ -145,12 +145,7 @@
                 <% events.forEach(function(event) { %>
                   <li>
                     <time datetime="<%= event.date %>"><%= event.displayDate %></time>
-                    <% if (event.linkUrl) { %>
-                      <a href="<%= event.linkUrl %>" target="_blank" rel="noopener"><%= event.title %></a>
-                    <% } else { %>
-                      <strong><%= event.title %></strong>
-                    <% } %>
-                    <span><%= [event.location, event.sourceName].filter(Boolean).join(" · ") %></span>
+                    <strong><%= event.publicLabel || event.sourceName || "Evento" %></strong>
                   </li>
                 <% }) %>
               </ul>

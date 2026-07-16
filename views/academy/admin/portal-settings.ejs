@@ -678,8 +678,30 @@
             </div>
 
             <div class="grid gap-3 p-4 md:grid-cols-[1.4fr_1fr]">
-              <% const previewFeatured = settings.portalFeatured || []; %>
-              <% const mainFeature = previewFeatured[0] || {}; %>
+              <%
+                const previewRows = settings.portalNewsRows || [];
+                const previewRowArticles = previewRows
+                  .map(function(row) { return row.left || {}; })
+                  .filter(function(article) {
+                    return article.title || article.imageUrl || article.body || article.externalUrl;
+                  });
+                const previewAllArticles = (settings.portalFeatured || []).concat(previewRowArticles);
+                const previewOrderArticles = function(items) {
+                  return items.slice().sort(function(a, b) {
+                    return Number(a.sortOrder || 999) - Number(b.sortOrder || 999);
+                  });
+                };
+                const previewFeaturedArticles = previewOrderArticles(previewAllArticles.filter(function(article) {
+                  return (article.placement || 'featured') === 'featured';
+                }));
+                const previewSideArticles = previewOrderArticles(previewAllArticles.filter(function(article) {
+                  return article.placement === 'side';
+                }));
+                const previewListArticles = previewOrderArticles(previewAllArticles.filter(function(article) {
+                  return article.placement === 'list';
+                }));
+                const mainFeature = previewFeaturedArticles[0] || {};
+              %>
               <article>
                 <div class="aspect-[16/9] overflow-hidden rounded-2xl bg-slate-100">
                   <% if (mainFeature.imageUrl) { %><img src="<%= mainFeature.imageUrl %>" alt="" class="h-full w-full object-cover" /><% } %>
@@ -689,14 +711,14 @@
                 <p class="mt-1 line-clamp-2 text-xs text-slate-500"><%= mainFeature.subtitle || 'Resumo da notícia principal.' %></p>
               </article>
               <div class="grid gap-3">
-                <% [1,2].forEach(function(index) { const item = previewFeatured[index] || {}; %>
+                <% [0,1].forEach(function(index) { const item = previewSideArticles[index] || {}; %>
                   <article class="grid grid-cols-[74px_1fr] gap-3">
                     <div class="aspect-square overflow-hidden rounded-xl bg-slate-100">
                       <% if (item.imageUrl) { %><img src="<%= item.imageUrl %>" alt="" class="h-full w-full object-cover" /><% } %>
                     </div>
                     <div>
                       <p class="text-[9px] font-black uppercase tracking-widest text-[#b88b38]"><%= item.category || 'Notícia' %></p>
-                      <h4 class="text-sm font-black leading-tight text-[#31513d]"><%= item.title || `Destaque ${index}` %></h4>
+                      <h4 class="text-sm font-black leading-tight text-[#31513d]"><%= item.title || `Destaque ${index + 1}` %></h4>
                     </div>
                   </article>
                 <% }) %>
@@ -714,7 +736,7 @@
             </div>
 
 	            <div class="grid gap-3 border-t border-slate-100 p-4">
-	              <% (settings.portalNewsRows || []).slice(0,2).forEach(function(row) { const left = row.left || {}; %>
+	              <% previewListArticles.slice(0,2).forEach(function(left) { %>
                 <article class="grid grid-cols-[92px_1fr] gap-3">
                   <div class="aspect-[4/3] overflow-hidden rounded-xl bg-slate-100">
                     <% if (left.imageUrl) { %><img src="<%= left.imageUrl %>" alt="" class="h-full w-full object-cover" /><% } %>

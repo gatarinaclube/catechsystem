@@ -3063,7 +3063,7 @@ body {
 .gatofilia-portal-logo img {
   display: block;
   width: auto;
-  height: clamp(54px, 7vw, 96px);
+  height: clamp(68px, 8vw, 124px);
   object-fit: contain;
 }
 
@@ -3099,7 +3099,9 @@ body {
 }
 
 .gatofilia-ad {
+  min-width: 0;
   overflow: hidden;
+  contain: paint;
   border: 1px solid rgba(177, 129, 43, 0.28);
   border-radius: 18px;
   background: linear-gradient(135deg, rgba(32, 30, 26, 0.08), rgba(177, 129, 43, 0.1));
@@ -3111,6 +3113,10 @@ body {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.gatofilia-ad a {
+  overflow: hidden;
 }
 
 .gatofilia-ad img {
@@ -3861,6 +3867,10 @@ body {
     padding: 14px 18px;
   }
 
+  .gatofilia-portal-logo img {
+    height: clamp(70px, 18vw, 92px);
+  }
+
   .gatofilia-portal-header-image {
     max-width: min(36vw, 180px);
     max-height: 44px;
@@ -3872,7 +3882,7 @@ body {
 
   .gatofilia-portal-header nav {
     position: fixed;
-    top: 86px;
+    top: 108px;
     right: 14px;
     left: 14px;
     display: none;
@@ -3905,7 +3915,9 @@ body {
   }
 
   .gatofilia-ad-grid {
-    gap: 10px;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
   }
 
   .gatofilia-ad-grid-a {
@@ -3920,6 +3932,12 @@ body {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
+  .gatofilia-ad-grid-a,
+  .gatofilia-ad-grid-b,
+  .gatofilia-ad-grid-c {
+    overflow: hidden;
+  }
+
   .gatofilia-news-row {
     gap: 14px;
   }
@@ -3928,6 +3946,7 @@ body {
   .gatofilia-ad-b,
   .gatofilia-ad-c {
     border-radius: 12px;
+    min-width: 0;
   }
 
   .gatofilia-ad-a {

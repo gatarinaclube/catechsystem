@@ -98,6 +98,7 @@ const DEFAULT_ACADEMY_PUBLIC_SETTINGS = {
   portalExternalEvents: [],
   portalExternalEventsUpdatedAt: "",
   portalExternalEventsError: "",
+  portalExternalEventsVersion: 0,
   presentationGuests: [
     {
       sortOrder: 1,
@@ -169,6 +170,7 @@ function normalizeSettings(value = {}) {
     portalExternalEvents: normalizePortalEvents(value.portalExternalEvents, ""),
     portalExternalEventsUpdatedAt: normalizeIsoDateTime(value.portalExternalEventsUpdatedAt),
     portalExternalEventsError: cleanText(value.portalExternalEventsError, "", 600),
+    portalExternalEventsVersion: Number(value.portalExternalEventsVersion) || 0,
     presentationGuests: normalizeGuests(value.presentationGuests),
   };
 }
@@ -495,6 +497,7 @@ function getPortalEvents(settings, options = {}) {
   const seen = new Set();
   const filtered = events
     .filter((event) => includePast || eventTime(event.date) >= todayTime())
+    .filter((event) => !isIgnoredEventTitle(event.title))
     .filter((event) => {
       const key = `${event.date}|${event.title}|${event.sourceName}`.toLowerCase();
       if (seen.has(key)) return false;
@@ -505,6 +508,7 @@ function getPortalEvents(settings, options = {}) {
     .map((event) => ({
       ...event,
       displayDate: formatPortalEventDate(event.date),
+      publicLabel: portalEventPublicLabel(event),
     }));
   return limit ? filtered.slice(0, limit) : filtered;
 }
@@ -517,14 +521,19 @@ const PORTAL_EVENT_SOURCES = [
   {
     sourceName: "TICA - Brasil",
     url: "https://shows.tica.org/en/",
+    kind: "tica",
   },
   {
     sourceName: "FIFe - Winner Show",
     url: "https://fifeweb.org/events/list/?tribe_eventcategory%5B0%5D=9",
   },
 ];
+const PORTAL_EXTERNAL_EVENTS_VERSION = 2;
 
 function shouldRefreshExternalEvents(settings) {
+  const cachedEvents = Array.isArray(settings.portalExternalEvents) ? settings.portalExternalEvents : [];
+  if ((Number(settings.portalExternalEventsVersion) || 0) < PORTAL_EXTERNAL_EVENTS_VERSION) return true;
+  if (cachedEvents.some((event) => isIgnoredEventTitle(event?.title))) return true;
   if (!settings.portalExternalEventsUpdatedAt) return true;
   const last = new Date(settings.portalExternalEventsUpdatedAt);
   if (Number.isNaN(last.getTime())) return true;
@@ -598,7 +607,122 @@ function findDateInText(text) {
   return "";
 }
 
+function portalEventPublicLabel(event = {}) {
+  const sourceName = String(event.sourceName || "").trim();
+  if (/winner/i.test(sourceName)) return "FIFe - Winner Show";
+  if (/tica/i.test(sourceName)) return "TICA - Brasil";
+  if (/fife/i.test(sourceName)) return "FIFe - Brasil";
+  return sourceName || "Evento";
+}
+
+function isIgnoredEventTitle(title) {
+  return /^(today|home|login|register|search|next|previous|read more|ler mais|show calendar|menu|loading|display all shows|show past shows for this season|next season|previous season)$/i.test(String(title || "").trim());
+}
+
+function parseTicaDate(monthYear, dayRange) {
+  const months = {
+    january: 1,
+    february: 2,
+    march: 3,
+    april: 4,
+    may: 5,
+    june: 6,
+    july: 7,
+    august: 8,
+    september: 9,
+    october: 10,
+    november: 11,
+    december: 12,
+  };
+  const monthMatch = String(monthYear || "").match(/(January|February|March|April|May|June|July|August|September|October|November|December)\s+(20\d{2})/i);
+  const firstDay = String(dayRange || "").match(/\d{1,2}/)?.[0];
+  if (!monthMatch || !firstDay) return "";
+  return dateFromParts(monthMatch[2], months[monthMatch[1].toLowerCase()], firstDay);
+}
+
+function extractTicaEvents(html, source) {
+  const events = [];
+  const monthBlockRegex = /<div[^>]*class=["'][^"']*month-heading[^"']*["'][^>]*>([\s\S]*?)<\/div>([\s\S]*?)(?=<div[^>]*class=["'][^"']*month-heading[^"']*["'][^>]*>|$)/gi;
+  let monthBlock;
+  while ((monthBlock = monthBlockRegex.exec(html)) !== null) {
+    const monthYear = stripTags(monthBlock[1]);
+    const monthContent = monthBlock[2] || "";
+    const entryRegex = /<div[^>]*class=["'][^"']*show-entry[^"']*["'][^>]*>([\s\S]*?)<div[^>]*class=["'][^"']*show-details[^"']*["'][^>]*>/gi;
+    let entryMatch;
+    while ((entryMatch = entryRegex.exec(monthContent)) !== null) {
+      const entry = entryMatch[1] || "";
+      const dayRange = stripTags(entry.match(/<div[^>]*class=["'][^"']*date[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)?.[1] || "");
+      const location = stripTags(entry.match(/<div[^>]*class=["'][^"']*address[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)?.[1] || "");
+      const title = stripTags(entry.match(/<div[^>]*class=["'][^"']*club-name[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)?.[1] || "");
+      if (!/(brasil|brazil)/i.test(location)) continue;
+      const date = parseTicaDate(monthYear, dayRange);
+      if (!date) continue;
+      const id = entry.match(/\brel=["'](\d+)["']/i)?.[1] || "";
+      events.push({
+        title: title || location || source.sourceName,
+        date,
+        location,
+        description: "",
+        linkUrl: id ? `${source.url}#show${id}` : source.url,
+        sourceName: source.sourceName,
+        origin: "external",
+      });
+    }
+  }
+
+  if (events.length) return normalizePortalEvents(events, source.sourceName).slice(0, 80);
+
+  const text = stripTags(html);
+  const textMonthBlockRegex = /\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(20\d{2})\b([\s\S]*?)(?=\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+20\d{2}\b|$)/gi;
+  let blockMatch;
+  while ((blockMatch = textMonthBlockRegex.exec(text)) !== null) {
+    const monthYear = `${blockMatch[1]} ${blockMatch[2]}`;
+    const block = blockMatch[3] || "";
+    const eventRegex = /\b(\d{1,2}(?:\s*-\s*\d{1,2})?)\s+([^.;|]+?,\s*(?:Brazil|Brasil))\s+([\s\S]*?)(?=\s+\d{1,2}(?:\s*-\s*\d{1,2})?\s+[^.;|]+?,\s*(?:Brazil|Brasil)|$)/gi;
+    let eventMatch;
+    while ((eventMatch = eventRegex.exec(block)) !== null) {
+      const date = parseTicaDate(monthYear, eventMatch[1]);
+      const location = decodeHtml(eventMatch[2]);
+      const title = decodeHtml(eventMatch[3]).replace(/\s+/g, " ").trim().slice(0, 160) || location;
+      if (!date) continue;
+      events.push({
+        title,
+        date,
+        location,
+        description: "",
+        linkUrl: source.url,
+        sourceName: source.sourceName,
+        origin: "external",
+      });
+    }
+  }
+
+  if (!events.length) {
+    const fallbackRegex = /\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(20\d{2})\s+(\d{1,2}(?:\s*-\s*\d{1,2})?)\s+([^.;|]+?,\s*(?:Brazil|Brasil))\s+([^.;|]+)/gi;
+    let fallbackMatch;
+    while ((fallbackMatch = fallbackRegex.exec(text)) !== null) {
+      const date = parseTicaDate(`${fallbackMatch[1]} ${fallbackMatch[2]}`, fallbackMatch[3]);
+      const location = decodeHtml(fallbackMatch[4]);
+      const title = decodeHtml(fallbackMatch[5]).replace(/\s+/g, " ").trim().slice(0, 160) || location;
+      if (!date) continue;
+      events.push({
+        title,
+        date,
+        location,
+        description: "",
+        linkUrl: source.url,
+        sourceName: source.sourceName,
+        origin: "external",
+      });
+    }
+  }
+
+  return normalizePortalEvents(events, source.sourceName).slice(0, 80);
+}
+
 function extractExternalEvents(html, source) {
+  if (source.kind === "tica") return extractTicaEvents(html, source);
+
   const events = [];
   const anchorRegex = /<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
   let match;
@@ -606,7 +730,7 @@ function extractExternalEvents(html, source) {
     const href = absoluteExternalUrl(source.url, match[1]);
     const title = stripTags(match[2]).replace(/\s+/g, " ").trim();
     if (!href || title.length < 4 || title.length > 180) continue;
-    if (/^(home|login|register|search|next|previous|read more|ler mais)$/i.test(title)) continue;
+    if (isIgnoredEventTitle(title)) continue;
     const context = html.slice(Math.max(0, match.index - 900), Math.min(html.length, match.index + match[0].length + 1300));
     const date = findDateInText(context);
     if (!date) continue;
@@ -642,8 +766,9 @@ async function refreshPortalExternalEvents(prisma, options = {}) {
     try {
       const response = await fetch(source.url, {
         headers: {
-          "User-Agent": "GatofiliaBot/1.0 (+https://www.gatofilia.com.br)",
-          Accept: "text/html,application/xhtml+xml",
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
         },
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -659,6 +784,7 @@ async function refreshPortalExternalEvents(prisma, options = {}) {
     portalExternalEvents: externalEvents.length ? externalEvents : current.portalExternalEvents,
     portalExternalEventsUpdatedAt: new Date().toISOString(),
     portalExternalEventsError: errors.join(" | "),
+    portalExternalEventsVersion: PORTAL_EXTERNAL_EVENTS_VERSION,
   });
 }
 
