@@ -139,16 +139,25 @@
               <span class="rounded-full bg-[#fff4d9] px-3 py-1 text-xs font-black text-[#8c651f]">Topo da página</span>
             </div>
             <div class="mt-5 grid gap-4 md:grid-cols-3">
-              <label class="grid gap-2 text-sm font-bold text-slate-700 md:col-span-2">
-                Logo do cabeçalho
-                <input type="hidden" name="portalLogoUrl" value="<%= settings.portalLogoUrl || '' %>" />
-                <% if (settings.portalLogoUrl) { %>
-                  <img src="<%= settings.portalLogoUrl %>" alt="Logo atual" class="max-h-24 w-fit rounded-2xl bg-slate-900 p-3" />
-                <% } %>
-                <input type="file" name="portalLogo" accept="image/*" class="rounded-2xl border border-slate-200 bg-white p-3" />
-              </label>
-              <label class="grid gap-2 text-sm font-bold text-slate-700">
-                Tamanho dos títulos
+	              <label class="grid gap-2 text-sm font-bold text-slate-700 md:col-span-2">
+	                Logo do cabeçalho
+	                <input type="hidden" name="portalLogoUrl" value="<%= settings.portalLogoUrl || '' %>" />
+	                <% if (settings.portalLogoUrl) { %>
+	                  <img src="<%= settings.portalLogoUrl %>" alt="Logo atual" class="max-h-24 w-fit rounded-2xl bg-slate-900 p-3" />
+	                <% } %>
+	                <input type="file" name="portalLogo" accept="image/*" class="rounded-2xl border border-slate-200 bg-white p-3" />
+	              </label>
+	              <label class="grid gap-2 text-sm font-bold text-slate-700 md:col-span-2">
+	                Imagem opcional no cabeçalho
+	                <span class="text-xs font-bold text-slate-400">Aparece entre o logo e o menu. Sugestão: imagem horizontal, leve, com fundo transparente quando possível.</span>
+	                <input type="hidden" name="portalHeaderImageUrl" value="<%= settings.portalHeaderImageUrl || '' %>" />
+	                <% if (settings.portalHeaderImageUrl) { %>
+	                  <img src="<%= settings.portalHeaderImageUrl %>" alt="Imagem atual do cabeçalho" class="max-h-20 w-fit rounded-2xl bg-slate-100 p-3" />
+	                <% } %>
+	                <input type="file" name="portalHeaderImage" accept="image/*" class="rounded-2xl border border-slate-200 bg-white p-3" />
+	              </label>
+	              <label class="grid gap-2 text-sm font-bold text-slate-700">
+	                Tamanho dos títulos
                 <select name="portalTitleSize" class="rounded-2xl border border-slate-200 bg-white p-3">
                   <option value="compact" <%= settings.portalTitleSize === 'compact' ? 'selected' : '' %>>Compacto</option>
                   <option value="medium" <%= !settings.portalTitleSize || settings.portalTitleSize === 'medium' ? 'selected' : '' %>>Médio</option>
@@ -521,12 +530,122 @@
                     </div>
                   </div>
                 </details>
+	              <% }) %>
+	            </div>
+	          </section>
+
+	          <section class="rounded-[2rem] bg-white p-6 shadow-sm">
+	            <div class="flex flex-wrap items-center justify-between gap-3">
+	              <div>
+	                <p class="text-xs font-black uppercase tracking-[0.22em] text-[#b88b38]">Rodapé</p>
+	                <h2 class="mt-2 text-2xl font-black">Redes sociais</h2>
+	                <p class="mt-2 max-w-3xl text-sm text-slate-500">
+	                  Suba o ícone da rede social e informe o link. Os ícones aparecem no rodapé da página e abrem o endereço ao serem clicados.
+	                </p>
+	              </div>
+	              <button type="button" data-add-social-link class="rounded-2xl bg-[#31513d] px-4 py-3 text-sm font-black text-white">
+	                + Rede social
+	              </button>
+	            </div>
+	            <div class="mt-5 grid gap-4" data-social-list>
+	              <% const socialLinks = settings.portalSocialLinks && settings.portalSocialLinks.length ? settings.portalSocialLinks : [{}]; %>
+	              <% socialLinks.forEach(function(social, index) { %>
+	                <details class="rounded-3xl border border-slate-200 p-4" data-social-card <%= index === 0 ? 'open' : '' %>>
+	                  <summary class="cursor-pointer text-lg font-black">Rede social <%= index + 1 %> · <%= social.title || 'Sem título' %></summary>
+	                  <div class="mt-4 grid gap-3 md:grid-cols-[120px_minmax(0,1fr)]">
+	                    <input name="portalSocialSortOrder" type="number" min="1" value="<%= social.sortOrder || index + 1 %>" placeholder="Ordem" class="rounded-2xl border border-slate-200 bg-white p-3" />
+	                    <input name="portalSocialTitle" value="<%= social.title || '' %>" placeholder="Nome da rede social" class="rounded-2xl border border-slate-200 bg-white p-3" />
+	                    <input type="hidden" name="portalSocialIconUrl" value="<%= social.iconUrl || '' %>" />
+	                    <div class="grid gap-2 md:col-span-2">
+	                      <% if (social.iconUrl) { %>
+	                        <img src="<%= social.iconUrl %>" alt="<%= social.title || 'Ícone da rede social' %>" class="h-14 w-14 rounded-2xl border border-slate-200 object-contain p-2" />
+	                      <% } %>
+	                      <input type="file" name="portalSocialIcon<%= index %>" accept="image/*" class="rounded-2xl border border-slate-200 bg-white p-3" />
+	                    </div>
+	                    <input name="portalSocialLinkUrl" value="<%= social.linkUrl || '' %>" placeholder="Link da rede social" class="rounded-2xl border border-slate-200 bg-white p-3 md:col-span-2" />
+	                  </div>
+	                </details>
+	              <% }) %>
+	            </div>
+	          </section>
+
+          <section class="rounded-[2rem] bg-white p-6 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p class="text-xs font-black uppercase tracking-[0.22em] text-[#b88b38]">Agenda</p>
+                <h2 class="mt-2 text-2xl font-black">Agenda de Eventos</h2>
+                <p class="mt-2 max-w-3xl text-sm text-slate-500">
+                  Cadastre eventos manualmente. A página pública mostra os próximos 5 na home e a agenda completa em <strong>/agenda</strong>.
+                </p>
+              </div>
+              <button type="button" data-add-event class="rounded-2xl bg-[#31513d] px-4 py-3 text-sm font-black text-white">
+                + Evento
+              </button>
+            </div>
+            <div class="mt-5 rounded-3xl border border-[#d6a84f]/30 bg-[#fff8e8] p-4 text-sm text-slate-700">
+              <p class="font-black text-slate-900">Atualização automática semanal</p>
+              <p class="mt-1">Além das datas manuais, o sistema tenta atualizar semanalmente eventos das fontes oficiais:</p>
+              <ul class="mt-2 grid gap-1 pl-5 text-xs font-bold text-slate-500">
+                <li>FIFe - Brasil</li>
+                <li>TICA - Brasil</li>
+                <li>FIFe - Winner Show</li>
+              </ul>
+              <% if (settings.portalExternalEventsUpdatedAt) { %>
+                <p class="mt-2 text-xs font-bold text-slate-500">Última tentativa: <%= new Date(settings.portalExternalEventsUpdatedAt).toLocaleString('pt-BR') %></p>
+              <% } %>
+              <% if (settings.portalExternalEventsError) { %>
+                <p class="mt-2 text-xs font-bold text-amber-800">Aviso da última atualização: <%= settings.portalExternalEventsError %></p>
+              <% } %>
+            </div>
+            <div class="mt-5 grid gap-4" data-event-list>
+              <% const manualEvents = settings.portalManualEvents && settings.portalManualEvents.length ? settings.portalManualEvents : [{}]; %>
+              <% manualEvents.forEach(function(event, index) { %>
+                <details class="rounded-3xl border border-slate-200 p-4" data-event-card <%= index === 0 ? 'open' : '' %>>
+                  <summary class="cursor-pointer text-lg font-black">Evento <%= index + 1 %> · <%= event.title || 'Sem título' %></summary>
+                  <div class="mt-4 grid gap-3 md:grid-cols-[120px_minmax(0,1fr)]">
+                    <input name="portalEventSortOrder" type="number" min="1" value="<%= event.sortOrder || index + 1 %>" placeholder="Ordem" class="rounded-2xl border border-slate-200 bg-white p-3" />
+                    <input name="portalEventTitle" value="<%= event.title || '' %>" placeholder="Nome do evento" class="rounded-2xl border border-slate-200 bg-white p-3" />
+                    <input name="portalEventDate" type="date" value="<%= event.date || '' %>" class="rounded-2xl border border-slate-200 bg-white p-3" />
+                    <input name="portalEventLocation" value="<%= event.location || '' %>" placeholder="Local, cidade ou país" class="rounded-2xl border border-slate-200 bg-white p-3" />
+                    <input name="portalEventLinkUrl" value="<%= event.linkUrl || '' %>" placeholder="Link opcional" class="rounded-2xl border border-slate-200 bg-white p-3 md:col-span-2" />
+                    <textarea name="portalEventDescription" rows="2" placeholder="Descrição curta opcional" class="rounded-2xl border border-slate-200 bg-white p-3 md:col-span-2"><%= event.description || '' %></textarea>
+                  </div>
+                </details>
               <% }) %>
             </div>
           </section>
 
-          <div class="sticky bottom-4 z-10 rounded-[1.5rem] border border-[#d6a84f]/30 bg-white/95 p-4 shadow-xl backdrop-blur">
-            <button class="w-full rounded-2xl bg-[#31513d] px-5 py-4 text-base font-black text-white">
+	          <section class="rounded-[2rem] bg-white p-6 shadow-sm">
+	            <div class="flex flex-wrap items-center justify-between gap-3">
+	              <div>
+	                <p class="text-xs font-black uppercase tracking-[0.22em] text-[#b88b38]">Podcast</p>
+	                <h2 class="mt-2 text-2xl font-black">Galeria de vídeos do YouTube</h2>
+	                <p class="mt-2 max-w-3xl text-sm text-slate-500">
+	                  Cole links do YouTube para exibir na página <strong>/podcast</strong>. O vídeo roda no player oficial, mantendo as visualizações contabilizadas pelo YouTube.
+	                </p>
+	              </div>
+	              <button type="button" data-add-podcast-video class="rounded-2xl bg-[#31513d] px-4 py-3 text-sm font-black text-white">
+	                + Vídeo
+	              </button>
+	            </div>
+	            <div class="mt-5 grid gap-4" data-podcast-list>
+	              <% const podcastVideos = settings.portalPodcastVideos && settings.portalPodcastVideos.length ? settings.portalPodcastVideos : [{}]; %>
+	              <% podcastVideos.forEach(function(video, index) { %>
+	                <details class="rounded-3xl border border-slate-200 p-4" data-podcast-card <%= index === 0 ? 'open' : '' %>>
+	                  <summary class="cursor-pointer text-lg font-black">Podcast <%= index + 1 %> · <%= video.title || 'Sem título' %></summary>
+	                  <div class="mt-4 grid gap-3 md:grid-cols-[120px_minmax(0,1fr)]">
+	                    <input name="portalPodcastSortOrder" type="number" min="1" value="<%= video.sortOrder || index + 1 %>" placeholder="Ordem" class="rounded-2xl border border-slate-200 bg-white p-3" />
+	                    <input name="portalPodcastTitle" value="<%= video.title || '' %>" placeholder="Título do vídeo" class="rounded-2xl border border-slate-200 bg-white p-3" />
+	                    <input name="portalPodcastUrl" value="<%= video.url || '' %>" placeholder="Link do YouTube" class="rounded-2xl border border-slate-200 bg-white p-3 md:col-span-2" />
+	                    <textarea name="portalPodcastDescription" rows="2" placeholder="Descrição opcional" class="rounded-2xl border border-slate-200 bg-white p-3 md:col-span-2"><%= video.description || '' %></textarea>
+	                  </div>
+	                </details>
+	              <% }) %>
+	            </div>
+	          </section>
+
+	          <div class="sticky bottom-4 z-10 rounded-[1.5rem] border border-[#d6a84f]/30 bg-white/95 p-4 shadow-xl backdrop-blur">
+	            <button class="w-full rounded-2xl bg-[#31513d] px-5 py-4 text-base font-black text-white">
               Salvar Gatofilia News
             </button>
           </div>
@@ -536,13 +655,16 @@
           <p class="text-xs font-black uppercase tracking-[0.22em] text-[#b88b38]">Prévia aproximada</p>
           <div class="portal-preview mt-4 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white">
             <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-              <% if (settings.portalLogoUrl) { %>
-                <img src="<%= settings.portalLogoUrl %>" alt="Logo Gatofilia" class="max-h-12 max-w-[160px] object-contain" />
-              <% } else { %>
-                <strong class="text-[#31513d]">Gatofilia</strong>
-              <% } %>
-              <span class="text-xs font-black uppercase tracking-widest text-slate-400">News</span>
-            </div>
+	              <% if (settings.portalLogoUrl) { %>
+	                <img src="<%= settings.portalLogoUrl %>" alt="Logo Gatofilia" class="max-h-12 max-w-[160px] object-contain" />
+	              <% } else { %>
+	                <strong class="text-[#31513d]">Gatofilia</strong>
+	              <% } %>
+	              <% if (settings.portalHeaderImageUrl) { %>
+	                <img src="<%= settings.portalHeaderImageUrl %>" alt="Imagem do cabeçalho" class="max-h-10 max-w-[120px] object-contain" />
+	              <% } %>
+	              <span class="text-xs font-black uppercase tracking-widest text-slate-400">News</span>
+	            </div>
 
             <div class="grid grid-cols-2 gap-2 p-3">
               <% const previewBannersA = Array.isArray(settings.portalBannerA) ? settings.portalBannerA : [settings.portalBannerA || {}, {}]; %>
@@ -591,8 +713,8 @@
               <% }) %>
             </div>
 
-            <div class="grid gap-3 border-t border-slate-100 p-4">
-              <% (settings.portalNewsRows || []).slice(0,2).forEach(function(row) { const left = row.left || {}; %>
+	            <div class="grid gap-3 border-t border-slate-100 p-4">
+	              <% (settings.portalNewsRows || []).slice(0,2).forEach(function(row) { const left = row.left || {}; %>
                 <article class="grid grid-cols-[92px_1fr] gap-3">
                   <div class="aspect-[4/3] overflow-hidden rounded-xl bg-slate-100">
                     <% if (left.imageUrl) { %><img src="<%= left.imageUrl %>" alt="" class="h-full w-full object-cover" /><% } %>
@@ -602,10 +724,17 @@
                     <h4 class="text-sm font-black leading-tight text-[#31513d]"><%= left.title || 'Título da matéria' %></h4>
                     <p class="mt-1 line-clamp-2 text-xs text-slate-500"><%= left.caption || left.subtitle || '' %></p>
                   </div>
-                </article>
-              <% }) %>
-            </div>
-          </div>
+	                </article>
+	              <% }) %>
+	            </div>
+	            <% if (settings.portalSocialLinks && settings.portalSocialLinks.length) { %>
+	              <div class="flex flex-wrap justify-center gap-2 border-t border-slate-100 p-4">
+	                <% settings.portalSocialLinks.forEach(function(social) { %>
+	                  <img src="<%= social.iconUrl %>" alt="<%= social.title || 'Rede social' %>" class="h-8 w-8 rounded-full border border-slate-200 object-contain p-1" />
+	                <% }) %>
+	              </div>
+	            <% } %>
+	          </div>
         </aside>
       </section>
     </main>
@@ -772,10 +901,10 @@
         refreshFeatured();
       })();
 
-      (() => {
-        const bannerCList = document.querySelector("[data-banner-c-list]");
-        const addBannerC = document.querySelector("[data-add-banner-c]");
-        if (!bannerCList || !addBannerC) return;
+	      (() => {
+	        const bannerCList = document.querySelector("[data-banner-c-list]");
+	        const addBannerC = document.querySelector("[data-add-banner-c]");
+	        if (!bannerCList || !addBannerC) return;
 
         const refreshBannerC = () => {
           bannerCList.querySelectorAll("[data-banner-c-card]").forEach((card, index) => {
@@ -814,12 +943,118 @@
           refreshBannerC();
         });
 
-        refreshBannerC();
-      })();
+	        refreshBannerC();
+	      })();
 
-      (() => {
-        const portalRows = document.querySelector("[data-portal-rows]");
-        const addPortalRow = document.querySelector("[data-add-portal-row]");
+	      (() => {
+	        const socialList = document.querySelector("[data-social-list]");
+	        const addSocialLink = document.querySelector("[data-add-social-link]");
+	        if (!socialList || !addSocialLink) return;
+
+	        const refreshSocialLinks = () => {
+	          socialList.querySelectorAll("[data-social-card]").forEach((card, index) => {
+	            const title = card.querySelector('input[name="portalSocialTitle"]')?.value?.trim() || "Sem título";
+	            const summary = card.querySelector("summary");
+	            const sortOrder = card.querySelector('input[name="portalSocialSortOrder"]');
+	            const fileInput = card.querySelector('input[type="file"][name^="portalSocialIcon"]');
+	            if (sortOrder && !sortOrder.value) sortOrder.value = String(index + 1);
+	            if (fileInput) fileInput.name = `portalSocialIcon${index}`;
+	            if (summary) summary.textContent = `Rede social ${index + 1} · ${title}`;
+	          });
+	        };
+
+	        addSocialLink.addEventListener("click", () => {
+	          const template = socialList.querySelector("[data-social-card]");
+	          if (!template) return;
+	          const nextIndex = socialList.querySelectorAll("[data-social-card]").length + 1;
+	          const clone = template.cloneNode(true);
+	          clone.querySelectorAll("input").forEach((field) => {
+	            if (field.type === "file") {
+	              field.value = "";
+	              delete field.dataset.previewReady;
+	              return;
+	            }
+	            field.value = field.name === "portalSocialSortOrder" ? String(nextIndex) : "";
+	          });
+	          clone.querySelectorAll("img").forEach((image) => image.remove());
+	          if ("open" in clone) clone.open = true;
+	          socialList.appendChild(clone);
+	          attachImagePreview(clone);
+	          refreshSocialLinks();
+	        });
+
+	        socialList.addEventListener("input", refreshSocialLinks);
+	        socialList.addEventListener("change", refreshSocialLinks);
+	        refreshSocialLinks();
+	      })();
+
+	      (() => {
+	        const eventList = document.querySelector("[data-event-list]");
+	        const addEvent = document.querySelector("[data-add-event]");
+	        if (!eventList || !addEvent) return;
+
+	        const refreshEvents = () => {
+	          eventList.querySelectorAll("[data-event-card]").forEach((card, index) => {
+	            const title = card.querySelector('input[name="portalEventTitle"]')?.value?.trim() || "Sem título";
+	            const summary = card.querySelector("summary");
+	            const sortOrder = card.querySelector('input[name="portalEventSortOrder"]');
+	            if (sortOrder && !sortOrder.value) sortOrder.value = String(index + 1);
+	            if (summary) summary.textContent = `Evento ${index + 1} · ${title}`;
+	          });
+	        };
+
+	        addEvent.addEventListener("click", () => {
+	          const template = eventList.querySelector("[data-event-card]");
+	          if (!template) return;
+	          const nextIndex = eventList.querySelectorAll("[data-event-card]").length + 1;
+	          const clone = template.cloneNode(true);
+	          clone.querySelectorAll("input, textarea").forEach((field) => {
+	            field.value = field.name === "portalEventSortOrder" ? String(nextIndex) : "";
+	          });
+	          if ("open" in clone) clone.open = true;
+	          eventList.appendChild(clone);
+	          refreshEvents();
+	        });
+
+	        eventList.addEventListener("input", refreshEvents);
+	        refreshEvents();
+	      })();
+
+	      (() => {
+	        const podcastList = document.querySelector("[data-podcast-list]");
+	        const addPodcastVideo = document.querySelector("[data-add-podcast-video]");
+	        if (!podcastList || !addPodcastVideo) return;
+
+	        const refreshPodcastVideos = () => {
+	          podcastList.querySelectorAll("[data-podcast-card]").forEach((card, index) => {
+	            const title = card.querySelector('input[name="portalPodcastTitle"]')?.value?.trim() || "Sem título";
+	            const summary = card.querySelector("summary");
+	            const sortOrder = card.querySelector('input[name="portalPodcastSortOrder"]');
+	            if (sortOrder && !sortOrder.value) sortOrder.value = String(index + 1);
+	            if (summary) summary.textContent = `Podcast ${index + 1} · ${title}`;
+	          });
+	        };
+
+	        addPodcastVideo.addEventListener("click", () => {
+	          const template = podcastList.querySelector("[data-podcast-card]");
+	          if (!template) return;
+	          const nextIndex = podcastList.querySelectorAll("[data-podcast-card]").length + 1;
+	          const clone = template.cloneNode(true);
+	          clone.querySelectorAll("input, textarea").forEach((field) => {
+	            field.value = field.name === "portalPodcastSortOrder" ? String(nextIndex) : "";
+	          });
+	          if ("open" in clone) clone.open = true;
+	          podcastList.appendChild(clone);
+	          refreshPodcastVideos();
+	        });
+
+	        podcastList.addEventListener("input", refreshPodcastVideos);
+	        refreshPodcastVideos();
+	      })();
+
+	      (() => {
+	        const portalRows = document.querySelector("[data-portal-rows]");
+	        const addPortalRow = document.querySelector("[data-add-portal-row]");
         if (!portalRows || !addPortalRow) return;
 
         const refreshPortalRows = () => {

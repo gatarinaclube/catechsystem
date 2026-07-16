@@ -1149,6 +1149,8 @@ app.get("/sitemap.xml", async (req, res, next) => {
       const lastmod = new Date();
       const gatofiliaUrls = [
         { loc: "/", priority: "1.0", lastmod },
+        { loc: "/podcast", priority: "0.8", lastmod },
+        { loc: "/agenda", priority: "0.8", lastmod },
         { loc: "/jornada", priority: "0.9", lastmod },
         { loc: "/jornada#inicio", priority: "0.8", lastmod },
         { loc: "/jornada#quem-somos", priority: "0.8", lastmod },

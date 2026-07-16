@@ -53,6 +53,8 @@ module.exports = (prisma) => {
   });
   router.get("/jornada", publicController.home);
   router.get("/gatofilia", publicController.home);
+  router.get("/podcast", publicController.podcast);
+  router.get("/agenda", publicController.eventsAgenda);
   router.get("/materia/:slug", publicController.portalArticle);
   router.get("/apresentacaoa", (req, res) => res.redirect(301, "/apresentacao"));
   router.get("/apresentacao", publicController.presentation);

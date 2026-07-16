@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <%- include("../partials/seo", { seo, pageTitle }) %>
+    <link rel="stylesheet" href="/css/academy.css" />
+  </head>
+  <body
+    class="gatofilia-public gatofilia-portal title-<%= settings.portalTitleSize || 'medium' %>"
+    style="--portal-font: '<%= settings.portalFontFamily || 'Inter' %>'; --portal-text: <%= settings.portalTextColor || '#1f2933' %>; --portal-heading: <%= settings.portalHeadingColor || '#171717' %>; --portal-accent: <%= settings.portalAccentColor || '#a97824' %>; --portal-heading-weight: <%= settings.portalHeadingWeight || '900' %>; --portal-heading-style: <%= settings.portalHeadingItalic ? 'italic' : 'normal' %>;"
+  >
+    <header class="gatofilia-portal-header">
+      <a class="gatofilia-portal-logo" href="/" aria-label="Gatofilia">
+        <img src="<%= settings.portalLogoUrl || '/uploads/academy/gatofilia-main-logo-360.png' %>" alt="Gatofilia" width="360" height="180" decoding="async" />
+      </a>
+      <% if (settings.portalHeaderImageUrl) { %>
+        <img class="gatofilia-portal-header-image" src="<%= settings.portalHeaderImageUrl %>" alt="Gatofilia" width="420" height="120" decoding="async" />
+      <% } %>
+      <button class="gatofilia-menu-toggle" type="button" aria-controls="gatofiliaPortalMenu" aria-expanded="false">
+        <span></span><span></span><span></span><strong>Menu</strong>
+      </button>
+      <nav id="gatofiliaPortalMenu" aria-label="Menu Gatofilia">
+        <a href="/">Início</a>
+        <a href="/podcast" aria-current="page">Podcast</a>
+      </nav>
+    </header>
+
+    <main class="gatofilia-portal-main gatofilia-podcast-page">
+      <section class="gatofilia-podcast-hero">
+        <p>Podcast Gatofilia</p>
+        <h1>Conversas para quem vive a felinocultura na prática.</h1>
+        <span>Assista aos episódios, entrevistas e conteúdos especiais diretamente por aqui. O player é oficial do YouTube, então suas visualizações seguem sendo contabilizadas por lá.</span>
+      </section>
+
+      <% const videos = Array.isArray(settings.portalPodcastVideos) ? settings.portalPodcastVideos : []; %>
+      <% if (videos.length) { %>
+        <section class="gatofilia-podcast-grid" aria-label="Galeria de vídeos do Podcast Gatofilia">
+          <% videos.forEach(function(video) { %>
+            <article class="gatofilia-podcast-card">
+              <div class="gatofilia-podcast-frame">
+                <iframe
+                  src="<%= video.embedUrl %>"
+                  title="<%= video.title || 'Podcast Gatofilia' %>"
+                  loading="lazy"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowfullscreen
+                ></iframe>
+              </div>
+              <div class="gatofilia-podcast-content">
+                <p>Episódio <%= String(video.sortOrder || 1).padStart(2, '0') %></p>
+                <h2><%= video.title || 'Podcast Gatofilia' %></h2>
+                <% if (video.description) { %>
+                  <span><%= video.description %></span>
+                <% } %>
+                <a href="<%= video.url %>" target="_blank" rel="noopener">Assistir no YouTube</a>
+              </div>
+            </article>
+          <% }) %>
+        </section>
+      <% } else { %>
+        <section class="gatofilia-podcast-empty">
+          <p>Podcast</p>
+          <h2>Os vídeos aparecerão aqui em breve.</h2>
+          <span>Assim que os links forem cadastrados no editor administrativo, a galeria será exibida automaticamente.</span>
+        </section>
+      <% } %>
+    </main>
+
+    <footer class="gatofilia-portal-footer">
+      <img src="<%= settings.portalLogoUrl || '/uploads/academy/gatofilia-main-logo-360.png' %>" alt="Gatofilia" width="260" height="140" loading="lazy" decoding="async" />
+      <% const footerSocialLinks = Array.isArray(settings.portalSocialLinks) ? settings.portalSocialLinks : []; %>
+      <% if (footerSocialLinks.length) { %>
+        <div class="gatofilia-social-links" aria-label="Redes sociais Gatofilia">
+          <% footerSocialLinks.forEach(function(social) { %>
+            <a href="<%= social.linkUrl %>" target="_blank" rel="noopener" aria-label="<%= social.title || 'Rede social Gatofilia' %>">
+              <img src="<%= social.iconUrl %>" alt="<%= social.title || 'Rede social Gatofilia' %>" width="44" height="44" loading="lazy" decoding="async" />
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
+      <p>E-mail: <a href="mailto:contato@gatofilia.com.br">contato@gatofilia.com.br</a></p>
+      <p>© 2026 Gatofilia. Todos os direitos reservados.</p>
+    </footer>
+
+    <script>
+      (() => {
+        const button = document.querySelector(".gatofilia-menu-toggle");
+        const menu = document.getElementById("gatofiliaPortalMenu");
+        if (!button || !menu) return;
+        button.addEventListener("click", () => {
+          const isOpen = menu.classList.toggle("is-open");
+          button.setAttribute("aria-expanded", String(isOpen));
+        });
+      })();
+    </script>
+  </body>
+</html>

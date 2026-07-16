@@ -125,6 +125,54 @@ function portalArticleFromBody(body, files, prefix, index, fileField) {
   };
 }
 
+function portalPodcastVideosFromBody(body) {
+  const titles = formArray(body.portalPodcastTitle);
+  const urls = formArray(body.portalPodcastUrl);
+  const descriptions = formArray(body.portalPodcastDescription);
+  const sortOrders = formArray(body.portalPodcastSortOrder);
+  const count = Math.max(titles.length, urls.length, descriptions.length, sortOrders.length);
+  return Array.from({ length: count }, (_, index) => ({
+    title: arrayAt(titles, index),
+    url: arrayAt(urls, index),
+    description: arrayAt(descriptions, index),
+    sortOrder: arrayAt(sortOrders, index, index + 1),
+  })).filter((item) => item.url || item.title || item.description);
+}
+
+function portalSocialLinksFromBody(body, files) {
+  const titles = formArray(body.portalSocialTitle);
+  const links = formArray(body.portalSocialLinkUrl);
+  const iconUrls = formArray(body.portalSocialIconUrl);
+  const sortOrders = formArray(body.portalSocialSortOrder);
+  const count = Math.max(titles.length, links.length, iconUrls.length, sortOrders.length);
+  return Array.from({ length: count }, (_, index) => ({
+    title: arrayAt(titles, index, `Rede social ${index + 1}`),
+    iconUrl: fileUrlAt(files, `portalSocialIcon${index}`) || arrayAt(iconUrls, index),
+    linkUrl: arrayAt(links, index),
+    sortOrder: arrayAt(sortOrders, index, index + 1),
+  })).filter((item) => item.iconUrl || item.linkUrl || item.title);
+}
+
+function portalManualEventsFromBody(body) {
+  const titles = formArray(body.portalEventTitle);
+  const dates = formArray(body.portalEventDate);
+  const locations = formArray(body.portalEventLocation);
+  const links = formArray(body.portalEventLinkUrl);
+  const descriptions = formArray(body.portalEventDescription);
+  const sortOrders = formArray(body.portalEventSortOrder);
+  const count = Math.max(titles.length, dates.length, locations.length, links.length, descriptions.length, sortOrders.length);
+  return Array.from({ length: count }, (_, index) => ({
+    title: arrayAt(titles, index),
+    date: arrayAt(dates, index),
+    location: arrayAt(locations, index),
+    linkUrl: arrayAt(links, index),
+    description: arrayAt(descriptions, index),
+    sourceName: "Manual",
+    origin: "manual",
+    sortOrder: arrayAt(sortOrders, index, index + 1),
+  })).filter((item) => item.title || item.date || item.location || item.linkUrl || item.description);
+}
+
 function portalSettingsFromBody(body, files) {
   const featuredCount = Math.max(1, formArray(body.portalFeaturedTitle).length);
   const newsCount = Math.max(1, formArray(body.portalNewsLeftTitle).length);
@@ -166,6 +214,7 @@ function portalSettingsFromBody(body, files) {
   const rightBlocks = rawNewsRows.map((row) => row.right);
   return {
     portalLogoUrl: fileUrlAt(files, "portalLogo") || body.portalLogoUrl,
+    portalHeaderImageUrl: fileUrlAt(files, "portalHeaderImage") || body.portalHeaderImageUrl,
     portalFontFamily: body.portalFontFamily,
     portalTitleSize: body.portalTitleSize,
     portalTextColor: body.portalTextColor,
@@ -206,6 +255,9 @@ function portalSettingsFromBody(body, files) {
       scale: arrayAt(body.portalBannerCScale, index, 100),
       fit: arrayAt(body.portalBannerCFit, index, "cover"),
     })),
+    portalPodcastVideos: portalPodcastVideosFromBody(body),
+    portalSocialLinks: portalSocialLinksFromBody(body, files),
+    portalManualEvents: portalManualEventsFromBody(body),
   };
 }
 

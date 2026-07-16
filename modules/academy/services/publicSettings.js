@@ -13,6 +13,7 @@ const DEFAULT_ACADEMY_PUBLIC_SETTINGS = {
   presentationOfferTitle: "Exclusiva para os 10 primeiros inscritos",
   presentationOfferNote: "Considerando os benefícios inclusos, uma parte significativa do investimento retorna em estrutura, tecnologia, associação e apoio prático.",
   portalLogoUrl: "/uploads/academy/gatofilia-main-logo-360.png",
+  portalHeaderImageUrl: "",
   portalFontFamily: "Inter",
   portalTitleSize: "medium",
   portalTextColor: "#1f2933",
@@ -79,7 +80,7 @@ const DEFAULT_ACADEMY_PUBLIC_SETTINGS = {
         body: "Use este espaço para publicar uma matéria completa, compartilhar uma notícia, destacar um criador, apresentar uma raça ou direcionar o leitor para uma página externa.",
       },
       right: {
-        title: "Agenda e avisos",
+        title: "Agenda de Eventos",
         text: "Espaço para textos curtos, comunicados, chamadas de eventos, notas institucionais ou links importantes.",
         externalUrl: "",
       },
@@ -91,6 +92,12 @@ const DEFAULT_ACADEMY_PUBLIC_SETTINGS = {
     { imageUrl: "", linkUrl: "", altText: "Banner C" },
     { imageUrl: "", linkUrl: "", altText: "Banner C" },
   ],
+  portalPodcastVideos: [],
+  portalSocialLinks: [],
+  portalManualEvents: [],
+  portalExternalEvents: [],
+  portalExternalEventsUpdatedAt: "",
+  portalExternalEventsError: "",
   presentationGuests: [
     {
       sortOrder: 1,
@@ -138,6 +145,7 @@ function normalizeSettings(value = {}) {
     presentationOfferTitle: cleanText(value.presentationOfferTitle, DEFAULT_ACADEMY_PUBLIC_SETTINGS.presentationOfferTitle),
     presentationOfferNote: cleanText(value.presentationOfferNote, DEFAULT_ACADEMY_PUBLIC_SETTINGS.presentationOfferNote),
     portalLogoUrl: normalizeUrl(value.portalLogoUrl) || DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalLogoUrl,
+    portalHeaderImageUrl: normalizeUrl(value.portalHeaderImageUrl),
     portalFontFamily: normalizeFontFamily(value.portalFontFamily),
     portalTitleSize: normalizeTitleSize(value.portalTitleSize),
     portalTextColor: normalizeHexColor(value.portalTextColor, DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalTextColor),
@@ -155,13 +163,21 @@ function normalizeSettings(value = {}) {
       DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalBannerC,
       Math.max(4, Array.isArray(value.portalBannerC) ? value.portalBannerC.length : DEFAULT_ACADEMY_PUBLIC_SETTINGS.portalBannerC.length),
     ),
+    portalPodcastVideos: normalizePodcastVideos(value.portalPodcastVideos),
+    portalSocialLinks: normalizeSocialLinks(value.portalSocialLinks),
+    portalManualEvents: normalizePortalEvents(value.portalManualEvents, "Manual"),
+    portalExternalEvents: normalizePortalEvents(value.portalExternalEvents, ""),
+    portalExternalEventsUpdatedAt: normalizeIsoDateTime(value.portalExternalEventsUpdatedAt),
+    portalExternalEventsError: cleanText(value.portalExternalEventsError, "", 600),
     presentationGuests: normalizeGuests(value.presentationGuests),
   };
 }
 
-function cleanText(value, fallback = "") {
+function cleanText(value, fallback = "", maxLength = 0) {
   const text = String(value || "").trim();
-  return text || fallback;
+  const resolved = text || fallback;
+  if (!maxLength || resolved.length <= maxLength) return resolved;
+  return resolved.slice(0, maxLength).trim();
 }
 
 function normalizeUrl(value) {
@@ -171,6 +187,42 @@ function normalizeUrl(value) {
   if (raw.startsWith("/logos/")) return raw;
   if (/^https?:\/\//i.test(raw)) return raw;
   return "";
+}
+
+function normalizeExternalUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (/^www\./i.test(raw)) return `https://${raw}`;
+  return "";
+}
+
+function youtubeVideoId(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+
+  try {
+    const url = new URL(raw);
+    const host = url.hostname.replace(/^www\./, "").toLowerCase();
+    if (host === "youtu.be") return url.pathname.split("/").filter(Boolean)[0] || "";
+    if (host.endsWith("youtube.com")) {
+      if (url.pathname === "/watch") return url.searchParams.get("v") || "";
+      const parts = url.pathname.split("/").filter(Boolean);
+      if (["embed", "shorts", "live"].includes(parts[0])) return parts[1] || "";
+    }
+  } catch (err) {
+    return "";
+  }
+
+  return "";
+}
+
+function youtubeWatchUrl(videoId) {
+  return videoId ? `https://www.youtube.com/watch?v=${videoId}` : "";
+}
+
+function youtubeEmbedUrl(videoId) {
+  return videoId ? `https://www.youtube.com/embed/${videoId}` : "";
 }
 
 function normalizeFontFamily(value) {
@@ -296,6 +348,55 @@ function normalizeArticleImages(value, fallback = []) {
     .filter((item) => item.imageUrl);
 }
 
+function normalizePodcastVideos(value = []) {
+  const source = Array.isArray(value) ? value : [];
+  return source
+    .map((item, index) => {
+      const videoId = youtubeVideoId(item?.url || item?.youtubeUrl || item?.watchUrl || item?.embedUrl);
+      if (!videoId) return null;
+      return {
+        title: cleanText(item?.title, `Podcast Gatofilia ${index + 1}`),
+        description: cleanText(item?.description, "", 600),
+        sortOrder: normalizeSortOrder(item?.sortOrder, index + 1),
+        url: youtubeWatchUrl(videoId),
+        embedUrl: youtubeEmbedUrl(videoId),
+        videoId,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+function normalizeSocialLinks(value = []) {
+  const source = Array.isArray(value) ? value : [];
+  return source
+    .map((item, index) => ({
+      title: cleanText(item?.title, `Rede social ${index + 1}`, 80),
+      iconUrl: normalizeUrl(item?.iconUrl),
+      linkUrl: normalizeExternalUrl(item?.linkUrl),
+      sortOrder: normalizeSortOrder(item?.sortOrder, index + 1),
+    }))
+    .filter((item) => item.iconUrl && item.linkUrl)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+function normalizePortalEvents(value = [], fallbackSource = "") {
+  const source = Array.isArray(value) ? value : [];
+  return source
+    .map((item, index) => ({
+      title: cleanText(item?.title, "", 180),
+      date: normalizeDateInput(item?.date),
+      location: cleanText(item?.location, "", 160),
+      description: cleanText(item?.description, "", 700),
+      linkUrl: normalizeExternalUrl(item?.linkUrl),
+      sourceName: cleanText(item?.sourceName, fallbackSource, 80),
+      sortOrder: normalizeSortOrder(item?.sortOrder, index + 1),
+      origin: cleanText(item?.origin, fallbackSource ? "manual" : "external", 20),
+    }))
+    .filter((item) => item.title && item.date)
+    .sort((a, b) => eventTime(a.date) - eventTime(b.date) || a.sortOrder - b.sortOrder || a.title.localeCompare(b.title));
+}
+
 function normalizeArticles(value, fallback = []) {
   const source = Array.isArray(value) ? value : fallback;
   return source
@@ -352,6 +453,213 @@ function normalizeDateInput(value) {
   if (!raw) return "";
   const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
   return match ? `${match[1]}-${match[2]}-${match[3]}` : "";
+}
+
+function normalizeIsoDateTime(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+}
+
+function eventTime(value) {
+  const [year, month, day] = normalizeDateInput(value).split("-").map(Number);
+  if (!year || !month || !day) return Number.MAX_SAFE_INTEGER;
+  return new Date(year, month - 1, day).getTime();
+}
+
+function todayTime() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today.getTime();
+}
+
+function formatPortalEventDate(value) {
+  const date = dateFromInput(value);
+  if (!date) return "";
+  return date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).replace(".", "");
+}
+
+function getPortalEvents(settings, options = {}) {
+  const normalized = normalizeSettings(settings);
+  const limit = Number(options.limit || 0);
+  const includePast = options.includePast === true;
+  const events = [
+    ...normalized.portalManualEvents,
+    ...normalized.portalExternalEvents,
+  ];
+  const seen = new Set();
+  const filtered = events
+    .filter((event) => includePast || eventTime(event.date) >= todayTime())
+    .filter((event) => {
+      const key = `${event.date}|${event.title}|${event.sourceName}`.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a, b) => eventTime(a.date) - eventTime(b.date) || String(a.title).localeCompare(String(b.title)))
+    .map((event) => ({
+      ...event,
+      displayDate: formatPortalEventDate(event.date),
+    }));
+  return limit ? filtered.slice(0, limit) : filtered;
+}
+
+const PORTAL_EVENT_SOURCES = [
+  {
+    sourceName: "FIFe - Brasil",
+    url: "https://fifeweb.org/events/list/?tribe_country%5B0%5D=10123-10124-10125-10126-10127-10165-10166-16659-124806-124948-126001-128890-132246-133792",
+  },
+  {
+    sourceName: "TICA - Brasil",
+    url: "https://shows.tica.org/en/",
+  },
+  {
+    sourceName: "FIFe - Winner Show",
+    url: "https://fifeweb.org/events/list/?tribe_eventcategory%5B0%5D=9",
+  },
+];
+
+function shouldRefreshExternalEvents(settings) {
+  if (!settings.portalExternalEventsUpdatedAt) return true;
+  const last = new Date(settings.portalExternalEventsUpdatedAt);
+  if (Number.isNaN(last.getTime())) return true;
+  return Date.now() - last.getTime() >= 7 * 24 * 60 * 60 * 1000;
+}
+
+function decodeHtml(value) {
+  return String(value || "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#039;/gi, "'")
+    .replace(/&apos;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function stripTags(value) {
+  return decodeHtml(
+    String(value || "")
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " "),
+  );
+}
+
+function absoluteExternalUrl(baseUrl, href) {
+  try {
+    return new URL(href, baseUrl).toString();
+  } catch (err) {
+    return "";
+  }
+}
+
+function dateFromParts(year, month, day) {
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+  if (Number.isNaN(date.getTime())) return "";
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function findDateInText(text) {
+  const raw = decodeHtml(text);
+  const iso = raw.match(/\b(20\d{2})-(\d{2})-(\d{2})\b/);
+  if (iso) return dateFromParts(iso[1], iso[2], iso[3]);
+
+  const br = raw.match(/\b(\d{1,2})[/.](\d{1,2})[/.](20\d{2})\b/);
+  if (br) return dateFromParts(br[3], br[2], br[1]);
+
+  const months = {
+    jan: 1, january: 1, janeiro: 1,
+    feb: 2, february: 2, fevereiro: 2,
+    mar: 3, march: 3, marco: 3, "março": 3,
+    apr: 4, april: 4, abril: 4,
+    may: 5, maio: 5,
+    jun: 6, june: 6, junho: 6,
+    jul: 7, july: 7, julho: 7,
+    aug: 8, august: 8, agosto: 8,
+    sep: 9, sept: 9, september: 9, setembro: 9,
+    oct: 10, october: 10, outubro: 10,
+    nov: 11, november: 11, novembro: 11,
+    dec: 12, december: 12, dezembro: 12,
+  };
+  const pattern = "(jan(?:uary|eiro)?|feb(?:ruary|vereiro)?|mar(?:ch|[çc]o)?|apr(?:il)?|abril|may|maio|jun(?:e|ho)?|jul(?:y|ho)?|aug(?:ust|osto)?|sep(?:t|tember|tembro)?|oct(?:ober|ubro)?|nov(?:ember|embro)?|dec(?:ember|embro)?)";
+  const dayFirst = raw.match(new RegExp(`\\b(\\d{1,2})\\s+${pattern}\\s*,?\\s*(20\\d{2})\\b`, "i"));
+  if (dayFirst) return dateFromParts(dayFirst[3], months[dayFirst[2].toLowerCase()], dayFirst[1]);
+  const monthFirst = raw.match(new RegExp(`\\b${pattern}\\s+(\\d{1,2}),?\\s*(20\\d{2})\\b`, "i"));
+  if (monthFirst) return dateFromParts(monthFirst[3], months[monthFirst[1].toLowerCase()], monthFirst[2]);
+  return "";
+}
+
+function extractExternalEvents(html, source) {
+  const events = [];
+  const anchorRegex = /<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  let match;
+  while ((match = anchorRegex.exec(html)) !== null) {
+    const href = absoluteExternalUrl(source.url, match[1]);
+    const title = stripTags(match[2]).replace(/\s+/g, " ").trim();
+    if (!href || title.length < 4 || title.length > 180) continue;
+    if (/^(home|login|register|search|next|previous|read more|ler mais)$/i.test(title)) continue;
+    const context = html.slice(Math.max(0, match.index - 900), Math.min(html.length, match.index + match[0].length + 1300));
+    const date = findDateInText(context);
+    if (!date) continue;
+    events.push({
+      title,
+      date,
+      location: "",
+      description: "",
+      linkUrl: href,
+      sourceName: source.sourceName,
+      origin: "external",
+    });
+  }
+
+  const seen = new Set();
+  return normalizePortalEvents(events, source.sourceName).filter((event) => {
+    const key = `${event.date}|${event.title}`.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, 80);
+}
+
+async function refreshPortalExternalEvents(prisma, options = {}) {
+  const current = await getAcademyPublicSettings(prisma);
+  if (!options.force && !shouldRefreshExternalEvents(current)) return current;
+  if (typeof fetch !== "function") return current;
+
+  const externalEvents = [];
+  const errors = [];
+
+  for (const source of PORTAL_EVENT_SOURCES) {
+    try {
+      const response = await fetch(source.url, {
+        headers: {
+          "User-Agent": "GatofiliaBot/1.0 (+https://www.gatofilia.com.br)",
+          Accept: "text/html,application/xhtml+xml",
+        },
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const html = await response.text();
+      externalEvents.push(...extractExternalEvents(html, source));
+    } catch (err) {
+      errors.push(`${source.sourceName}: ${err.message || err}`);
+    }
+  }
+
+  return saveAcademyPublicSettings(prisma, {
+    ...current,
+    portalExternalEvents: externalEvents.length ? externalEvents : current.portalExternalEvents,
+    portalExternalEventsUpdatedAt: new Date().toISOString(),
+    portalExternalEventsError: errors.join(" | "),
+  });
 }
 
 async function getAcademyPublicSettings(prisma) {
@@ -434,4 +742,6 @@ module.exports = {
   getAcademyPublicSettings,
   saveAcademyPublicSettings,
   buildAcademyCountdown,
+  getPortalEvents,
+  refreshPortalExternalEvents,
 };

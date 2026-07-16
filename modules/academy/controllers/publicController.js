@@ -13,7 +13,12 @@ const {
   userHasAcademyAccess,
 } = require("../services/academyService");
 const { academySeo, absoluteUrl, sitemapUrl } = require("../services/academySeo");
-const { getAcademyPublicSettings, buildAcademyCountdown } = require("../services/publicSettings");
+const {
+  getAcademyPublicSettings,
+  buildAcademyCountdown,
+  getPortalEvents,
+  refreshPortalExternalEvents,
+} = require("../services/publicSettings");
 
 function escapeHtml(value) {
   return String(value || "")
@@ -260,19 +265,66 @@ async function notifyGatofiliaLead(lead) {
 
 module.exports = (prisma) => ({
   portal: async (req, res) => {
-    const publicSettings = await getAcademyPublicSettings(prisma);
+    const publicSettings = await refreshPortalExternalEvents(prisma);
     const portalSeoBanner = Array.isArray(publicSettings.portalBannerA)
       ? publicSettings.portalBannerA.find((banner) => banner?.imageUrl)?.imageUrl
       : publicSettings.portalBannerA?.imageUrl;
     renderPublic(req, res, "portal", {
       settings: publicSettings,
       articleUrl,
+      portalEvents: getPortalEvents(publicSettings, { limit: 5 }),
       seo: {
         path: "/",
         title: "Gatofilia | Felinocultura, Notícias e Jornada para Criadores",
         description: "Portal Gatofilia com notícias, matérias, conteúdo para criadores de gatos, felinocultura, gestão de gatil, raças felinas e a Jornada Gatofilia.",
         image: portalSeoBanner || "/uploads/academy/gatofilia-main-logo-620.png",
         keywords: portalSeoKeywords(publicSettings),
+      },
+    });
+  },
+
+  eventsAgenda: async (req, res) => {
+    const publicSettings = await refreshPortalExternalEvents(prisma);
+    const events = getPortalEvents(publicSettings);
+    renderPublic(req, res, "events", {
+      settings: publicSettings,
+      portalEvents: events,
+      seo: {
+        path: "/agenda",
+        title: "Agenda de Eventos | Gatofilia",
+        description: "Agenda Gatofilia com eventos de felinocultura, exposições FIFe, TICA e datas importantes para criadores de gatos.",
+        image: publicSettings.portalLogoUrl || "/uploads/academy/gatofilia-main-logo-620.png",
+        keywords: [
+          "agenda de eventos felinos",
+          "eventos de gatos",
+          "exposições de gatos",
+          "FIFe Brasil",
+          "TICA Brasil",
+          "Winner Show FIFe",
+          "felinocultura",
+          "gatofilia",
+        ],
+      },
+    });
+  },
+
+  podcast: async (req, res) => {
+    const publicSettings = await getAcademyPublicSettings(prisma);
+    renderPublic(req, res, "podcast", {
+      settings: publicSettings,
+      seo: {
+        path: "/podcast",
+        title: "Podcast Gatofilia | Vídeos para Criadores de Gatos",
+        description: "Galeria de vídeos e episódios do Podcast Gatofilia para criadores, gatis, felinocultura, gestão, saúde, genética e criação responsável.",
+        image: publicSettings.portalLogoUrl || "/uploads/academy/gatofilia-main-logo-620.png",
+        keywords: [
+          "podcast gatofilia",
+          "vídeos para criadores de gatos",
+          "felinocultura",
+          "gatil",
+          "criação de gatos",
+          "gestão de gatil",
+        ],
       },
     });
   },
@@ -706,6 +758,8 @@ module.exports = (prisma) => ({
     const lastmod = new Date();
     const urls = [
       sitemapUrl(absoluteUrl(req, "/"), lastmod, "1.0"),
+      sitemapUrl(absoluteUrl(req, "/podcast"), lastmod, "0.8"),
+      sitemapUrl(absoluteUrl(req, "/agenda"), lastmod, "0.8"),
       sitemapUrl(absoluteUrl(req, "/jornada"), lastmod, "0.9"),
       sitemapUrl(absoluteUrl(req, "/jornada#inicio"), lastmod, "0.8"),
       sitemapUrl(absoluteUrl(req, "/jornada#quem-somos"), lastmod, "0.8"),
