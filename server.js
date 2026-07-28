@@ -242,6 +242,8 @@ app.use(
 );
 
 const ACTIVE_SESSION_WINDOW_MINUTES = 15;
+const COMMERCIAL_ACCESS_EXPIRATION_INTERVAL_MS = 60 * 60 * 1000;
+let commercialAccessExpirationJobRunning = false;
 
 app.use((req, res, next) => {
   if (req.session?.userId) {
@@ -478,7 +480,7 @@ async function buildAdminOverview(req) {
     approval: {
       active: approvalCounts.get("DEFERIDO") || 0,
       pending: approvalCounts.get("INDEFERIDO") || 0,
-      restricted: approvalCounts.get("RESTRICAO") || 0,
+      restricted: approvalCounts.get("RESTRICOES") || 0,
       inactive: approvalCounts.get("INATIVO") || 0,
     },
     activeUsers,
@@ -654,6 +656,86 @@ function commercialPaymentStatus(user) {
   return null;
 }
 
+function isPaymentFlowAllowedPath(pathValue) {
+  const currentPath = String(pathValue || "");
+  const allowedPrefixes = [
+    "/billing",
+    "/associacao",
+    "/login",
+    "/logout",
+    "/admin/view-as/stop",
+    "/ajuda",
+  ];
+
+  return allowedPrefixes.some((prefix) => currentPath === prefix || currentPath.startsWith(`${prefix}/`));
+}
+
+async function restrictCommercialAccessForPayment(user, paymentStatus) {
+  if (!user || user.accountOrigin !== "NON_ASSOCIATE" || !paymentStatus) return user;
+
+  const currentSubscriptionStatus = String(user.subscriptionStatus || "").toUpperCase();
+  const nextSubscriptionStatus = paymentStatus === "EXPIRED" ? "EXPIRED" : user.subscriptionStatus;
+  const nextApprovalStatus = "RESTRICOES";
+  const needsUpdate =
+    user.approvalStatus !== nextApprovalStatus ||
+    (paymentStatus === "EXPIRED" && currentSubscriptionStatus !== "EXPIRED") ||
+    Boolean(user.asaasPaymentUrl && paymentStatus === "EXPIRED");
+
+  if (!needsUpdate) return user;
+
+  const updatedUser = await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      approvalStatus: nextApprovalStatus,
+      subscriptionStatus: nextSubscriptionStatus,
+      ...(paymentStatus === "EXPIRED" ? { asaasPaymentUrl: null } : {}),
+    },
+  });
+
+  await notifyUserAccessStatusChange(updatedUser, user.approvalStatus, updatedUser.approvalStatus);
+  if (user.subscriptionStatus !== updatedUser.subscriptionStatus) {
+    await notifyUserSubscriptionStatusChange(updatedUser, user.subscriptionStatus, updatedUser.subscriptionStatus);
+  }
+
+  return updatedUser;
+}
+
+async function runCommercialAccessExpirationJob() {
+  if (commercialAccessExpirationJobRunning) return { skipped: true };
+  commercialAccessExpirationJobRunning = true;
+
+  try {
+    const expiredUsers = await prisma.user.findMany({
+      where: {
+        accountOrigin: "NON_ASSOCIATE",
+        subscriptionStatus: { in: ["ACTIVE", "TRIALING"] },
+        trialEndsAt: { lt: new Date() },
+      },
+      orderBy: { id: "asc" },
+    });
+
+    for (const user of expiredUsers) {
+      await restrictCommercialAccessForPayment(user, "EXPIRED");
+    }
+
+    if (expiredUsers.length) {
+      console.log(`Acessos comerciais vencidos atualizados: ${expiredUsers.length}`);
+    }
+
+    return { updated: expiredUsers.length };
+  } catch (err) {
+    console.error("Erro ao atualizar acessos comerciais vencidos:", err);
+    return { error: err };
+  } finally {
+    commercialAccessExpirationJobRunning = false;
+  }
+}
+
+function startCommercialAccessExpirationScheduler() {
+  setTimeout(() => runCommercialAccessExpirationJob(), 30 * 1000);
+  setInterval(() => runCommercialAccessExpirationJob(), COMMERCIAL_ACCESS_EXPIRATION_INTERVAL_MS);
+}
+
 function associationPaymentStatus(user) {
   if (!user || user.accountOrigin !== "ASSOCIATE") return false;
   const status = String(user.subscriptionStatus || "").toUpperCase();
@@ -817,19 +899,7 @@ async function handleSystemLogin(req, res, loginKind) {
 
     const paymentStatus = commercialPaymentStatus(user);
     if (paymentStatus) {
-      const updatedUser = paymentStatus === "EXPIRED"
-        ? await prisma.user.update({
-            where: { id: user.id },
-            data: {
-              approvalStatus: "DEFERIDO",
-              subscriptionStatus: "EXPIRED",
-              asaasPaymentUrl: null,
-            },
-          })
-        : user;
-      if (paymentStatus === "EXPIRED") {
-        await notifyUserSubscriptionStatusChange(updatedUser, user.subscriptionStatus, updatedUser.subscriptionStatus);
-      }
+      const updatedUser = await restrictCommercialAccessForPayment(user, paymentStatus);
 
       clearAdminViewAs(req);
       req.session.userId = updatedUser.id;
@@ -930,6 +1000,19 @@ app.use(async (req, res, next) => {
         res.locals.adminViewAs = req.adminViewAs;
       } else {
         clearAdminViewAs(req);
+      }
+    }
+
+    if (!req.session.adminViewAs && !isPaymentFlowAllowedPath(req.path)) {
+      const associationStatus = associationPaymentStatus(req.user);
+      if (associationStatus) {
+        return res.redirect("/associacao/pagamento");
+      }
+
+      const paymentStatus = commercialPaymentStatus(req.user);
+      if (paymentStatus) {
+        await restrictCommercialAccessForPayment(req.user, paymentStatus);
+        return res.redirect("/billing/pay");
       }
     }
 
@@ -2110,10 +2193,12 @@ app.post("/webhooks/asaas", async (req, res) => {
       const updatedUser = await prisma.user.update({
         where: { id: user.id },
         data: {
+          approvalStatus: "RESTRICOES",
           subscriptionStatus: eventName === "PAYMENT_OVERDUE" ? "PENDING" : "CANCELED",
           asaasLastEvent: eventName,
         },
       });
+      await notifyUserAccessStatusChange(updatedUser, user.approvalStatus, updatedUser.approvalStatus);
       await notifyUserSubscriptionStatusChange(updatedUser, user.subscriptionStatus, updatedUser.subscriptionStatus);
     } else {
       await prisma.user.update({
@@ -2141,23 +2226,13 @@ app.get("/dashboard", requireAuth, async (req, res) => {
    
     const user = req.user;
 
-    if (associationPaymentStatus(user)) {
+    if (!req.session.adminViewAs && associationPaymentStatus(user)) {
       return res.redirect("/associacao/pagamento");
     }
 
     const paymentStatus = commercialPaymentStatus(user);
-    if (paymentStatus) {
-      if (paymentStatus === "EXPIRED") {
-        const updatedUser = await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            approvalStatus: "DEFERIDO",
-            subscriptionStatus: "EXPIRED",
-            asaasPaymentUrl: null,
-          },
-        });
-        await notifyUserSubscriptionStatusChange(updatedUser, user.subscriptionStatus, updatedUser.subscriptionStatus);
-      }
+    if (!req.session.adminViewAs && paymentStatus) {
+      await restrictCommercialAccessForPayment(user, paymentStatus);
       return res.redirect("/billing/pay");
     }
 
@@ -4298,5 +4373,6 @@ Promise.all([
   app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
     startVaccineReminderScheduler(prisma);
+    startCommercialAccessExpirationScheduler();
   });
 });
