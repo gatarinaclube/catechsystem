@@ -5,6 +5,7 @@ const { formatCpfCnpj, formatPhone } = require("../utils/format");
 const {
   countryFromBody,
   countryOptionsFromClients,
+  documentForCountry,
   phoneForCountry,
   validateClientData,
 } = require("../utils/revenueClients");
@@ -748,12 +749,13 @@ function buildRevenueData(body, existing = null) {
 
   router.post("/receitas/clientes/novo", async (req, res) => {
     try {
-      await ensureUniqueClientDocument(req, req.body.document);
       const country = countryFromBody(req.body);
+      const document = documentForCountry(req.body.document, country, formatCpfCnpj);
+      await ensureUniqueClientDocument(req, document);
       const data = {
         ownerId: req.session?.userId || null,
         fullName: req.body.fullName,
-        document: formatCpfCnpj(req.body.document) || null,
+        document,
         cep: req.body.cep || null,
         street: req.body.street || null,
         number: req.body.number || null,

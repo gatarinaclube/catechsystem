@@ -42,6 +42,12 @@ function phoneForCountry(rawPhone, country, formatBrazilPhone) {
   return isBrazilCountry(country) ? formatBrazilPhone(phone) || null : phone;
 }
 
+function documentForCountry(rawDocument, country, formatBrazilDocument) {
+  const document = clean(rawDocument);
+  if (!document) return null;
+  return isBrazilCountry(country) ? formatBrazilDocument(document) || null : document;
+}
+
 function validateClientData(data = {}) {
   if (!clean(data.fullName)) {
     throw new Error("Informe o nome do cliente.");
@@ -59,6 +65,7 @@ function validateClientData(data = {}) {
 module.exports = {
   countryFromBody,
   countryOptionsFromClients,
+  documentForCountry,
   isBrazilCountry,
   phoneForCountry,
   validateClientData,

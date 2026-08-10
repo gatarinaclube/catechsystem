@@ -39,11 +39,13 @@
   }
 
   function shouldMaskLive(input) {
+    if (input.dataset.documentMask === "false") return false;
     const key = `${input.name || ""} ${input.id || ""}`.toLowerCase();
     return key.includes("cpf") || key.includes("cnpj") || key.includes("cpfcnpj");
   }
 
   function shouldMaskOnBlur(input) {
+    if (input.dataset.documentMask === "false") return false;
     const key = `${input.name || ""} ${input.id || ""}`.toLowerCase();
     return input.dataset.documentMask === "cpf-cnpj" || key === "document document" || key.includes("cpf") || key.includes("cnpj");
   }
@@ -76,9 +78,21 @@
     if (input.dataset.documentMaskReady === "true") return;
     input.dataset.documentMaskReady = "true";
 
+    if (input.dataset.documentMask !== undefined) {
+      input.addEventListener("blur", () => {
+        if (input.dataset.documentMask === "false") return;
+        applyCompleteMask(input);
+      });
+      if (input.dataset.documentMask !== "false") applyCompleteMask(input);
+      return;
+    }
+
     if (shouldMaskLive(input)) {
-      input.addEventListener("input", () => applyLiveMask(input));
-      applyCompleteMask(input);
+      input.addEventListener("input", () => {
+        if (input.dataset.documentMask === "false") return;
+        applyLiveMask(input);
+      });
+      if (input.dataset.documentMask !== "false") applyCompleteMask(input);
       return;
     }
 
@@ -92,8 +106,11 @@
     }
 
     if (shouldMaskOnBlur(input)) {
-      input.addEventListener("blur", () => applyCompleteMask(input));
-      applyCompleteMask(input);
+      input.addEventListener("blur", () => {
+        if (input.dataset.documentMask === "false") return;
+        applyCompleteMask(input);
+      });
+      if (input.dataset.documentMask !== "false") applyCompleteMask(input);
     }
   }
 

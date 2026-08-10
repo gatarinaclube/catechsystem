@@ -18,6 +18,11 @@
         <% if (client && client.createdAtLabel) { %>
           <div class="quick-hint">Cadastro: <%= client.createdAtLabel %></div>
         <% } %>
+        <% const countryOptions = Array.isArray(countries) && countries.length ? countries : ['Brasil']; %>
+        <% const currentCountry = client && client.country ? client.country : 'Brasil'; %>
+        <% const selectedCountryInList = countryOptions.some(function(item) { return String(item || '').toLowerCase() === String(currentCountry || '').toLowerCase(); }); %>
+        <% const currentCountryNormalized = String(currentCountry || 'Brasil').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); %>
+        <% const isBrazilCurrent = ['brasil', 'brazil', 'br'].includes(currentCountryNormalized); %>
 
         <div class="field">
           <label for="fullName">Nome Completo</label>
@@ -25,7 +30,7 @@
         </div>
         <div class="field">
           <label for="document">CPF/RG/Passaporte</label>
-          <input id="document" name="document" data-document-mask="cpf-cnpj" value="<%= client && client.document ? client.document : '' %>" />
+          <input id="document" name="document" data-document-mask="<%= isBrazilCurrent ? 'cpf-cnpj' : 'false' %>" value="<%= client && client.document ? client.document : '' %>" />
         </div>
         <div class="quick-grid">
           <div class="field">
@@ -34,22 +39,21 @@
           </div>
           <div class="field">
             <label for="phone">Telefone</label>
-            <input id="phone" name="phone" value="<%= client && client.phone ? client.phone : '' %>" />
+            <input id="phone" name="phone" data-phone-mask="<%= isBrazilCurrent ? 'true' : 'false' %>" value="<%= client && client.phone ? client.phone : '' %>" />
           </div>
         </div>
 
-        <% const countryOptions = Array.isArray(countries) && countries.length ? countries : ['Brasil']; %>
-        <% const currentCountry = client && client.country ? client.country : 'Brasil'; %>
-        <% const selectedCountryInList = countryOptions.some(function(item) { return String(item || '').toLowerCase() === String(currentCountry || '').toLowerCase(); }); %>
         <div class="quick-grid">
           <div class="field">
             <label for="countrySelect">País</label>
-            <select id="countrySelect">
-              <% countryOptions.forEach(function(countryOption) { %>
-                <option value="<%= countryOption %>" <%= selectedCountryInList && currentCountry === countryOption ? 'selected' : '' %>><%= countryOption %></option>
-              <% }) %>
-              <option value="__OTHER__" <%= !selectedCountryInList ? 'selected' : '' %>>Outro País</option>
-            </select>
+            <div class="quick-inline-field">
+              <select id="countrySelect">
+                <% countryOptions.forEach(function(countryOption) { %>
+                  <option value="<%= countryOption %>" <%= selectedCountryInList && String(currentCountry || '').toLowerCase() === String(countryOption || '').toLowerCase() ? 'selected' : '' %>><%= countryOption %></option>
+                <% }) %>
+              </select>
+              <button type="button" class="btn small-button" id="addCountryButton" title="Cadastrar novo país">+</button>
+            </div>
             <input id="country" name="country" type="hidden" value="<%= selectedCountryInList ? currentCountry : 'Outro País' %>" />
           </div>
           <div class="field" id="otherCountryField" hidden>
@@ -129,12 +133,14 @@
       const city = document.getElementById("city");
       const cityOptions = document.getElementById("cityOptions");
       const cepStatus = document.getElementById("cepStatus");
+      const documentInput = document.getElementById("document");
       const phoneInput = document.getElementById("phone");
       const emailInput = document.getElementById("email");
       const cepLookupButton = document.getElementById("cepLookup");
       const cityCache = {};
       const initialState = stateHidden.value || "AC";
       const initialCity = city.value || "";
+      let addingCountry = <%= selectedCountryInList ? 'false' : 'true' %>;
 
       stateBrazil.innerHTML = states
         .map(([uf, name]) => `<option value="${uf}">${uf} - ${name}</option>`)
@@ -144,16 +150,22 @@
         cepStatus.textContent = message || "";
       }
 
+      function normalizeText(value) {
+        return String(value || "")
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase()
+          .trim();
+      }
+
       function isBrazil() {
-        return country.value === "Brasil";
+        return ["brasil", "brazil", "br"].includes(normalizeText(country.value));
       }
 
       function syncCountryValue() {
-        const selected = countrySelect.value;
-        const isOther = selected === "__OTHER__";
-        otherCountryField.hidden = !isOther;
-        otherCountry.required = isOther;
-        country.value = isOther ? (otherCountry.value.trim() || "Outro País") : selected;
+        otherCountryField.hidden = !addingCountry;
+        otherCountry.required = addingCountry;
+        country.value = addingCountry ? (otherCountry.value.trim() || "Outro País") : countrySelect.value;
       }
 
       function syncState() {
@@ -187,6 +199,7 @@
         stateOtherField.hidden = brazil;
         emailInput.required = !brazil;
         phoneInput.required = !brazil;
+        documentInput.dataset.documentMask = brazil ? "cpf-cnpj" : "false";
         phoneInput.dataset.phoneMask = brazil ? "true" : "false";
         cepLookupButton.disabled = !brazil;
         cepLookupButton.style.display = brazil ? "" : "none";
@@ -198,13 +211,22 @@
       }
 
       countrySelect.addEventListener("change", () => {
+        addingCountry = false;
         city.value = "";
         stateOther.value = "";
-        if (countrySelect.value !== "__OTHER__") otherCountry.value = "";
+        otherCountry.value = "";
         refreshCountryMode();
       });
       otherCountry.addEventListener("input", () => {
         refreshCountryMode();
+      });
+      document.getElementById("addCountryButton").addEventListener("click", () => {
+        addingCountry = true;
+        otherCountry.value = "";
+        city.value = "";
+        stateOther.value = "";
+        refreshCountryMode();
+        otherCountry.focus();
       });
 
       stateBrazil.addEventListener("change", () => {
@@ -221,7 +243,9 @@
           return;
         }
 
+        addingCountry = false;
         countrySelect.value = "Brasil";
+        otherCountry.value = "";
         refreshCountryMode();
         setStatus("Buscando CEP...");
 

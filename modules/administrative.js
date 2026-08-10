@@ -10,6 +10,7 @@ const { formatCnpj, formatCpfCnpj, formatPhone } = require("../utils/format");
 const {
   countryFromBody,
   countryOptionsFromClients,
+  documentForCountry,
   phoneForCountry,
   validateClientData,
 } = require("../utils/revenueClients");
@@ -559,7 +560,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const country = countryFromBody(req.body);
     const data = {
       fullName: cleanText(req.body.fullName),
-      document: formatCpfCnpj(cleanText(req.body.document)) || null,
+      document: documentForCountry(req.body.document, country, formatCpfCnpj),
       cep: cleanText(req.body.cep) || null,
       street: cleanText(req.body.street) || null,
       number: cleanText(req.body.number) || null,
@@ -1065,11 +1066,12 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requirePermission("admin.administrative"),
     async (req, res) => {
       try {
-        await ensureUniqueClientDocument(req, req.body.document);
+        const data = clientData(req);
+        await ensureUniqueClientDocument(req, data.document);
         await prisma.revenueClient.create({
           data: {
             ownerId: req.session?.userId || null,
-            ...clientData(req),
+            ...data,
           },
         });
         res.redirect("/administrativo/clientes?ok=1");
@@ -1121,10 +1123,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       if (!client) return res.status(404).send("Cliente não encontrado.");
 
       try {
-        await ensureUniqueClientDocument(req, req.body.document, client.id);
+        const data = clientData(req);
+        await ensureUniqueClientDocument(req, data.document, client.id);
         await prisma.revenueClient.update({
           where: { id: client.id },
-          data: clientData(req),
+          data,
         });
         res.redirect("/administrativo/clientes?ok=1");
       } catch (err) {

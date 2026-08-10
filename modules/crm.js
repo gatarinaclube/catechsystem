@@ -8,6 +8,7 @@ const { formatCpfCnpj, formatPhone } = require("../utils/format");
 const {
   countryFromBody,
   countryOptionsFromClients,
+  documentForCountry,
   phoneForCountry,
   validateClientData,
 } = require("../utils/revenueClients");
@@ -409,7 +410,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const country = countryFromBody(req.body);
     const data = {
       fullName: req.body.fullName,
-      document: formatCpfCnpj(req.body.document) || null,
+      document: documentForCountry(req.body.document, country, formatCpfCnpj),
       cep: req.body.cep || null,
       street: req.body.street || null,
       number: req.body.number || null,
@@ -1217,11 +1218,12 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
   router.post("/crm/clientes/novo", requireAuth, requirePermission("admin.crm"), async (req, res) => {
     try {
-      await ensureUniqueDocument(req, req.body.document);
+      const data = clientData(req);
+      await ensureUniqueDocument(req, data.document);
       await prisma.revenueClient.create({
         data: {
           ownerId: req.session?.userId || null,
-          ...clientData(req),
+          ...data,
         },
       });
       res.redirect("/crm");
@@ -1275,10 +1277,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     if (!client) return res.status(404).send("Cliente não encontrado.");
 
     try {
-      await ensureUniqueDocument(req, req.body.document, client.id);
+      const data = clientData(req);
+      await ensureUniqueDocument(req, data.document, client.id);
       await prisma.revenueClient.update({
         where: { id: client.id },
-        data: clientData(req),
+        data,
       });
       res.redirect("/crm");
     } catch (err) {
