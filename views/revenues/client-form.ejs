@@ -38,12 +38,24 @@
           </div>
         </div>
 
-        <div class="field">
-          <label for="country">País</label>
-          <select id="country" name="country">
-            <option value="Brasil" <%= !client || !client.country || client.country === 'Brasil' ? 'selected' : '' %>>Brasil</option>
-            <option value="Outro País" <%= client && client.country && client.country !== 'Brasil' ? 'selected' : '' %>>Outro País</option>
-          </select>
+        <% const countryOptions = Array.isArray(countries) && countries.length ? countries : ['Brasil']; %>
+        <% const currentCountry = client && client.country ? client.country : 'Brasil'; %>
+        <% const selectedCountryInList = countryOptions.some(function(item) { return String(item || '').toLowerCase() === String(currentCountry || '').toLowerCase(); }); %>
+        <div class="quick-grid">
+          <div class="field">
+            <label for="countrySelect">País</label>
+            <select id="countrySelect">
+              <% countryOptions.forEach(function(countryOption) { %>
+                <option value="<%= countryOption %>" <%= selectedCountryInList && currentCountry === countryOption ? 'selected' : '' %>><%= countryOption %></option>
+              <% }) %>
+              <option value="__OTHER__" <%= !selectedCountryInList ? 'selected' : '' %>>Outro País</option>
+            </select>
+            <input id="country" name="country" type="hidden" value="<%= selectedCountryInList ? currentCountry : 'Outro País' %>" />
+          </div>
+          <div class="field" id="otherCountryField" hidden>
+            <label for="otherCountry">Nome do país</label>
+            <input id="otherCountry" name="otherCountry" value="<%= !selectedCountryInList ? currentCountry : '' %>" placeholder="Digite o país" />
+          </div>
         </div>
 
         <div class="inline-action-row">
@@ -105,7 +117,10 @@
         ["SP", "São Paulo"], ["SE", "Sergipe"], ["TO", "Tocantins"]
       ];
 
+      const countrySelect = document.getElementById("countrySelect");
       const country = document.getElementById("country");
+      const otherCountryField = document.getElementById("otherCountryField");
+      const otherCountry = document.getElementById("otherCountry");
       const stateHidden = document.getElementById("state");
       const stateBrazil = document.getElementById("stateBrazil");
       const stateOther = document.getElementById("stateOther");
@@ -114,6 +129,9 @@
       const city = document.getElementById("city");
       const cityOptions = document.getElementById("cityOptions");
       const cepStatus = document.getElementById("cepStatus");
+      const phoneInput = document.getElementById("phone");
+      const emailInput = document.getElementById("email");
+      const cepLookupButton = document.getElementById("cepLookup");
       const cityCache = {};
       const initialState = stateHidden.value || "AC";
       const initialCity = city.value || "";
@@ -128,6 +146,14 @@
 
       function isBrazil() {
         return country.value === "Brasil";
+      }
+
+      function syncCountryValue() {
+        const selected = countrySelect.value;
+        const isOther = selected === "__OTHER__";
+        otherCountryField.hidden = !isOther;
+        otherCountry.required = isOther;
+        country.value = isOther ? (otherCountry.value.trim() || "Outro País") : selected;
       }
 
       function syncState() {
@@ -155,9 +181,15 @@
       }
 
       function refreshCountryMode() {
+        syncCountryValue();
         const brazil = isBrazil();
         stateBrazilField.hidden = !brazil;
         stateOtherField.hidden = brazil;
+        emailInput.required = !brazil;
+        phoneInput.required = !brazil;
+        phoneInput.dataset.phoneMask = brazil ? "true" : "false";
+        cepLookupButton.disabled = !brazil;
+        cepLookupButton.style.display = brazil ? "" : "none";
         cityOptions.innerHTML = "";
         syncState();
         if (brazil) {
@@ -165,9 +197,13 @@
         }
       }
 
-      country.addEventListener("change", () => {
+      countrySelect.addEventListener("change", () => {
         city.value = "";
         stateOther.value = "";
+        if (countrySelect.value !== "__OTHER__") otherCountry.value = "";
+        refreshCountryMode();
+      });
+      otherCountry.addEventListener("input", () => {
         refreshCountryMode();
       });
 
@@ -185,7 +221,7 @@
           return;
         }
 
-        country.value = "Brasil";
+        countrySelect.value = "Brasil";
         refreshCountryMode();
         setStatus("Buscando CEP...");
 
@@ -213,6 +249,7 @@
         }
       });
 
+      refreshCountryMode();
       if (isBrazil()) {
         stateBrazil.value = states.some(([uf]) => uf === initialState) ? initialState : "AC";
       } else {

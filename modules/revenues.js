@@ -2,6 +2,12 @@ const express = require("express");
 const { dataOwnerScope, userCan } = require("../utils/access");
 const { buildDisplayName, kittenFallbackDisplayName } = require("../utils/cattery-admin");
 const { formatCpfCnpj, formatPhone } = require("../utils/format");
+const {
+  countryFromBody,
+  countryOptionsFromClients,
+  phoneForCountry,
+  validateClientData,
+} = require("../utils/revenueClients");
 
 const DEFAULT_PAYMENT_ACCOUNT = "";
 
@@ -307,6 +313,14 @@ module.exports = (prisma) => {
         { ownerId: null },
       ],
     };
+  }
+
+  async function loadClientCountryOptions(req, currentCountry = "") {
+    const clients = await prisma.revenueClient.findMany({
+      where: clientScope(req),
+      select: { country: true },
+    });
+    return countryOptionsFromClients(clients, currentCountry);
   }
 
   function normalizeDocument(value) {
@@ -726,6 +740,7 @@ function buildRevenueData(body, existing = null) {
       formAction: "/receitas/clientes/novo",
       backPath: "/receitas",
       client: null,
+      countries: await loadClientCountryOptions(req),
       error: null,
       currentPath: "/receitas",
     });
@@ -734,22 +749,25 @@ function buildRevenueData(body, existing = null) {
   router.post("/receitas/clientes/novo", async (req, res) => {
     try {
       await ensureUniqueClientDocument(req, req.body.document);
+      const country = countryFromBody(req.body);
+      const data = {
+        ownerId: req.session?.userId || null,
+        fullName: req.body.fullName,
+        document: formatCpfCnpj(req.body.document) || null,
+        cep: req.body.cep || null,
+        street: req.body.street || null,
+        number: req.body.number || null,
+        complement: req.body.complement || null,
+        neighborhood: req.body.neighborhood || null,
+        city: req.body.city || null,
+        state: req.body.state || null,
+        country,
+        email: req.body.email || null,
+        phone: phoneForCountry(req.body.phone, country, formatPhone),
+      };
+      validateClientData(data);
       await prisma.revenueClient.create({
-        data: {
-          ownerId: req.session?.userId || null,
-          fullName: req.body.fullName,
-          document: formatCpfCnpj(req.body.document) || null,
-          cep: req.body.cep || null,
-          street: req.body.street || null,
-          number: req.body.number || null,
-          complement: req.body.complement || null,
-          neighborhood: req.body.neighborhood || null,
-          city: req.body.city || null,
-          state: req.body.state || null,
-          country: req.body.country || null,
-          email: req.body.email || null,
-          phone: formatPhone(req.body.phone) || null,
-        },
+        data,
       });
       res.redirect("/receitas");
     } catch (err) {
@@ -758,6 +776,7 @@ function buildRevenueData(body, existing = null) {
         formAction: "/receitas/clientes/novo",
         backPath: "/receitas",
         client: req.body,
+        countries: await loadClientCountryOptions(req, countryFromBody(req.body)),
         error: err.message || "Erro ao salvar cliente.",
         currentPath: "/receitas",
       });

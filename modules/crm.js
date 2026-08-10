@@ -5,6 +5,12 @@ const path = require("path");
 const multer = require("multer");
 const { sendStatusEmail } = require("../utils/mailer");
 const { formatCpfCnpj, formatPhone } = require("../utils/format");
+const {
+  countryFromBody,
+  countryOptionsFromClients,
+  phoneForCountry,
+  validateClientData,
+} = require("../utils/revenueClients");
 
 const baseUploadsDir = process.env.UPLOADS_DIR
   ? process.env.UPLOADS_DIR
@@ -400,7 +406,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   }
 
   function clientData(req) {
-    return {
+    const country = countryFromBody(req.body);
+    const data = {
       fullName: req.body.fullName,
       document: formatCpfCnpj(req.body.document) || null,
       cep: req.body.cep || null,
@@ -410,10 +417,20 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       neighborhood: req.body.neighborhood || null,
       city: req.body.city || null,
       state: req.body.state || null,
-      country: req.body.country || null,
+      country,
       email: req.body.email || null,
-      phone: formatPhone(req.body.phone) || null,
+      phone: phoneForCountry(req.body.phone, country, formatPhone),
     };
+    validateClientData(data);
+    return data;
+  }
+
+  async function loadClientCountryOptions(req, currentCountry = "") {
+    const clients = await prisma.revenueClient.findMany({
+      where: clientScope(req),
+      select: { country: true },
+    });
+    return countryOptionsFromClients(clients, currentCountry);
   }
 
   function marketingScope(req) {
@@ -1185,12 +1202,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     }
   });
 
-  router.get("/crm/clientes/novo", requireAuth, requirePermission("admin.crm"), (req, res) => {
+  router.get("/crm/clientes/novo", requireAuth, requirePermission("admin.crm"), async (req, res) => {
     res.render("revenues/client-form", {
       title: "Novo Cliente",
       formAction: "/crm/clientes/novo",
       backPath: "/crm",
       client: null,
+      countries: await loadClientCountryOptions(req),
       deleteAction: null,
       error: null,
       currentPath: "/crm",
@@ -1213,6 +1231,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         formAction: "/crm/clientes/novo",
         backPath: "/crm",
         client: req.body,
+        countries: await loadClientCountryOptions(req, countryFromBody(req.body)),
         deleteAction: null,
         error: err.message || "Erro ao salvar cliente.",
         currentPath: "/crm",
@@ -1238,6 +1257,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         ...client,
         createdAtLabel: formatDateLabel(client.createdAt),
       },
+      countries: await loadClientCountryOptions(req, client.country),
       deleteAction: `/crm/clientes/${client.id}/excluir`,
       error: null,
       currentPath: "/crm",
@@ -1271,6 +1291,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           ...req.body,
           createdAtLabel: formatDateLabel(client.createdAt),
         },
+        countries: await loadClientCountryOptions(req, countryFromBody(req.body)),
         deleteAction: `/crm/clientes/${client.id}/excluir`,
         error: err.message || "Erro ao salvar cliente.",
         currentPath: "/crm",

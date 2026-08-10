@@ -83,8 +83,11 @@
     }
 
     if (shouldMaskPhone(input)) {
-      input.addEventListener("input", () => applyPhoneMask(input));
-      applyPhoneMask(input);
+      input.addEventListener("input", () => {
+        if (input.dataset.phoneMask === "false") return;
+        applyPhoneMask(input);
+      });
+      if (input.dataset.phoneMask !== "false") applyPhoneMask(input);
       return;
     }
 

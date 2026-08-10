@@ -7,6 +7,12 @@ const {
   payableGroupType,
 } = require("../utils/accountPayables");
 const { formatCnpj, formatCpfCnpj, formatPhone } = require("../utils/format");
+const {
+  countryFromBody,
+  countryOptionsFromClients,
+  phoneForCountry,
+  validateClientData,
+} = require("../utils/revenueClients");
 
 function todayForInput() {
   return new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
@@ -550,7 +556,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   }
 
   function clientData(req) {
-    return {
+    const country = countryFromBody(req.body);
+    const data = {
       fullName: cleanText(req.body.fullName),
       document: formatCpfCnpj(cleanText(req.body.document)) || null,
       cep: cleanText(req.body.cep) || null,
@@ -560,10 +567,20 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       neighborhood: cleanText(req.body.neighborhood) || null,
       city: cleanText(req.body.city) || null,
       state: cleanText(req.body.state) || null,
-      country: cleanText(req.body.country) || null,
+      country,
       email: cleanText(req.body.email) || null,
-      phone: formatPhone(req.body.phone) || null,
+      phone: phoneForCountry(req.body.phone, country, formatPhone),
     };
+    validateClientData(data);
+    return data;
+  }
+
+  async function loadClientCountryOptions(req, currentCountry = "") {
+    const clients = await prisma.revenueClient.findMany({
+      where: { ...supplierScope(req), deletedAt: null },
+      select: { country: true },
+    });
+    return countryOptionsFromClients(clients, currentCountry);
   }
 
   function normalizeDocument(value) {
@@ -1028,12 +1045,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     "/administrativo/clientes/novo",
     requireAuth,
     requirePermission("admin.administrative"),
-    (req, res) => {
+    async (req, res) => {
       res.render("revenues/client-form", {
         title: "Novo Cliente",
         formAction: "/administrativo/clientes/novo",
         backPath: "/administrativo/clientes",
         client: null,
+        countries: await loadClientCountryOptions(req),
         deleteAction: null,
         error: null,
         currentPath: "/administrativo",
@@ -1061,6 +1079,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           formAction: "/administrativo/clientes/novo",
           backPath: "/administrativo/clientes",
           client: req.body,
+          countries: await loadClientCountryOptions(req, countryFromBody(req.body)),
           deleteAction: null,
           error: err.message || "Erro ao salvar cliente.",
           currentPath: "/administrativo",
@@ -1083,6 +1102,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         formAction: `/administrativo/clientes/${client.id}`,
         backPath: "/administrativo/clientes",
         client,
+        countries: await loadClientCountryOptions(req, client.country),
         deleteAction: `/administrativo/clientes/${client.id}/excluir`,
         error: null,
         currentPath: "/administrativo",
@@ -1113,6 +1133,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           formAction: `/administrativo/clientes/${client.id}`,
           backPath: "/administrativo/clientes",
           client: { ...client, ...req.body },
+          countries: await loadClientCountryOptions(req, countryFromBody(req.body)),
           deleteAction: `/administrativo/clientes/${client.id}/excluir`,
           error: err.message || "Erro ao salvar cliente.",
           currentPath: "/administrativo",
@@ -1367,7 +1388,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         await ensureFixedPayableWindow(prisma, seed);
       }
 
-      res.redirect(`/despesas?month=${encodeURIComponent(formatMonthInput(paidAt))}&ok=1`);
+      res.redirect("/administrativo/contas-a-pagar?ok=1");
     }
   );
 
