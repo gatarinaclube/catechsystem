@@ -1296,6 +1296,13 @@ function kittenNameOnly(label) {
   return String(label || "-").replace(/^\s*[^-]+-\s*/, "") || "-";
 }
 
+function joinNotes(...notes) {
+  return notes
+    .map((note) => String(note || "").trim())
+    .filter(Boolean)
+    .join(" ");
+}
+
 function parcelCancellationNote(parcel) {
   if (!parcel?.canceled) return "";
   const refundDate = parcel.refundDate ? parseDateInput(parcel.refundDate, null) : null;
@@ -1334,7 +1341,7 @@ function mapRevenueRows(revenues, filters) {
         clientLabel: revenue.client?.fullName || "Cliente desconhecido",
         invoiceLabel: revenue.invoiceNumber ? `NF ${revenue.invoiceNumber}` : "",
         paymentAccount,
-        note: parcelCancellationNote(parcel),
+        note: joinNotes(revenue.note, parcelCancellationNote(parcel)),
       });
     });
   });
@@ -1393,6 +1400,7 @@ function mapReceivableRows(revenues, filters) {
         amountCents: parcel.amountCents || 0,
         clientLabel: revenue.client?.fullName || "Cliente desconhecido",
         paymentAccount,
+        note: revenue.note || "",
       });
     });
   });
@@ -1432,7 +1440,10 @@ function mapRefundRows(revenues, filters) {
         kittenLabel: revenue.kittenLabel || "-",
         clientLabel: revenue.client?.fullName || "Cliente desconhecido",
         paymentAccount,
-        note: `Estorno referente ao pagamento de ${parcel.date ? formatDateOnlyLabel(parseDateInput(parcel.date, null)) : "data não informada"}.`,
+        note: joinNotes(
+          revenue.note,
+          `Estorno referente ao pagamento de ${parcel.date ? formatDateOnlyLabel(parseDateInput(parcel.date, null)) : "data não informada"}.`
+        ),
       });
     });
   });
@@ -2376,12 +2387,12 @@ function renderRevenuesPdf(res, rows, filters, totals) {
 
   const columns = [
     { label: "Data", x: 40, width: 62 },
-    { label: "Filhote", x: 108, width: 95 },
-    { label: "Nota", x: 207, width: 55 },
-    { label: "Pagamento", x: 266, width: 70 },
-    { label: "Cliente", x: 340, width: 76 },
-    { label: "Conta", x: 420, width: 55 },
-    { label: "Valor", x: 479, width: 48 },
+    { label: "Filhote", x: 108, width: 92 },
+    { label: "Nota", x: 204, width: 48 },
+    { label: "Pagamento", x: 256, width: 70 },
+    { label: "Cliente", x: 330, width: 90 },
+    { label: "Conta", x: 424, width: 55 },
+    { label: "Valor", x: 483, width: 72 },
   ];
 
   function drawHeader(y) {
@@ -2405,7 +2416,7 @@ function renderRevenuesPdf(res, rows, filters, totals) {
       { ...columns[5], value: "paymentAccount" },
       { ...columns[6], value: "amountLabel" },
     ], row, 8));
-    const noteHeight = note ? pdfTextHeight(doc, `Obs.: ${note}`, 419, 7) + 4 : 0;
+    const noteHeight = note ? pdfTextHeight(doc, `Obs.: ${note}`, 447, 7) + 4 : 0;
     const noteY = y + textHeight + 4;
     const rowHeight = Math.max(22, textHeight + noteHeight + (note ? 8 : 4));
 
@@ -2437,7 +2448,7 @@ function renderRevenuesPdf(res, rows, filters, totals) {
         .font("Helvetica")
         .fontSize(7)
         .fillColor("#6b7280")
-        .text(`Obs.: ${note}`, columns[1].x, noteY, { width: 419 });
+        .text(`Obs.: ${note}`, columns[1].x, noteY, { width: 447 });
     }
 
     y += rowHeight;
