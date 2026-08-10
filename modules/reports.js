@@ -1235,6 +1235,53 @@ function mapExpenseRows(expenses) {
   }));
 }
 
+function buildTransferExpenseWhere(req, filters) {
+  const where = {
+    ...ownerScope(req),
+    deletedAt: null,
+    transferDate: {
+      gte: filters.startDate,
+      lt: addDays(filters.endDate, 1),
+    },
+  };
+
+  if (filters.account) {
+    where.fromAccount = filters.account;
+  }
+
+  return where;
+}
+
+function mapTransferExpenseRows(transfers, creditCardNames = new Set()) {
+  return transfers.map((transfer) => {
+    const isCreditCardPayment = creditCardNames.has(transfer.toAccount || "");
+    const note = joinNotes(
+      isCreditCardPayment ? "Pagamento de fatura de cartão de crédito." : "",
+      transfer.note
+    );
+
+    return {
+      ...transfer,
+      id: `transfer-${transfer.id}`,
+      category: isCreditCardPayment ? "Pagamento de fatura" : "Transferência entre contas",
+      supplier: transfer.toAccount ? `Para ${transfer.toAccount}` : "Transferência",
+      paymentMethod: transfer.fromAccount || "-",
+      note,
+      competenceDate: transfer.transferDate,
+      dateLabel: formatDateOnlyLabel(transfer.transferDate),
+      amountCents: Number(transfer.amountCents || 0),
+      amountLabel: formatCurrency(transfer.amountCents),
+    };
+  });
+}
+
+function sortExpenseReportRows(rows) {
+  return rows.sort((a, b) => {
+    const dateCompare = new Date(b.competenceDate).getTime() - new Date(a.competenceDate).getTime();
+    return dateCompare || String(b.id).localeCompare(String(a.id));
+  });
+}
+
 function parseParcelData(value) {
   if (!value) return [];
   try {
@@ -3089,11 +3136,18 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         where: buildExpenseWhere(req, filters),
         orderBy: [{ competenceDate: "desc" }, { createdAt: "desc" }],
       });
+      const transfers = await prisma.financialTransfer.findMany({
+        where: buildTransferExpenseWhere(req, filters),
+        orderBy: [{ transferDate: "desc" }, { createdAt: "desc" }],
+      });
       const creditCardNames = await loadCreditCardNames(prisma, req);
       const visibleExpenses = filterCreditCardExpenses(expenses, creditCardNames);
-      const rows = mapExpenseRows(visibleExpenses);
-      const totalCents = visibleExpenses.reduce(
-        (sum, expense) => sum + expense.amountCents,
+      const rows = sortExpenseReportRows([
+        ...mapExpenseRows(visibleExpenses),
+        ...mapTransferExpenseRows(transfers, creditCardNames),
+      ]);
+      const totalCents = rows.reduce(
+        (sum, row) => sum + Number(row.amountCents || 0),
         0
       );
 
@@ -3119,11 +3173,18 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         where: buildExpenseWhere(req, filters),
         orderBy: [{ competenceDate: "desc" }, { createdAt: "desc" }],
       });
+      const transfers = await prisma.financialTransfer.findMany({
+        where: buildTransferExpenseWhere(req, filters),
+        orderBy: [{ transferDate: "desc" }, { createdAt: "desc" }],
+      });
       const creditCardNames = await loadCreditCardNames(prisma, req);
       const visibleExpenses = filterCreditCardExpenses(expenses, creditCardNames);
-      const rows = mapExpenseRows(visibleExpenses);
-      const totalCents = visibleExpenses.reduce(
-        (sum, expense) => sum + expense.amountCents,
+      const rows = sortExpenseReportRows([
+        ...mapExpenseRows(visibleExpenses),
+        ...mapTransferExpenseRows(transfers, creditCardNames),
+      ]);
+      const totalCents = rows.reduce(
+        (sum, row) => sum + Number(row.amountCents || 0),
         0
       );
 
