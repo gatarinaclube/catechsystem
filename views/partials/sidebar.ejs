@@ -228,6 +228,43 @@
 <script src="/js/document-masks.js"></script>
 <% if (typeof adminViewAs !== "undefined" && adminViewAs) { %>
   <script>
+    (() => {
+      const timeoutMs = Number(<%- JSON.stringify(adminViewAs.timeoutMs || 60000) %>);
+      let inactivityTimer = null;
+      let pingTimer = null;
+
+      function stopViewAs() {
+        window.location.href = "/admin/view-as/stop";
+      }
+
+      function scheduleStop() {
+        window.clearTimeout(inactivityTimer);
+        inactivityTimer = window.setTimeout(stopViewAs, timeoutMs);
+      }
+
+      function keepAlive() {
+        window.clearTimeout(pingTimer);
+        pingTimer = window.setTimeout(() => {
+          fetch("/admin/view-as/keepalive", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Accept": "application/json" },
+          }).then((response) => {
+            if (response.status === 204 || response.status === 440) stopViewAs();
+          }).catch(() => {});
+        }, 150);
+      }
+
+      ["click", "keydown", "touchstart"].forEach((eventName) => {
+        document.addEventListener(eventName, () => {
+          scheduleStop();
+          keepAlive();
+        }, { passive: true });
+      });
+
+      scheduleStop();
+    })();
+
     document.querySelectorAll("form").forEach((form) => {
       const method = String(form.getAttribute("method") || "get").toLowerCase();
       const action = String(form.getAttribute("action") || "");

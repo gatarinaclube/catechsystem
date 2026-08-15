@@ -1,9 +1,11 @@
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 const {
   notifyNewUser,
   notifyUserRegistrationConfirmation,
 } = require("../../../utils/adminNotifications");
 const { sendStatusEmail } = require("../../../utils/mailer");
+const { formatCpfCnpj, isValidCpfCnpj } = require("../../../utils/format");
 const {
   getEnrollment,
   getActiveSubscription,
@@ -53,6 +55,45 @@ function gatofiliaSmtpConfig() {
     pass: process.env.GATOFILIA_SMTP_PASS,
     from: gatofiliaMailFrom(),
   };
+}
+
+function addDaysDate(date, days) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function createEmailVerificationToken() {
+  const token = crypto.randomBytes(32).toString("hex");
+  return {
+    token,
+    tokenHash: crypto.createHash("sha256").update(token).digest("hex"),
+    expiresAt: addDaysDate(new Date(), 2),
+  };
+}
+
+function needsEmailVerification(user) {
+  return Boolean(user?.emailVerificationToken && !user?.emailVerifiedAt);
+}
+
+async function sendEmailVerification(req, user, token) {
+  const verifyUrl = absoluteUrl(req, `/email/confirmar?token=${encodeURIComponent(token)}`);
+  const loginUrl = absoluteUrl(req, "/academy/login");
+
+  await sendStatusEmail({
+    to: user.email,
+    subject: "Gatofilia - Confirme seu e-mail",
+    smtpConfig: gatofiliaSmtpConfig(),
+    from: gatofiliaMailFrom(),
+    html: `
+      <h2>Confirme seu e-mail</h2>
+      <p>Olá, ${escapeHtml(user.name)}.</p>
+      <p>Recebemos seu cadastro na Gatofilia. Para acessar pela primeira vez, confirme seu e-mail pelo link abaixo:</p>
+      <p><a href="${verifyUrl}">${verifyUrl}</a></p>
+      <p>Este link expira em 48 horas.</p>
+      <p>Depois da confirmação, acesse em: <a href="${loginUrl}">${loginUrl}</a></p>
+    `,
+  });
 }
 
 function renderPublic(req, res, view, locals = {}) {
@@ -682,7 +723,11 @@ module.exports = (prisma) => ({
   },
 
   loginForm: (req, res) => {
-    renderPublic(req, res, "login", { error: null, seo: { path: "/academy/login", title: "Login | Gatofilia", robots: "noindex,nofollow" } });
+    renderPublic(req, res, "login", {
+      error: null,
+      success: req.query.confirmed === "1" ? "E-mail confirmado com sucesso. Agora você já pode acessar." : null,
+      seo: { path: "/academy/login", title: "Login | Gatofilia", robots: "noindex,nofollow" },
+    });
   },
 
   login: async (req, res) => {
@@ -692,6 +737,13 @@ module.exports = (prisma) => ({
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return renderPublic(req, res, "login", { error: "E-mail ou senha inválidos.", seo: { path: "/academy/login", title: "Login | Gatofilia", robots: "noindex,nofollow" } });
+    }
+
+    if (needsEmailVerification(user)) {
+      return renderPublic(req, res, "login", {
+        error: "Confirme seu cadastro pelo link enviado ao seu e-mail para acessar pela primeira vez.",
+        seo: { path: "/academy/login", title: "Login | Gatofilia", robots: "noindex,nofollow" },
+      });
     }
 
     const [enrollment, subscription] = await Promise.all([
@@ -716,36 +768,52 @@ module.exports = (prisma) => ({
   },
 
   registerForm: (req, res) => {
-    renderPublic(req, res, "register", { error: null, seo: { path: "/academy/cadastro", title: "Cadastro | Gatofilia", robots: "noindex,nofollow" } });
+    renderPublic(req, res, "register", { error: null, success: null, seo: { path: "/academy/cadastro", title: "Cadastro | Gatofilia", robots: "noindex,nofollow" } });
   },
 
   register: async (req, res) => {
     const name = String(req.body.name || "").trim();
     const email = String(req.body.email || "").trim().toLowerCase();
+    const cpf = String(req.body.cpf || "").trim();
     const password = String(req.body.password || "");
 
-    if (!name || !email || password.length < 6) {
+    if (!name || !email || !cpf || password.length < 6) {
       return renderPublic(req, res, "register", {
-        error: "Informe nome, e-mail e uma senha com pelo menos 6 caracteres.",
+        error: "Informe nome, CPF, e-mail e uma senha com pelo menos 6 caracteres.",
+        seo: { path: "/academy/cadastro", title: "Cadastro | Gatofilia", robots: "noindex,nofollow" },
+      });
+    }
+
+    if (!isValidCpfCnpj(cpf)) {
+      return renderPublic(req, res, "register", {
+        error: "Informe um CPF válido. Os dígitos verificadores serão conferidos.",
         seo: { path: "/academy/cadastro", title: "Cadastro | Gatofilia", robots: "noindex,nofollow" },
       });
     }
 
     try {
+      const verification = createEmailVerificationToken();
       const user = await prisma.user.create({
         data: {
           name,
           email,
+          cpf: formatCpfCnpj(cpf),
           password: await bcrypt.hash(password, 10),
           role: "CATBREED",
           approvalStatus: "DEFERIDO",
+          accountOrigin: "ACADEMY",
+          emailVerificationToken: verification.tokenHash,
+          emailVerificationExpiresAt: verification.expiresAt,
         },
       });
-      req.session.userId = user.id;
-      req.session.userRole = user.role;
       await notifyNewUser(prisma, user);
       await notifyUserRegistrationConfirmation(user);
-      return res.redirect("/academy/planos");
+      await sendEmailVerification(req, user, verification.token);
+      return renderPublic(req, res, "register", {
+        success: "Cadastro criado. Enviamos um e-mail de confirmação; clique no link para liberar o primeiro acesso.",
+        error: null,
+        seo: { path: "/academy/cadastro", title: "Cadastro | Gatofilia", robots: "noindex,nofollow" },
+      });
     } catch (err) {
       return renderPublic(req, res, "register", {
         error: "Não foi possível criar o cadastro. Verifique se o e-mail já está em uso.",

@@ -36,6 +36,49 @@ function formatCpfCnpj(value) {
   return text;
 }
 
+function hasRepeatedDigits(digits) {
+  return /^(\d)\1+$/.test(digits);
+}
+
+function isValidCpf(value) {
+  const digits = onlyDigits(value);
+  if (digits.length !== 11 || hasRepeatedDigits(digits)) return false;
+
+  const calculateDigit = (factor) => {
+    let total = 0;
+    for (let index = 0; index < factor - 1; index += 1) {
+      total += Number(digits[index]) * (factor - index);
+    }
+    const remainder = (total * 10) % 11;
+    return remainder === 10 ? 0 : remainder;
+  };
+
+  return calculateDigit(10) === Number(digits[9]) && calculateDigit(11) === Number(digits[10]);
+}
+
+function isValidCnpj(value) {
+  const digits = onlyDigits(value);
+  if (digits.length !== 14 || hasRepeatedDigits(digits)) return false;
+
+  const calculateDigit = (baseLength) => {
+    const weights = baseLength === 12
+      ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+      : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    const total = weights.reduce((sum, weight, index) => sum + Number(digits[index]) * weight, 0);
+    const remainder = total % 11;
+    return remainder < 2 ? 0 : 11 - remainder;
+  };
+
+  return calculateDigit(12) === Number(digits[12]) && calculateDigit(13) === Number(digits[13]);
+}
+
+function isValidCpfCnpj(value) {
+  const digits = onlyDigits(value);
+  if (digits.length === 11) return isValidCpf(digits);
+  if (digits.length === 14) return isValidCnpj(digits);
+  return false;
+}
+
 function formatPhone(value) {
   const text = String(value || "").trim();
   const digits = onlyDigits(text);
@@ -48,4 +91,14 @@ function formatPhone(value) {
   return text;
 }
 
-module.exports = { formatMicrochip, onlyDigits, formatCpf, formatCnpj, formatCpfCnpj, formatPhone };
+module.exports = {
+  formatMicrochip,
+  onlyDigits,
+  formatCpf,
+  formatCnpj,
+  formatCpfCnpj,
+  formatPhone,
+  isValidCpf,
+  isValidCnpj,
+  isValidCpfCnpj,
+};

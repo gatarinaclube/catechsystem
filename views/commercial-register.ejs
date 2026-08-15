@@ -21,6 +21,9 @@
         <% if (typeof error !== "undefined" && error) { %>
           <div class="auth-error"><%= error %></div>
         <% } %>
+        <% if (typeof success !== "undefined" && success) { %>
+          <div class="alert alert-success"><%= success %></div>
+        <% } %>
 
         <form method="post" action="/planos/<%= plan.slug %>/cadastro" class="commercial-register-form">
           <div class="field">

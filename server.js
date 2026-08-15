@@ -94,7 +94,7 @@ const publicMicrochipRouterFactory = require("./modules/public-microchip");
 const helpRouterFactory = require("./modules/help");
 const { startVaccineReminderScheduler } = require("./utils/vaccineReminderJob");
 const { baseSeo, organizationSchema } = require("./utils/seo");
-const { formatCpfCnpj, formatPhone } = require("./utils/format");
+const { formatCpfCnpj, formatPhone, isValidCpfCnpj } = require("./utils/format");
 const { normalizeModulePreferences } = require("./utils/modulePreferences");
 const { getAppVersion } = require("./utils/appVersion");
 const { buildProfilePlanCards, buildPlanComparisonRows } = require("./utils/planComparison");
@@ -243,6 +243,7 @@ app.use(
 
 const ACTIVE_SESSION_WINDOW_MINUTES = 15;
 const COMMERCIAL_ACCESS_EXPIRATION_INTERVAL_MS = 60 * 60 * 1000;
+const ADMIN_VIEW_AS_IDLE_TIMEOUT_MS = 60 * 1000;
 let commercialAccessExpirationJobRunning = false;
 
 app.use((req, res, next) => {
@@ -253,10 +254,22 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res, next) => {
+  if (req.path !== "/admin/view-as/stop" && isAdminViewAsExpired(req)) {
+    restoreAdminViewAs(req);
+  }
+
+  if (req.session?.adminViewAs && isAdminViewAsActivityRequest(req)) {
+    touchAdminViewAs(req);
+  }
+
+  next();
+});
+
+app.use((req, res, next) => {
   const viewAs = req.session?.adminViewAs;
   if (!viewAs || !isWriteMethod(req.method)) return next();
 
-  if (req.path === "/admin/view-as/stop") return next();
+  if (req.path === "/admin/view-as/stop" || req.path === "/admin/view-as/keepalive") return next();
 
   return res.status(403).send(
     "Visualização somente leitura. Retorne ao perfil de administrador para realizar alterações."
@@ -292,7 +305,7 @@ function requirePermission(permission) {
   };
 }
 
-app.post("/admin/view-as/stop", requireAuth, (req, res) => {
+function stopAdminViewAs(req, res) {
   const viewAs = req.session.adminViewAs;
   if (!viewAs?.adminId || !isAdminRole(viewAs.adminRole)) {
     clearAdminViewAs(req);
@@ -303,6 +316,27 @@ app.post("/admin/view-as/stop", requireAuth, (req, res) => {
   req.session.userRole = normalizeRole(viewAs.adminRole);
   clearAdminViewAs(req);
   return res.redirect("/users");
+}
+
+app.get("/admin/view-as/stop", requireAuth, stopAdminViewAs);
+app.post("/admin/view-as/stop", requireAuth, stopAdminViewAs);
+
+app.post("/admin/view-as/keepalive", requireAuth, (req, res) => {
+  if (!req.session?.adminViewAs) {
+    return res.status(204).end();
+  }
+
+  if (isAdminViewAsExpired(req)) {
+    restoreAdminViewAs(req);
+    return res.status(440).json({ expired: true, redirectTo: "/users" });
+  }
+
+  touchAdminViewAs(req);
+  return res.json({
+    ok: true,
+    expiresAt: req.session.adminViewAs.expiresAt,
+    timeoutMs: ADMIN_VIEW_AS_IDLE_TIMEOUT_MS,
+  });
 });
 
 function isWriteMethod(method) {
@@ -311,6 +345,39 @@ function isWriteMethod(method) {
 
 function clearAdminViewAs(req) {
   delete req.session.adminViewAs;
+}
+
+function touchAdminViewAs(req) {
+  if (!req.session?.adminViewAs) return;
+  const now = Date.now();
+  req.session.adminViewAs.lastActivityAt = new Date(now).toISOString();
+  req.session.adminViewAs.expiresAt = new Date(now + ADMIN_VIEW_AS_IDLE_TIMEOUT_MS).toISOString();
+}
+
+function isAdminViewAsExpired(req) {
+  const viewAs = req.session?.adminViewAs;
+  if (!viewAs?.adminId || !isAdminRole(viewAs.adminRole)) return false;
+  const expiresAt = viewAs.expiresAt ? new Date(viewAs.expiresAt).getTime() : 0;
+  return !expiresAt || expiresAt <= Date.now();
+}
+
+function restoreAdminViewAs(req) {
+  const viewAs = req.session?.adminViewAs;
+  if (!viewAs?.adminId || !isAdminRole(viewAs.adminRole)) {
+    clearAdminViewAs(req);
+    return false;
+  }
+
+  req.session.userId = viewAs.adminId;
+  req.session.userRole = normalizeRole(viewAs.adminRole);
+  clearAdminViewAs(req);
+  return true;
+}
+
+function isAdminViewAsActivityRequest(req) {
+  if (req.path === "/admin/view-as/stop") return false;
+  if (req.path === "/admin/view-as/keepalive") return true;
+  return ["GET", "HEAD"].includes(String(req.method || "").toUpperCase());
 }
 
 function isInitialSetupAllowedPath(pathValue) {
@@ -889,6 +956,12 @@ async function handleSystemLogin(req, res, loginKind) {
       return res.render("login", loginViewOptions(loginKind, { error: "Usuário ou senha inválidos" }));
     }
 
+    if (needsEmailVerification(user)) {
+      return res.render("login", loginViewOptions(loginKind, {
+        error: "Confirme seu cadastro pelo link enviado ao seu e-mail para acessar pela primeira vez.",
+      }));
+    }
+
     const associationStatus = associationPaymentStatus(user);
     if (associationStatus) {
       clearAdminViewAs(req);
@@ -996,6 +1069,8 @@ app.use(async (req, res, next) => {
             role: normalizeRole(adminUser.role),
           },
           target: req.user,
+          expiresAt: req.session.adminViewAs.expiresAt,
+          timeoutMs: ADMIN_VIEW_AS_IDLE_TIMEOUT_MS,
         };
         res.locals.adminViewAs = req.adminViewAs;
       } else {
@@ -1308,8 +1383,35 @@ function escapePublicContactValue(value) {
     .replace(/"/g, "&quot;");
 }
 
-function billingDocumentDigits(value) {
-  return String(value || "").replace(/\D/g, "");
+function createEmailVerificationToken() {
+  const token = crypto.randomBytes(32).toString("hex");
+  return {
+    token,
+    tokenHash: crypto.createHash("sha256").update(token).digest("hex"),
+    expiresAt: addDaysDate(new Date(), 2),
+  };
+}
+
+function needsEmailVerification(user) {
+  return Boolean(user?.emailVerificationToken && !user?.emailVerifiedAt);
+}
+
+async function sendEmailVerification(req, user, token, loginPath = "/login") {
+  const verifyUrl = buildAbsoluteUrl(req, `/email/confirmar?token=${encodeURIComponent(token)}`);
+  const safeName = escapePublicContactValue(user.name);
+
+  await sendStatusEmail({
+    to: user.email,
+    subject: "PetGus - Confirme seu e-mail",
+    html: `
+      <h2>Confirme seu e-mail</h2>
+      <p>Olá, ${safeName}.</p>
+      <p>Recebemos seu cadastro no PetGus. Para acessar pela primeira vez, confirme seu e-mail pelo link abaixo:</p>
+      <p><a href="${verifyUrl}">${verifyUrl}</a></p>
+      <p>Este link expira em 48 horas.</p>
+      <p>Depois da confirmação, acesse em: <a href="${buildAbsoluteUrl(req, loginPath)}">${buildAbsoluteUrl(req, loginPath)}</a></p>
+    `,
+  });
 }
 
 function gatofiliaHostMatches(host) {
@@ -1508,6 +1610,50 @@ app.post("/gatofilia/login", async (req, res) => {
   return handleSystemLogin(req, res, "gatofilia");
 });
 
+app.get("/email/confirmar", async (req, res) => {
+  const token = String(req.query.token || "").trim();
+  if (!token) {
+    return res.render("login", loginViewOptions("commercial", {
+      error: "Link de confirmação inválido.",
+    }));
+  }
+
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  const user = await prisma.user.findUnique({
+    where: { emailVerificationToken: tokenHash },
+  });
+
+  if (!user) {
+    return res.render("login", loginViewOptions("commercial", {
+      error: "Link de confirmação inválido ou já utilizado.",
+    }));
+  }
+
+  if (user.emailVerificationExpiresAt && user.emailVerificationExpiresAt < new Date()) {
+    return res.render("login", loginViewOptions("commercial", {
+      error: "Link de confirmação expirado. Solicite um novo cadastro ou fale com o suporte.",
+    }));
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      emailVerifiedAt: new Date(),
+      emailVerificationToken: null,
+      emailVerificationExpiresAt: null,
+    },
+  });
+
+  if (user.accountOrigin === "ACADEMY") {
+    return res.redirect("/academy/login?confirmed=1");
+  }
+
+  const loginKind = user.accountOrigin === "ASSOCIATE" ? "gatarina" : "commercial";
+  return res.render("login", loginViewOptions(loginKind, {
+    success: "E-mail confirmado com sucesso. Agora você já pode acessar.",
+  }));
+});
+
 app.get("/forgot-password", (req, res) => {
   const brandTitle = gatofiliaHostMatches(req.hostname) ? "Gatofilia" : "PetGus";
   res.render("forgot-password", {
@@ -1686,7 +1832,7 @@ app.post("/reset-password/:token", async (req, res) => {
 
 // ---------- CADASTRO DE USUÁRIO ----------
 app.get("/register", (req, res) => {
-  res.render("register", { error: null });
+  res.render("register", { error: null, success: null });
 });
 
 app.post("/register", async (req, res) => {
@@ -1717,8 +1863,11 @@ const {
       });
     }
 
-    if (![11, 14].includes(billingDocumentDigits(cpf).length)) {
-      return res.render("register", { error: "Informe um CPF ou CNPJ válido para gerar a cobrança de associação." });
+    if (!isValidCpfCnpj(cpf)) {
+      return res.render("register", {
+        error: "Informe um CPF válido. Os dígitos verificadores serão conferidos.",
+        success: null,
+      });
     }
 
     if (password !== confirmPassword) {
@@ -1731,6 +1880,7 @@ const {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
+    const verification = createEmailVerificationToken();
 
     let clubsValue = null;
     if (Array.isArray(clubs)) {
@@ -1757,6 +1907,8 @@ const createdUser = await prisma.user.create({
     accountOrigin: "ASSOCIATE",
     selectedPlan: ROLES.ASSOCIADO_A,
     subscriptionStatus: "PENDING_ASSOCIATION_PAYMENT",
+    emailVerificationToken: verification.tokenHash,
+    emailVerificationExpiresAt: verification.expiresAt,
 
     hasFifeCattery: hasFifeCattery || "NO",
     fifeCatteryName:
@@ -1766,11 +1918,12 @@ const createdUser = await prisma.user.create({
 
 await notifyNewUser(prisma, createdUser);
 await notifyUserRegistrationConfirmation(createdUser);
+await sendEmailVerification(req, createdUser, verification.token, "/login-gatarina");
 
-    req.session.userId = createdUser.id;
-    req.session.userRole = normalizeRole(createdUser.role);
-
-    return res.redirect("/associacao/pagamento");
+    return res.render("register", {
+      error: null,
+      success: "Cadastro recebido. Enviamos um e-mail de confirmação; clique no link para validar seu cadastro antes de acessar.",
+    });
   } catch (err) {
     console.error("Erro no cadastro:", err);
     return res.status(500).send("Erro no cadastro");
@@ -1839,6 +1992,7 @@ app.get("/planos/:plan/cadastro", (req, res) => {
   const plan = resolveCommercialPlan(req.params.plan);
   res.render("commercial-register", {
     error: null,
+    success: null,
     plan,
     plans: commercialPlanList(),
     billingOptions: billingOptionsForPlan(plan),
@@ -1867,9 +2021,9 @@ app.post("/planos/:plan/cadastro", async (req, res) => {
       });
     }
 
-    if (![11, 14].includes(billingDocumentDigits(cpf).length)) {
+    if (!isValidCpfCnpj(cpf)) {
       return res.render("commercial-register", {
-        error: "Informe um CPF ou CNPJ válido para gerar a cobrança.",
+        error: "Informe um CPF/CNPJ válido. Os dígitos verificadores serão conferidos.",
         plan,
         plans: commercialPlanList(),
         billingOptions: billingOptionsForPlan(plan),
@@ -1906,6 +2060,7 @@ app.post("/planos/:plan/cadastro", async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
     const trialEndsAt = addDaysDate(new Date(), 7);
+    const verification = createEmailVerificationToken();
 
     const createdUser = await prisma.user.create({
       data: {
@@ -1920,16 +2075,22 @@ app.post("/planos/:plan/cadastro", async (req, res) => {
         selectedPlan: plan.key,
         subscriptionStatus: "TRIALING",
         trialEndsAt,
+        emailVerificationToken: verification.tokenHash,
+        emailVerificationExpiresAt: verification.expiresAt,
       },
     });
 
     await notifyNewUser(prisma, createdUser);
     await notifyUserRegistrationConfirmation(createdUser);
+    await sendEmailVerification(req, createdUser, verification.token, "/login");
 
-    req.session.userId = createdUser.id;
-    req.session.userRole = normalizeRole(createdUser.role);
-
-    return res.redirect("/dashboard");
+    return res.render("commercial-register", {
+      error: null,
+      success: "Cadastro criado. Enviamos um e-mail de confirmação; clique no link para liberar o primeiro acesso.",
+      plan,
+      plans: commercialPlanList(),
+      billingOptions: billingOptionsForPlan(plan),
+    });
   } catch (err) {
     console.error("Erro no cadastro comercial:", err);
     return res.status(500).render("commercial-register", {
@@ -2018,9 +2179,9 @@ app.post("/billing/dados", requireAuth, async (req, res) => {
   const user = await prisma.user.findUnique({ where: { id: req.session.userId } });
   if (!user) return res.redirect("/login");
 
-  if (![11, 14].includes(billingDocumentDigits(cpf).length)) {
+  if (!isValidCpfCnpj(cpf)) {
     return res.render("billing-customer-data", {
-      error: "Informe um CPF ou CNPJ válido para gerar a cobrança.",
+      error: "Informe um CPF/CNPJ válido para gerar a cobrança.",
       user: { ...user, cpf, phones },
     });
   }
@@ -2043,7 +2204,7 @@ app.get("/billing/pay", requireAuth, async (req, res) => {
     });
 
     if (!user) return res.redirect("/login");
-    if (![11, 14].includes(billingDocumentDigits(user.cpf).length)) {
+    if (!isValidCpfCnpj(user.cpf)) {
       return res.redirect("/billing/dados");
     }
 
@@ -2069,7 +2230,7 @@ app.post("/billing/pay", requireAuth, async (req, res) => {
     });
 
     if (!user) return res.redirect("/login");
-    if (![11, 14].includes(billingDocumentDigits(user.cpf).length)) {
+    if (!isValidCpfCnpj(user.cpf)) {
       return res.redirect("/billing/dados");
     }
 

@@ -211,7 +211,7 @@ async function notifyNewUser(prisma, user) {
       <p><strong>Nome:</strong> ${escapeHtml(user.name)}</p>
       <p><strong>E-mail:</strong> ${escapeHtml(user.email)}</p>
       <p><strong>Telefone:</strong> ${escapeHtml(user.phones || "-")}</p>
-      <p><strong>Origem:</strong> ${escapeHtml(user.accountOrigin === "NON_ASSOCIATE" ? "Usuário comercial PetGus" : user.accountOrigin === "ASSOCIATE" ? "Solicitação de associação Gatarina" : "Cadastro interno")}</p>
+      <p><strong>Origem:</strong> ${escapeHtml(user.accountOrigin === "NON_ASSOCIATE" ? "Usuário comercial PetGus" : user.accountOrigin === "ASSOCIATE" ? "Solicitação de associação Gatarina" : user.accountOrigin === "ACADEMY" ? "Cadastro Gatofilia" : "Cadastro interno")}</p>
       <p><strong>Perfil/plano:</strong> ${escapeHtml(user.selectedPlan || user.role || "-")}</p>
       <p><strong>Status:</strong> ${escapeHtml(user.subscriptionStatus || user.approvalStatus || "-")}</p>
       <p><strong>Gatil FIFe:</strong> ${escapeHtml(user.hasFifeCattery === "YES" ? (user.fifeCatteryName || "Sim") : "Não")}</p>
@@ -221,7 +221,12 @@ async function notifyNewUser(prisma, user) {
 }
 
 async function notifyUserRegistrationConfirmation(user) {
-  const loginPath = user.accountOrigin === "NON_ASSOCIATE" ? "/login" : "/login-gatarina";
+  const loginPath = user.accountOrigin === "ACADEMY"
+    ? "/academy/login"
+    : user.accountOrigin === "NON_ASSOCIATE"
+    ? "/login"
+    : "/login-gatarina";
+  const hasPendingEmailVerification = Boolean(user.emailVerificationToken && !user.emailVerifiedAt);
   return sendUserNotification({
     to: user.email,
     subject: "PetGus - Cadastro recebido",
@@ -232,7 +237,9 @@ async function notifyUserRegistrationConfirmation(user) {
       <p><strong>E-mail:</strong> ${escapeHtml(user.email)}</p>
       <p><strong>Telefone:</strong> ${escapeHtml(user.phones || "-")}</p>
       <p><strong>Gatil FIFe:</strong> ${escapeHtml(user.hasFifeCattery === "YES" ? (user.fifeCatteryName || "Sim") : "Não")}</p>
-      <p>Acesse o sistema em: <a href="${appUrl(loginPath)}">${appUrl(loginPath)}</a></p>
+      ${hasPendingEmailVerification
+        ? "<p>Para liberar o primeiro acesso, confirme seu e-mail pelo link de validação que enviamos em seguida.</p>"
+        : `<p>Acesse o sistema em: <a href="${appUrl(loginPath)}">${appUrl(loginPath)}</a></p>`}
     `,
   });
 }

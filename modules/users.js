@@ -137,6 +137,8 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       adminRole: ROLES.ADMIN,
       targetId: targetUser.id,
       startedAt: new Date().toISOString(),
+      lastActivityAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 60 * 1000).toISOString(),
     };
     req.session.userId = targetUser.id;
     req.session.userRole = normalizeRole(targetUser.role);

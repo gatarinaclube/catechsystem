@@ -17,6 +17,9 @@
       <% if (typeof error !== "undefined" && error) { %>
         <div class="auth-error"><%= error %></div>
       <% } %>
+      <% if (typeof success !== "undefined" && success) { %>
+        <div class="alert alert-success"><%= success %></div>
+      <% } %>
 
       <form method="post" action="<%= typeof formAction !== 'undefined' ? formAction : '/login' %>" class="auth-form">
         <div class="auth-field">
