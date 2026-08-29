@@ -41,9 +41,17 @@
               <input id="phones" name="phones" type="text" />
             </div>
             <div class="field">
-              <label class="field-label" for="cpf">CPF/CNPJ</label>
-              <input id="cpf" name="cpf" type="text" inputmode="numeric" maxlength="18" required />
+              <label class="field-label" for="country">País</label>
+              <select id="country" name="country" required>
+                <option value="Brasil" selected>Brasil</option>
+                <option value="Argentina">Argentina</option>
+              </select>
             </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="cpf" data-document-label>CPF/CNPJ</label>
+            <input id="cpf" name="cpf" type="text" inputmode="numeric" maxlength="18" required />
           </div>
 
           <div class="grid-2">
@@ -89,5 +97,24 @@
       </section>
     </main>
     <script src="/js/document-masks.js"></script>
+    <script>
+      (() => {
+        const country = document.getElementById("country");
+        const documentInput = document.getElementById("cpf");
+        const documentLabel = document.querySelector("[data-document-label]");
+        if (!country || !documentInput || !documentLabel) return;
+
+        function updateDocumentField() {
+          const isArgentina = country.value === "Argentina";
+          documentLabel.textContent = isArgentina ? "DNI/CNI" : "CPF/CNPJ";
+          documentInput.placeholder = isArgentina ? "Somente números" : "";
+          documentInput.maxLength = isArgentina ? 10 : 18;
+          documentInput.dataset.documentMask = isArgentina ? "false" : "cpf-cnpj";
+        }
+
+        country.addEventListener("change", updateDocumentField);
+        updateDocumentField();
+      })();
+    </script>
   </body>
 </html>

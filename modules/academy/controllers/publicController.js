@@ -5,7 +5,12 @@ const {
   notifyUserRegistrationConfirmation,
 } = require("../../../utils/adminNotifications");
 const { sendStatusEmail } = require("../../../utils/mailer");
-const { formatCpfCnpj, isValidCpfCnpj } = require("../../../utils/format");
+const {
+  documentLabelForCountry,
+  formatDocumentForCountry,
+  isValidDocumentForCountry,
+  normalizeCountry,
+} = require("../../../utils/format");
 const {
   getEnrollment,
   getActiveSubscription,
@@ -774,19 +779,23 @@ module.exports = (prisma) => ({
   register: async (req, res) => {
     const name = String(req.body.name || "").trim();
     const email = String(req.body.email || "").trim().toLowerCase();
+    const country = normalizeCountry(req.body.country);
     const cpf = String(req.body.cpf || "").trim();
     const password = String(req.body.password || "");
+    const documentLabel = documentLabelForCountry(country);
 
     if (!name || !email || !cpf || password.length < 6) {
       return renderPublic(req, res, "register", {
-        error: "Informe nome, CPF, e-mail e uma senha com pelo menos 6 caracteres.",
+        error: `Informe nome, ${documentLabel}, e-mail e uma senha com pelo menos 6 caracteres.`,
         seo: { path: "/academy/cadastro", title: "Cadastro | Gatofilia", robots: "noindex,nofollow" },
       });
     }
 
-    if (!isValidCpfCnpj(cpf)) {
+    if (!isValidDocumentForCountry(cpf, country)) {
       return renderPublic(req, res, "register", {
-        error: "Informe um CPF válido. Os dígitos verificadores serão conferidos.",
+        error: country === "Argentina"
+          ? "Informe um DNI/CNI válido, com 7 ou 8 dígitos."
+          : "Informe um CPF/CNPJ válido. Os dígitos verificadores serão conferidos.",
         seo: { path: "/academy/cadastro", title: "Cadastro | Gatofilia", robots: "noindex,nofollow" },
       });
     }
@@ -797,7 +806,8 @@ module.exports = (prisma) => ({
         data: {
           name,
           email,
-          cpf: formatCpfCnpj(cpf),
+          country,
+          cpf: formatDocumentForCountry(cpf, country),
           password: await bcrypt.hash(password, 10),
           role: "CATBREED",
           approvalStatus: "DEFERIDO",

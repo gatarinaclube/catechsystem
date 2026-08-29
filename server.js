@@ -94,7 +94,15 @@ const publicMicrochipRouterFactory = require("./modules/public-microchip");
 const helpRouterFactory = require("./modules/help");
 const { startVaccineReminderScheduler } = require("./utils/vaccineReminderJob");
 const { baseSeo, organizationSchema } = require("./utils/seo");
-const { formatCpfCnpj, formatPhone, isValidCpfCnpj } = require("./utils/format");
+const {
+  documentLabelForCountry,
+  formatCpfCnpj,
+  formatDocumentForCountry,
+  formatPhone,
+  isValidCpfCnpj,
+  isValidDocumentForCountry,
+  normalizeCountry,
+} = require("./utils/format");
 const { normalizeModulePreferences } = require("./utils/modulePreferences");
 const { getAppVersion } = require("./utils/appVersion");
 const { buildProfilePlanCards, buildPlanComparisonRows } = require("./utils/planComparison");
@@ -1854,18 +1862,23 @@ const {
   fifeCatteryName
 } = req.body;
   const normalizedEmail = String(email || "").trim().toLowerCase();
+  const normalizedCountry = normalizeCountry(country);
+  const documentLabel = documentLabelForCountry(normalizedCountry);
 
 
   try {
     if (!name || !normalizedEmail || !cpf || !password || !confirmPassword) {
       return res.render("register", {
-        error: "Preencha pelo menos Nome, CPF, E-mail e Senha.",
+        error: `Preencha pelo menos Nome, ${documentLabel}, E-mail e Senha.`,
+        success: null,
       });
     }
 
-    if (!isValidCpfCnpj(cpf)) {
+    if (!isValidDocumentForCountry(cpf, normalizedCountry)) {
       return res.render("register", {
-        error: "Informe um CPF válido. Os dígitos verificadores serão conferidos.",
+        error: normalizedCountry === "Argentina"
+          ? "Informe um DNI/CNI válido, com 7 ou 8 dígitos."
+          : "Informe um CPF/CNPJ válido. Os dígitos verificadores serão conferidos.",
         success: null,
       });
     }
@@ -1896,10 +1909,10 @@ const createdUser = await prisma.user.create({
     city,
     cep,
     state,
-    country,
+    country: normalizedCountry,
     phones: formatPhone(phones),
     email: normalizedEmail,
-    cpf: formatCpfCnpj(cpf),
+    cpf: formatDocumentForCountry(cpf, normalizedCountry),
     password: passwordHash,
     role: ROLES.ASSOCIADO_A,
     clubs: clubsValue,
@@ -2004,26 +2017,31 @@ app.post("/planos/:plan/cadastro", async (req, res) => {
   const {
     name,
     email,
+    country,
     phones,
     cpf,
     password,
     confirmPassword,
   } = req.body;
   const normalizedEmail = String(email || "").trim().toLowerCase();
+  const normalizedCountry = normalizeCountry(country);
+  const documentLabel = documentLabelForCountry(normalizedCountry);
 
   try {
     if (!name || !normalizedEmail || !cpf || !password || !confirmPassword) {
       return res.render("commercial-register", {
-        error: "Preencha nome, e-mail, CPF/CNPJ e senha para iniciar o teste.",
+        error: `Preencha nome, e-mail, ${documentLabel} e senha para iniciar o teste.`,
         plan,
         plans: commercialPlanList(),
         billingOptions: billingOptionsForPlan(plan),
       });
     }
 
-    if (!isValidCpfCnpj(cpf)) {
+    if (!isValidDocumentForCountry(cpf, normalizedCountry)) {
       return res.render("commercial-register", {
-        error: "Informe um CPF/CNPJ válido. Os dígitos verificadores serão conferidos.",
+        error: normalizedCountry === "Argentina"
+          ? "Informe um DNI/CNI válido, com 7 ou 8 dígitos."
+          : "Informe um CPF/CNPJ válido. Os dígitos verificadores serão conferidos.",
         plan,
         plans: commercialPlanList(),
         billingOptions: billingOptionsForPlan(plan),
@@ -2066,8 +2084,9 @@ app.post("/planos/:plan/cadastro", async (req, res) => {
       data: {
         name,
         email: normalizedEmail,
+        country: normalizedCountry,
         phones: formatPhone(phones),
-        cpf: formatCpfCnpj(cpf),
+        cpf: formatDocumentForCountry(cpf, normalizedCountry),
         password: passwordHash,
         role: ROLES.PREMIUM,
         approvalStatus: "DEFERIDO",

@@ -15,8 +15,13 @@
         <% if (typeof success !== "undefined" && success) { %><div class="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800"><%= success %></div><% } %>
         <label class="mt-6 block text-xs font-black uppercase tracking-widest text-slate-500">Nome</label>
         <input name="name" required class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3" />
-        <label class="mt-4 block text-xs font-black uppercase tracking-widest text-slate-500">CPF</label>
-        <input name="cpf" inputmode="numeric" maxlength="18" required class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3" />
+        <label class="mt-4 block text-xs font-black uppercase tracking-widest text-slate-500" for="country">País</label>
+        <select id="country" name="country" required class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3">
+          <option value="Brasil" selected>Brasil</option>
+          <option value="Argentina">Argentina</option>
+        </select>
+        <label class="mt-4 block text-xs font-black uppercase tracking-widest text-slate-500" data-document-label>CPF/CNPJ</label>
+        <input id="cpf" name="cpf" inputmode="numeric" maxlength="18" required class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3" />
         <label class="mt-4 block text-xs font-black uppercase tracking-widest text-slate-500">E-mail</label>
         <input name="email" type="email" required class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3" />
         <label class="mt-4 block text-xs font-black uppercase tracking-widest text-slate-500">Senha</label>
@@ -25,5 +30,24 @@
       </form>
     </main>
     <script src="/js/document-masks.js"></script>
+    <script>
+      (() => {
+        const country = document.getElementById("country");
+        const documentInput = document.getElementById("cpf");
+        const documentLabel = document.querySelector("[data-document-label]");
+        if (!country || !documentInput || !documentLabel) return;
+
+        function updateDocumentField() {
+          const isArgentina = country.value === "Argentina";
+          documentLabel.textContent = isArgentina ? "DNI/CNI" : "CPF/CNPJ";
+          documentInput.placeholder = isArgentina ? "Somente números" : "";
+          documentInput.maxLength = isArgentina ? 10 : 18;
+          documentInput.dataset.documentMask = isArgentina ? "false" : "cpf-cnpj";
+        }
+
+        country.addEventListener("change", updateDocumentField);
+        updateDocumentField();
+      })();
+    </script>
   </body>
 </html>

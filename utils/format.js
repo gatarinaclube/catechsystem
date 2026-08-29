@@ -36,6 +36,12 @@ function formatCpfCnpj(value) {
   return text;
 }
 
+function normalizeCountry(value) {
+  const text = String(value || "").trim().toLowerCase();
+  if (["argentina", "ar"].includes(text)) return "Argentina";
+  return "Brasil";
+}
+
 function hasRepeatedDigits(digits) {
   return /^(\d)\1+$/.test(digits);
 }
@@ -79,6 +85,33 @@ function isValidCpfCnpj(value) {
   return false;
 }
 
+function formatArgentineDniCni(value) {
+  const digits = onlyDigits(value).slice(0, 8);
+  if (digits.length < 7) return String(value || "").trim();
+  return `DNI ${digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+}
+
+function isValidArgentineDniCni(value) {
+  const digits = onlyDigits(value);
+  return [7, 8].includes(digits.length) && !hasRepeatedDigits(digits);
+}
+
+function documentLabelForCountry(country) {
+  return normalizeCountry(country) === "Argentina" ? "DNI/CNI" : "CPF/CNPJ";
+}
+
+function formatDocumentForCountry(value, country) {
+  return normalizeCountry(country) === "Argentina"
+    ? formatArgentineDniCni(value)
+    : formatCpfCnpj(value);
+}
+
+function isValidDocumentForCountry(value, country) {
+  return normalizeCountry(country) === "Argentina"
+    ? isValidArgentineDniCni(value)
+    : isValidCpfCnpj(value);
+}
+
 function formatPhone(value) {
   const text = String(value || "").trim();
   const digits = onlyDigits(text);
@@ -97,8 +130,14 @@ module.exports = {
   formatCpf,
   formatCnpj,
   formatCpfCnpj,
+  formatArgentineDniCni,
+  formatDocumentForCountry,
   formatPhone,
+  documentLabelForCountry,
   isValidCpf,
   isValidCnpj,
   isValidCpfCnpj,
+  isValidArgentineDniCni,
+  isValidDocumentForCountry,
+  normalizeCountry,
 };

@@ -47,13 +47,16 @@
                 </div>
 
                 <div class="field">
-                  <label class="field-label" for="cpf">CPF</label>
+                  <label class="field-label" for="cpf" data-document-label>CPF/CNPJ</label>
                   <input id="cpf" type="text" name="cpf" inputmode="numeric" maxlength="18" required />
                 </div>
 
                 <div class="field">
                   <label class="field-label" for="country">País</label>
-                  <input id="country" type="text" name="country" value="Brasil" />
+                  <select id="country" name="country" required>
+                    <option value="Brasil" selected>Brasil</option>
+                    <option value="Argentina">Argentina</option>
+                  </select>
                 </div>
 
               </div>
@@ -335,6 +338,24 @@
         }
       }
 
+      (() => {
+        const country = document.getElementById("country");
+        const documentInput = document.getElementById("cpf");
+        const documentLabel = document.querySelector("[data-document-label]");
+        if (!country || !documentInput || !documentLabel) return;
+
+        function updateDocumentField() {
+          const isArgentina = country.value === "Argentina";
+          documentLabel.textContent = isArgentina ? "DNI/CNI" : "CPF/CNPJ";
+          documentInput.placeholder = isArgentina ? "Somente números" : "";
+          documentInput.maxLength = isArgentina ? 10 : 18;
+          documentInput.dataset.documentMask = isArgentina ? "false" : "cpf-cnpj";
+        }
+
+        country.addEventListener("change", updateDocumentField);
+        updateDocumentField();
+      })();
+
       document.querySelector("form").addEventListener("submit", function (e) {
   const agree1 = document.getElementById("agree1").checked;
   const agree2 = document.getElementById("agree2").checked;
@@ -349,7 +370,6 @@
     </script>
   </body>
 </html>
-
 
 
 
