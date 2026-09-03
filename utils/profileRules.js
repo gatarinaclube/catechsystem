@@ -41,6 +41,7 @@ const FEATURE_ROWS = [
   { key: "weighing", label: "Pesagem", permissions: ["admin.weighing"] },
   { key: "treatments", label: "Tratamentos", permissions: ["admin.treatments"] },
   { key: "exams", label: "Exames", permissions: ["admin.exams"] },
+  { key: "titles", label: "Títulos", permissions: ["admin.titles"] },
   { key: "documents", label: "Documentos", permissions: ["admin.documents"] },
   { key: "crm", label: "CRM de clientes", permissions: ["admin.crm"] },
   { key: "showcase", label: "Vitrine de filhotes", permissions: ["showcase.manage"] },
@@ -66,7 +67,9 @@ const DEFAULT_PROFILE_RULES = {
       row.key,
       {
         basic: ["breeders", "matings", "history", "vaccinations"].includes(row.key),
-        master: !["basicReports", "advancedReports", "financialAdmin", "payablesReceivables", "cashFlow"].includes(row.key),
+        master: row.key === "titles"
+          ? false
+          : !["basicReports", "advancedReports", "financialAdmin", "payablesReceivables", "cashFlow"].includes(row.key),
         premium: true,
       },
     ])

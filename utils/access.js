@@ -101,7 +101,7 @@ const PERMISSIONS = {
   "admin.exams": MASTER_LEVEL_ROLES,
   "admin.treatments": MASTER_LEVEL_ROLES,
   "admin.history": BASIC_LEVEL_ROLES,
-  "admin.titles": BASIC_LEVEL_ROLES,
+  "admin.titles": PREMIUM_LEVEL_ROLES,
   "admin.quickLaunch": MASTER_LEVEL_ROLES,
   "admin.revenues": MASTER_LEVEL_ROLES,
   "admin.crm": MASTER_LEVEL_ROLES,
