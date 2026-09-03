@@ -186,6 +186,16 @@
           </div>
         </div>
 
+        <% if (cat.historyNotes) { %>
+          <div class="section">
+            <div class="section-title">Informações individuais</div>
+            <div class="field">
+              <div class="field-label">Observações</div>
+              <div class="field-value" style="white-space: pre-wrap;"><%= cat.historyNotes %></div>
+            </div>
+          </div>
+        <% } %>
+
 <!-- CRIADOR / PROPRIETÁRIO -->
 <div class="section">
   <div class="section-title">Criador / Proprietário</div>

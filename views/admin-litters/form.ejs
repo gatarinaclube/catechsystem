@@ -77,15 +77,89 @@
         display: block;
         width: 100%;
         box-sizing: border-box;
-        padding: 14px;
+        padding: 0;
         border: 1px solid var(--border-soft);
         border-radius: 12px;
         margin-bottom: 14px;
         background: #ffffff;
         box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+        overflow: hidden;
       }
       .admin-litter-kitten-row.is-deceased {
         background: #e5e7eb;
+      }
+      .admin-litter-kitten-row summary {
+        list-style: none;
+        cursor: pointer;
+      }
+      .admin-litter-kitten-row summary::-webkit-details-marker {
+        display: none;
+      }
+      .litter-kitten-summary {
+        display: grid;
+        grid-template-columns: 36px minmax(80px, 120px) minmax(160px, 1fr) minmax(80px, 120px);
+        gap: 12px;
+        align-items: center;
+        padding: 12px 14px;
+        color: var(--text-main);
+      }
+      .litter-kitten-summary-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        border: 1px solid var(--border-soft);
+        font-weight: 700;
+        color: var(--brand-primary);
+        background: #fff;
+      }
+      details[open] .litter-kitten-summary-icon {
+        transform: rotate(45deg);
+      }
+      .litter-kitten-summary-label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+      .litter-kitten-summary-value {
+        display: block;
+        margin-top: 2px;
+        font-size: 14px;
+        font-weight: 700;
+      }
+      .litter-kitten-body {
+        padding: 14px;
+        border-top: 1px solid var(--border-soft);
+        background: rgba(248, 250, 252, 0.7);
+      }
+      .litter-kitten-notes-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 0;
+        background: transparent;
+        color: var(--brand-primary);
+        font-weight: 700;
+        cursor: pointer;
+        padding: 0;
+      }
+      .litter-kitten-notes-toggle span:first-child {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 999px;
+        background: var(--brand-primary);
+        color: #fff;
+      }
+      .litter-kitten-notes {
+        grid-column: 1 / -1;
+        margin-top: 12px;
       }
       @media (max-width: 1200px) {
         .litter-info-grid {
@@ -101,12 +175,18 @@
         .litter-kitten-history {
           justify-self: stretch;
         }
+        .litter-kitten-summary {
+          grid-template-columns: 36px repeat(3, minmax(0, 1fr));
+        }
       }
       @media (max-width: 700px) {
         .litter-info-grid,
         .litter-kitten-grid,
         .litter-kitten-row-2 {
           grid-template-columns: 1fr;
+        }
+        .litter-kitten-summary {
+          grid-template-columns: 32px 1fr;
         }
       }
     </style>
@@ -331,6 +411,25 @@
         return String(value || "").replace(/\D/g, "").slice(0, 15);
       }
 
+      function escapeHtml(value) {
+        return String(value || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function fieldValue(value) {
+        return escapeHtml(value || "");
+      }
+
+      function sexLabel(value) {
+        if (value === "M") return "Macho";
+        if (value === "F") return "Fêmea";
+        return "Não informado";
+      }
+
       function refreshMicrochipOptions() {
         const datalist = document.getElementById("availableMicrochipOptions");
         if (!datalist) return;
@@ -425,19 +524,38 @@
 
         for (let i = 0; i < total; i += 1) {
           const kitten = kittens[i] || {};
-          const row = document.createElement("div");
+          const row = document.createElement("details");
           row.className = "admin-litter-kitten-row" + (kitten.deceased ? " is-deceased" : "");
+          if (!kitten.id) row.open = true;
+          const summaryNumber = kitten.kittenNumber || String(i + 1).padStart(2, "0");
+          const summaryName = kitten.name || `Filhote ${i + 1}`;
           row.innerHTML = `
+            <summary class="litter-kitten-summary">
+              <span class="litter-kitten-summary-icon">+</span>
+              <span>
+                <span class="litter-kitten-summary-label">Número</span>
+                <span class="litter-kitten-summary-value">${fieldValue(summaryNumber)}</span>
+              </span>
+              <span>
+                <span class="litter-kitten-summary-label">Nome</span>
+                <span class="litter-kitten-summary-value">${fieldValue(summaryName)}</span>
+              </span>
+              <span>
+                <span class="litter-kitten-summary-label">Sexo</span>
+                <span class="litter-kitten-summary-value">${fieldValue(sexLabel(kitten.sex))}</span>
+              </span>
+            </summary>
+            <div class="litter-kitten-body">
             <input type="hidden" name="kitten_id_${i}" value="${kitten.id || ""}">
             <input type="hidden" name="kitten_cat_id_${i}" value="${kitten.kittenCatId || ""}">
             <div class="litter-kitten-grid">
               <div class="litter-kitten-field">
                 <label class="field-label">N do Filhote</label>
-                <input name="kitten_number_${i}" maxlength="4" value="${kitten.kittenNumber || ""}" />
+                <input name="kitten_number_${i}" maxlength="4" value="${fieldValue(kitten.kittenNumber)}" />
               </div>
               <div class="litter-kitten-field">
                 <label class="field-label">Nome do Filhote</label>
-                <input name="kitten_name_${i}" maxlength="${kittenNameMaxLength}" value="${kitten.name || ""}" />
+                <input name="kitten_name_${i}" maxlength="${kittenNameMaxLength}" value="${fieldValue(kitten.name)}" />
               </div>
               <div class="litter-kitten-field">
                 <label class="field-label">Sexo</label>
@@ -449,7 +567,7 @@
               </div>
               <div class="litter-kitten-field">
                 <label class="field-label">Microchip</label>
-                <input name="kitten_microchip_${i}" class="kitten-microchip" ${availableMicrochips.length ? 'list="availableMicrochipOptions"' : ""} maxlength="19" inputmode="numeric" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" value="${kitten.microchip || ""}" />
+                <input name="kitten_microchip_${i}" class="kitten-microchip" ${availableMicrochips.length ? 'list="availableMicrochipOptions"' : ""} maxlength="19" inputmode="numeric" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" value="${fieldValue(kitten.microchip)}" />
                 <div class="section-note" style="margin-top:4px;">Obrigatório a partir de 4 meses.</div>
               </div>
               <div class="litter-kitten-field">
@@ -464,13 +582,13 @@
                   <label class="field-label">Raça</label>
                   <select name="kitten_breed_${i}" data-kit-breed="${i}">
                     <option value="">Raça...</option>
-                    ${breeds.map((breed) => `<option value="${breed}" ${kitten.breed === breed || (!kitten.breed && breeds.length === 1) ? "selected" : ""}>${breed}</option>`).join("")}
+                    ${breeds.map((breed) => `<option value="${fieldValue(breed)}" ${kitten.breed === breed || (!kitten.breed && breeds.length === 1) ? "selected" : ""}>${fieldValue(breed)}</option>`).join("")}
                   </select>
                 </div>
                 <div class="litter-kitten-field">
                   <label class="field-label">Cor e EMS</label>
                   <select name="kitten_ems_${i}" data-kit-ems="${i}">
-                    <option value="${kitten.emsEyes || ""}">${kitten.emsEyes || "EMS..."}</option>
+                    <option value="${fieldValue(kitten.emsEyes)}">${fieldValue(kitten.emsEyes || "EMS...")}</option>
                   </select>
                 </div>
                 <div class="litter-kitten-field">
@@ -484,6 +602,17 @@
                   ${kitten.kittenCatId ? `<a href="/admin/history/${kitten.kittenCatId}" class="btn">Histórico</a>` : `<span style="font-size:12px; color:var(--text-muted);">Histórico será criado ao salvar</span>`}
                 </div>
               </div>
+              <div class="litter-kitten-notes">
+                <button type="button" class="litter-kitten-notes-toggle" data-kit-notes-toggle="${i}">
+                  <span>+</span>
+                  <span>Informações do filhote</span>
+                </button>
+                <div class="field" data-kit-notes="${i}" style="${kitten.individualNotes ? "" : "display:none;"}">
+                  <label class="field-label">Informações individuais</label>
+                  <textarea name="kitten_individual_notes_${i}" rows="4">${fieldValue(kitten.individualNotes)}</textarea>
+                </div>
+              </div>
+            </div>
             </div>
           `;
           kittenRows.appendChild(row);
@@ -510,6 +639,14 @@
         document.querySelectorAll('input[type="checkbox"][name^="kitten_deceased_"]').forEach((checkbox) => {
           checkbox.addEventListener("change", () => {
             checkbox.closest(".admin-litter-kitten-row").classList.toggle("is-deceased", checkbox.checked);
+          });
+        });
+
+        document.querySelectorAll("[data-kit-notes-toggle]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const notes = document.querySelector(`[data-kit-notes="${button.dataset.kitNotesToggle}"]`);
+            if (!notes) return;
+            notes.style.display = notes.style.display === "none" ? "block" : "none";
           });
         });
       }

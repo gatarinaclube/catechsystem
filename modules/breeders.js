@@ -379,6 +379,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       breedingStatus,
       deceased,
       ownershipMode,
+      historyNotes,
     } = req.body;
 
     const microchipDigits = normalizeMicrochip(microchip);
@@ -479,8 +480,26 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       deceased: deceasedBool,
       ...deathCauseData,
       ownershipType: mapOwnershipType(ownershipMode),
+      historyNotes: historyNotes || null,
       status: existingCat ? existingCat.status : "APROVADO",
     };
+  }
+
+  async function syncLinkedLitterKitten(tx, catId, data) {
+    await tx.litterKitten.updateMany({
+      where: { kittenCatId: catId },
+      data: {
+        kittenNumber: data.kittenNumber || undefined,
+        name: data.name,
+        sex: data.gender,
+        breed: data.breed,
+        emsEyes: data.emsCode,
+        microchip: data.microchip,
+        breeding: data.neutered ? "NOT_FOR_BREEDING" : "FOR_BREEDING",
+        individualNotes: data.historyNotes || null,
+        deceased: data.deceased,
+      },
+    });
   }
 
   function applyUploadedDocuments(req, data, existingCat = null) {
@@ -685,9 +704,13 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       try {
         const data = await parseBreederPayload(req, existingCat);
         applyUploadedDocuments(req, data, existingCat);
-        const updated = await prisma.cat.update({
-          where: { id: existingCat.id },
-          data,
+        const updated = await prisma.$transaction(async (tx) => {
+          const saved = await tx.cat.update({
+            where: { id: existingCat.id },
+            data,
+          });
+          await syncLinkedLitterKitten(tx, existingCat.id, data);
+          return saved;
         });
         await syncDeathHistoryEntry(prisma, existingCat.id, updated);
         res.redirect(`/breeders/${existingCat.id}?saved=1`);

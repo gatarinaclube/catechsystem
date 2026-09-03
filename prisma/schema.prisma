@@ -1300,6 +1300,7 @@ model LitterKitten {
   breeding     String? // BREEDING / NOT_FOR_BREEDING
   breedingRole String? // NEW_DAM / NEW_SIRE
   obs          String?
+  individualNotes String?
   deceased     Boolean? @default(false)
   reservationPaymentRows ReservationPaymentKitten[]
 

@@ -441,6 +441,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         microchip: data.microchip,
         breeding: data.neutered ? "NOT_FOR_BREEDING" : "FOR_BREEDING",
         breedingRole: null,
+        individualNotes: data.historyNotes || null,
         deceased: data.deceased,
       },
     });

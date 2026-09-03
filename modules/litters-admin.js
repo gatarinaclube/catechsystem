@@ -46,6 +46,11 @@ function normalizeMicrochip(value) {
   return value ? String(value).replace(/\D/g, "").slice(0, 15) : null;
 }
 
+function cleanLongText(value) {
+  const text = String(value || "").trim();
+  return text || null;
+}
+
 function formatDateForInput(date) {
   if (!date) return "";
   const parsed = new Date(date);
@@ -384,6 +389,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         microchip: normalizeMicrochip(body[`kitten_microchip_${i}`]),
         breeding: body[`kitten_breeding_${i}`] || null,
         breedingRole: null,
+        individualNotes: cleanLongText(body[`kitten_individual_notes_${i}`]),
         deceased: body[`kitten_deceased_${i}`] === "on",
       });
     }
@@ -432,6 +438,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       motherName: motherCat?.name || litter.femaleName || null,
       motherBreed: motherCat?.breed || litter.femaleBreed || null,
       motherEmsCode: motherCat?.emsCode || litter.femaleEms || null,
+      historyNotes: kitten.individualNotes || null,
       deceased: kitten.deceased,
       status: "APROVADO",
     };
@@ -566,6 +573,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         microchip: kitten.microchip,
         breeding: kitten.breeding,
         breedingRole: kitten.breedingRole,
+        individualNotes: kitten.individualNotes,
         deceased: kitten.deceased,
         kittenCatId,
       };
