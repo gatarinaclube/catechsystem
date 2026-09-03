@@ -20,6 +20,10 @@ const CLUBS = [
   "Rio Cat Clube",
   "Rio Minas",
 ];
+const HOMOLOGATION_STATUSES = [
+  { value: "REQUEST", label: "Solicitar Homologação" },
+  { value: "HOMOLOGATED", label: "Homologado" },
+];
 
 const BREEDING_CERTIFICATES = ["CACC", "CACJ", "CAC", "CACIB", "CAGCIB", "CACS", "HP", "BIV", "BIS", "BOB", "BOA"];
 const NEUTERED_CERTIFICATES = ["CACC", "CACJ", "CAP", "CAPIB", "CAGPIB", "CAPS", "HP(n)", "BIV", "BIS", "BOB", "BOA"];
@@ -98,6 +102,15 @@ function hasTitle(records, code) {
   return records.some((record) => record.kind === "TITLE" && record.code === code);
 }
 
+function findTitleRecord(records, code) {
+  return records.find((record) => record.kind === "TITLE" && record.code === code) || null;
+}
+
+function homologationStatusLabel(value) {
+  const status = HOMOLOGATION_STATUSES.find((item) => item.value === value);
+  return status ? status.label : "Pendente";
+}
+
 function titleOption(code, label, available, reason) {
   return { code, label, available, reason };
 }
@@ -136,7 +149,9 @@ function titleOptionsForCat(cat, records, titledOffspringCount = 0) {
     titleOption("DM", "Distinguished Merit", titledOffspringCount >= 5, "5 filhotes com IC/IP ou maior"),
   ].map((option) => ({
     ...option,
+    titleRecord: findTitleRecord(records, option.code),
     alreadyAdded: hasTitle(records, option.code),
+    homologationStatusLabel: homologationStatusLabel(findTitleRecord(records, option.code)?.homologationStatus),
   }));
 }
 
@@ -206,6 +221,11 @@ function validateRecordData(data, allowedTitleCodes, allowedCertificateCodes) {
     : "Informe data, clube e juiz para cada certificado ou título.";
 }
 
+function normalizeHomologationStatus(value) {
+  const status = String(value || "").trim().toUpperCase();
+  return HOMOLOGATION_STATUSES.some((item) => item.value === status) ? status : null;
+}
+
 function parseRecordsFromBody(body, ownerId, catId, allowedTitleCodes, allowedCertificateCodes) {
   const ids = reqArray(body.recordId);
   const kinds = reqArray(body.recordKind);
@@ -215,6 +235,7 @@ function parseRecordsFromBody(body, ownerId, catId, allowedTitleCodes, allowedCe
   const judges = reqArray(body.recordJudge);
   const years = reqArray(body.recordYear);
   const notes = reqArray(body.recordNotes);
+  const homologationStatuses = reqArray(body.recordHomologationStatus);
   const deletes = new Set(reqArray(body.deleteRecord).map(Number).filter(Boolean));
   const records = [];
   const errors = [];
@@ -235,6 +256,7 @@ function parseRecordsFromBody(body, ownerId, catId, allowedTitleCodes, allowedCe
       judge: kind === "SPECIAL" ? null : cleanText(judges[index], 120) || null,
       year: kind === "SPECIAL" ? cleanText(years[index], 10) || null : null,
       notes: cleanText(notes[index], 500) || null,
+      homologationStatus: kind === "TITLE" ? normalizeHomologationStatus(homologationStatuses[index]) : null,
     };
     const error = validateRecordData(data, allowedTitleCodes, allowedCertificateCodes);
     if (error) {
@@ -259,6 +281,7 @@ function parseRecordsFromBody(body, ownerId, catId, allowedTitleCodes, allowedCe
       judge: isSpecial ? null : cleanText(body.newJudge, 120) || null,
       year: isSpecial ? cleanText(body.newYear, 10) || null : null,
       notes: cleanText(body.newNotes, 500) || null,
+      homologationStatus: newKind === "TITLE" ? normalizeHomologationStatus(body.newHomologationStatus) : null,
     };
     const error = isAllowedTitle
       ? validateRecordData(data, allowedTitleCodes, allowedCertificateCodes)
@@ -271,6 +294,53 @@ function parseRecordsFromBody(body, ownerId, catId, allowedTitleCodes, allowedCe
   }
 
   return { records, deletes, errors };
+}
+
+function mergeNames(...groups) {
+  const seen = new Set();
+  const names = [];
+  groups.flat().forEach((value) => {
+    const name = cleanText(value, 120);
+    const key = name.toLocaleLowerCase("pt-BR");
+    if (!name || seen.has(key)) return;
+    seen.add(key);
+    names.push(name);
+  });
+  return names.sort((a, b) => a.localeCompare(b, "pt-BR"));
+}
+
+async function loadTitleOptions(prisma, ownerId, records = []) {
+  const rows = await prisma.catTitleOption.findMany({
+    where: { ownerId },
+    orderBy: [{ type: "asc" }, { name: "asc" }],
+  });
+  return {
+    clubs: mergeNames(
+      CLUBS,
+      rows.filter((row) => row.type === "CLUB").map((row) => row.name),
+      records.map((record) => record.club)
+    ),
+    judges: mergeNames(
+      rows.filter((row) => row.type === "JUDGE").map((row) => row.name),
+      records.map((record) => record.judge)
+    ),
+  };
+}
+
+async function rememberTitleOptions(tx, ownerId, records) {
+  const values = [];
+  records.forEach((record) => {
+    if (record.data.club) values.push({ type: "CLUB", name: record.data.club });
+    if (record.data.judge) values.push({ type: "JUDGE", name: record.data.judge });
+  });
+
+  for (const value of values) {
+    await tx.catTitleOption.upsert({
+      where: { ownerId_type_name: { ownerId, type: value.type, name: value.name } },
+      update: {},
+      create: { ownerId, type: value.type, name: value.name },
+    });
+  }
 }
 
 function buildTitleBeforeName(records) {
@@ -314,6 +384,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const titleOptions = selectedCat
       ? titleOptionsForCat(selectedCat, selectedCat.titleRecords, offspringCount)
       : [];
+    const titleOptionLists = await loadTitleOptions(prisma, req.session.userId, selectedCat?.titleRecords || []);
 
     return {
       user: req.user,
@@ -324,7 +395,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       certificateCodes: selectedCat ? certificateCodesForCat(selectedCat) : [],
       titleOptions,
       specialTitles: SPECIAL_TITLES,
-      clubs: CLUBS,
+      clubs: titleOptionLists.clubs,
+      judges: titleOptionLists.judges,
+      homologationStatuses: HOMOLOGATION_STATUSES,
       error,
       success,
       formatDateInput: recordDateValue,
@@ -341,6 +414,22 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     const catId = Number(req.body.catId);
     if (!catId) return res.redirect("/admin/titles");
     return res.redirect(`/admin/titles?catId=${catId}`);
+  });
+
+  router.post("/admin/titles/options", requireAuth, requirePermission("admin.titles"), async (req, res) => {
+    const type = String(req.body.type || "").trim().toUpperCase();
+    const name = cleanText(req.body.name, 120);
+    const redirect = req.body.catId ? `/admin/titles?catId=${Number(req.body.catId)}` : "/admin/titles";
+    if (!["CLUB", "JUDGE"].includes(type) || !name) {
+      return res.redirect(redirect);
+    }
+
+    await prisma.catTitleOption.upsert({
+      where: { ownerId_type_name: { ownerId: req.session.userId, type, name } },
+      update: {},
+      create: { ownerId: req.session.userId, type, name },
+    });
+    return res.redirect(redirect);
   });
 
   router.post("/admin/titles/:catId", requireAuth, requirePermission("admin.titles"), async (req, res) => {
@@ -389,6 +478,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           await tx.catTitleRecord.create({ data: record.data });
         }
       }
+      await rememberTitleOptions(tx, req.session.userId, records);
 
       const savedRecords = await tx.catTitleRecord.findMany({ where: { catId: cat.id } });
       await tx.cat.update({

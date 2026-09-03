@@ -15,7 +15,7 @@
       }
       .titles-record-grid {
         display: grid;
-        grid-template-columns: 120px 110px 145px minmax(130px, 1fr) minmax(160px, 1.2fr) 90px 42px;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         gap: 10px;
         align-items: end;
       }
@@ -59,6 +59,21 @@
       .title-reason {
         color: var(--text-muted);
         font-size: 12px;
+      }
+      .titles-option-form {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .titles-delete-field {
+        align-self: center;
+        min-height: 42px;
+        display: flex;
+        align-items: center;
+      }
+      .titles-hidden-field {
+        display: none;
       }
       @media (max-width: 1180px) {
         .titles-layout {
@@ -119,6 +134,22 @@
               </form>
             </div>
 
+            <div class="content-card" style="margin-bottom:18px;">
+              <div class="content-title">Clubes e juízes</div>
+              <form class="titles-option-form" method="post" action="/admin/titles/options">
+                <input type="hidden" name="type" value="CLUB" />
+                <% if (selectedCat) { %><input type="hidden" name="catId" value="<%= selectedCat.id %>" /><% } %>
+                <input name="name" placeholder="Novo clube" required />
+                <button type="submit" class="btn btn-primary" title="Adicionar clube">+</button>
+              </form>
+              <form class="titles-option-form" method="post" action="/admin/titles/options">
+                <input type="hidden" name="type" value="JUDGE" />
+                <% if (selectedCat) { %><input type="hidden" name="catId" value="<%= selectedCat.id %>" /><% } %>
+                <input name="name" placeholder="Novo juiz" required />
+                <button type="submit" class="btn btn-primary" title="Adicionar juiz">+</button>
+              </form>
+            </div>
+
             <div class="content-card">
               <div class="content-title">Gatos com títulos</div>
               <div class="record-list" style="margin-top:12px;">
@@ -165,7 +196,7 @@
                       <div class="titles-record-grid">
                         <div class="field">
                           <label class="field-label">Tipo</label>
-                          <select name="recordKind">
+                          <select name="recordKind" data-record-kind>
                             <option value="CERTIFICATE" <%= record.kind === 'CERTIFICATE' ? 'selected' : '' %>>Certificado</option>
                             <option value="TITLE" <%= record.kind === 'TITLE' ? 'selected' : '' %>>Título</option>
                             <option value="SPECIAL" <%= record.kind === 'SPECIAL' ? 'selected' : '' %>>Especial</option>
@@ -181,22 +212,26 @@
                         </div>
                         <div class="field">
                           <label class="field-label">Clube</label>
-                          <select name="recordClub">
-                            <option value="">Selecione...</option>
-                            <% clubs.forEach(function(club) { %>
-                              <option value="<%= club %>" <%= record.club === club ? 'selected' : '' %>><%= club %></option>
-                            <% }) %>
-                          </select>
+                          <input name="recordClub" list="clubsList" value="<%= record.club || '' %>" />
                         </div>
                         <div class="field">
                           <label class="field-label">Juiz</label>
                           <input name="recordJudge" list="judgesList" value="<%= record.judge || '' %>" />
                         </div>
-                        <div class="field">
+                        <div class="field" data-year-field>
                           <label class="field-label">Ano</label>
                           <input name="recordYear" value="<%= record.year || '' %>" maxlength="10" />
                         </div>
-                        <label class="checkbox-label" style="align-self:center;">
+                        <div class="field">
+                          <label class="field-label">Homologação</label>
+                          <select name="recordHomologationStatus">
+                            <option value="">Pendente</option>
+                            <% homologationStatuses.forEach(function(status) { %>
+                              <option value="<%= status.value %>" <%= record.homologationStatus === status.value ? 'selected' : '' %>><%= status.label %></option>
+                            <% }) %>
+                          </select>
+                        </div>
+                        <label class="checkbox-label titles-delete-field">
                           <input type="checkbox" name="deleteRecord" value="<%= record.id %>" />
                           Excluir
                         </label>
@@ -244,22 +279,25 @@
                     </div>
                     <div class="field">
                       <label class="field-label" for="newClub">Clube</label>
-                      <select id="newClub" name="newClub">
-                        <option value="">Selecione...</option>
-                        <% clubs.forEach(function(club) { %>
-                          <option value="<%= club %>"><%= club %></option>
-                        <% }) %>
-                      </select>
+                      <input id="newClub" name="newClub" list="clubsList" placeholder="Digite para buscar" />
                     </div>
                     <div class="field">
                       <label class="field-label" for="newJudge">Juiz</label>
                       <input id="newJudge" name="newJudge" list="judgesList" placeholder="Digite para buscar" />
                     </div>
-                    <div class="field">
+                    <div class="field" data-new-year-field>
                       <label class="field-label" for="newYear">Ano</label>
                       <input id="newYear" name="newYear" maxlength="10" placeholder="XX" />
                     </div>
-                    <div></div>
+                    <div class="field">
+                      <label class="field-label" for="newHomologationStatus">Homologação</label>
+                      <select id="newHomologationStatus" name="newHomologationStatus">
+                        <option value="">Pendente</option>
+                        <% homologationStatuses.forEach(function(status) { %>
+                          <option value="<%= status.value %>"><%= status.label %></option>
+                        <% }) %>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
@@ -274,6 +312,9 @@
                           <div class="title-reason"><%= option.reason %></div>
                         </div>
                         <span class="status-pill"><%= option.alreadyAdded ? 'Lançado' : option.available ? 'Disponível' : 'Pendente' %></span>
+                        <% if (option.alreadyAdded || option.available) { %>
+                          <span class="status-pill"><%= option.alreadyAdded ? option.homologationStatusLabel : 'Solicitar Homologação' %></span>
+                        <% } %>
                       </div>
                     <% }) %>
                   </div>
@@ -290,12 +331,20 @@
       </main>
     </div>
 
+    <datalist id="clubsList">
+      <% clubs.forEach(function(club) { %>
+        <option value="<%= club %>"></option>
+      <% }) %>
+    </datalist>
     <datalist id="judgesList"></datalist>
     <script src="/js/judges.js"></script>
     <script>
       const judgesList = document.getElementById("judgesList");
-      if (judgesList && Array.isArray(window.JUDGES)) {
-        judgesList.innerHTML = window.JUDGES
+      if (judgesList) {
+        const userJudges = <%- JSON.stringify(judges || []) %>;
+        const defaultJudges = Array.isArray(window.JUDGES) ? window.JUDGES : [];
+        const names = Array.from(new Set(userJudges.concat(defaultJudges).filter(Boolean)));
+        judgesList.innerHTML = names
           .map((judge) => `<option value="${String(judge).replaceAll('"', '&quot;')}"></option>`)
           .join("");
       }
@@ -306,6 +355,22 @@
       const newClub = document.getElementById("newClub");
       const newJudge = document.getElementById("newJudge");
       const newYear = document.getElementById("newYear");
+      const newHomologationStatus = document.getElementById("newHomologationStatus");
+      document.querySelectorAll("[data-record-kind]").forEach((kindField) => {
+        const row = kindField.closest(".titles-record-row");
+        const yearWrapper = row?.querySelector("[data-year-field]");
+        const yearInput = yearWrapper?.querySelector("input");
+        function syncExistingYearField() {
+          const isSpecial = kindField.value === "SPECIAL";
+          yearWrapper?.classList.toggle("titles-hidden-field", !isSpecial);
+          if (yearInput) {
+            yearInput.required = isSpecial;
+            if (!isSpecial) yearInput.value = "";
+          }
+        }
+        kindField.addEventListener("change", syncExistingYearField);
+        syncExistingYearField();
+      });
       if (newKind && newCode) {
         function syncCodeOptions() {
           const kind = newKind.value;
@@ -326,6 +391,11 @@
             newYear.required = isSpecial;
             newYear.disabled = hasKind && !isSpecial;
             if (newYear.disabled) newYear.value = "";
+            document.querySelector("[data-new-year-field]")?.classList.toggle("titles-hidden-field", !isSpecial);
+          }
+          if (newHomologationStatus) {
+            newHomologationStatus.disabled = kind !== "TITLE";
+            if (newHomologationStatus.disabled) newHomologationStatus.value = "";
           }
         }
         newKind.addEventListener("change", syncCodeOptions);

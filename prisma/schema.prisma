@@ -80,6 +80,7 @@ model User {
   matings                   MatingPlan[]
   serviceRequests           ServiceRequest[]
   titleRecords              CatTitleRecord[]
+  titleOptions              CatTitleOption[]
   settings                  UserSettings?
   quickLaunchEntries        QuickLaunchEntry[]
   quickLaunchOptions        QuickLaunchOption[]
@@ -1037,12 +1038,26 @@ model CatTitleRecord {
   judge    String?
   year     String?
   notes    String?
+  homologationStatus String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([ownerId])
   @@index([catId])
   @@index([kind, code])
+}
+
+model CatTitleOption {
+  id        Int      @id @default(autoincrement())
+  owner    User?    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId  Int?
+  type      String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, type, name])
+  @@index([ownerId, type])
 }
 
 model CatteryDocument {
