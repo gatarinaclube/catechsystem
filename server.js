@@ -76,6 +76,7 @@ const dewormingAdminRouterFactory = require("./modules/deworming-admin");
 const weighingAdminRouterFactory = require("./modules/weighing-admin");
 const examsAdminRouterFactory = require("./modules/exams-admin");
 const historyAdminRouterFactory = require("./modules/history-admin");
+const titlesAdminRouterFactory = require("./modules/titles-admin");
 const treatmentsAdminRouterFactory = require("./modules/treatments-admin");
 const quickLaunchRouterFactory = require("./modules/quick-launch");
 const reportsRouterFactory = require("./modules/reports");
@@ -3400,6 +3401,13 @@ const historyAdminRouter = historyAdminRouterFactory(
   requirePermission
 );
 app.use(historyAdminRouter);
+
+const titlesAdminRouter = titlesAdminRouterFactory(
+  prisma,
+  requireAuth,
+  requirePermission
+);
+app.use(titlesAdminRouter);
 
 const treatmentsAdminRouter = treatmentsAdminRouterFactory(
   prisma,

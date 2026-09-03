@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Títulos - PetGus</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+    <style>
+      .titles-layout {
+        display: grid;
+        grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+        gap: 18px;
+        align-items: start;
+      }
+      .titles-record-grid {
+        display: grid;
+        grid-template-columns: 120px 110px 145px minmax(130px, 1fr) minmax(160px, 1.2fr) 90px 42px;
+        gap: 10px;
+        align-items: end;
+      }
+      .titles-record-grid input,
+      .titles-record-grid select {
+        width: 100%;
+        min-width: 0;
+      }
+      .titles-record-row {
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border-soft);
+      }
+      .titles-record-row:last-child {
+        border-bottom: 0;
+      }
+      .title-rule-list {
+        display: grid;
+        gap: 8px;
+      }
+      .title-rule-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 12px;
+        border: 1px solid var(--border-soft);
+        border-radius: 8px;
+        background: #fff;
+      }
+      .title-rule-item.is-available {
+        border-color: #16a34a;
+        background: #f0fdf4;
+      }
+      .title-rule-item.is-added {
+        border-color: #2563eb;
+        background: #eff6ff;
+      }
+      .title-code {
+        font-weight: 800;
+        color: var(--text-main);
+      }
+      .title-reason {
+        color: var(--text-muted);
+        font-size: 12px;
+      }
+      @media (max-width: 1180px) {
+        .titles-layout {
+          grid-template-columns: 1fr;
+        }
+        .titles-record-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 700px) {
+        .titles-record-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Títulos</h2>
+            <div class="welcome-sub">Anote certificados, resultados de exposição e títulos dos gatos do gatil.</div>
+          </div>
+          <div class="actions">
+            <a href="/admin/history" class="btn">Histórico</a>
+          </div>
+        </div>
+
+        <% if (error) { %>
+          <div class="content-card" style="border-left:4px solid #b91c1c; margin-bottom:18px;">
+            <div class="content-sub"><%= error %></div>
+          </div>
+        <% } %>
+        <% if (success) { %>
+          <div class="content-card" style="border-left:4px solid #16a34a; margin-bottom:18px; background:#f0fdf4;">
+            <div class="content-title" style="color:#166534;">Títulos salvos com sucesso.</div>
+          </div>
+        <% } %>
+
+        <div class="titles-layout">
+          <aside>
+            <div class="content-card" style="margin-bottom:18px;">
+              <div class="content-title">Adicionar gato</div>
+              <form method="post" action="/admin/titles/select" style="margin-top:12px;">
+                <div class="field">
+                  <label class="field-label" for="catId">Gato sem títulos cadastrados</label>
+                  <select id="catId" name="catId">
+                    <option value="">Selecione...</option>
+                    <% availableCats.forEach(function(cat) { %>
+                      <option value="<%= cat.id %>"><%= cat.displayName %></option>
+                    <% }) %>
+                  </select>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%; margin-top:12px;">Abrir cadastro</button>
+              </form>
+            </div>
+
+            <div class="content-card">
+              <div class="content-title">Gatos com títulos</div>
+              <div class="record-list" style="margin-top:12px;">
+                <% if (!catsWithRecords.length) { %>
+                  <div class="empty">Nenhum gato com certificado ou título cadastrado.</div>
+                <% } %>
+                <% catsWithRecords.forEach(function(cat) { %>
+                  <a class="record-row" href="/admin/titles?catId=<%= cat.id %>" style="text-decoration:none;">
+                    <div class="record-main">
+                      <div class="record-title"><%= cat.displayName %></div>
+                      <div class="record-sub"><%= cat.titleRecords.length %> lançamento(s)</div>
+                    </div>
+                  </a>
+                <% }) %>
+              </div>
+            </div>
+          </aside>
+
+          <section>
+            <% if (!selectedCat) { %>
+              <div class="content-card">
+                <div class="content-title">Selecione um gato</div>
+                <div class="content-sub" style="margin-top:6px;">
+                  Gatos que já possuem lançamentos aparecem apenas na lista lateral para consulta e edição.
+                </div>
+              </div>
+            <% } else { %>
+              <form method="post" action="/admin/titles/<%= selectedCat.id %>">
+                <div class="content-card" style="margin-bottom:18px;">
+                  <div class="content-title"><%= selectedCat.displayName %></div>
+                  <div class="content-sub" style="margin-top:6px;">
+                    Nascimento: <%= selectedCat.birthDateLabel %> · Microchip: <%= selectedCat.microchipLabel %> · <%= selectedCat.neutered ? 'Not For Breeding' : 'For Breeding' %>
+                  </div>
+                </div>
+
+                <div class="content-card" style="margin-bottom:18px;">
+                  <div class="content-title">Lançamentos cadastrados</div>
+                  <% if (!selectedCat.titleRecords.length) { %>
+                    <div class="empty" style="margin-top:12px;">Nenhum certificado ou título lançado para este gato.</div>
+                  <% } %>
+                  <% selectedCat.titleRecords.forEach(function(record) { %>
+                    <div class="titles-record-row">
+                      <input type="hidden" name="recordId" value="<%= record.id %>" />
+                      <div class="titles-record-grid">
+                        <div class="field">
+                          <label class="field-label">Tipo</label>
+                          <select name="recordKind">
+                            <option value="CERTIFICATE" <%= record.kind === 'CERTIFICATE' ? 'selected' : '' %>>Certificado</option>
+                            <option value="TITLE" <%= record.kind === 'TITLE' ? 'selected' : '' %>>Título</option>
+                            <option value="SPECIAL" <%= record.kind === 'SPECIAL' ? 'selected' : '' %>>Especial</option>
+                          </select>
+                        </div>
+                        <div class="field">
+                          <label class="field-label">Código</label>
+                          <input name="recordCode" value="<%= record.code || '' %>" />
+                        </div>
+                        <div class="field">
+                          <label class="field-label">Data</label>
+                          <input name="recordDate" type="date" value="<%= formatDateInput(record.date) %>" />
+                        </div>
+                        <div class="field">
+                          <label class="field-label">Clube</label>
+                          <select name="recordClub">
+                            <option value="">Selecione...</option>
+                            <% clubs.forEach(function(club) { %>
+                              <option value="<%= club %>" <%= record.club === club ? 'selected' : '' %>><%= club %></option>
+                            <% }) %>
+                          </select>
+                        </div>
+                        <div class="field">
+                          <label class="field-label">Juiz</label>
+                          <input name="recordJudge" list="judgesList" value="<%= record.judge || '' %>" />
+                        </div>
+                        <div class="field">
+                          <label class="field-label">Ano</label>
+                          <input name="recordYear" value="<%= record.year || '' %>" maxlength="10" />
+                        </div>
+                        <label class="checkbox-label" style="align-self:center;">
+                          <input type="checkbox" name="deleteRecord" value="<%= record.id %>" />
+                          Excluir
+                        </label>
+                      </div>
+                    </div>
+                  <% }) %>
+                </div>
+
+                <div class="content-card" style="margin-bottom:18px;">
+                  <div class="content-title">Novo lançamento</div>
+                  <div class="titles-record-grid" style="margin-top:12px;">
+                    <div class="field">
+                      <label class="field-label" for="newKind">Tipo</label>
+                      <select id="newKind" name="newKind">
+                        <option value="">Não adicionar</option>
+                        <option value="CERTIFICATE">Certificado</option>
+                        <option value="TITLE">Título</option>
+                        <option value="SPECIAL">Especial</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label class="field-label" for="newCode">Código</label>
+                      <select id="newCode" name="newCode">
+                        <option value="">Selecione...</option>
+                        <optgroup label="Certificados">
+                          <% certificateCodes.forEach(function(code) { %>
+                            <option value="<%= code %>" data-kind="CERTIFICATE"><%= code %></option>
+                          <% }) %>
+                        </optgroup>
+                        <optgroup label="Títulos disponíveis">
+                          <% titleOptions.filter(function(option) { return option.available && !option.alreadyAdded; }).forEach(function(option) { %>
+                            <option value="<%= option.code %>" data-kind="TITLE"><%= option.code %> - <%= option.label %></option>
+                          <% }) %>
+                        </optgroup>
+                        <optgroup label="Títulos especiais">
+                          <% specialTitles.forEach(function(code) { %>
+                            <option value="<%= code %>" data-kind="SPECIAL"><%= code %></option>
+                          <% }) %>
+                        </optgroup>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label class="field-label" for="newDate">Data</label>
+                      <input id="newDate" name="newDate" type="date" />
+                    </div>
+                    <div class="field">
+                      <label class="field-label" for="newClub">Clube</label>
+                      <select id="newClub" name="newClub">
+                        <option value="">Selecione...</option>
+                        <% clubs.forEach(function(club) { %>
+                          <option value="<%= club %>"><%= club %></option>
+                        <% }) %>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label class="field-label" for="newJudge">Juiz</label>
+                      <input id="newJudge" name="newJudge" list="judgesList" placeholder="Digite para buscar" />
+                    </div>
+                    <div class="field">
+                      <label class="field-label" for="newYear">Ano</label>
+                      <input id="newYear" name="newYear" maxlength="10" placeholder="XX" />
+                    </div>
+                    <div></div>
+                  </div>
+                </div>
+
+                <div class="content-card" style="margin-bottom:18px;">
+                  <div class="content-title">Títulos liberados pelas regras</div>
+                  <div class="title-rule-list" style="margin-top:12px;">
+                    <% titleOptions.forEach(function(option) { %>
+                      <div class="title-rule-item <%= option.alreadyAdded ? 'is-added' : option.available ? 'is-available' : '' %>">
+                        <div>
+                          <span class="title-code"><%= option.code %></span>
+                          <span> · <%= option.label %></span>
+                          <div class="title-reason"><%= option.reason %></div>
+                        </div>
+                        <span class="status-pill"><%= option.alreadyAdded ? 'Lançado' : option.available ? 'Disponível' : 'Pendente' %></span>
+                      </div>
+                    <% }) %>
+                  </div>
+                </div>
+
+                <div class="form-actions" style="text-align:right;">
+                  <button type="submit" class="btn btn-primary">Salvar títulos</button>
+                  <a href="/admin/titles" class="btn">Cancelar</a>
+                </div>
+              </form>
+            <% } %>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <datalist id="judgesList"></datalist>
+    <script src="/js/judges.js"></script>
+    <script>
+      const judgesList = document.getElementById("judgesList");
+      if (judgesList && Array.isArray(window.JUDGES)) {
+        judgesList.innerHTML = window.JUDGES
+          .map((judge) => `<option value="${String(judge).replaceAll('"', '&quot;')}"></option>`)
+          .join("");
+      }
+
+      const newKind = document.getElementById("newKind");
+      const newCode = document.getElementById("newCode");
+      const newDate = document.getElementById("newDate");
+      const newClub = document.getElementById("newClub");
+      const newJudge = document.getElementById("newJudge");
+      const newYear = document.getElementById("newYear");
+      if (newKind && newCode) {
+        function syncCodeOptions() {
+          const kind = newKind.value;
+          Array.from(newCode.options).forEach((option) => {
+            if (!option.dataset.kind) return;
+            option.hidden = Boolean(kind && option.dataset.kind !== kind);
+          });
+          if (newCode.selectedOptions[0]?.hidden) newCode.value = "";
+          const isSpecial = kind === "SPECIAL";
+          const hasKind = Boolean(kind);
+          [newDate, newClub, newJudge].forEach((field) => {
+            if (!field) return;
+            field.required = hasKind && !isSpecial;
+            field.disabled = hasKind && isSpecial;
+            if (field.disabled) field.value = "";
+          });
+          if (newYear) {
+            newYear.required = isSpecial;
+            newYear.disabled = hasKind && !isSpecial;
+            if (newYear.disabled) newYear.value = "";
+          }
+        }
+        newKind.addEventListener("change", syncCodeOptions);
+        syncCodeOptions();
+      }
+    </script>
+  </body>
+</html>

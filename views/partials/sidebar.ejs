@@ -88,6 +88,7 @@
             "Tratamento": "Registro de medicações, doses, frequência, período de tratamento e envio automático ao histórico do animal.",
             "Exames": "Controle de exames genéticos, HCM, uploads de laudos e impressão de comprovações.",
             "Histórico": "Consulta consolidada do histórico individual do gato, incluindo eventos, saúde, tratamentos e registros anteriores.",
+            "Títulos": "Registro de certificados, resultados de exposição e títulos conquistados pelos gatos do gatil.",
             "Painel": "Painel público de rotina do gatil para exibir em tela, com medicações, vacinas, acasalamentos e exames.",
             "CRM": "Gestão de clientes, contatos de e-mail e campanhas de e-mail marketing por usuário.",
             "Vitrine de Filhotes": "Configuração da página pública de filhotes disponíveis, cores, textos, fotos, pagamento e informações do gatil.",
@@ -169,6 +170,7 @@
         { href: "/admin/treatments", match: "/admin/treatments", icon: "💊", label: "Tratamento", allowed: access && access.canAccessTreatmentsAdmin, preferenceKey: "treatments" },
         { href: "/admin/exams", match: "/admin/exams", icon: "🩺", label: "Exames", allowed: access && access.canAccessExamsAdmin, preferenceKey: "exams" },
         { href: "/admin/history", match: "/admin/history", icon: "📚", label: "Histórico", allowed: access && access.canAccessHistoryAdmin, preferenceKey: "history" },
+        { href: "/admin/titles", match: "/admin/titles", icon: "🏆", label: "Títulos", allowed: access && access.canAccessTitlesAdmin, preferenceKey: "titles" },
         ];
       %>
       <details class="menu-section" <%= isSectionActive(catteryItems) ? "open" : "" %>>

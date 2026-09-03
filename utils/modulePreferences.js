@@ -12,6 +12,7 @@ const MODULE_PREFERENCES = [
   { key: "treatments", label: "Tratamento", group: "Gestão do Gatil", permission: "admin.treatments" },
   { key: "exams", label: "Exames", group: "Gestão do Gatil", permission: "admin.exams" },
   { key: "history", label: "Histórico", group: "Gestão do Gatil", permission: "admin.history" },
+  { key: "titles", label: "Títulos", group: "Gestão do Gatil", permission: "admin.titles" },
   { key: "administrative", label: "Financeiro", group: "Administrativo", permission: "admin.administrative" },
   { key: "documents", label: "Documentos", group: "Administrativo", permission: "admin.documents" },
   { key: "reports", label: "Relatórios", group: "Administrativo", permission: "admin.reports" },
