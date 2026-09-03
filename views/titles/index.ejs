@@ -66,6 +66,31 @@
         gap: 8px;
         margin-top: 8px;
       }
+      .titles-option-list {
+        display: grid;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .titles-option-row {
+        display: grid;
+        grid-template-columns: 52px minmax(0, 1fr) auto auto auto;
+        gap: 8px;
+        align-items: center;
+      }
+      .titles-option-row form {
+        display: contents;
+      }
+      .titles-option-type {
+        color: var(--text-muted);
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+      .titles-option-usage {
+        color: var(--text-muted);
+        font-size: 11px;
+        white-space: nowrap;
+      }
       .titles-delete-field {
         align-self: center;
         min-height: 42px;
@@ -148,6 +173,29 @@
                 <input name="name" placeholder="Novo juiz" required />
                 <button type="submit" class="btn btn-primary" title="Adicionar juiz">+</button>
               </form>
+              <details style="margin-top:12px;">
+                <summary class="content-sub" style="cursor:pointer;">Ver e editar cadastrados</summary>
+                <div class="titles-option-list">
+                  <% if (!titleOptionRows.length) { %>
+                    <div class="empty">Nenhum clube ou juiz cadastrado.</div>
+                  <% } %>
+                  <% titleOptionRows.forEach(function(option) { %>
+                    <div class="titles-option-row">
+                      <form method="post" action="/admin/titles/options/<%= option.id %>">
+                        <% if (selectedCat) { %><input type="hidden" name="catId" value="<%= selectedCat.id %>" /><% } %>
+                        <span class="titles-option-type"><%= option.label %></span>
+                        <input name="name" value="<%= option.name %>" required />
+                        <span class="titles-option-usage"><%= option.usedCount %> uso(s)</span>
+                        <button type="submit" class="btn">Salvar</button>
+                      </form>
+                      <form method="post" action="/admin/titles/options/<%= option.id %>/delete">
+                        <% if (selectedCat) { %><input type="hidden" name="catId" value="<%= selectedCat.id %>" /><% } %>
+                        <button type="submit" class="btn" <%= option.canDelete ? '' : 'disabled title="Já está em uso"' %>>Excluir</button>
+                      </form>
+                    </div>
+                  <% }) %>
+                </div>
+              </details>
             </div>
 
             <div class="content-card">
@@ -337,13 +385,11 @@
       <% }) %>
     </datalist>
     <datalist id="judgesList"></datalist>
-    <script src="/js/judges.js"></script>
     <script>
       const judgesList = document.getElementById("judgesList");
       if (judgesList) {
         const userJudges = <%- JSON.stringify(judges || []) %>;
-        const defaultJudges = Array.isArray(window.JUDGES) ? window.JUDGES : [];
-        const names = Array.from(new Set(userJudges.concat(defaultJudges).filter(Boolean)));
+        const names = Array.from(new Set(userJudges.filter(Boolean)));
         judgesList.innerHTML = names
           .map((judge) => `<option value="${String(judge).replaceAll('"', '&quot;')}"></option>`)
           .join("");

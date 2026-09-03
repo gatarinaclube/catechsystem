@@ -11,15 +11,6 @@ const {
 } = require("../utils/cattery-admin");
 const { formatMicrochip } = require("../utils/format");
 
-const CLUBS = [
-  "Gatarina",
-  "Sampa Gato",
-  "CBG",
-  "Amacoon",
-  "Gato Grupo",
-  "Rio Cat Clube",
-  "Rio Minas",
-];
 const HOMOLOGATION_STATUSES = [
   { value: "REQUEST", label: "Solicitar Homologação" },
   { value: "HOMOLOGATED", label: "Homologado" },
@@ -314,9 +305,22 @@ async function loadTitleOptions(prisma, ownerId, records = []) {
     where: { ownerId },
     orderBy: [{ type: "asc" }, { name: "asc" }],
   });
+  const optionRows = await Promise.all(rows.map(async (row) => {
+    const usedCount = await prisma.catTitleRecord.count({
+      where: {
+        ownerId,
+        ...(row.type === "CLUB" ? { club: row.name } : { judge: row.name }),
+      },
+    });
+    return {
+      ...row,
+      label: row.type === "CLUB" ? "Clube" : "Juiz",
+      usedCount,
+      canDelete: usedCount === 0,
+    };
+  }));
   return {
     clubs: mergeNames(
-      CLUBS,
       rows.filter((row) => row.type === "CLUB").map((row) => row.name),
       records.map((record) => record.club)
     ),
@@ -324,6 +328,7 @@ async function loadTitleOptions(prisma, ownerId, records = []) {
       rows.filter((row) => row.type === "JUDGE").map((row) => row.name),
       records.map((record) => record.judge)
     ),
+    optionRows,
   };
 }
 
@@ -397,6 +402,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       specialTitles: SPECIAL_TITLES,
       clubs: titleOptionLists.clubs,
       judges: titleOptionLists.judges,
+      titleOptionRows: titleOptionLists.optionRows,
       homologationStatuses: HOMOLOGATION_STATUSES,
       error,
       success,
@@ -429,6 +435,65 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       update: {},
       create: { ownerId: req.session.userId, type, name },
     });
+    return res.redirect(redirect);
+  });
+
+  router.post("/admin/titles/options/:id", requireAuth, requirePermission("admin.titles"), async (req, res) => {
+    const id = Number(req.params.id);
+    const name = cleanText(req.body.name, 120);
+    const redirect = req.body.catId ? `/admin/titles?catId=${Number(req.body.catId)}` : "/admin/titles";
+    const option = await prisma.catTitleOption.findFirst({
+      where: { id, ownerId: req.session.userId },
+    });
+    if (!option || !name) return res.redirect(redirect);
+
+    await prisma.$transaction(async (tx) => {
+      const existingOption = await tx.catTitleOption.findFirst({
+        where: {
+          ownerId: req.session.userId,
+          type: option.type,
+          name,
+          id: { not: option.id },
+        },
+      });
+      await tx.catTitleRecord.updateMany({
+        where: {
+          ownerId: req.session.userId,
+          ...(option.type === "CLUB" ? { club: option.name } : { judge: option.name }),
+        },
+        data: option.type === "CLUB" ? { club: name } : { judge: name },
+      });
+      if (existingOption) {
+        await tx.catTitleOption.delete({ where: { id: option.id } });
+      } else {
+        await tx.catTitleOption.update({
+          where: { id: option.id },
+          data: { name },
+        });
+      }
+    });
+    return res.redirect(redirect);
+  });
+
+  router.post("/admin/titles/options/:id/delete", requireAuth, requirePermission("admin.titles"), async (req, res) => {
+    const id = Number(req.params.id);
+    const redirect = req.body.catId ? `/admin/titles?catId=${Number(req.body.catId)}` : "/admin/titles";
+    const option = await prisma.catTitleOption.findFirst({
+      where: { id, ownerId: req.session.userId },
+    });
+    if (!option) return res.redirect(redirect);
+
+    const usedCount = await prisma.catTitleRecord.count({
+      where: {
+        ownerId: req.session.userId,
+        ...(option.type === "CLUB" ? { club: option.name } : { judge: option.name }),
+      },
+    });
+    if (usedCount > 0) {
+      return res.status(400).render("titles/index", await loadContext(req, req.body.catId ? Number(req.body.catId) : null, "Não é possível excluir clube ou juiz já utilizado em lançamentos."));
+    }
+
+    await prisma.catTitleOption.delete({ where: { id: option.id } });
     return res.redirect(redirect);
   });
 
