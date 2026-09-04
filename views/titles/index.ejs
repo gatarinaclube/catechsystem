@@ -15,8 +15,8 @@
       }
       .titles-record-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 10px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
         align-items: end;
       }
       .titles-record-grid input,
@@ -25,11 +25,25 @@
         min-width: 0;
       }
       .titles-record-row {
-        padding: 12px 0;
-        border-bottom: 1px solid var(--border-soft);
+        margin-top: 12px;
+        padding: 14px;
+        border: 1px solid var(--border-soft);
+        border-radius: 8px;
+        background: #fff;
       }
-      .titles-record-row:last-child {
-        border-bottom: 0;
+      .titles-record-row:first-of-type {
+        margin-top: 0;
+      }
+      .titles-record-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .titles-record-heading {
+        font-weight: 800;
+        color: var(--text-main);
       }
       .title-rule-list {
         display: grid;
@@ -66,14 +80,20 @@
         gap: 8px;
         margin-top: 8px;
       }
-      .titles-option-list {
+      .titles-option-actions {
         display: grid;
+        grid-template-columns: 1fr 1fr;
         gap: 8px;
         margin-top: 12px;
       }
+      .titles-option-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 14px;
+      }
       .titles-option-row {
         display: grid;
-        grid-template-columns: 52px minmax(0, 1fr) auto auto auto;
+        grid-template-columns: minmax(0, 1fr) auto auto auto;
         gap: 8px;
         align-items: center;
       }
@@ -100,6 +120,29 @@
       .titles-hidden-field {
         display: none;
       }
+      .titles-dialog {
+        width: min(760px, calc(100vw - 32px));
+        border: 0;
+        border-radius: 12px;
+        padding: 0;
+        box-shadow: 0 24px 80px rgba(15, 23, 42, 0.22);
+      }
+      .titles-dialog::backdrop {
+        background: rgba(15, 23, 42, 0.42);
+      }
+      .titles-dialog-card {
+        padding: 22px;
+      }
+      .titles-dialog-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: flex-start;
+        margin-bottom: 14px;
+      }
+      .titles-dialog-close {
+        min-width: 38px;
+      }
       @media (max-width: 1180px) {
         .titles-layout {
           grid-template-columns: 1fr;
@@ -110,6 +153,10 @@
       }
       @media (max-width: 700px) {
         .titles-record-grid {
+          grid-template-columns: 1fr;
+        }
+        .titles-option-actions,
+        .titles-option-row {
           grid-template-columns: 1fr;
         }
       }
@@ -161,45 +208,15 @@
 
             <div class="content-card" style="margin-bottom:18px;">
               <div class="content-title">Clubes e juízes</div>
-              <form class="titles-option-form" method="post" action="/admin/titles/options">
-                <input type="hidden" name="type" value="CLUB" />
-                <% if (selectedCat) { %><input type="hidden" name="catId" value="<%= selectedCat.id %>" /><% } %>
-                <input name="name" placeholder="Novo clube" required />
-                <button type="submit" class="btn btn-primary" title="Adicionar clube">+</button>
-              </form>
-              <form class="titles-option-form" method="post" action="/admin/titles/options">
-                <input type="hidden" name="type" value="JUDGE" />
-                <% if (selectedCat) { %><input type="hidden" name="catId" value="<%= selectedCat.id %>" /><% } %>
-                <input name="name" placeholder="Novo juiz" required />
-                <button type="submit" class="btn btn-primary" title="Adicionar juiz">+</button>
-              </form>
-              <details style="margin-top:12px;">
-                <summary class="content-sub" style="cursor:pointer;">Ver e editar cadastrados</summary>
-                <div class="titles-option-list">
-                  <% if (!titleOptionRows.length) { %>
-                    <div class="empty">Nenhum clube ou juiz cadastrado.</div>
-                  <% } %>
-                  <% titleOptionRows.forEach(function(option) { %>
-                    <div class="titles-option-row">
-                      <form method="post" action="/admin/titles/options/<%= option.id %>">
-                        <% if (selectedCat) { %><input type="hidden" name="catId" value="<%= selectedCat.id %>" /><% } %>
-                        <span class="titles-option-type"><%= option.label %></span>
-                        <input name="name" value="<%= option.name %>" required />
-                        <span class="titles-option-usage"><%= option.usedCount %> uso(s)</span>
-                        <button type="submit" class="btn">Salvar</button>
-                      </form>
-                      <form method="post" action="/admin/titles/options/<%= option.id %>/delete">
-                        <% if (selectedCat) { %><input type="hidden" name="catId" value="<%= selectedCat.id %>" /><% } %>
-                        <button type="submit" class="btn" <%= option.canDelete ? '' : 'disabled title="Já está em uso"' %>>Excluir</button>
-                      </form>
-                    </div>
-                  <% }) %>
-                </div>
-              </details>
+              <div class="content-sub" style="margin-top:6px;">Cadastre listas próprias para usar nos lançamentos.</div>
+              <div class="titles-option-actions">
+                <button type="button" class="btn btn-primary" data-open-dialog="clubsDialog">Clubes</button>
+                <button type="button" class="btn btn-primary" data-open-dialog="judgesDialog">Juízes</button>
+              </div>
             </div>
 
             <div class="content-card">
-              <div class="content-title">Gatos com títulos</div>
+              <div class="content-title">Gatos com lançamentos</div>
               <div class="record-list" style="margin-top:12px;">
                 <% if (!catsWithRecords.length) { %>
                   <div class="empty">Nenhum gato com certificado ou título cadastrado.</div>
@@ -234,13 +251,20 @@
                 </div>
 
                 <div class="content-card" style="margin-bottom:18px;">
-                  <div class="content-title">Lançamentos cadastrados</div>
+                  <div class="content-title">Lançamentos cadastrados para <%= selectedCat.displayName %></div>
                   <% if (!selectedCat.titleRecords.length) { %>
                     <div class="empty" style="margin-top:12px;">Nenhum certificado ou título lançado para este gato.</div>
                   <% } %>
                   <% selectedCat.titleRecords.forEach(function(record) { %>
                     <div class="titles-record-row">
                       <input type="hidden" name="recordId" value="<%= record.id %>" />
+                      <div class="titles-record-header">
+                        <div class="titles-record-heading"><%= record.code || 'Lançamento' %></div>
+                        <label class="checkbox-label">
+                          <input type="checkbox" name="deleteRecord" value="<%= record.id %>" />
+                          Excluir
+                        </label>
+                      </div>
                       <div class="titles-record-grid">
                         <div class="field">
                           <label class="field-label">Tipo</label>
@@ -270,7 +294,7 @@
                           <label class="field-label">Ano</label>
                           <input name="recordYear" value="<%= record.year || '' %>" maxlength="10" />
                         </div>
-                        <div class="field">
+                        <div class="field" data-homologation-field>
                           <label class="field-label">Homologação</label>
                           <select name="recordHomologationStatus">
                             <option value="">Pendente</option>
@@ -279,10 +303,6 @@
                             <% }) %>
                           </select>
                         </div>
-                        <label class="checkbox-label titles-delete-field">
-                          <input type="checkbox" name="deleteRecord" value="<%= record.id %>" />
-                          Excluir
-                        </label>
                       </div>
                     </div>
                   <% }) %>
@@ -379,6 +399,82 @@
       </main>
     </div>
 
+    <dialog class="titles-dialog" id="clubsDialog">
+      <div class="titles-dialog-card">
+        <div class="titles-dialog-header">
+          <div>
+            <div class="content-title">Clubes</div>
+            <div class="content-sub">Cadastre e mantenha os clubes usados nos certificados.</div>
+          </div>
+          <button type="button" class="btn titles-dialog-close" data-close-dialog>×</button>
+        </div>
+        <form class="titles-option-form" method="post" action="/admin/titles/options">
+          <input type="hidden" name="type" value="CLUB" />
+          <% if (selectedCat) { %><input type="hidden" name="catId" value="<%= selectedCat.id %>" /><% } %>
+          <input name="name" placeholder="Novo clube" required />
+          <button type="submit" class="btn btn-primary">+</button>
+        </form>
+        <div class="titles-option-list">
+          <% const clubRows = titleOptionRows.filter(function(option) { return option.type === 'CLUB'; }); %>
+          <% if (!clubRows.length) { %>
+            <div class="empty">Nenhum clube cadastrado.</div>
+          <% } %>
+          <% clubRows.forEach(function(option) { %>
+            <div class="titles-option-row">
+              <form method="post" action="/admin/titles/options/<%= option.id %>">
+                <% if (selectedCat) { %><input type="hidden" name="catId" value="<%= selectedCat.id %>" /><% } %>
+                <input name="name" value="<%= option.name %>" required />
+                <span class="titles-option-usage"><%= option.usedCount %> uso(s)</span>
+                <button type="submit" class="btn">Salvar</button>
+              </form>
+              <form method="post" action="/admin/titles/options/<%= option.id %>/delete">
+                <% if (selectedCat) { %><input type="hidden" name="catId" value="<%= selectedCat.id %>" /><% } %>
+                <button type="submit" class="btn" <%= option.canDelete ? '' : 'disabled title="Já está em uso"' %>>Excluir</button>
+              </form>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog class="titles-dialog" id="judgesDialog">
+      <div class="titles-dialog-card">
+        <div class="titles-dialog-header">
+          <div>
+            <div class="content-title">Juízes</div>
+            <div class="content-sub">Cadastre e mantenha os juízes usados nos certificados.</div>
+          </div>
+          <button type="button" class="btn titles-dialog-close" data-close-dialog>×</button>
+        </div>
+        <form class="titles-option-form" method="post" action="/admin/titles/options">
+          <input type="hidden" name="type" value="JUDGE" />
+          <% if (selectedCat) { %><input type="hidden" name="catId" value="<%= selectedCat.id %>" /><% } %>
+          <input name="name" placeholder="Novo juiz" required />
+          <button type="submit" class="btn btn-primary">+</button>
+        </form>
+        <div class="titles-option-list">
+          <% const judgeRows = titleOptionRows.filter(function(option) { return option.type === 'JUDGE'; }); %>
+          <% if (!judgeRows.length) { %>
+            <div class="empty">Nenhum juiz cadastrado.</div>
+          <% } %>
+          <% judgeRows.forEach(function(option) { %>
+            <div class="titles-option-row">
+              <form method="post" action="/admin/titles/options/<%= option.id %>">
+                <% if (selectedCat) { %><input type="hidden" name="catId" value="<%= selectedCat.id %>" /><% } %>
+                <input name="name" value="<%= option.name %>" required />
+                <span class="titles-option-usage"><%= option.usedCount %> uso(s)</span>
+                <button type="submit" class="btn">Salvar</button>
+              </form>
+              <form method="post" action="/admin/titles/options/<%= option.id %>/delete">
+                <% if (selectedCat) { %><input type="hidden" name="catId" value="<%= selectedCat.id %>" /><% } %>
+                <button type="submit" class="btn" <%= option.canDelete ? '' : 'disabled title="Já está em uso"' %>>Excluir</button>
+              </form>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    </dialog>
+
     <datalist id="clubsList">
       <% clubs.forEach(function(club) { %>
         <option value="<%= club %>"></option>
@@ -402,17 +498,36 @@
       const newJudge = document.getElementById("newJudge");
       const newYear = document.getElementById("newYear");
       const newHomologationStatus = document.getElementById("newHomologationStatus");
+      document.querySelectorAll("[data-open-dialog]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const dialog = document.getElementById(button.dataset.openDialog);
+          if (dialog && typeof dialog.showModal === "function") dialog.showModal();
+        });
+      });
+      document.querySelectorAll("[data-close-dialog]").forEach((button) => {
+        button.addEventListener("click", () => button.closest("dialog")?.close());
+      });
+      document.querySelectorAll(".titles-dialog").forEach((dialog) => {
+        dialog.addEventListener("click", (event) => {
+          if (event.target === dialog) dialog.close();
+        });
+      });
       document.querySelectorAll("[data-record-kind]").forEach((kindField) => {
         const row = kindField.closest(".titles-record-row");
         const yearWrapper = row?.querySelector("[data-year-field]");
         const yearInput = yearWrapper?.querySelector("input");
+        const homologationWrapper = row?.querySelector("[data-homologation-field]");
+        const homologationInput = homologationWrapper?.querySelector("select");
         function syncExistingYearField() {
           const isSpecial = kindField.value === "SPECIAL";
+          const isTitle = kindField.value === "TITLE";
           yearWrapper?.classList.toggle("titles-hidden-field", !isSpecial);
           if (yearInput) {
             yearInput.required = isSpecial;
             if (!isSpecial) yearInput.value = "";
           }
+          homologationWrapper?.classList.toggle("titles-hidden-field", !isTitle);
+          if (homologationInput && !isTitle) homologationInput.value = "";
         }
         kindField.addEventListener("change", syncExistingYearField);
         syncExistingYearField();
