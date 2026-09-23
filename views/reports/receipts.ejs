@@ -11,6 +11,34 @@
       .receipts-table select {
         min-width: 120px;
       }
+      .receipts-scroll {
+        overflow-x: auto;
+        max-width: calc(100vw - 320px);
+        border: 1px solid var(--border-soft);
+        border-radius: 8px;
+      }
+      .receipts-table {
+        min-width: 1720px;
+      }
+      .receipts-table tbody tr:nth-child(even) {
+        background: #f8fafc;
+      }
+      .receipts-table th:first-child,
+      .receipts-table td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 2;
+        min-width: 220px;
+        background: #fff;
+        box-shadow: 1px 0 0 var(--border-soft);
+      }
+      .receipts-table tbody tr:nth-child(even) td:first-child {
+        background: #f8fafc;
+      }
+      .receipts-table th:first-child {
+        z-index: 3;
+        background: #f8fafc;
+      }
       .receipts-table .payer-input {
         min-width: 180px;
       }
@@ -20,6 +48,20 @@
       }
       .receipt-card-field.is-hidden {
         display: none;
+      }
+      .receipt-stack {
+        display: grid;
+        gap: 8px;
+      }
+      .receipt-stack-line {
+        min-height: 38px;
+        display: flex;
+        align-items: center;
+      }
+      @media (max-width: 1180px) {
+        .receipts-scroll {
+          max-width: calc(100vw - 48px);
+        }
       }
     </style>
   </head>
@@ -50,12 +92,17 @@
               <label class="field-label" for="periodType">Período</label>
               <select id="periodType" name="periodType">
                 <option value="month" <%= filters.periodType === 'month' ? 'selected' : '' %>>Mês</option>
+                <option value="year" <%= filters.periodType === 'year' ? 'selected' : '' %>>Ano</option>
                 <option value="custom" <%= filters.periodType === 'custom' ? 'selected' : '' %>>Personalizado</option>
               </select>
             </div>
             <div class="field">
               <label class="field-label" for="month">Mês</label>
               <input id="month" name="month" type="month" value="<%= filters.month %>" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="year">Ano</label>
+              <input id="year" name="year" type="number" min="2000" max="2100" value="<%= filters.year %>" />
             </div>
             <div class="field">
               <label class="field-label" for="startDate">Data inicial</label>
@@ -83,7 +130,7 @@
           <div class="report-summary">
             <div>
               <div class="content-title">Recebimentos encontrados</div>
-              <div class="content-sub"><%= rows.length %> pagamento(s) na conta selecionada.</div>
+              <div class="content-sub"><%= rows.length %> receita(s) com pagamento na conta selecionada.</div>
             </div>
           </div>
 
@@ -105,7 +152,7 @@
           <% } else { %>
             <form method="post" action="/reports/recebimentos">
               <input type="hidden" name="returnQuery" value="<%= queryString %>" />
-              <div class="report-table-wrap">
+              <div class="report-table-wrap receipts-scroll">
                 <table class="report-table receipts-table">
                   <thead>
                     <tr>
@@ -128,25 +175,53 @@
                       <tr>
                         <td>
                           <input type="hidden" name="rows[<%= index %>][revenueId]" value="<%= row.revenueId %>" />
-                          <input type="hidden" name="rows[<%= index %>][parcelNumber]" value="<%= row.parcelNumber %>" />
                           <%= row.clientLabel %>
                         </td>
                         <td><%= row.kittenLabel || '-' %></td>
                         <td class="amount"><%= row.saleAmountLabel %></td>
-                        <td><%= row.paidDateLabel %></td>
-                        <td><input class="payer-input" name="rows[<%= index %>][payer]" value="<%= row.payer %>" placeholder="Nome de quem pagou" /></td>
                         <td>
-                          <select name="rows[<%= index %>][paymentType]" data-payment-type>
-                            <option value="">Selecione...</option>
-                            <option value="PIX" <%= row.paymentType === 'PIX' ? 'selected' : '' %>>PIX</option>
-                            <option value="DINHEIRO" <%= row.paymentType === 'DINHEIRO' ? 'selected' : '' %>>Dinheiro</option>
-                            <option value="CARTAO" <%= row.paymentType === 'CARTAO' ? 'selected' : '' %>>Cartão</option>
-                          </select>
+                          <div class="receipt-stack">
+                            <% row.payments.forEach(function(payment, paymentIndex) { %>
+                              <div class="receipt-stack-line">
+                                <input type="hidden" name="rows[<%= index %>][payments][<%= paymentIndex %>][parcelNumber]" value="<%= payment.parcelNumber %>" />
+                                <%= payment.paidDateLabel %>
+                              </div>
+                            <% }) %>
+                          </div>
                         </td>
                         <td>
-                          <input class="card-installments" name="rows[<%= index %>][cardInstallments]" data-card-installments type="number" min="1" max="36" value="<%= row.cardInstallments %>" placeholder="x" />
+                          <div class="receipt-stack">
+                            <% row.payments.forEach(function(payment, paymentIndex) { %>
+                              <input class="payer-input" name="rows[<%= index %>][payments][<%= paymentIndex %>][payer]" value="<%= payment.payer %>" placeholder="Nome de quem pagou" />
+                            <% }) %>
+                          </div>
                         </td>
-                        <td class="amount"><%= row.paidAmountLabel %></td>
+                        <td>
+                          <div class="receipt-stack">
+                            <% row.payments.forEach(function(payment, paymentIndex) { %>
+                              <select name="rows[<%= index %>][payments][<%= paymentIndex %>][paymentType]" data-payment-type>
+                                <option value="">Selecione...</option>
+                                <option value="PIX" <%= payment.paymentType === 'PIX' ? 'selected' : '' %>>PIX</option>
+                                <option value="DINHEIRO" <%= payment.paymentType === 'DINHEIRO' ? 'selected' : '' %>>Dinheiro</option>
+                                <option value="CARTAO" <%= payment.paymentType === 'CARTAO' ? 'selected' : '' %>>Cartão</option>
+                              </select>
+                            <% }) %>
+                          </div>
+                        </td>
+                        <td>
+                          <div class="receipt-stack">
+                            <% row.payments.forEach(function(payment, paymentIndex) { %>
+                              <input class="card-installments" name="rows[<%= index %>][payments][<%= paymentIndex %>][cardInstallments]" data-card-installments type="number" min="1" max="36" value="<%= payment.cardInstallments %>" placeholder="x" />
+                            <% }) %>
+                          </div>
+                        </td>
+                        <td class="amount">
+                          <div class="receipt-stack">
+                            <% row.payments.forEach(function(payment) { %>
+                              <div class="receipt-stack-line" style="justify-content:flex-end;"><%= payment.paidAmountLabel %></div>
+                            <% }) %>
+                          </div>
+                        </td>
                         <td class="amount"><%= row.freightLabel %></td>
                         <td class="amount"><%= row.totalPaidLabel %></td>
                         <td><%= row.invoiceDateLabel %></td>
@@ -166,8 +241,11 @@
     </div>
     <script>
       function syncCardInstallments(select) {
+        const stack = select.closest(".receipt-stack");
+        const index = Array.from(stack?.children || []).indexOf(select);
         const row = select.closest("tr");
-        const input = row?.querySelector("[data-card-installments]");
+        const inputs = row ? Array.from(row.querySelectorAll("[data-card-installments]")) : [];
+        const input = inputs[index] || null;
         if (!input) return;
         const isCard = select.value === "CARTAO";
         input.disabled = !isCard;

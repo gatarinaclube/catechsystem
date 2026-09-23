@@ -1162,6 +1162,7 @@ function buildReceiptQueryString(filters) {
   return new URLSearchParams({
     periodType: filters.periodType,
     month: filters.month,
+    year: filters.year || "",
     startDate: filters.startDateInput,
     endDate: filters.endDateInput,
     account: filters.account || "",
@@ -1177,7 +1178,45 @@ async function ensureUserSettings(prisma, req) {
 }
 
 async function buildReceiptFilters(prisma, req, accountOptions) {
-  const base = buildRevenueFilters(req.query || {});
+  const query = req.query || {};
+  const periodType = ["year", "month", "custom"].includes(query.periodType)
+    ? query.periodType
+    : "month";
+  const month = /^\d{4}-\d{2}$/.test(query.month || "")
+    ? query.month
+    : currentMonthInput();
+  const [monthYear, monthNumber] = month.split("-").map(Number);
+  const year = /^\d{4}$/.test(query.year || "")
+    ? String(query.year)
+    : String(monthYear || todayParts()[0]);
+  let startDate;
+  let endDate;
+
+  if (periodType === "year") {
+    startDate = new Date(Date.UTC(Number(year), 0, 1));
+    endDate = new Date(Date.UTC(Number(year), 11, 31));
+  } else if (periodType === "custom") {
+    startDate = parseDateInput(query.startDate, null);
+    endDate = parseDateInput(query.endDate, null);
+  } else {
+    startDate = new Date(Date.UTC(monthYear, monthNumber - 1, 1));
+    endDate = new Date(Date.UTC(monthYear, monthNumber, 0));
+  }
+
+  if (!startDate || !endDate) {
+    startDate = new Date(Date.UTC(monthYear, monthNumber - 1, 1));
+    endDate = new Date(Date.UTC(monthYear, monthNumber, 0));
+  }
+
+  const base = {
+    periodType,
+    month,
+    year,
+    startDate,
+    endDate,
+    startDateInput: formatDateInput(startDate),
+    endDateInput: formatDateInput(endDate),
+  };
   const settings = await ensureUserSettings(prisma, req);
   const accountNames = accountOptions.map((option) => option.value).filter(Boolean);
   const requestedAccount = String(req.query.account || "").trim();
@@ -1200,7 +1239,7 @@ async function buildReceiptFilters(prisma, req, accountOptions) {
 }
 
 function mapReceiptRows(revenues, filters) {
-  const rows = [];
+  const rowsByRevenue = new Map();
   const startTime = filters.startDate.getTime();
   const endTime = addDays(filters.endDate, 1).getTime();
 
@@ -1218,14 +1257,27 @@ function mapReceiptRows(revenues, filters) {
       const paymentType = inferPaymentType(parcel, paymentAccount);
       const cardInstallments = parcel.cardInstallments || "";
       const kittenLabel = kittenNameOnly(revenue.kittenLabel || revenue.kitten?.name || revenue.productService?.name || "");
-      rows.push({
-        key: `${revenue.id}-${parcel.number || 1}`,
-        revenueId: revenue.id,
+      if (!rowsByRevenue.has(revenue.id)) {
+        rowsByRevenue.set(revenue.id, {
+          key: String(revenue.id),
+          revenueId: revenue.id,
+          firstPaidDateTime: paidTime,
+          clientLabel: revenue.client?.fullName || "Cliente desconhecido",
+          kittenLabel,
+          saleAmountLabel: formatCurrency(revenue.catAmountCents),
+          freightLabel: formatCurrency(revenue.transportAmountCents),
+          totalPaidLabel: formatCurrency(revenue.totalAmountCents),
+          invoiceDateLabel: formatDateOnlyLabel(revenue.invoiceDate),
+          invoiceNumber: revenue.invoiceNumber || "",
+          paymentAccount,
+          payments: [],
+        });
+      }
+      const row = rowsByRevenue.get(revenue.id);
+      row.firstPaidDateTime = Math.min(row.firstPaidDateTime, paidTime);
+      row.payments.push({
         parcelNumber: parcel.number || 1,
         paidDateTime: paidTime,
-        clientLabel: revenue.client?.fullName || "Cliente desconhecido",
-        kittenLabel,
-        saleAmountLabel: formatCurrency(revenue.catAmountCents),
         paidDateLabel: formatDateOnlyLabel(paidDate),
         payer: parcel.payer || "",
         paymentType,
@@ -1233,17 +1285,16 @@ function mapReceiptRows(revenues, filters) {
         cardInstallments,
         paidAmountLabel: formatCurrency(parcel.amountCents),
         paidAmountCents: Number(parcel.amountCents || 0),
-        freightLabel: formatCurrency(revenue.transportAmountCents),
-        totalPaidLabel: formatCurrency(revenue.totalAmountCents),
-        invoiceDateLabel: formatDateOnlyLabel(revenue.invoiceDate),
-        invoiceNumber: revenue.invoiceNumber || "",
-        paymentAccount,
       });
     });
   });
 
-  return rows.sort((a, b) => {
-    const dateCompare = a.paidDateTime - b.paidDateTime;
+  return Array.from(rowsByRevenue.values()).map((row) => ({
+    ...row,
+    payments: row.payments.sort((a, b) => a.paidDateTime - b.paidDateTime || Number(a.parcelNumber) - Number(b.parcelNumber)),
+    paidAmountCents: row.payments.reduce((sum, payment) => sum + Number(payment.paidAmountCents || 0), 0),
+  })).sort((a, b) => {
+    const dateCompare = a.firstPaidDateTime - b.firstPaidDateTime;
     return dateCompare || a.clientLabel.localeCompare(b.clientLabel, "pt-BR");
   });
 }
@@ -1262,13 +1313,21 @@ function normalizeReceiptRowsFromBody(body) {
     : body.rows && typeof body.rows === "object"
       ? Object.values(body.rows)
       : (body.rows ? [body.rows] : []);
-  return rows.map((row) => ({
-    revenueId: Number(row.revenueId),
-    parcelNumber: Number(row.parcelNumber),
-    payer: String(row.payer || "").trim().slice(0, 120),
-    paymentType: normalizePaymentType(row.paymentType),
-    cardInstallments: Math.min(36, Math.max(0, Number.parseInt(row.cardInstallments || "0", 10) || 0)),
-  })).filter((row) => row.revenueId && row.parcelNumber);
+  return rows.flatMap((row) => {
+    const revenueId = Number(row.revenueId);
+    const payments = Array.isArray(row.payments)
+      ? row.payments
+      : row.payments && typeof row.payments === "object"
+        ? Object.values(row.payments)
+        : [];
+    return payments.map((payment) => ({
+      revenueId,
+      parcelNumber: Number(payment.parcelNumber),
+      payer: String(payment.payer || "").trim().slice(0, 120),
+      paymentType: normalizePaymentType(payment.paymentType),
+      cardInstallments: Math.min(36, Math.max(0, Number.parseInt(payment.cardInstallments || "0", 10) || 0)),
+    }));
+  }).filter((row) => row.revenueId && row.parcelNumber);
 }
 
 async function saveReceiptMetadata(prisma, req, body) {
