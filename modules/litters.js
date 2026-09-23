@@ -62,6 +62,15 @@ function requiredFieldError(message) {
   return error;
 }
 
+function parseJsonArray(value) {
+  try {
+    const parsed = JSON.parse(value || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 function isKittenFromLitter(cat) {
   return Boolean(cat?.kittenNumber || cat?.litterKitten);
 }
@@ -80,6 +89,45 @@ function formatDateForInput(date) {
 
 function normalizeMicrochip(value) {
   return value ? String(value).replace(/\D/g, "").slice(0, 15) : null;
+}
+
+function parseDateOnly(value) {
+  if (!value) return null;
+  const date = value instanceof Date ? new Date(value) : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  date.setUTCHours(0, 0, 0, 0);
+  return date;
+}
+
+function addMonths(date, months) {
+  const copy = new Date(date);
+  copy.setUTCMonth(copy.getUTCMonth() + months);
+  return copy;
+}
+
+function hasExcessLitterForDate(litterHistoryDates, candidateDate) {
+  const candidate = parseDateOnly(candidateDate);
+  if (!candidate) return false;
+
+  const uniqueDates = new Map();
+  [...litterHistoryDates, candidate]
+    .map(parseDateOnly)
+    .filter(Boolean)
+    .forEach((date) => uniqueDates.set(date.toISOString().slice(0, 10), date));
+  const dates = Array.from(uniqueDates.values()).sort((a, b) => a - b);
+
+  return dates.some((startDate, index) => {
+    const twelveMonthLimit = addMonths(startDate, 12);
+    const twentyFourMonthLimit = addMonths(startDate, 24);
+    const littersInTwelveMonths = dates
+      .slice(index)
+      .filter((date) => date >= startDate && date <= twelveMonthLimit).length;
+    const littersInTwentyFourMonths = dates
+      .slice(index)
+      .filter((date) => date >= startDate && date <= twentyFourMonthLimit).length;
+
+    return littersInTwelveMonths > 2 || littersInTwentyFourMonths > 3;
+  });
 }
 
 function sameUtcDay(date) {
@@ -170,6 +218,33 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const filteredFemaleCats = femaleCats.filter(canAppearAsLitterParent);
       const importedMaleCat = findMatchingCat(filteredMaleCats, importedLitter, "male");
       const importedFemaleCat = findMatchingCat(filteredFemaleCats, importedLitter, "female");
+      const matingPlans = filteredFemaleCats.length
+        ? await prisma.matingPlan.findMany({
+            where: { femaleCatId: { in: filteredFemaleCats.map((cat) => cat.id) } },
+            select: { femaleCatId: true, litterHistoryJson: true },
+          })
+        : [];
+      const matingPlanByFemaleId = new Map(matingPlans.map((plan) => [plan.femaleCatId, plan]));
+      const litterHistoryByFemaleId = Object.fromEntries(
+        filteredFemaleCats.map((cat) => {
+          const dates = [
+            ...importableLitters
+            .filter((litter) =>
+              Number(litter.id) !== Number(importedLitter?.id || 0) &&
+              (
+                (cat.microchip && normalizeMicrochip(litter.femaleMicrochip) === normalizeMicrochip(cat.microchip)) ||
+                (cat.name && String(litter.femaleName || "").trim() === String(cat.name || "").trim())
+              )
+            )
+            .map((litter) => formatDateForInput(litter.litterBirthDate)),
+            ...parseJsonArray(matingPlanByFemaleId.get(cat.id)?.litterHistoryJson),
+          ];
+          const uniqueDates = Array.from(new Set(
+            dates.map((value) => formatDateForInput(value)).filter(Boolean)
+          ));
+          return [cat.id, uniqueDates];
+        })
+      );
       const settings = await prisma.userSettings.findUnique({
         where: { userId },
         select: { breedsJson: true },
@@ -193,6 +268,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         importedFemaleCatId: importedFemaleCat?.id || "",
         importedKittenAt,
         formatDateForInput,
+        litterHistoryByFemaleId,
         breeds,
         userId,
       });
@@ -395,6 +471,36 @@ if (litterBirthDate && litterBirthDate.trim() !== "") {
   const parts = normalized.split("-"); // [YYYY, MM, DD]
   litterBirthDateObj = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
 }
+
+      const motherHistoryFilters = [
+        ...(femaleMicrochip ? [{ femaleMicrochip }] : []),
+        ...(femaleName ? [{ femaleName }] : []),
+      ];
+      if (motherHistoryFilters.length) {
+        const [motherLitters, matingPlan] = await Promise.all([
+          prisma.litter.findMany({
+            where: {
+              ownerId: userId,
+              litterBirthDate: { not: null },
+              OR: motherHistoryFilters,
+            },
+            select: { litterBirthDate: true },
+          }),
+          femaleCatId
+            ? prisma.matingPlan.findUnique({
+                where: { femaleCatId: Number(femaleCatId) },
+                select: { litterHistoryJson: true },
+              })
+            : null,
+        ]);
+        const motherHistoryDates = [
+          ...motherLitters.map((litter) => litter.litterBirthDate),
+          ...parseJsonArray(matingPlan?.litterHistoryJson),
+        ].filter(Boolean);
+        if (hasExcessLitterForDate(motherHistoryDates, litterBirthDateObj)) {
+          throw requiredFieldError("Excesso de Ninhada. Informe uma nova data válida dentro das regras.");
+        }
+      }
 
       // Monta array de filhotes
       // Observação: pelos logs, os campos vêm como:

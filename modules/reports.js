@@ -2559,6 +2559,15 @@ function pdfMaxColumnHeight(doc, columns, row, fontSize = 8) {
   }, 0);
 }
 
+function pdfFileSafe(value) {
+  return String(value || "relatorio")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase() || "relatorio";
+}
+
 function renderExpensesPdf(res, rows, filters, totalLabel) {
   const doc = new PDFDocument({ margin: 40, size: "A4" });
   const fileName = `relatorio-despesas-${filters.startDateInput}-${filters.endDateInput}.pdf`;
@@ -2738,6 +2747,124 @@ function renderRevenuesPdf(res, rows, filters, totals) {
   });
 
   if (!rows.length) doc.font("Helvetica").fontSize(10).text("Nenhuma receita encontrada.", 40, y);
+  doc.end();
+}
+
+function renderReceiptsPdf(res, rows, filters, totals) {
+  const doc = new PDFDocument({ margin: 24, size: "A4", layout: "landscape" });
+  const accountSlug = pdfFileSafe(filters.account || "conta");
+  const fileName = `relatorio-recebimentos-${accountSlug}-${filters.startDateInput}-${filters.endDateInput}.pdf`;
+  const left = doc.page.margins.left;
+  const right = doc.page.width - doc.page.margins.right;
+  const bottom = doc.page.height - doc.page.margins.bottom;
+  const tableWidth = right - left;
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+  doc.pipe(res);
+
+  const columns = [
+    { label: "Cliente", key: "clientLabel", width: 95 },
+    { label: "Gato", key: "kittenLabel", width: 58 },
+    { label: "Valor", key: "saleAmountLabel", width: 54, align: "right" },
+    { label: "Data Pgt.", key: "paymentDates", width: 62 },
+    { label: "Pagador", key: "payers", width: 92 },
+    { label: "Tipo Pgt.", key: "paymentTypes", width: 72 },
+    { label: "Valor Pgt.", key: "paymentAmounts", width: 62, align: "right" },
+    { label: "Frete", key: "freightLabel", width: 54, align: "right" },
+    { label: "Total", key: "totalPaidLabel", width: 58, align: "right" },
+    { label: "Data Nota", key: "invoiceDateLabel", width: 58 },
+    { label: "Nota", key: "invoiceNumber", width: 52 },
+  ];
+
+  function rowValue(row, key) {
+    if (key === "paymentDates") return row.payments.map((payment) => payment.paidDateLabel || "-").join("\n");
+    if (key === "payers") return row.payments.map((payment) => payment.payer || "-").join("\n");
+    if (key === "paymentTypes") {
+      return row.payments
+        .map((payment) => paymentTypeLabel(payment.paymentType, payment.cardInstallments) || "-")
+        .join("\n");
+    }
+    if (key === "paymentAmounts") return row.payments.map((payment) => payment.paidAmountLabel || "-").join("\n");
+    return row[key] || "-";
+  }
+
+  function drawTitle() {
+    doc.font("Helvetica-Bold").fontSize(16).fillColor("#111827").text("Relatório de Recebimentos", left, 24);
+    doc.moveDown(0.25);
+    doc.font("Helvetica").fontSize(8.5).fillColor("#374151");
+    doc.text(
+      `Conta: ${filters.account || "-"} | Período: ${formatDateOnlyLabel(filters.startDate)} a ${formatDateOnlyLabel(filters.endDate)} | Total recebido: ${totals.paidLabel}`,
+      left,
+      doc.y,
+      { width: tableWidth }
+    );
+  }
+
+  function drawHeader(y) {
+    doc.rect(left, y, tableWidth, 18).fill("#e5e7eb");
+    let x = left;
+    doc.font("Helvetica-Bold").fontSize(6.8).fillColor("#111827");
+    columns.forEach((column) => {
+      doc.text(column.label, x + 3, y + 5, {
+        width: column.width - 6,
+        align: column.align || "left",
+        lineBreak: false,
+      });
+      x += column.width;
+    });
+    return y + 18;
+  }
+
+  function addTablePage() {
+    doc.addPage({ margin: 24, size: "A4", layout: "landscape" });
+    drawTitle();
+    return drawHeader(doc.y + 10);
+  }
+
+  drawTitle();
+  let y = drawHeader(doc.y + 10);
+
+  if (!rows.length) {
+    doc.font("Helvetica").fontSize(10).fillColor("#111827").text("Nenhum recebimento encontrado.", left, y + 14);
+    doc.end();
+    return;
+  }
+
+  rows.forEach((row, index) => {
+    const values = columns.map((column) => rowValue(row, column.key));
+    doc.font("Helvetica").fontSize(6.8);
+    const maxTextHeight = values.reduce((max, value, columnIndex) => {
+      const width = columns[columnIndex].width - 6;
+      return Math.max(max, doc.heightOfString(String(value || "-"), { width, lineGap: 1 }));
+    }, 0);
+    const rowHeight = Math.max(22, Math.min(92, maxTextHeight + 10));
+
+    if (y + rowHeight > bottom) {
+      y = addTablePage();
+    }
+
+    if (index % 2 === 0) {
+      doc.rect(left, y, tableWidth, rowHeight).fill("#f9fafb");
+    }
+    doc.strokeColor("#e5e7eb").lineWidth(0.4);
+    doc.moveTo(left, y + rowHeight).lineTo(right, y + rowHeight).stroke();
+
+    let x = left;
+    doc.font("Helvetica").fontSize(6.8).fillColor("#111827");
+    values.forEach((value, columnIndex) => {
+      const column = columns[columnIndex];
+      doc.text(String(value || "-"), x + 3, y + 5, {
+        width: column.width - 6,
+        height: rowHeight - 8,
+        align: column.align || "left",
+        lineGap: 1,
+      });
+      x += column.width;
+    });
+    y += rowHeight;
+  });
+
   doc.end();
 }
 
@@ -3500,6 +3627,26 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         queryString: buildReceiptQueryString(filters),
         success: req.query.saved === "1",
       });
+    }
+  );
+
+  router.get(
+    "/reports/recebimentos/pdf",
+    requireAuth,
+    requirePermission("admin.reports"),
+    async (req, res) => {
+      const allAccountOptions = await loadAccountOptions(prisma, req);
+      const accountOptions = allAccountOptions.filter((option) => option.value);
+      const filters = await buildReceiptFilters(prisma, req, accountOptions);
+      const revenues = await prisma.revenueEntry.findMany({
+        where: buildRevenueWhere(req, filters),
+        include: { client: true, kitten: true, productService: true },
+        orderBy: [{ createdAt: "desc" }],
+      });
+      const rows = mapReceiptRows(revenues, filters);
+      const totals = buildReceiptTotals(rows);
+
+      renderReceiptsPdf(res, rows, filters, totals);
     }
   );
 

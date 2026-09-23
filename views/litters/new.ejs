@@ -7,6 +7,18 @@
     <!-- CSS GLOBAL -->
     <link rel="stylesheet" href="/css/theme.css" />
     <link rel="stylesheet" href="/css/layout.css" />
+    <style>
+      .litter-excess-warning {
+        display: none;
+        margin-top: 6px;
+        color: #b91c1c;
+        font-size: 13px;
+        font-weight: 700;
+      }
+      .litter-excess-warning.is-visible {
+        display: block;
+      }
+    </style>
   </head>
   <body>
     <div class="shell">
@@ -252,6 +264,7 @@
                     value="<%= imported ? formatDateForInput(imported.litterBirthDate) : '' %>"
                     required
                   />
+                  <div id="litterExcessWarning" class="litter-excess-warning">Excesso de Ninhada</div>
                 </div>
               </div>
 
@@ -502,6 +515,8 @@
     <!--  SCRIPTS PRINCIPAIS DA PÁGINA -->
     <!-- ============================ -->
     <script>
+      const litterHistoryByFemaleId = <%- JSON.stringify(litterHistoryByFemaleId || {}) %>;
+
       document.addEventListener("DOMContentLoaded", function () {
         // ---------- Função de formatação de microchip ----------
         function formatMicrochip(raw) {
@@ -541,6 +556,54 @@
 
         // ---------- Preencher dados da fêmea ----------
         const femaleSelect = document.getElementById("femaleCatId");
+        const litterBirthDateInput = document.getElementById("litterBirthDate");
+        const litterExcessWarning = document.getElementById("litterExcessWarning");
+
+        function parseDateOnly(value) {
+          if (!value) return null;
+          const parts = String(value).split("-").map(Number);
+          if (parts.length !== 3 || parts.some((part) => !Number.isFinite(part))) return null;
+          return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+        }
+
+        function addMonths(date, months) {
+          const copy = new Date(date.getTime());
+          copy.setUTCMonth(copy.getUTCMonth() + months);
+          return copy;
+        }
+
+        function hasExcessLitterForDate(historyDates, candidateValue) {
+          const candidate = parseDateOnly(candidateValue);
+          if (!candidate) return false;
+          const dates = [...(historyDates || []), candidateValue]
+            .map(parseDateOnly)
+            .filter(Boolean)
+            .sort((a, b) => a - b);
+
+          return dates.some((startDate, index) => {
+            const twelveMonthLimit = addMonths(startDate, 12);
+            const twentyFourMonthLimit = addMonths(startDate, 24);
+            const littersInTwelveMonths = dates
+              .slice(index)
+              .filter((date) => date >= startDate && date <= twelveMonthLimit).length;
+            const littersInTwentyFourMonths = dates
+              .slice(index)
+              .filter((date) => date >= startDate && date <= twentyFourMonthLimit).length;
+
+            return littersInTwelveMonths > 2 || littersInTwentyFourMonths > 3;
+          });
+        }
+
+        function syncLitterExcessWarning() {
+          const femaleId = femaleSelect?.value || "";
+          const historyDates = litterHistoryByFemaleId[femaleId] || [];
+          const hasExcess = hasExcessLitterForDate(historyDates, litterBirthDateInput?.value || "");
+          litterExcessWarning?.classList.toggle("is-visible", hasExcess);
+          litterBirthDateInput?.setCustomValidity(hasExcess ? "Excesso de Ninhada" : "");
+          return hasExcess;
+        }
+        window.syncLitterExcessWarning = syncLitterExcessWarning;
+
         function syncFemaleFields() {
           const opt = femaleSelect.options[femaleSelect.selectedIndex];
           if (!opt || !opt.dataset) return;
@@ -552,9 +615,14 @@
             formatMicrochip(opt.dataset.microchip || "");
         }
         if (femaleSelect) {
-          femaleSelect.addEventListener("change", syncFemaleFields);
+          femaleSelect.addEventListener("change", () => {
+            syncFemaleFields();
+            syncLitterExcessWarning();
+          });
           syncFemaleFields();
         }
+        litterBirthDateInput?.addEventListener("input", syncLitterExcessWarning);
+        syncLitterExcessWarning();
 
         // ---------- Toggle propriedade do macho ----------
 const maleOwnershipRadios = document.getElementsByName("maleOwnership");
@@ -778,7 +846,15 @@ refreshMaleOwnership();
 <script>
   document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll("form").forEach((form) => {
-      form.addEventListener("submit", () => {
+      form.addEventListener("submit", (event) => {
+        const isLitterPostForm = String(form.method || "").toLowerCase() === "post";
+        if (isLitterPostForm && typeof window.syncLitterExcessWarning === "function" && window.syncLitterExcessWarning()) {
+          event.preventDefault();
+          document.getElementById("litterBirthDate")?.reportValidity();
+          return;
+        }
+        if (event.defaultPrevented) return;
+
         const submitBtn = form.querySelector("button[type='submit']");
         if (!submitBtn) return;
 

@@ -60,6 +60,20 @@ function formatDateForInput(date) {
   return `${day}/${month}/${parsed.getFullYear()}`;
 }
 
+function parseDate(value) {
+  if (!value) return null;
+  const date = value instanceof Date ? new Date(value) : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  date.setUTCHours(0, 0, 0, 0);
+  return date;
+}
+
+function addMonths(date, months) {
+  const copy = new Date(date);
+  copy.setUTCMonth(copy.getUTCMonth() + months);
+  return copy;
+}
+
 function isCatFromLitter(cat) {
   return Boolean(cat.kittenNumber || cat.litterKitten);
 }
@@ -99,6 +113,31 @@ function parseJsonArray(value) {
   } catch {
     return [];
   }
+}
+
+function hasExcessLitterForDate(litterHistoryDates, candidateDate) {
+  const candidate = parseDate(candidateDate);
+  if (!candidate) return false;
+
+  const uniqueDates = new Map();
+  [...litterHistoryDates, candidate]
+    .map(parseDate)
+    .filter(Boolean)
+    .forEach((date) => uniqueDates.set(date.toISOString().slice(0, 10), date));
+  const dates = Array.from(uniqueDates.values()).sort((a, b) => a - b);
+
+  return dates.some((startDate, index) => {
+    const twelveMonthLimit = addMonths(startDate, 12);
+    const twentyFourMonthLimit = addMonths(startDate, 24);
+    const littersInTwelveMonths = dates
+      .slice(index)
+      .filter((date) => date >= startDate && date <= twelveMonthLimit).length;
+    const littersInTwentyFourMonths = dates
+      .slice(index)
+      .filter((date) => date >= startDate && date <= twentyFourMonthLimit).length;
+
+    return littersInTwelveMonths > 2 || littersInTwentyFourMonths > 3;
+  });
 }
 
 function parseDeathCauses(body, fieldName, count, allowedCauses) {
@@ -191,6 +230,55 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     return Boolean(cat);
   }
 
+  async function findLitterMother(req, femaleCatId) {
+    if (!femaleCatId) return null;
+    return prisma.cat.findFirst({
+      where: { id: femaleCatId, ...ownerScope(req), gender: "F" },
+      select: { id: true, name: true, microchip: true },
+    });
+  }
+
+  async function loadMotherLitterHistory(req, motherCat, currentLitterId = null) {
+    if (!motherCat) return [];
+
+    const filters = [];
+    if (motherCat.microchip) filters.push({ femaleMicrochip: motherCat.microchip });
+    if (motherCat.name) filters.push({ femaleName: motherCat.name });
+    if (!filters.length) return [];
+
+    const [litters, matingPlan] = await Promise.all([
+      prisma.litter.findMany({
+        where: {
+          ...ownerScope(req),
+          ...(currentLitterId ? { NOT: { id: currentLitterId } } : {}),
+          litterBirthDate: { not: null },
+          OR: filters,
+        },
+        select: { litterBirthDate: true },
+      }),
+      prisma.matingPlan.findUnique({
+        where: { femaleCatId: motherCat.id },
+        select: { litterHistoryJson: true },
+      }),
+    ]);
+
+    return [
+      ...litters.map((row) => row.litterBirthDate),
+      ...parseJsonArray(matingPlan?.litterHistoryJson),
+    ].filter(Boolean);
+  }
+
+  async function ensureValidLitterBirthSpacing(req, femaleCatId, litterBirthDate, currentLitterId = null) {
+    if (!litterBirthDate) return;
+    const motherCat = await findLitterMother(req, femaleCatId);
+    if (!motherCat) return;
+
+    const litterHistory = await loadMotherLitterHistory(req, motherCat, currentLitterId);
+    if (hasExcessLitterForDate(litterHistory, litterBirthDate)) {
+      throw new Error("Excesso de Ninhada. Informe uma nova data válida dentro das regras.");
+    }
+  }
+
   async function getCatteryNameForUser(userId, litter = null) {
     const settingsRows = await prisma.$queryRaw`
       SELECT "catteryName"
@@ -240,6 +328,52 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       },
       orderBy: { name: "asc" },
     });
+
+    const currentLitterId = litter?.id ? Number(litter.id) : null;
+    const femaleMicrochips = females.map((cat) => cat.microchip).filter(Boolean);
+    const femaleNames = females.map((cat) => cat.name).filter(Boolean);
+    const [litterHistoryRows, matingPlans] = await Promise.all([
+      femaleMicrochips.length || femaleNames.length
+        ? prisma.litter.findMany({
+            where: {
+              ...scopedOwner,
+              ...(currentLitterId ? { NOT: { id: currentLitterId } } : {}),
+              litterBirthDate: { not: null },
+              OR: [
+                ...(femaleMicrochips.length ? [{ femaleMicrochip: { in: femaleMicrochips } }] : []),
+                ...(femaleNames.length ? [{ femaleName: { in: femaleNames } }] : []),
+              ],
+            },
+            select: { femaleMicrochip: true, femaleName: true, litterBirthDate: true },
+          })
+        : [],
+      females.length
+        ? prisma.matingPlan.findMany({
+            where: { femaleCatId: { in: females.map((cat) => cat.id) } },
+            select: { femaleCatId: true, litterHistoryJson: true },
+          })
+        : [],
+    ]);
+    const matingPlanByFemaleId = new Map(matingPlans.map((plan) => [plan.femaleCatId, plan]));
+    const litterHistoryByFemaleId = Object.fromEntries(
+      females.map((cat) => {
+        const dates = [
+          ...litterHistoryRows
+            .filter((row) =>
+              (cat.microchip && row.femaleMicrochip === cat.microchip) ||
+              (cat.name && row.femaleName === cat.name)
+            )
+            .map((row) => row.litterBirthDate),
+          ...parseJsonArray(matingPlanByFemaleId.get(cat.id)?.litterHistoryJson),
+        ];
+        const uniqueDates = Array.from(new Set(
+          dates.map((value) => {
+            const date = parseDate(value);
+            return date ? date.toISOString().slice(0, 10) : null;
+          }).filter(Boolean)));
+        return [cat.id, uniqueDates];
+      })
+    );
 
     const catOwnerIds = Array.from(
       new Set([...females, ...males].map((cat) => cat.ownerId).filter(Boolean))
@@ -291,6 +425,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       litter,
       kittens,
       availableMicrochips,
+      litterHistoryByFemaleId,
       catteryName,
       kittenNameMaxLength,
       error,
@@ -683,6 +818,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         );
         const litterBirthDate = req.body.litterBirthDate ? new Date(req.body.litterBirthDate) : null;
         ensureKittensMicrochipRules(kittens, litterBirthDate);
+        await ensureValidLitterBirthSpacing(
+          req,
+          req.body.femaleCatId ? Number(req.body.femaleCatId) : null,
+          litterBirthDate
+        );
 
         const payload = {
           ownerId: req.session.userId,
@@ -817,6 +957,12 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         );
         const litterBirthDate = req.body.litterBirthDate ? new Date(req.body.litterBirthDate) : null;
         ensureKittensMicrochipRules(kittens, litterBirthDate);
+        await ensureValidLitterBirthSpacing(
+          req,
+          req.body.femaleCatId ? Number(req.body.femaleCatId) : null,
+          litterBirthDate,
+          existingLitter.id
+        );
 
         const payload = {
           ownerId: existingLitter.ownerId || req.session.userId,

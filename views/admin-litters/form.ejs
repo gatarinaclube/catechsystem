@@ -161,6 +161,16 @@
         grid-column: 1 / -1;
         margin-top: 12px;
       }
+      .litter-excess-warning {
+        display: none;
+        margin-top: 6px;
+        color: #b91c1c;
+        font-size: 13px;
+        font-weight: 700;
+      }
+      .litter-excess-warning.is-visible {
+        display: block;
+      }
       @media (max-width: 1200px) {
         .litter-info-grid {
           grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -247,6 +257,7 @@
               <div class="field">
                 <label class="field-label" for="litterBirthDate">Data de Nascimento</label>
                 <input id="litterBirthDate" name="litterBirthDate" type="date" value="<%= litter?.litterBirthDate ? new Date(litter.litterBirthDate).toISOString().slice(0,10) : '' %>" />
+                <div id="litterExcessWarning" class="litter-excess-warning">Excesso de Ninhada</div>
               </div>
             </div>
           </div>
@@ -336,12 +347,17 @@
       const currentDeadAtBirthCauses = <%- JSON.stringify(deadAtBirthCauses || []) %>;
       const currentDeadAfterBirthCauses = <%- JSON.stringify(deadAfterBirthCauses || []) %>;
       const availableMicrochips = <%- JSON.stringify(availableMicrochips || []) %>;
+      const litterHistoryByFemaleId = <%- JSON.stringify(litterHistoryByFemaleId || {}) %>;
       const lastEmsStorageKey = "catech:lastEmsCode";
       const kittens = <%- JSON.stringify(kittens.map((kitten) => ({
         ...kitten,
         kittenCatId: kitten.kittenCatId || null,
       }))) %>;
       const kittenNameMaxLength = <%- JSON.stringify(kittenNameMaxLength || 30) %>;
+      const litterForm = document.querySelector("form");
+      const femaleCatInput = document.getElementById("femaleCatId");
+      const litterBirthDateInput = document.getElementById("litterBirthDate");
+      const litterExcessWarning = document.getElementById("litterExcessWarning");
       const femaleCountInput = document.getElementById("femaleCount");
       const maleCountInput = document.getElementById("maleCount");
       const litterCountDisplay = document.getElementById("litterCountDisplay");
@@ -370,6 +386,50 @@
         } catch {
           // Se o navegador bloquear armazenamento local, apenas não reaproveita o EMS.
         }
+      }
+
+      function parseDateOnly(value) {
+        if (!value) return null;
+        const parts = String(value).split("-").map(Number);
+        if (parts.length !== 3 || parts.some((part) => !Number.isFinite(part))) return null;
+        return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+      }
+
+      function addMonths(date, months) {
+        const copy = new Date(date.getTime());
+        copy.setUTCMonth(copy.getUTCMonth() + months);
+        return copy;
+      }
+
+      function hasExcessLitterForDate(historyDates, candidateValue) {
+        const candidate = parseDateOnly(candidateValue);
+        if (!candidate) return false;
+        const dates = [...(historyDates || []), candidateValue]
+          .map(parseDateOnly)
+          .filter(Boolean)
+          .sort((a, b) => a - b);
+
+        return dates.some((startDate, index) => {
+          const twelveMonthLimit = addMonths(startDate, 12);
+          const twentyFourMonthLimit = addMonths(startDate, 24);
+          const littersInTwelveMonths = dates
+            .slice(index)
+            .filter((date) => date >= startDate && date <= twelveMonthLimit).length;
+          const littersInTwentyFourMonths = dates
+            .slice(index)
+            .filter((date) => date >= startDate && date <= twentyFourMonthLimit).length;
+
+          return littersInTwelveMonths > 2 || littersInTwentyFourMonths > 3;
+        });
+      }
+
+      function syncLitterExcessWarning() {
+        const femaleId = femaleCatInput?.value || "";
+        const historyDates = litterHistoryByFemaleId[femaleId] || [];
+        const hasExcess = hasExcessLitterForDate(historyDates, litterBirthDateInput?.value || "");
+        litterExcessWarning?.classList.toggle("is-visible", hasExcess);
+        litterBirthDateInput?.setCustomValidity(hasExcess ? "Excesso de Ninhada" : "");
+        return hasExcess;
       }
 
       function applySingleBreedDefault(select) {
@@ -655,9 +715,17 @@
       maleCountInput.addEventListener("input", renderKittenRows);
       deadAtBirthCountInput.addEventListener("input", updateDeadBlocks);
       deadAfterBirthCountInput.addEventListener("input", updateDeadBlocks);
+      femaleCatInput?.addEventListener("change", syncLitterExcessWarning);
+      litterBirthDateInput?.addEventListener("input", syncLitterExcessWarning);
+      litterForm?.addEventListener("submit", (event) => {
+        if (!syncLitterExcessWarning()) return;
+        event.preventDefault();
+        litterBirthDateInput?.reportValidity();
+      });
 
       renderKittenRows();
       updateDeadBlocks();
+      syncLitterExcessWarning();
     </script>
   </body>
 </html>
