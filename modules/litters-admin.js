@@ -60,6 +60,26 @@ function formatDateForInput(date) {
   return `${day}/${month}/${parsed.getFullYear()}`;
 }
 
+function shortStoredCatName(value, catteryName = "") {
+  let name = String(value || "").replace(/\s+/g, " ").trim().replace(/^[A-Z]{2}\*\s*/i, "").trim();
+  const cattery = String(catteryName || "").replace(/\s+/g, " ").trim();
+  if (cattery) {
+    const candidates = [
+      cattery,
+      cattery.replace(/^gatil\s+/i, "").trim(),
+      cattery.replace(/^gatil\s+/i, "").trim().split(/\s+/)[0],
+    ].filter(Boolean).sort((a, b) => b.length - a.length);
+    candidates.forEach((candidate) => {
+      const lowerName = name.toLocaleLowerCase("pt-BR");
+      const lowerCandidate = candidate.toLocaleLowerCase("pt-BR");
+      if (lowerName.startsWith(`${lowerCandidate} `)) {
+        name = name.slice(candidate.length).trim();
+      }
+    });
+  }
+  return name;
+}
+
 function parseDate(value) {
   if (!value) return null;
   const date = value instanceof Date ? new Date(value) : new Date(value);
@@ -103,7 +123,7 @@ function getFullCatName(cat, catteryName = "") {
 }
 
 function buildLitterLabel(litter) {
-  return `${litter.litterNumber || String(litter.id).padStart(3, "0")} - ${litter.femaleName || "Fêmea"} X ${litter.maleName || "Macho"} - ${formatDateForInput(litter.litterBirthDate) || "-"}`;
+  return `${litter.litterNumber || String(litter.id).padStart(3, "0")} - ${shortStoredCatName(litter.femaleName, litter.catteryName) || "Fêmea"} X ${shortStoredCatName(litter.maleName, litter.catteryName) || "Macho"} - ${formatDateForInput(litter.litterBirthDate) || "-"}`;
 }
 
 function parseJsonArray(value) {

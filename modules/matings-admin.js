@@ -326,7 +326,7 @@ function buildNextActions(grouped) {
     if (!nextDate || nextDate > upcomingLimit) return;
 
     actions.push({
-      title: row.femaleDisplayName,
+      title: row.femaleShortName || row.femaleDisplayName,
       sub: `Próxima cruza: ${formatDate(nextDate)}`,
       badge: nextDate < today ? "Atrasada" : "Para acasalar",
       color: nextDate < today ? "is-red" : "is-green",
@@ -340,7 +340,7 @@ function buildNextActions(grouped) {
     if (!dppDate || dppDate > upcomingLimit) return;
 
     actions.push({
-      title: row.femaleDisplayName,
+      title: row.femaleShortName || row.femaleDisplayName,
       sub: `DPP: ${formatDate(dppDate)}${row.gestationDays !== null ? ` · ${row.gestationDays} dias` : ""}`,
       badge: dppDate < today ? "DPP vencida" : "DPP próxima",
       color: dppDate < today ? "is-red" : "is-yellow",

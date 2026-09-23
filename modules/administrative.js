@@ -500,6 +500,14 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     return year && month && day ? new Date(Date.UTC(year, month - 1, day)) : null;
   }
 
+  function shortCatName(value) {
+    return String(value || "")
+      .replace(/^\s*[^-]+-\s*/, "")
+      .replace(/^[A-Z]{2}\*\s*/i, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
   function mapReceivableRows(revenues) {
     const today = parseDateInput(todayForInput());
 
@@ -532,7 +540,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
         return {
           id: revenue.id,
-          kittenLabel: revenue.kittenLabel || "Venda sem gato informado",
+          kittenLabel: shortCatName(revenue.kitten?.name || revenue.kittenLabel) || "Venda sem gato informado",
           clientLabel: revenue.client?.fullName || "Cliente desconhecido",
           clientContact: [revenue.client?.phone, revenue.client?.email].filter(Boolean).join(" · "),
           totalLabel: formatAmount(revenue.totalAmountCents),
@@ -990,7 +998,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     async (req, res) => {
       const revenues = await prisma.revenueEntry.findMany({
         where: ownerScope(req),
-        include: { client: true },
+        include: { client: true, kitten: true },
         orderBy: [{ createdAt: "desc" }],
       });
       const receivables = mapReceivableRows(revenues);

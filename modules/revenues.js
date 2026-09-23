@@ -103,13 +103,35 @@ function safeJsonParse(value, fallback = []) {
   }
 }
 
+function shortCatName(value, cat = null) {
+  let name = String(value || "").replace(/\s+/g, " ").trim().replace(/^[A-Z]{2}\*\s*/i, "").trim();
+  const cattery = String(cat?.litterKitten?.litter?.catteryName || cat?.owner?.settings?.catteryName || "").replace(/\s+/g, " ").trim();
+  if (cattery) {
+    [cattery, cattery.replace(/^gatil\s+/i, "").trim(), cattery.replace(/^gatil\s+/i, "").trim().split(/\s+/)[0]]
+      .filter(Boolean)
+      .sort((a, b) => b.length - a.length)
+      .forEach((candidate) => {
+        if (name.toLocaleLowerCase("pt-BR").startsWith(`${candidate.toLocaleLowerCase("pt-BR")} `)) {
+          name = name.slice(candidate.length).trim();
+        }
+      });
+  }
+  return name;
+}
+
 function buildKittenLabel(cat) {
-  const number = cat.kittenNumber || cat.litterKitten?.kittenNumber || cat.litterKitten?.index || "-";
-  const displayName = buildDisplayName(cat);
-  if (displayName) return `${number} - ${displayName}`;
+  const name = shortCatName(cat.name, cat);
+  if (name) return name;
+  const displayName = shortCatName(buildDisplayName(cat), cat);
+  if (displayName) return displayName;
   const fallback = kittenFallbackDisplayName(cat);
   if (fallback) return fallback;
-  return `${number} - ${cat.name || "Sem nome"}`;
+  return cat.name || "Sem nome";
+}
+
+function displayRevenueKittenLabel(revenue) {
+  if (revenue?.kitten) return buildKittenLabel(revenue.kitten);
+  return shortCatName(String(revenue?.kittenLabel || "").replace(/^\s*[^-]+-\s*/, "")) || "Venda sem filhote";
 }
 
 function deriveKittenStatus(cat) {
@@ -274,7 +296,7 @@ function mapPaidRevenueRows(revenues, start, end) {
         id: revenue.id,
         paidDateTime: paidTime,
         dateLabel: formatDateOnlyLabel(paidDate),
-        kittenLabel: revenue.kittenLabel || "-",
+        kittenLabel: displayRevenueKittenLabel(revenue),
         clientLabel: revenue.client?.fullName || "Cliente desconhecido",
         paymentAccount: parcel.paymentAccount || revenue.paymentAccount || "-",
         amountLabel: formatAmount(parcel.amountCents || 0),
@@ -597,7 +619,15 @@ function buildRevenueData(body, existing = null) {
     const { page, pageSize, skip } = paginationData(req.query);
     const revenues = await prisma.revenueEntry.findMany({
       where: ownerScope(req),
-      include: { client: true },
+      include: {
+        client: true,
+        kitten: {
+          include: {
+            litterKitten: { include: { litter: true } },
+            owner: { include: { settings: true } },
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
     });
     const rows = mapPaidRevenueRows(revenues, start, end);
@@ -631,7 +661,10 @@ function buildRevenueData(body, existing = null) {
       .slice(0, 200);
 
     res.render("revenues/sales-list", {
-      revenues: sortedRevenues,
+      revenues: sortedRevenues.map((revenue) => ({
+        ...revenue,
+        displayKittenLabel: displayRevenueKittenLabel(revenue),
+      })),
       currentPath: "/vendas",
     });
   });

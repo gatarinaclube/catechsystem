@@ -1256,7 +1256,7 @@ function mapReceiptRows(revenues, filters) {
 
       const paymentType = inferPaymentType(parcel, paymentAccount);
       const cardInstallments = parcel.cardInstallments || "";
-      const kittenLabel = kittenNameOnly(revenue.kittenLabel || revenue.kitten?.name || revenue.productService?.name || "");
+      const kittenLabel = kittenNameOnly(revenue.kitten?.name || revenue.kittenLabel || revenue.productService?.name || "");
       if (!rowsByRevenue.has(revenue.id)) {
         rowsByRevenue.set(revenue.id, {
           key: String(revenue.id),
@@ -1576,7 +1576,11 @@ function mapCreditCardPurchaseRows(expenses, dates) {
 }
 
 function kittenNameOnly(label) {
-  return String(label || "-").replace(/^\s*[^-]+-\s*/, "") || "-";
+  return String(label || "-")
+    .replace(/^\s*[^-]+-\s*/, "")
+    .replace(/^[A-Z]{2}\*\s*/i, "")
+    .replace(/\s+/g, " ")
+    .trim() || "-";
 }
 
 function joinNotes(...notes) {
@@ -1613,6 +1617,7 @@ function mapRevenueRows(revenues, filters) {
 
       rows.push({
         ...revenue,
+        kittenLabel: kittenNameOnly(revenue.kitten?.name || revenue.kittenLabel),
         parcelNumber: parcel.number,
         parcelLabel: `${parcel.number || "-"} / ${revenue.installments || "-"}`,
         paymentLabel: parcel.number ? `Pagamento ${parcel.number}/${revenue.installments || "-"}` : "",
@@ -1675,6 +1680,7 @@ function mapReceivableRows(revenues, filters) {
 
       rows.push({
         ...revenue,
+        kittenLabel: kittenNameOnly(revenue.kitten?.name || revenue.kittenLabel),
         parcelNumber: parcel.number,
         parcelLabel: `${parcel.number || "-"} / ${revenue.installments || "-"}`,
         dueDateTime: dueTime,
@@ -1720,7 +1726,7 @@ function mapRefundRows(revenues, filters) {
         dateLabel: formatDateOnlyLabel(refundDate),
         amountCents: -Number(parcel.amountCents || 0),
         amountLabel: `- ${formatCurrency(parcel.amountCents)}`,
-        kittenLabel: revenue.kittenLabel || "-",
+        kittenLabel: kittenNameOnly(revenue.kitten?.name || revenue.kittenLabel),
         clientLabel: revenue.client?.fullName || "Cliente desconhecido",
         paymentAccount,
         note: joinNotes(
@@ -3563,7 +3569,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const filters = buildRevenueFilters(req.query);
       const revenues = await prisma.revenueEntry.findMany({
         where: buildRevenueWhere(req, filters),
-        include: { client: true },
+        include: { client: true, kitten: true },
         orderBy: [{ createdAt: "desc" }],
       });
       const rows = mapRevenueRows(revenues, filters);
@@ -3591,7 +3597,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const filters = buildRevenueFilters(req.query);
       const revenues = await prisma.revenueEntry.findMany({
         where: buildRevenueWhere(req, filters),
-        include: { client: true },
+        include: { client: true, kitten: true },
         orderBy: [{ createdAt: "desc" }],
       });
       const rows = mapRevenueRows(revenues, filters);
@@ -3674,7 +3680,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       });
       const revenues = await prisma.revenueEntry.findMany({
         where: buildRevenueWhere(req, filters),
-        include: { client: true },
+        include: { client: true, kitten: true },
         orderBy: [{ createdAt: "desc" }],
       });
       const transfers = await prisma.financialTransfer.findMany({
@@ -3725,7 +3731,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       });
       const revenues = await prisma.revenueEntry.findMany({
         where: buildRevenueWhere(req, filters),
-        include: { client: true },
+        include: { client: true, kitten: true },
         orderBy: [{ createdAt: "desc" }],
       });
       const transfers = await prisma.financialTransfer.findMany({
@@ -3898,7 +3904,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     });
     const revenues = await prisma.revenueEntry.findMany({
       where: buildRevenueWhere(req, filters),
-      include: { client: true },
+      include: { client: true, kitten: true },
       orderBy: [{ createdAt: "desc" }],
     });
     const transfers = await prisma.financialTransfer.findMany({

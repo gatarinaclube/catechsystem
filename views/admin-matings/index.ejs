@@ -906,7 +906,7 @@
               <% supplementRows.forEach(function(row) { %>
                 <div class="supplement-item">
                   <div class="supplement-item-main">
-                    <strong><%= row.femaleDisplayName %></strong>
+                    <strong><%= row.femaleShortName || row.femaleDisplayName %></strong>
                     <span class="supplement-item-sub">
                       <%= row.supplement.phase %> · início <%= formatDate(row.supplement.startDate) %> ·
                       <%= row.supplement.endOpen ? "mantém até informar a data de cruza" : "fim " + formatDate(row.supplement.endDate) %>

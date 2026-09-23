@@ -32,7 +32,7 @@
                   <a class="record-row-main-link" href="/vendas/<%= revenue.id %>?returnTo=<%= encodeURIComponent('/vendas') %>">
                     <div class="record-main">
                       <div class="record-title">
-                        <%= revenue.kittenLabel || "Venda sem filhote" %>
+                        <%= revenue.displayKittenLabel || revenue.kittenLabel || "Venda sem filhote" %>
                       </div>
                       <div class="record-sub">
                         <%= revenue.client ? revenue.client.fullName : "Cliente desconhecido" %>
