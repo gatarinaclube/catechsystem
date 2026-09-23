@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Recebimentos - PetGus</title>
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/cattery-admin.css" />
+    <style>
+      .receipts-table input,
+      .receipts-table select {
+        min-width: 120px;
+      }
+      .receipts-table .payer-input {
+        min-width: 180px;
+      }
+      .receipts-table .card-installments {
+        width: 84px;
+        min-width: 84px;
+      }
+      .receipt-card-field.is-hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <%- include('../partials/sidebar', { user, currentPath }) %>
+
+      <main class="main">
+        <div class="main-header">
+          <div>
+            <h2 class="welcome-title">Recebimentos</h2>
+            <div class="welcome-sub">Relatório contábil de parcelas recebidas por conta.</div>
+          </div>
+          <div class="actions">
+            <a href="/reports" class="btn">Voltar</a>
+          </div>
+        </div>
+
+        <% if (success) { %>
+          <div class="content-card" style="border-left:4px solid #16a34a; margin-bottom:18px; background:#f0fdf4;">
+            <div class="content-title" style="color:#166534;">Informações salvas com sucesso.</div>
+          </div>
+        <% } %>
+
+        <div class="content-card report-filter-card">
+          <form method="get" action="/reports/recebimentos" class="report-filter-grid">
+            <div class="field">
+              <label class="field-label" for="periodType">Período</label>
+              <select id="periodType" name="periodType">
+                <option value="month" <%= filters.periodType === 'month' ? 'selected' : '' %>>Mês</option>
+                <option value="custom" <%= filters.periodType === 'custom' ? 'selected' : '' %>>Personalizado</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label" for="month">Mês</label>
+              <input id="month" name="month" type="month" value="<%= filters.month %>" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="startDate">Data inicial</label>
+              <input id="startDate" name="startDate" type="date" value="<%= filters.startDateInput %>" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="endDate">Data final</label>
+              <input id="endDate" name="endDate" type="date" value="<%= filters.endDateInput %>" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="account">Conta</label>
+              <select id="account" name="account" required>
+                <% accountOptions.forEach(function(option) { %>
+                  <option value="<%= option.value %>" <%= filters.account === option.value ? 'selected' : '' %>><%= option.label %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="report-filter-actions">
+              <button type="submit" class="btn btn-primary">Filtrar</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="content-card">
+          <div class="report-summary">
+            <div>
+              <div class="content-title">Recebimentos encontrados</div>
+              <div class="content-sub"><%= rows.length %> pagamento(s) na conta selecionada.</div>
+            </div>
+          </div>
+
+          <div class="report-summary-grid">
+            <div>
+              <div class="content-sub">Conta</div>
+              <div class="report-total"><%= filters.account || '-' %></div>
+            </div>
+            <div>
+              <div class="content-sub">Total recebido</div>
+              <div class="report-total cash-in"><%= totalPaidLabel %></div>
+            </div>
+          </div>
+
+          <% if (!accountOptions.length) { %>
+            <div class="empty">Cadastre uma conta em Receitas/Vendas para usar este relatório.</div>
+          <% } else if (!rows.length) { %>
+            <div class="empty">Nenhum recebimento encontrado para a conta e período selecionados.</div>
+          <% } else { %>
+            <form method="post" action="/reports/recebimentos">
+              <input type="hidden" name="returnQuery" value="<%= queryString %>" />
+              <div class="report-table-wrap">
+                <table class="report-table receipts-table">
+                  <thead>
+                    <tr>
+                      <th>Cliente</th>
+                      <th>Gato</th>
+                      <th class="amount">Valor</th>
+                      <th>Data de Pagamento</th>
+                      <th>Pagador</th>
+                      <th>Tipo de Pagamento</th>
+                      <th>Parcelas</th>
+                      <th class="amount">Valor Pago</th>
+                      <th class="amount">Valor Frete</th>
+                      <th class="amount">Total Pago</th>
+                      <th>Data da Nota</th>
+                      <th>Número da Nota</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% rows.forEach(function(row, index) { %>
+                      <tr>
+                        <td>
+                          <input type="hidden" name="rows[<%= index %>][revenueId]" value="<%= row.revenueId %>" />
+                          <input type="hidden" name="rows[<%= index %>][parcelNumber]" value="<%= row.parcelNumber %>" />
+                          <%= row.clientLabel %>
+                        </td>
+                        <td><%= row.kittenLabel || '-' %></td>
+                        <td class="amount"><%= row.saleAmountLabel %></td>
+                        <td><%= row.paidDateLabel %></td>
+                        <td><input class="payer-input" name="rows[<%= index %>][payer]" value="<%= row.payer %>" placeholder="Nome de quem pagou" /></td>
+                        <td>
+                          <select name="rows[<%= index %>][paymentType]" data-payment-type>
+                            <option value="">Selecione...</option>
+                            <option value="PIX" <%= row.paymentType === 'PIX' ? 'selected' : '' %>>PIX</option>
+                            <option value="DINHEIRO" <%= row.paymentType === 'DINHEIRO' ? 'selected' : '' %>>Dinheiro</option>
+                            <option value="CARTAO" <%= row.paymentType === 'CARTAO' ? 'selected' : '' %>>Cartão</option>
+                          </select>
+                        </td>
+                        <td>
+                          <input class="card-installments" name="rows[<%= index %>][cardInstallments]" data-card-installments type="number" min="1" max="36" value="<%= row.cardInstallments %>" placeholder="x" />
+                        </td>
+                        <td class="amount"><%= row.paidAmountLabel %></td>
+                        <td class="amount"><%= row.freightLabel %></td>
+                        <td class="amount"><%= row.totalPaidLabel %></td>
+                        <td><%= row.invoiceDateLabel %></td>
+                        <td><%= row.invoiceNumber || '-' %></td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+              <div class="form-actions" style="text-align:right; margin-top:16px;">
+                <button type="submit" class="btn btn-primary">Salvar informações</button>
+              </div>
+            </form>
+          <% } %>
+        </div>
+      </main>
+    </div>
+    <script>
+      function syncCardInstallments(select) {
+        const row = select.closest("tr");
+        const input = row?.querySelector("[data-card-installments]");
+        if (!input) return;
+        const isCard = select.value === "CARTAO";
+        input.disabled = !isCard;
+        input.classList.toggle("receipt-card-field", !isCard);
+        input.classList.toggle("is-hidden", !isCard);
+        if (!isCard) input.value = "";
+      }
+      document.querySelectorAll("[data-payment-type]").forEach((select) => {
+        select.addEventListener("change", () => syncCardInstallments(select));
+        syncCardInstallments(select);
+      });
+    </script>
+  </body>
+</html>

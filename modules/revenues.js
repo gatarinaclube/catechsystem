@@ -432,9 +432,11 @@ function buildRevenueData(body, existing = null) {
     const transportAmountCents = parseAmountToCents(body.transportAmount);
     const totalAmountCents = catAmountCents + transportAmountCents;
     const installments = Math.min(10, Math.max(1, Number.parseInt(body.installments || "1", 10)));
+    const existingParcels = safeJsonParse(existing?.parcelDataJson);
     const parcels = [];
 
     for (let i = 1; i <= installments; i += 1) {
+      const existingParcel = existingParcels.find((parcel) => Number(parcel.number) === i) || {};
       parcels.push({
         number: i,
         amountCents: parseAmountToCents(body[`parcel${i}Amount`]),
@@ -446,6 +448,9 @@ function buildRevenueData(body, existing = null) {
             ? body[`parcel${i}RefundDate`] || ""
             : "",
         paymentAccount: body[`parcel${i}PaymentAccount`] || body.paymentAccount || DEFAULT_PAYMENT_ACCOUNT,
+        payer: existingParcel.payer || "",
+        paymentType: existingParcel.paymentType || "",
+        cardInstallments: existingParcel.cardInstallments || "",
       });
     }
 

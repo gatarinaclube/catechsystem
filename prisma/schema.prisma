@@ -436,6 +436,7 @@ model UserSettings {
   marketingFooterText              String?
   financialPlanningKittensPerLitter Float?
   financialPlanningKittenValueCents Int?
+  lastReceiptReportAccount          String?
   modulePreferencesJson            String?
   createdAt                        DateTime @default(now())
   updatedAt                        DateTime @updatedAt

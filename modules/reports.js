@@ -1130,6 +1130,183 @@ function buildRevenueFilters(query) {
   return buildExpenseFilters(query);
 }
 
+function normalizePaymentType(value) {
+  const text = String(value || "").trim().toUpperCase();
+  if (text === "PIX") return "PIX";
+  if (text === "DINHEIRO") return "DINHEIRO";
+  if (["CARTAO", "CARTÃO", "CARD"].includes(text)) return "CARTAO";
+  return "";
+}
+
+function inferPaymentType(parcel, fallbackAccount = "") {
+  const stored = normalizePaymentType(parcel?.paymentType);
+  if (stored) return stored;
+  const text = searchableText(parcel?.paymentAccount || fallbackAccount);
+  if (text.includes("pix")) return "PIX";
+  if (text.includes("dinheiro")) return "DINHEIRO";
+  if (text.includes("cartao") || text.includes("credito") || text.includes("debito")) return "CARTAO";
+  return "";
+}
+
+function paymentTypeLabel(type, installments = "") {
+  if (type === "PIX") return "PIX";
+  if (type === "DINHEIRO") return "Dinheiro";
+  if (type === "CARTAO") {
+    const count = Number.parseInt(installments || "", 10);
+    return count > 1 ? `Cartão - ${count}x` : "Cartão";
+  }
+  return "";
+}
+
+function buildReceiptQueryString(filters) {
+  return new URLSearchParams({
+    periodType: filters.periodType,
+    month: filters.month,
+    startDate: filters.startDateInput,
+    endDate: filters.endDateInput,
+    account: filters.account || "",
+  }).toString();
+}
+
+async function ensureUserSettings(prisma, req) {
+  return prisma.userSettings.upsert({
+    where: { userId: req.session.userId },
+    update: {},
+    create: { userId: req.session.userId },
+  });
+}
+
+async function buildReceiptFilters(prisma, req, accountOptions) {
+  const base = buildRevenueFilters(req.query || {});
+  const settings = await ensureUserSettings(prisma, req);
+  const accountNames = accountOptions.map((option) => option.value).filter(Boolean);
+  const requestedAccount = String(req.query.account || "").trim();
+  const savedAccount = String(settings.lastReceiptReportAccount || "").trim();
+  const account = requestedAccount || (accountNames.includes(savedAccount) ? savedAccount : accountNames[0] || "");
+
+  if (requestedAccount && requestedAccount !== savedAccount) {
+    await prisma.userSettings.update({
+      where: { userId: req.session.userId },
+      data: { lastReceiptReportAccount: requestedAccount },
+    });
+  } else if (!savedAccount && account) {
+    await prisma.userSettings.update({
+      where: { userId: req.session.userId },
+      data: { lastReceiptReportAccount: account },
+    });
+  }
+
+  return { ...base, account };
+}
+
+function mapReceiptRows(revenues, filters) {
+  const rows = [];
+  const startTime = filters.startDate.getTime();
+  const endTime = addDays(filters.endDate, 1).getTime();
+
+  revenues.forEach((revenue) => {
+    parseParcelData(revenue.parcelDataJson).forEach((parcel) => {
+      if (!parcel.paid || parcel.canceled || !parcel.date) return;
+      const paidDate = parseDateInput(parcel.date, null);
+      if (!paidDate) return;
+      const paidTime = paidDate.getTime();
+      if (paidTime < startTime || paidTime >= endTime) return;
+
+      const paymentAccount = parcel.paymentAccount || revenue.paymentAccount || "";
+      if (filters.account && paymentAccount !== filters.account) return;
+
+      const paymentType = inferPaymentType(parcel, paymentAccount);
+      const cardInstallments = parcel.cardInstallments || "";
+      const kittenLabel = kittenNameOnly(revenue.kittenLabel || revenue.kitten?.name || revenue.productService?.name || "");
+      rows.push({
+        key: `${revenue.id}-${parcel.number || 1}`,
+        revenueId: revenue.id,
+        parcelNumber: parcel.number || 1,
+        paidDateTime: paidTime,
+        clientLabel: revenue.client?.fullName || "Cliente desconhecido",
+        kittenLabel,
+        saleAmountLabel: formatCurrency(revenue.catAmountCents),
+        paidDateLabel: formatDateOnlyLabel(paidDate),
+        payer: parcel.payer || "",
+        paymentType,
+        paymentTypeLabel: paymentTypeLabel(paymentType, cardInstallments),
+        cardInstallments,
+        paidAmountLabel: formatCurrency(parcel.amountCents),
+        paidAmountCents: Number(parcel.amountCents || 0),
+        freightLabel: formatCurrency(revenue.transportAmountCents),
+        totalPaidLabel: formatCurrency(revenue.totalAmountCents),
+        invoiceDateLabel: formatDateOnlyLabel(revenue.invoiceDate),
+        invoiceNumber: revenue.invoiceNumber || "",
+        paymentAccount,
+      });
+    });
+  });
+
+  return rows.sort((a, b) => {
+    const dateCompare = a.paidDateTime - b.paidDateTime;
+    return dateCompare || a.clientLabel.localeCompare(b.clientLabel, "pt-BR");
+  });
+}
+
+function buildReceiptTotals(rows) {
+  const paidCents = rows.reduce((sum, row) => sum + Number(row.paidAmountCents || 0), 0);
+  return {
+    paidCents,
+    paidLabel: formatCurrency(paidCents),
+  };
+}
+
+function normalizeReceiptRowsFromBody(body) {
+  const rows = Array.isArray(body.rows)
+    ? body.rows
+    : body.rows && typeof body.rows === "object"
+      ? Object.values(body.rows)
+      : (body.rows ? [body.rows] : []);
+  return rows.map((row) => ({
+    revenueId: Number(row.revenueId),
+    parcelNumber: Number(row.parcelNumber),
+    payer: String(row.payer || "").trim().slice(0, 120),
+    paymentType: normalizePaymentType(row.paymentType),
+    cardInstallments: Math.min(36, Math.max(0, Number.parseInt(row.cardInstallments || "0", 10) || 0)),
+  })).filter((row) => row.revenueId && row.parcelNumber);
+}
+
+async function saveReceiptMetadata(prisma, req, body) {
+  const rows = normalizeReceiptRowsFromBody(body);
+  if (!rows.length) return;
+  const rowsByRevenue = new Map();
+  rows.forEach((row) => {
+    if (!rowsByRevenue.has(row.revenueId)) rowsByRevenue.set(row.revenueId, []);
+    rowsByRevenue.get(row.revenueId).push(row);
+  });
+
+  const revenues = await prisma.revenueEntry.findMany({
+    where: {
+      ...ownerScope(req),
+      id: { in: Array.from(rowsByRevenue.keys()) },
+    },
+    select: { id: true, parcelDataJson: true },
+  });
+
+  await prisma.$transaction(revenues.map((revenue) => {
+    const updates = rowsByRevenue.get(revenue.id) || [];
+    const parcels = parseParcelData(revenue.parcelDataJson).map((parcel) => {
+      const match = updates.find((row) => Number(row.parcelNumber) === Number(parcel.number || 1));
+      if (!match) return parcel;
+      return {
+        ...parcel,
+        payer: match.payer,
+        paymentType: match.paymentType,
+        cardInstallments: match.paymentType === "CARTAO" && match.cardInstallments ? String(match.cardInstallments) : "",
+      };
+    });
+    return prisma.revenueEntry.update({
+      where: { id: revenue.id },
+      data: { parcelDataJson: JSON.stringify(parcels) },
+    });
+  }));
+}
+
 function buildAccountingFilters(query) {
   const periodType = ["last3", "month", "custom"].includes(query.periodType)
     ? query.periodType
@@ -3235,6 +3412,46 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       const totals = buildRevenueTotals(rows);
 
       renderRevenuesPdf(res, rows, filters, totals);
+    }
+  );
+
+  router.get(
+    "/reports/recebimentos",
+    requireAuth,
+    requirePermission("admin.reports"),
+    async (req, res) => {
+      const allAccountOptions = await loadAccountOptions(prisma, req);
+      const accountOptions = allAccountOptions.filter((option) => option.value);
+      const filters = await buildReceiptFilters(prisma, req, accountOptions);
+      const revenues = await prisma.revenueEntry.findMany({
+        where: buildRevenueWhere(req, filters),
+        include: { client: true, kitten: true, productService: true },
+        orderBy: [{ createdAt: "desc" }],
+      });
+      const rows = mapReceiptRows(revenues, filters);
+      const totals = buildReceiptTotals(rows);
+
+      res.render("reports/receipts", {
+        user: req.user,
+        currentPath: "/reports",
+        rows,
+        filters,
+        accountOptions,
+        totalPaidLabel: totals.paidLabel,
+        queryString: buildReceiptQueryString(filters),
+        success: req.query.saved === "1",
+      });
+    }
+  );
+
+  router.post(
+    "/reports/recebimentos",
+    requireAuth,
+    requirePermission("admin.reports"),
+    async (req, res) => {
+      await saveReceiptMetadata(prisma, req, req.body);
+      const redirectQuery = String(req.body.returnQuery || "").trim();
+      res.redirect(`/reports/recebimentos${redirectQuery ? `?${redirectQuery}&saved=1` : "?saved=1"}`);
     }
   );
 

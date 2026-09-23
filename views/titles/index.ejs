@@ -26,24 +26,69 @@
       }
       .titles-record-row {
         margin-top: 12px;
-        padding: 14px;
         border: 1px solid var(--border-soft);
         border-radius: 8px;
         background: #fff;
+        overflow: hidden;
       }
       .titles-record-row:first-of-type {
         margin-top: 0;
       }
-      .titles-record-header {
+      .titles-record-summary {
         display: flex;
         justify-content: space-between;
         gap: 12px;
         align-items: center;
-        margin-bottom: 12px;
+        padding: 13px 14px;
+        cursor: pointer;
+        list-style: none;
+      }
+      .titles-record-summary::-webkit-details-marker {
+        display: none;
+      }
+      .titles-record-row[open] .titles-record-summary {
+        border-bottom: 1px solid var(--border-soft);
+        background: #f8fafc;
+      }
+      .titles-record-content {
+        padding: 14px;
       }
       .titles-record-heading {
         font-weight: 800;
         color: var(--text-main);
+      }
+      .titles-record-meta {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+        color: var(--text-muted);
+        font-size: 12px;
+      }
+      .titles-add-summary {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        list-style: none;
+      }
+      .titles-add-summary::-webkit-details-marker {
+        display: none;
+      }
+      .titles-add-button {
+        display: inline-flex;
+        width: 42px;
+        height: 42px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: var(--accent);
+        color: #fff;
+        font-size: 26px;
+        font-weight: 800;
+      }
+      .titles-add-content {
+        margin-top: 16px;
       }
       .title-rule-list {
         display: grid;
@@ -256,118 +301,144 @@
                     <div class="empty" style="margin-top:12px;">Nenhum certificado ou título lançado para este gato.</div>
                   <% } %>
                   <% selectedCat.titleRecords.forEach(function(record) { %>
-                    <div class="titles-record-row">
+                    <%
+                      const recordKindLabel = record.kind === 'CERTIFICATE'
+                        ? 'Certificado'
+                        : record.kind === 'TITLE'
+                          ? 'Título'
+                          : 'Especial';
+                      const recordDateLabel = record.kind === 'SPECIAL'
+                        ? (record.year || '-')
+                        : (formatDate(record.date) || '-');
+                    %>
+                    <details class="titles-record-row">
+                      <summary class="titles-record-summary">
+                        <div class="titles-record-heading"><%= recordKindLabel %> · <%= record.code || 'Lançamento' %></div>
+                        <div class="titles-record-meta">
+                          <span><%= recordDateLabel %></span>
+                          <% if (record.kind === 'TITLE') { %>
+                            <span><%= record.homologationStatus ? homologationStatuses.find(function(status) { return status.value === record.homologationStatus; })?.label || 'Pendente' : 'Pendente' %></span>
+                          <% } %>
+                        </div>
+                      </summary>
                       <input type="hidden" name="recordId" value="<%= record.id %>" />
-                      <div class="titles-record-header">
-                        <div class="titles-record-heading"><%= record.code || 'Lançamento' %></div>
+                      <div class="titles-record-content">
                         <label class="checkbox-label">
                           <input type="checkbox" name="deleteRecord" value="<%= record.id %>" />
                           Excluir
                         </label>
+                        <div class="titles-record-grid" style="margin-top:12px;">
+                          <div class="field">
+                            <label class="field-label">Tipo</label>
+                            <select name="recordKind" data-record-kind>
+                              <option value="CERTIFICATE" <%= record.kind === 'CERTIFICATE' ? 'selected' : '' %>>Certificado</option>
+                              <option value="TITLE" <%= record.kind === 'TITLE' ? 'selected' : '' %>>Título</option>
+                              <option value="SPECIAL" <%= record.kind === 'SPECIAL' ? 'selected' : '' %>>Especial</option>
+                            </select>
+                          </div>
+                          <div class="field">
+                            <label class="field-label">Código</label>
+                            <input name="recordCode" value="<%= record.code || '' %>" />
+                          </div>
+                          <div class="field">
+                            <label class="field-label">Data</label>
+                            <input name="recordDate" type="date" value="<%= formatDateInput(record.date) %>" />
+                          </div>
+                          <div class="field">
+                            <label class="field-label">Clube</label>
+                            <input name="recordClub" list="clubsList" value="<%= record.club || '' %>" />
+                          </div>
+                          <div class="field">
+                            <label class="field-label">Juiz</label>
+                            <input name="recordJudge" list="judgesList" value="<%= record.judge || '' %>" />
+                          </div>
+                          <div class="field" data-year-field>
+                            <label class="field-label">Ano</label>
+                            <input name="recordYear" value="<%= record.year || '' %>" maxlength="10" />
+                          </div>
+                          <div class="field" data-homologation-field>
+                            <label class="field-label">Homologação</label>
+                            <select name="recordHomologationStatus">
+                              <option value="">Pendente</option>
+                              <% homologationStatuses.forEach(function(status) { %>
+                                <option value="<%= status.value %>" <%= record.homologationStatus === status.value ? 'selected' : '' %>><%= status.label %></option>
+                              <% }) %>
+                            </select>
+                          </div>
+                        </div>
                       </div>
-                      <div class="titles-record-grid">
-                        <div class="field">
-                          <label class="field-label">Tipo</label>
-                          <select name="recordKind" data-record-kind>
-                            <option value="CERTIFICATE" <%= record.kind === 'CERTIFICATE' ? 'selected' : '' %>>Certificado</option>
-                            <option value="TITLE" <%= record.kind === 'TITLE' ? 'selected' : '' %>>Título</option>
-                            <option value="SPECIAL" <%= record.kind === 'SPECIAL' ? 'selected' : '' %>>Especial</option>
-                          </select>
-                        </div>
-                        <div class="field">
-                          <label class="field-label">Código</label>
-                          <input name="recordCode" value="<%= record.code || '' %>" />
-                        </div>
-                        <div class="field">
-                          <label class="field-label">Data</label>
-                          <input name="recordDate" type="date" value="<%= formatDateInput(record.date) %>" />
-                        </div>
-                        <div class="field">
-                          <label class="field-label">Clube</label>
-                          <input name="recordClub" list="clubsList" value="<%= record.club || '' %>" />
-                        </div>
-                        <div class="field">
-                          <label class="field-label">Juiz</label>
-                          <input name="recordJudge" list="judgesList" value="<%= record.judge || '' %>" />
-                        </div>
-                        <div class="field" data-year-field>
-                          <label class="field-label">Ano</label>
-                          <input name="recordYear" value="<%= record.year || '' %>" maxlength="10" />
-                        </div>
-                        <div class="field" data-homologation-field>
-                          <label class="field-label">Homologação</label>
-                          <select name="recordHomologationStatus">
-                            <option value="">Pendente</option>
-                            <% homologationStatuses.forEach(function(status) { %>
-                              <option value="<%= status.value %>" <%= record.homologationStatus === status.value ? 'selected' : '' %>><%= status.label %></option>
-                            <% }) %>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
+                    </details>
                   <% }) %>
                 </div>
 
-                <div class="content-card" style="margin-bottom:18px;">
-                  <div class="content-title">Novo lançamento</div>
-                  <div class="titles-record-grid" style="margin-top:12px;">
-                    <div class="field">
-                      <label class="field-label" for="newKind">Tipo</label>
-                      <select id="newKind" name="newKind">
-                        <option value="">Não adicionar</option>
-                        <option value="CERTIFICATE">Certificado</option>
-                        <option value="TITLE">Título</option>
-                        <option value="SPECIAL">Especial</option>
-                      </select>
-                    </div>
-                    <div class="field">
-                      <label class="field-label" for="newCode">Código</label>
-                      <select id="newCode" name="newCode">
-                        <option value="">Selecione...</option>
-                        <optgroup label="Certificados">
-                          <% certificateCodes.forEach(function(code) { %>
-                            <option value="<%= code %>" data-kind="CERTIFICATE"><%= code %></option>
+                <details class="content-card" style="margin-bottom:18px;">
+                  <summary class="titles-add-summary">
+                    <span class="titles-add-button">+</span>
+                    <span>
+                      <span class="content-title">Novo lançamento</span>
+                      <span class="content-sub" style="display:block; margin-top:4px;">Adicionar certificado, título ou título especial para este gato.</span>
+                    </span>
+                  </summary>
+                  <div class="titles-add-content">
+                    <div class="titles-record-grid">
+                      <div class="field">
+                        <label class="field-label" for="newKind">Tipo</label>
+                        <select id="newKind" name="newKind">
+                          <option value="">Não adicionar</option>
+                          <option value="CERTIFICATE">Certificado</option>
+                          <option value="TITLE">Título</option>
+                          <option value="SPECIAL">Especial</option>
+                        </select>
+                      </div>
+                      <div class="field">
+                        <label class="field-label" for="newCode">Código</label>
+                        <select id="newCode" name="newCode">
+                          <option value="">Selecione...</option>
+                          <optgroup label="Certificados">
+                            <% certificateCodes.forEach(function(code) { %>
+                              <option value="<%= code %>" data-kind="CERTIFICATE"><%= code %></option>
+                            <% }) %>
+                          </optgroup>
+                          <optgroup label="Títulos disponíveis">
+                            <% titleOptions.filter(function(option) { return option.available && !option.alreadyAdded; }).forEach(function(option) { %>
+                              <option value="<%= option.code %>" data-kind="TITLE"><%= option.code %> - <%= option.label %></option>
+                            <% }) %>
+                          </optgroup>
+                          <optgroup label="Títulos especiais">
+                            <% specialTitles.forEach(function(code) { %>
+                              <option value="<%= code %>" data-kind="SPECIAL"><%= code %></option>
+                            <% }) %>
+                          </optgroup>
+                        </select>
+                      </div>
+                      <div class="field">
+                        <label class="field-label" for="newDate">Data</label>
+                        <input id="newDate" name="newDate" type="date" />
+                      </div>
+                      <div class="field">
+                        <label class="field-label" for="newClub">Clube</label>
+                        <input id="newClub" name="newClub" list="clubsList" placeholder="Digite para buscar" />
+                      </div>
+                      <div class="field">
+                        <label class="field-label" for="newJudge">Juiz</label>
+                        <input id="newJudge" name="newJudge" list="judgesList" placeholder="Digite para buscar" />
+                      </div>
+                      <div class="field" data-new-year-field>
+                        <label class="field-label" for="newYear">Ano</label>
+                        <input id="newYear" name="newYear" maxlength="10" placeholder="XX" />
+                      </div>
+                      <div class="field">
+                        <label class="field-label" for="newHomologationStatus">Homologação</label>
+                        <select id="newHomologationStatus" name="newHomologationStatus">
+                          <option value="">Pendente</option>
+                          <% homologationStatuses.forEach(function(status) { %>
+                            <option value="<%= status.value %>"><%= status.label %></option>
                           <% }) %>
-                        </optgroup>
-                        <optgroup label="Títulos disponíveis">
-                          <% titleOptions.filter(function(option) { return option.available && !option.alreadyAdded; }).forEach(function(option) { %>
-                            <option value="<%= option.code %>" data-kind="TITLE"><%= option.code %> - <%= option.label %></option>
-                          <% }) %>
-                        </optgroup>
-                        <optgroup label="Títulos especiais">
-                          <% specialTitles.forEach(function(code) { %>
-                            <option value="<%= code %>" data-kind="SPECIAL"><%= code %></option>
-                          <% }) %>
-                        </optgroup>
-                      </select>
-                    </div>
-                    <div class="field">
-                      <label class="field-label" for="newDate">Data</label>
-                      <input id="newDate" name="newDate" type="date" />
-                    </div>
-                    <div class="field">
-                      <label class="field-label" for="newClub">Clube</label>
-                      <input id="newClub" name="newClub" list="clubsList" placeholder="Digite para buscar" />
-                    </div>
-                    <div class="field">
-                      <label class="field-label" for="newJudge">Juiz</label>
-                      <input id="newJudge" name="newJudge" list="judgesList" placeholder="Digite para buscar" />
-                    </div>
-                    <div class="field" data-new-year-field>
-                      <label class="field-label" for="newYear">Ano</label>
-                      <input id="newYear" name="newYear" maxlength="10" placeholder="XX" />
-                    </div>
-                    <div class="field">
-                      <label class="field-label" for="newHomologationStatus">Homologação</label>
-                      <select id="newHomologationStatus" name="newHomologationStatus">
-                        <option value="">Pendente</option>
-                        <% homologationStatuses.forEach(function(status) { %>
-                          <option value="<%= status.value %>"><%= status.label %></option>
-                        <% }) %>
-                      </select>
+                        </select>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </details>
 
                 <div class="content-card" style="margin-bottom:18px;">
                   <div class="content-title">Títulos liberados pelas regras</div>
