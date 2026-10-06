@@ -437,6 +437,7 @@ model UserSettings {
   financialPlanningKittensPerLitter Float?
   financialPlanningKittenValueCents Int?
   lastReceiptReportAccount          String?
+  litterKittenTransferEnabled        Boolean  @default(false)
   modulePreferencesJson            String?
   createdAt                        DateTime @default(now())
   updatedAt                        DateTime @updatedAt
@@ -1340,6 +1341,8 @@ model LitterKitten {
   breedingRole String? // NEW_DAM / NEW_SIRE
   obs          String?
   individualNotes String?
+  transferOriginParents String?
+  transferOriginBirthDate DateTime?
   deceased     Boolean? @default(false)
   reservationPaymentRows ReservationPaymentKitten[]
 

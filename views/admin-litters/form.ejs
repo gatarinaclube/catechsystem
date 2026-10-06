@@ -53,6 +53,25 @@
         min-width: 130px;
         text-align: center;
       }
+      .litter-kitten-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+      .litter-transfer-dialog {
+        border: 0;
+        border-radius: 12px;
+        padding: 0;
+        width: min(520px, calc(100vw - 32px));
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+      }
+      .litter-transfer-dialog::backdrop {
+        background: rgba(15, 23, 42, 0.38);
+      }
+      .litter-transfer-dialog-body {
+        padding: 22px;
+      }
       .litter-kitten-deceased {
         display: inline-flex;
         align-items: center;
@@ -97,7 +116,7 @@
       }
       .litter-kitten-summary {
         display: grid;
-        grid-template-columns: 36px minmax(80px, 120px) minmax(160px, 1fr) minmax(80px, 120px);
+        grid-template-columns: 36px minmax(80px, 120px) minmax(160px, 1fr) minmax(80px, 120px) 34px;
         gap: 12px;
         align-items: center;
         padding: 12px 14px;
@@ -130,6 +149,16 @@
         margin-top: 2px;
         font-size: 14px;
         font-weight: 700;
+      }
+      .litter-origin-button {
+        width: 30px;
+        height: 30px;
+        border-radius: 999px;
+        border: 1px solid var(--border-soft);
+        background: #fff7ed;
+        color: #b45309;
+        font-weight: 900;
+        cursor: pointer;
       }
       .litter-kitten-body {
         padding: 14px;
@@ -186,7 +215,7 @@
           justify-self: stretch;
         }
         .litter-kitten-summary {
-          grid-template-columns: 36px repeat(3, minmax(0, 1fr));
+          grid-template-columns: 36px repeat(3, minmax(0, 1fr)) 34px;
         }
       }
       @media (max-width: 700px) {
@@ -196,7 +225,7 @@
           grid-template-columns: 1fr;
         }
         .litter-kitten-summary {
-          grid-template-columns: 32px 1fr;
+          grid-template-columns: 32px 1fr 34px;
         }
       }
     </style>
@@ -211,6 +240,14 @@
             <div class="welcome-sub">Cadastro administrativo da ninhada e dos filhotes.</div>
           </div>
           <div class="actions">
+            <% if (litter?.id) { %>
+              <button
+                type="submit"
+                form="deleteLitterForm"
+                class="btn"
+                style="color:#b91c1c;"
+              >Excluir ninhada</button>
+            <% } %>
             <a href="<%= cancelPath %>" class="btn">Voltar</a>
           </div>
         </div>
@@ -336,6 +373,61 @@
             <a href="<%= cancelPath %>" class="btn">Cancelar</a>
           </div>
         </form>
+        <% if (litter?.id) { %>
+          <form
+            id="deleteLitterForm"
+            method="post"
+            action="/admin/litters/<%= litter.id %>/delete"
+            onsubmit="return confirm('Tem certeza que deseja excluir esta ninhada e todas as informações dos filhotes? Esta ação não poderá ser desfeita.');"
+          ></form>
+          <% if (canTransferKittens) { %>
+            <dialog id="transferKittenDialog" class="litter-transfer-dialog">
+              <form
+                id="transferKittenForm"
+                method="post"
+                class="litter-transfer-dialog-body"
+                onsubmit="return confirm('Tem certeza que deseja transferir este filhote para a ninhada selecionada?');"
+              >
+                <div class="content-title">Transferir filhote</div>
+                <div class="content-sub" style="margin-top:4px;">
+                  Selecione a ninhada de destino para <strong id="transferKittenName">Filhote</strong>.
+                </div>
+                <div class="field" style="margin-top:16px;">
+                  <label class="field-label" for="targetLitterId">Ninhada de destino</label>
+                  <select id="targetLitterId" name="targetLitterId" required>
+                    <option value="">Selecione...</option>
+                    <% transferLitterOptions.forEach(function(option) { %>
+                      <option value="<%= option.id %>"><%= option.label %></option>
+                    <% }) %>
+                  </select>
+                </div>
+                <% if (!transferLitterOptions.length) { %>
+                  <div class="section-note" style="margin-top:10px;">Não há outra ninhada disponível para receber este filhote.</div>
+                <% } %>
+                <div class="form-actions" style="text-align:right; margin-top:18px;">
+                  <button type="button" class="btn" onclick="document.getElementById('transferKittenDialog').close()">Cancelar</button>
+                  <button type="submit" class="btn btn-primary" <%= transferLitterOptions.length ? '' : 'disabled' %>>Transferir</button>
+                </div>
+              </form>
+            </dialog>
+          <% } %>
+          <dialog id="transferOriginDialog" class="litter-transfer-dialog">
+            <div class="litter-transfer-dialog-body">
+              <div class="content-title">Origem do filhote</div>
+              <div style="margin-top:14px;">
+                <div class="field-label">Mãe X Pai</div>
+                <div id="transferOriginParents" class="content-title" style="font-size:16px;">-</div>
+              </div>
+              <div style="margin-top:14px;">
+                <div class="field-label">Data de Nascimento</div>
+                <div id="transferOriginBirthDate" class="content-title" style="font-size:16px;">-</div>
+              </div>
+              <div class="form-actions" style="text-align:right; margin-top:18px;">
+                <button type="button" class="btn" onclick="document.getElementById('transferOriginDialog').close()">Fechar</button>
+              </div>
+            </div>
+          </dialog>
+        <% } %>
       </main>
     </div>
 
@@ -348,6 +440,8 @@
       const currentDeadAfterBirthCauses = <%- JSON.stringify(deadAfterBirthCauses || []) %>;
       const availableMicrochips = <%- JSON.stringify(availableMicrochips || []) %>;
       const litterHistoryByFemaleId = <%- JSON.stringify(litterHistoryByFemaleId || {}) %>;
+      const transferLitterOptions = <%- JSON.stringify(transferLitterOptions || []) %>;
+      const canTransferKittens = <%- JSON.stringify(Boolean(canTransferKittens)) %>;
       const lastEmsStorageKey = "catech:lastEmsCode";
       const kittens = <%- JSON.stringify(kittens.map((kitten) => ({
         ...kitten,
@@ -370,6 +464,12 @@
       const deadAfterBirthCountInput = document.getElementById("deadAfterBirthCount");
       const deadAfterBirthDetails = document.getElementById("deadAfterBirthDetails");
       const deadAfterBirthCauses = document.getElementById("deadAfterBirthCauses");
+      const transferDialog = document.getElementById("transferKittenDialog");
+      const transferForm = document.getElementById("transferKittenForm");
+      const transferKittenName = document.getElementById("transferKittenName");
+      const transferOriginDialog = document.getElementById("transferOriginDialog");
+      const transferOriginParents = document.getElementById("transferOriginParents");
+      const transferOriginBirthDate = document.getElementById("transferOriginBirthDate");
 
       function getLastEmsCode() {
         try {
@@ -490,6 +590,13 @@
         return "Não informado";
       }
 
+      function dateLabel(value) {
+        if (!value) return "-";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "-";
+        return date.toLocaleDateString("pt-BR", { timeZone: "UTC" });
+      }
+
       function refreshMicrochipOptions() {
         const datalist = document.getElementById("availableMicrochipOptions");
         if (!datalist) return;
@@ -589,6 +696,11 @@
           if (!kitten.id) row.open = true;
           const summaryNumber = kitten.kittenNumber || String(i + 1).padStart(2, "0");
           const summaryName = kitten.name || `Filhote ${i + 1}`;
+          const originParents = kitten.transferOriginParents || "";
+          const originBirthDate = kitten.transferOriginBirthDate || "";
+          const originButton = originParents || originBirthDate
+            ? `<button type="button" class="litter-origin-button" title="Ver ninhada de origem" aria-label="Ver ninhada de origem" data-origin-parents="${fieldValue(originParents)}" data-origin-birth="${fieldValue(dateLabel(originBirthDate))}">i</button>`
+            : "";
           row.innerHTML = `
             <summary class="litter-kitten-summary">
               <span class="litter-kitten-summary-icon">+</span>
@@ -604,6 +716,7 @@
                 <span class="litter-kitten-summary-label">Sexo</span>
                 <span class="litter-kitten-summary-value">${fieldValue(sexLabel(kitten.sex))}</span>
               </span>
+              <span>${originButton}</span>
             </summary>
             <div class="litter-kitten-body">
             <input type="hidden" name="kitten_id_${i}" value="${kitten.id || ""}">
@@ -658,8 +771,9 @@
                     Óbito
                   </label>
                 </div>
-                <div class="litter-kitten-history">
+                <div class="litter-kitten-history litter-kitten-actions">
                   ${kitten.kittenCatId ? `<a href="/admin/history/${kitten.kittenCatId}" class="btn">Histórico</a>` : `<span style="font-size:12px; color:var(--text-muted);">Histórico será criado ao salvar</span>`}
+                  ${canTransferKittens && kitten.id ? `<button type="button" class="btn" data-transfer-kitten="${kitten.id}" data-transfer-name="${fieldValue(summaryName)}" ${transferLitterOptions.length ? "" : "disabled"}>Transferir</button>` : ""}
                 </div>
               </div>
               <div class="litter-kitten-notes">
@@ -707,6 +821,28 @@
             const notes = document.querySelector(`[data-kit-notes="${button.dataset.kitNotesToggle}"]`);
             if (!notes) return;
             notes.style.display = notes.style.display === "none" ? "block" : "none";
+          });
+        });
+
+        document.querySelectorAll("[data-transfer-kitten]").forEach((button) => {
+          button.addEventListener("click", () => {
+            if (!transferDialog || !transferForm) return;
+            transferForm.action = `/admin/litters/<%= litter?.id || '' %>/kittens/${button.dataset.transferKitten}/transfer`;
+            if (transferKittenName) {
+              transferKittenName.textContent = button.dataset.transferName || "Filhote";
+            }
+            transferDialog.showModal();
+          });
+        });
+
+        document.querySelectorAll("[data-origin-parents]").forEach((button) => {
+          button.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (!transferOriginDialog) return;
+            if (transferOriginParents) transferOriginParents.textContent = button.dataset.originParents || "-";
+            if (transferOriginBirthDate) transferOriginBirthDate.textContent = button.dataset.originBirth || "-";
+            transferOriginDialog.showModal();
           });
         });
       }

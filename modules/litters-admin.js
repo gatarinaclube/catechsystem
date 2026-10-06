@@ -1,5 +1,5 @@
 const express = require("express");
-const { canViewAllData, dataOwnerScope } = require("../utils/access");
+const { canViewAllData, dataOwnerScope, isAdminRole } = require("../utils/access");
 const { getCreationLimits, yearlyRange } = require("../utils/planLimits");
 const { selectedBreedsFromSettings } = require("../utils/userPreferences");
 const { ensureMicrochipWhenRequired } = require("../utils/microchipRules");
@@ -126,6 +126,13 @@ function buildLitterLabel(litter) {
   return `${litter.litterNumber || String(litter.id).padStart(3, "0")} - ${shortStoredCatName(litter.femaleName, litter.catteryName) || "Fêmea"} X ${shortStoredCatName(litter.maleName, litter.catteryName) || "Macho"} - ${formatDateForInput(litter.litterBirthDate) || "-"}`;
 }
 
+function buildLitterParentsLabel(litter) {
+  return [
+    shortStoredCatName(litter?.femaleName, litter?.catteryName) || "Mãe",
+    shortStoredCatName(litter?.maleName, litter?.catteryName) || "Pai",
+  ].join(" X ");
+}
+
 function parseJsonArray(value) {
   try {
     const parsed = JSON.parse(value || "[]");
@@ -248,6 +255,15 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       select: { id: true },
     });
     return Boolean(cat);
+  }
+
+  async function canTransferLitterKittens(req) {
+    if (isAdminRole(req.session?.userRole)) return true;
+    const settings = await prisma.userSettings.findUnique({
+      where: { userId: req.session.userId },
+      select: { litterKittenTransferEnabled: true },
+    });
+    return Boolean(settings?.litterKittenTransferEnabled);
   }
 
   async function findLitterMother(req, femaleCatId) {
@@ -425,6 +441,16 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       litter?.litterBreed,
       ...kittens.map((kitten) => kitten.breed),
     ]);
+    const canTransferKittens = await canTransferLitterKittens(req);
+    const transferLitterOptions = litter?.id && canTransferKittens
+      ? await prisma.litter.findMany({
+          where: {
+            ...scopedOwner,
+            NOT: { id: litter.id },
+          },
+          orderBy: [{ litterBirthDate: "desc" }, { litterNumber: "desc" }, { id: "desc" }],
+        })
+      : [];
 
     return {
       user: req.user,
@@ -446,6 +472,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       kittens,
       availableMicrochips,
       litterHistoryByFemaleId,
+      transferLitterOptions: transferLitterOptions.map((item) => ({
+        id: item.id,
+        label: buildLitterLabel(item),
+      })),
+      canTransferKittens,
       catteryName,
       kittenNameMaxLength,
       error,
@@ -660,6 +691,17 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   }
 
   async function deleteGeneratedKittenCat(tx, catId) {
+    await tx.revenueEntry.updateMany({ where: { kittenId: catId }, data: { kittenId: null } });
+    await tx.catteryDocument.updateMany({ where: { catId }, data: { catId: null } });
+    await tx.cat.updateMany({ where: { fatherId: catId }, data: { fatherId: null } });
+    await tx.cat.updateMany({ where: { motherId: catId }, data: { motherId: null } });
+    await tx.matingPlan.deleteMany({
+      where: {
+        OR: [{ femaleCatId: catId }, { maleCatId: catId }],
+      },
+    });
+    await tx.transferRequest.deleteMany({ where: { catId } });
+    await tx.litterKitten.updateMany({ where: { kittenCatId: catId }, data: { kittenCatId: null } });
     await tx.$executeRaw`DELETE FROM "CatHistoryEntry" WHERE "catId" = ${catId}`;
     await tx.$executeRaw`DELETE FROM "VaccinationPlan" WHERE "catId" = ${catId}`;
     await tx.$executeRaw`DELETE FROM "DewormingPlan" WHERE "catId" = ${catId}`;
@@ -668,6 +710,84 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     await tx.$executeRaw`DELETE FROM "SecondCopyRequest" WHERE "catId" = ${catId}`;
     await tx.catTreatment.deleteMany({ where: { catId } });
     await tx.cat.delete({ where: { id: catId } });
+  }
+
+  async function updateLitterCountsFromKittens(tx, litterId) {
+    const kittens = await tx.litterKitten.findMany({
+      where: { litterId },
+      select: { sex: true },
+    });
+    const femaleCount = kittens.filter((kitten) => kitten.sex === "F").length;
+    const maleCount = kittens.filter((kitten) => kitten.sex === "M").length;
+    await tx.litter.update({
+      where: { id: litterId },
+      data: {
+        femaleCount,
+        maleCount,
+        litterCount: kittens.length,
+      },
+    });
+  }
+
+  async function deleteLitterCascade(tx, litter) {
+    const kittens = litter.kittens || [];
+    await syncMicrochipInventoryForLitter(
+      tx,
+      litter.ownerId,
+      [],
+      kittens.map((kitten) => ({
+        id: kitten.id,
+        kittenCatId: kitten.kittenCatId || null,
+      }))
+    );
+
+    for (const kitten of kittens) {
+      if (kitten.kittenCatId) {
+        await deleteGeneratedKittenCat(tx, kitten.kittenCatId);
+      }
+    }
+
+    await tx.litterKitten.deleteMany({ where: { litterId: litter.id } });
+    await tx.serviceRequest.updateMany({
+      where: { litterId: litter.id },
+      data: { litterId: null },
+    });
+    await tx.litter.delete({ where: { id: litter.id } });
+  }
+
+  async function updateKittenCatForTransferredLitter(tx, kitten, targetLitter) {
+    if (!kitten.kittenCatId) return;
+    const motherCat = targetLitter.femaleMicrochip
+      ? await tx.cat.findFirst({
+          where: {
+            ownerId: targetLitter.ownerId || undefined,
+            microchip: targetLitter.femaleMicrochip,
+          },
+        })
+      : null;
+    const fatherCat = targetLitter.maleMicrochip
+      ? await tx.cat.findFirst({
+          where: {
+            ownerId: targetLitter.ownerId || undefined,
+            microchip: targetLitter.maleMicrochip,
+          },
+        })
+      : null;
+
+    await tx.cat.update({
+      where: { id: kitten.kittenCatId },
+      data: {
+        birthDate: targetLitter.litterBirthDate || null,
+        fatherId: fatherCat?.id || null,
+        fatherName: fatherCat?.name || targetLitter.maleName || null,
+        fatherBreed: fatherCat?.breed || targetLitter.maleBreed || null,
+        fatherEmsCode: fatherCat?.emsCode || targetLitter.maleEms || null,
+        motherId: motherCat?.id || null,
+        motherName: motherCat?.name || targetLitter.femaleName || null,
+        motherBreed: motherCat?.breed || targetLitter.femaleBreed || null,
+        motherEmsCode: motherCat?.emsCode || targetLitter.femaleEms || null,
+      },
+    });
   }
 
   async function persistLitter(tx, payload, existingLitter = null) {
@@ -785,6 +905,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         currentPath: req.path,
         users,
         selectedOwnerId,
+        deleted: req.query.deleted === "1",
         litters: litters.map((litter) => ({
           ...litter,
           label: buildLitterLabel(litter),
@@ -893,6 +1014,102 @@ module.exports = (prisma, requireAuth, requirePermission) => {
           formAction: "/admin/litters",
           cancelPath: "/admin/litters",
         });
+      }
+    }
+  );
+
+  router.post(
+    "/admin/litters/:id/delete",
+    requireAuth,
+    requirePermission("admin.litters"),
+    async (req, res) => {
+      const litter = await prisma.litter.findUnique({
+        where: { id: Number(req.params.id) },
+        include: { kittens: true },
+      });
+
+      if (!litter) {
+        return res.status(404).send("Ninhada não encontrada.");
+      }
+
+      if (!(await ensureLitterAccess(req, litter.id))) {
+        return res.status(403).send("Você não pode excluir esta ninhada.");
+      }
+
+      try {
+        await prisma.$transaction(async (tx) => {
+          await deleteLitterCascade(tx, litter);
+        });
+        res.redirect("/admin/litters?deleted=1");
+      } catch (err) {
+        console.error("Erro ao excluir ninhada:", err);
+        res.status(400).send(err.message || "Erro ao excluir a ninhada.");
+      }
+    }
+  );
+
+  router.post(
+    "/admin/litters/:id/kittens/:kittenId/transfer",
+    requireAuth,
+    requirePermission("admin.litters"),
+    async (req, res) => {
+      const sourceLitterId = Number(req.params.id);
+      const kittenId = Number(req.params.kittenId);
+      const targetLitterId = Number(req.body.targetLitterId || "");
+
+      if (!Number.isFinite(targetLitterId) || targetLitterId <= 0 || targetLitterId === sourceLitterId) {
+        return res.status(400).send("Selecione uma ninhada de destino válida.");
+      }
+
+      const [sourceLitter, targetLitter, kitten] = await Promise.all([
+        prisma.litter.findUnique({ where: { id: sourceLitterId } }),
+        prisma.litter.findUnique({ where: { id: targetLitterId } }),
+        prisma.litterKitten.findUnique({ where: { id: kittenId } }),
+      ]);
+
+      if (!sourceLitter || !targetLitter || !kitten || kitten.litterId !== sourceLitterId) {
+        return res.status(404).send("Filhote ou ninhada não encontrados.");
+      }
+
+      if (
+        !(await ensureLitterAccess(req, sourceLitterId)) ||
+        !(await ensureLitterAccess(req, targetLitterId))
+      ) {
+        return res.status(403).send("Você não tem acesso às ninhadas informadas.");
+      }
+
+      if (!(await canTransferLitterKittens(req))) {
+        return res.status(403).send("Você não tem autorização para transferir filhotes entre ninhadas.");
+      }
+
+      try {
+        await prisma.$transaction(async (tx) => {
+          const lastTargetKitten = await tx.litterKitten.findFirst({
+            where: { litterId: targetLitterId },
+            orderBy: { index: "desc" },
+            select: { index: true },
+          });
+          const nextIndex = Number(lastTargetKitten?.index || 0) + 1;
+
+          await tx.litterKitten.update({
+            where: { id: kitten.id },
+            data: {
+              litterId: targetLitterId,
+              index: nextIndex,
+              transferOriginParents: kitten.transferOriginParents || buildLitterParentsLabel(sourceLitter),
+              transferOriginBirthDate: kitten.transferOriginBirthDate || sourceLitter.litterBirthDate || null,
+            },
+          });
+
+          await updateKittenCatForTransferredLitter(tx, kitten, targetLitter);
+          await updateLitterCountsFromKittens(tx, sourceLitterId);
+          await updateLitterCountsFromKittens(tx, targetLitterId);
+        });
+
+        res.redirect(`/admin/litters/${sourceLitterId}?saved=1`);
+      } catch (err) {
+        console.error("Erro ao transferir filhote:", err);
+        res.status(400).send(err.message || "Erro ao transferir o filhote.");
       }
     }
   );

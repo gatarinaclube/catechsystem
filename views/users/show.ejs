@@ -314,6 +314,21 @@
                     Quando ativo, o usuário verá o atalho Gatofilia no menu e poderá acessar a área interna.
                   </small>
                 </div>
+                <div class="field">
+                  <label class="field-label" for="litterKittenTransferEnabled">Transferência de filhotes</label>
+                  <label style="display:flex; align-items:center; gap:8px; min-height:38px;">
+                    <input
+                      id="litterKittenTransferEnabled"
+                      type="checkbox"
+                      name="litterKittenTransferEnabled"
+                      <%= userDetail.settings?.litterKittenTransferEnabled ? "checked" : "" %>
+                    />
+                    <span>Autorizar este usuário a transferir filhotes entre ninhadas</span>
+                  </label>
+                  <small style="font-size:11px; color:var(--text-muted);">
+                    Administradores sempre podem transferir. Para demais perfis, marque esta opção individualmente.
+                  </small>
+                </div>
               </div>
 
               <% if (userDetail.createdAt) { %>

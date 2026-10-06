@@ -162,6 +162,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       let userDetail = await prisma.user.findUnique({
         where: { id: targetId },
+        include: { settings: true },
       });
 
       if (!userDetail) {
@@ -216,6 +217,7 @@ router.post("/users/:id", requireAuth, requirePermission("admin.users"), async (
       subscriptionStatus,
       trialEndsAt,
       gatofiliaAccess,
+      litterKittenTransferEnabled,
 
       // 🔹 CAMPOS DO GATIL FIFe
       hasFifeCattery,
@@ -283,6 +285,21 @@ router.post("/users/:id", requireAuth, requirePermission("admin.users"), async (
           hasFifeCattery === "YES" ? fifeCatteryName : null,
       },
     });
+
+    if (isAdmin) {
+      await prisma.userSettings.upsert({
+        where: { userId: targetId },
+        update: {
+          litterKittenTransferEnabled:
+            litterKittenTransferEnabled === "on" || litterKittenTransferEnabled === "true",
+        },
+        create: {
+          userId: targetId,
+          litterKittenTransferEnabled:
+            litterKittenTransferEnabled === "on" || litterKittenTransferEnabled === "true",
+        },
+      });
+    }
 
     if (isAdmin) {
       await notifyUserAccessStatusChange(updatedUser, existingUser?.approvalStatus, updatedUser.approvalStatus);
