@@ -381,6 +381,7 @@
             onsubmit="return confirm('Tem certeza que deseja excluir esta ninhada e todas as informações dos filhotes? Esta ação não poderá ser desfeita.');"
           ></form>
           <% if (canTransferKittens) { %>
+            <form id="deleteKittenForm" method="post"></form>
             <dialog id="transferKittenDialog" class="litter-transfer-dialog">
               <form
                 id="transferKittenForm"
@@ -769,6 +770,7 @@
                 <div class="litter-kitten-history litter-kitten-actions">
                   ${kitten.kittenCatId ? `<a href="/admin/history/${kitten.kittenCatId}" class="btn">Histórico</a>` : `<span style="font-size:12px; color:var(--text-muted);">Histórico será criado ao salvar</span>`}
                   ${canTransferKittens && kitten.id ? `<button type="button" class="btn" data-transfer-kitten="${kitten.id}" data-transfer-name="${fieldValue(summaryName)}" ${transferLitterOptions.length ? "" : "disabled"}>Transferir</button>` : ""}
+                  ${canTransferKittens && kitten.id ? `<button type="button" class="btn" style="color:#b91c1c;" data-delete-kitten="${kitten.id}" data-delete-name="${fieldValue(summaryName)}">Excluir</button>` : ""}
                 </div>
               </div>
               <div class="litter-kitten-notes">
@@ -827,6 +829,18 @@
               transferKittenName.textContent = button.dataset.transferName || "Filhote";
             }
             transferDialog.showModal();
+          });
+        });
+
+        document.querySelectorAll("[data-delete-kitten]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const name = button.dataset.deleteName || "este filhote";
+            const confirmed = confirm(`Tem certeza que deseja excluir ${name}? As informações vinculadas a este filhote serão removidas e a quantidade da ninhada será atualizada.`);
+            if (!confirmed) return;
+            const form = document.getElementById("deleteKittenForm");
+            if (!form) return;
+            form.action = `/admin/litters/<%= litter?.id || '' %>/kittens/${button.dataset.deleteKitten}/delete`;
+            form.submit();
           });
         });
 

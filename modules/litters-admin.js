@@ -1031,13 +1031,22 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       }
 
       try {
-        await prisma.$transaction(async (tx) => {
-          await deleteLitterCascade(tx, litter);
-        });
+        await prisma.$transaction(
+          async (tx) => {
+            await deleteLitterCascade(tx, litter);
+          },
+          {
+            maxWait: 10000,
+            timeout: 60000,
+          }
+        );
         res.redirect("/admin/litters?deleted=1");
       } catch (err) {
         console.error("Erro ao excluir ninhada:", err);
-        res.status(400).send(err.message || "Erro ao excluir a ninhada.");
+        const message = /transaction|transa[cç][aã]o/i.test(err.message || "")
+          ? "A exclusão demorou mais que o esperado. Tente novamente; se persistir, entre em contato com o suporte."
+          : err.message || "Erro ao excluir a ninhada.";
+        res.status(400).send(message);
       }
     }
   );
@@ -1104,6 +1113,65 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       } catch (err) {
         console.error("Erro ao transferir filhote:", err);
         res.status(400).send(err.message || "Erro ao transferir o filhote.");
+      }
+    }
+  );
+
+  router.post(
+    "/admin/litters/:id/kittens/:kittenId/delete",
+    requireAuth,
+    requirePermission("admin.litters"),
+    async (req, res) => {
+      const litterId = Number(req.params.id);
+      const kittenId = Number(req.params.kittenId);
+
+      const [litter, kitten] = await Promise.all([
+        prisma.litter.findUnique({ where: { id: litterId }, select: { id: true, ownerId: true } }),
+        prisma.litterKitten.findUnique({ where: { id: kittenId } }),
+      ]);
+
+      if (!litter || !kitten || kitten.litterId !== litterId) {
+        return res.status(404).send("Filhote ou ninhada não encontrados.");
+      }
+
+      if (!(await ensureLitterAccess(req, litterId))) {
+        return res.status(403).send("Você não tem acesso a esta ninhada.");
+      }
+
+      if (!(await canTransferLitterKittens(req))) {
+        return res.status(403).send("Você não tem autorização para excluir filhotes da ninhada.");
+      }
+
+      try {
+        await prisma.$transaction(
+          async (tx) => {
+            await syncMicrochipInventoryForLitter(
+              tx,
+              litter.ownerId,
+              [],
+              [{
+                id: kitten.id,
+                kittenCatId: kitten.kittenCatId || null,
+              }]
+            );
+
+            if (kitten.kittenCatId) {
+              await deleteGeneratedKittenCat(tx, kitten.kittenCatId);
+            }
+
+            await tx.litterKitten.delete({ where: { id: kitten.id } });
+            await updateLitterCountsFromKittens(tx, litterId);
+          },
+          {
+            maxWait: 10000,
+            timeout: 60000,
+          }
+        );
+
+        res.redirect(`/admin/litters/${litterId}?saved=1`);
+      } catch (err) {
+        console.error("Erro ao excluir filhote:", err);
+        res.status(400).send(err.message || "Erro ao excluir o filhote.");
       }
     }
   );
