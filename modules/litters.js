@@ -114,20 +114,13 @@ function hasExcessLitterForDate(litterHistoryDates, candidateDate) {
     .map(parseDateOnly)
     .filter(Boolean)
     .forEach((date) => uniqueDates.set(date.toISOString().slice(0, 10), date));
-  const dates = Array.from(uniqueDates.values()).sort((a, b) => a - b);
+  const dates = Array.from(uniqueDates.values()).filter((date) => date <= candidate);
+  const twelveMonthStart = addMonths(candidate, -12);
+  const twentyFourMonthStart = addMonths(candidate, -24);
+  const littersInTwelveMonths = dates.filter((date) => date >= twelveMonthStart).length;
+  const littersInTwentyFourMonths = dates.filter((date) => date >= twentyFourMonthStart).length;
 
-  return dates.some((startDate, index) => {
-    const twelveMonthLimit = addMonths(startDate, 12);
-    const twentyFourMonthLimit = addMonths(startDate, 24);
-    const littersInTwelveMonths = dates
-      .slice(index)
-      .filter((date) => date >= startDate && date <= twelveMonthLimit).length;
-    const littersInTwentyFourMonths = dates
-      .slice(index)
-      .filter((date) => date >= startDate && date <= twentyFourMonthLimit).length;
-
-    return littersInTwelveMonths > 2 || littersInTwentyFourMonths > 3;
-  });
+  return littersInTwelveMonths > 2 || littersInTwentyFourMonths > 3;
 }
 
 function sameUtcDay(date) {

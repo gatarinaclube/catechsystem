@@ -6,6 +6,14 @@
     <link rel="stylesheet" href="/css/theme.css" />
     <link rel="stylesheet" href="/css/layout.css" />
     <link rel="stylesheet" href="/css/cattery-admin.css" />
+    <style>
+      .litter-empty-link {
+        color: #cbd5e1;
+      }
+      .litter-empty-link:hover {
+        color: #94a3b8;
+      }
+    </style>
   </head>
   <body>
     <div class="shell">
@@ -59,7 +67,7 @@
               <% litters.forEach(function(litter) { %>
                 <li class="item">
                   <div>
-                    <a class="item-link" href="/admin/litters/<%= litter.id %>"><%= litter.label %></a>
+                    <a class="item-link <%= litter._count?.kittens ? '' : 'litter-empty-link' %>" href="/admin/litters/<%= litter.id %>"><%= litter.label %></a>
                   </div>
                   <form method="post" action="/admin/litters/<%= litter.id %>/delete" onsubmit="return confirm('Tem certeza que deseja excluir esta ninhada e todas as informações dos filhotes? Esta ação não poderá ser desfeita.');">
                     <button type="submit" class="btn" style="color:#b91c1c;">Excluir</button>
