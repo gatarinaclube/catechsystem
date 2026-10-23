@@ -2,6 +2,7 @@
 const express = require("express");
 const { ROLES, getRoleLabel, normalizeRole, isAdminRole } = require("../utils/access");
 const { formatCpfCnpj, formatPhone } = require("../utils/format");
+const { formatApplicationDate, applicationFields, generateApplicationPdf, sendApplicationCopies } = require("../utils/associationApplication");
 const {
   notifyUserAccessStatusChange,
   notifyUserPlanChange,
@@ -147,6 +148,39 @@ module.exports = (prisma, requireAuth, requirePermission) => {
   });
 
   // --------- DETALHES DO USUÁRIO ---------
+  router.get("/users/:id/association.pdf", requireAuth, requirePermission("admin.users"), async (req, res) => {
+    if (!getAuthInfo(req).isAdmin) return res.status(403).send("Acesso restrito apenas para administradores.");
+    const userId = Number(req.params.id);
+    if (!Number.isSafeInteger(userId) || userId <= 0) return res.status(400).send("Usuário inválido.");
+    try {
+      const application = await prisma.associationApplication.findUnique({ where: { userId } });
+      if (!application) return res.status(404).send("Solicitação de associação não registrada para este usuário.");
+      const pdf = await generateApplicationPdf(application);
+      res.set("Cache-Control", "no-store");
+      res.set("Content-Type", "application/pdf");
+      res.set("Content-Disposition", `inline; filename="solicitacao-associacao-${application.id}.pdf"`);
+      return res.send(pdf);
+    } catch (err) {
+      console.error("Erro ao gerar PDF da associação:", err);
+      return res.status(500).send("Erro ao gerar PDF da solicitação de associação.");
+    }
+  });
+
+  router.post("/users/:id/association/resend", requireAuth, requirePermission("admin.users"), async (req, res) => {
+    if (!getAuthInfo(req).isAdmin) return res.status(403).send("Acesso restrito apenas para administradores.");
+    const userId = Number(req.params.id);
+    if (!Number.isSafeInteger(userId) || userId <= 0) return res.status(400).send("Usuário inválido.");
+    try {
+      const application = await prisma.associationApplication.findUnique({ where: { userId } });
+      if (!application) return res.status(404).send("Solicitação de associação não registrada para este usuário.");
+      await sendApplicationCopies(prisma, application);
+      return res.redirect(`/users/${userId}#association-application`);
+    } catch (err) {
+      console.error("Erro ao reenviar cópias da associação:", err);
+      return res.status(500).send("Erro ao reenviar cópias da solicitação de associação.");
+    }
+  });
+
   router.get("/users/:id", requireAuth, requirePermission("admin.users"), async (req, res) => {
     const { userId, isAdmin } = getAuthInfo(req);
     const targetId = Number(req.params.id);
@@ -162,7 +196,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
 
       let userDetail = await prisma.user.findUnique({
         where: { id: targetId },
-        include: { settings: true },
+        include: { settings: true, associationApplication: isAdmin },
       });
 
       if (!userDetail) {
@@ -180,6 +214,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
         },
         logs,
         roleOptions,
+        isAdmin,
+        formatApplicationDate,
+        applicationFields,
         currentPath: req.path,
       });
     } catch (err) {

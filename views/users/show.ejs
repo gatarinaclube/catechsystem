@@ -104,6 +104,9 @@
         </div>
 
         <div class="content-card">
+          <% if (isAdmin) { %>
+            <%- include('association-application', { application: userDetail.associationApplication }) %>
+          <% } %>
           <!-- FORMULÁRIO COMPLETO -->
           <form method="post" action="/users/<%= userDetail.id %>">
             <!-- INFORMAÇÕES BÁSICAS / CADASTRAIS -->

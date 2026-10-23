@@ -209,35 +209,25 @@
 
   <div style="font-size:14px; line-height:1.6;">
 
-    <p>
-      Ao solicitar associação ao Gatarina Clube, concordo e afirmo que tenho conhecimento sobre todas as regras, principalmente:
-    </p>
-
+    <p><%= associationDeclaration.introduction %></p>
     <ul style="margin-left:18px;">
-      <li>Conhecer e seguir as normas, regulamentos e diretrizes estabelecidas pela Fédération Internationale Féline (FIFe), bem como pela Federação Felina Brasileira (FFB);</li>
-      <li>Não criar, promover, registrar ou comercializar raças felinas que não sejam reconhecidas pela FIFe, bem como a não participar de programas de criação envolvendo raças expressamente proibidas ou banidas por esta entidade, como por exemplo Scottish Fold, Munchkin entre outros;</li>
-      <li>São permitidas na FIFe apenas 3 ninhadas a cada 2 anos de uma mesma fêmea, com limitação máxima de 2 ninhadas no intervalo de 12 meses;</li>
-      <li>Todos os filhotes criados por um associado FIFe devem ser primeiramente registrados na FIFe.</li>
-      <li>Não estímular à compra de animais por impulso: venda de animais em feiras, para petshop ou sites de comércio (OLX, mercado livre, entre outros).</li>
+      <% associationDeclaration.rules.forEach(function(rule) { %>
+        <li><%= rule %></li>
+      <% }) %>
     </ul>
-
     <p style="margin-top:10px;">
       <strong>Regras, regulamentos e informações FIFe/FFB:</strong><br />
-      Raças reconhecidas: <a href="https://fifeweb.org/cats/breeds/" target="_blank">fifeweb.org/cats/breeds</a><br />
-      Normas FIFe: <a href="https://fifeweb.org/library/rules-and-forms/" target="_blank">fifeweb.org/library/rules-and-forms</a><br />
-      Normas FFB: <a href="https://www.fifebrasil.com.br" target="_blank">fifebrasil.com.br</a>
+      <% associationDeclaration.links.forEach(function(link) { %>
+        <%= link.label %>: <a href="<%= link.url %>" target="_blank" rel="noopener noreferrer"><%= link.url %></a><br />
+      <% }) %>
     </p>
-
     <div style="margin-top:15px; display:flex; flex-direction:column; gap:10px;">
-      <label class="checkbox-label">
-        <input type="checkbox" id="agree1" />
-        Declaro que todas as minhas atividades de criação seguirão rigorosamente os padrões de bem-estar animal e ética estabelecidos pelas entidades mencionadas
-      </label>
-
-      <label class="checkbox-label">
-        <input type="checkbox" id="agree2" />
-        Estou ciente de que o descumprimento desta declaração poderá resultar em sanções administrativas, incluindo suspensão ou exclusão de registros
-      </label>
+      <% associationDeclaration.acceptances.forEach(function(text, index) { %>
+        <label class="checkbox-label">
+          <input type="checkbox" id="agree<%= index + 1 %>" name="agree<%= index + 1 %>" required />
+          <%= text %>
+        </label>
+      <% }) %>
     </div>
 
     <div id="checkboxError" style="color:#c0392b; margin-top:10px; display:none;">

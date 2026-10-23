@@ -1,0 +1,48 @@
+<section class="user-admin-section" id="association-application">
+  <div class="user-admin-section-header">
+    <div>
+      <h3 class="user-admin-section-title">Solicitação de associação</h3>
+      <div class="user-admin-section-sub">Dados e aceite preservados no momento do envio da solicitação.</div>
+    </div>
+    <% if (application) { %>
+      <a class="btn" href="/users/<%= userDetail.id %>/association.pdf" target="_blank" rel="noopener">Abrir / imprimir PDF</a>
+    <% } %>
+  </div>
+  <% if (!application) { %>
+    <p>Não há solicitação de associação com aceite registrada para este usuário. Cadastros anteriores à implantação deste registro não possuem comprovante de aceite.</p>
+  <% } else { %>
+    <p><strong>Protocolo:</strong> <%= application.id %></p>
+    <p><strong>Solicitação e aceite:</strong> <%= formatApplicationDate(application.submittedAt) %></p>
+    <details>
+      <summary>Ver informações e declarações aceitas</summary>
+      <div class="grid-3" style="margin-top:12px;">
+        <% applicationFields(application).forEach(function(field) { %>
+          <div class="field"><strong><%= field.label %>:</strong> <span style="white-space:pre-wrap;overflow-wrap:anywhere;"><%= field.value %></span></div>
+        <% }) %>
+      </div>
+      <h4>Declaração de ciência e responsabilidade</h4>
+      <p><%= application.declaration.introduction %></p>
+      <ul>
+        <% application.declaration.rules.forEach(function(rule) { %><li><%= rule %></li><% }) %>
+      </ul>
+      <% application.declaration.links.forEach(function(link) { %>
+        <p><%= link.label %>: <%= link.url %></p>
+      <% }) %>
+      <% application.declaration.acceptances.forEach(function(item) { %>
+        <p><strong><%= item.accepted ? 'Aceito' : 'Não aceito' %>:</strong> <%= item.text %></p>
+      <% }) %>
+      <p>Versão da declaração: <%= application.declaration.version %></p>
+    </details>
+    <p><strong>Cópia para <%= application.data.email %>:</strong>
+      <%= application.memberCopySentAt ? 'Enviada em ' + formatApplicationDate(application.memberCopySentAt) : application.memberCopyError ? 'Falha no envio. Tente novamente.' : 'Envio pendente.' %>
+    </p>
+    <p><strong>Cópia para contato@gatarina.com.br:</strong>
+      <%= application.clubCopySentAt ? 'Enviada em ' + formatApplicationDate(application.clubCopySentAt) : application.clubCopyError ? 'Falha no envio. Tente novamente.' : 'Envio pendente.' %>
+    </p>
+    <% if (!application.memberCopySentAt || !application.clubCopySentAt) { %>
+      <form method="post" action="/users/<%= userDetail.id %>/association/resend">
+        <button type="submit" class="btn">Tentar enviar cópias pendentes</button>
+      </form>
+    <% } %>
+  <% } %>
+</section>

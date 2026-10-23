@@ -35,6 +35,8 @@ const {
   classifyOperationalCat,
 } = require("./utils/cattery-admin");
 const { sendStatusEmail } = require("./utils/mailer");
+const associationDeclaration = require("./utils/associationDeclaration");
+const { hasAssociationConsent, createApplicationSnapshot, sendApplicationCopies } = require("./utils/associationApplication");
 const { buildVaccineDueItems } = require("./utils/vaccines");
 const {
   createAnnualPlanPayment,
@@ -1840,6 +1842,10 @@ app.post("/reset-password/:token", async (req, res) => {
 });
 
 // ---------- CADASTRO DE USUÁRIO ----------
+app.use("/register", (req, res, next) => {
+  res.locals.associationDeclaration = associationDeclaration;
+  next();
+});
 app.get("/register", (req, res) => {
   res.render("register", { error: null, success: null });
 });
@@ -1868,6 +1874,13 @@ const {
 
 
   try {
+    if (!hasAssociationConsent(req.body)) {
+      return res.status(400).render("register", {
+        error: "É necessário aceitar as duas declarações de ciência e responsabilidade para continuar.",
+        success: null,
+      });
+    }
+
     if (!name || !normalizedEmail || !cpf || !password || !confirmPassword) {
       return res.render("register", {
         error: `Preencha pelo menos Nome, ${documentLabel}, E-mail e Senha.`,
@@ -1903,8 +1916,7 @@ const {
       clubsValue = clubs;
     }
 
-const createdUser = await prisma.user.create({
-  data: {
+const registrationData = {
     name,
     address,
     city,
@@ -1927,9 +1939,21 @@ const createdUser = await prisma.user.create({
     hasFifeCattery: hasFifeCattery || "NO",
     fifeCatteryName:
       hasFifeCattery === "YES" ? fifeCatteryName : null,
+};
+const createdUser = await prisma.user.create({
+  data: {
+    ...registrationData,
+    associationApplication: { create: createApplicationSnapshot(registrationData) },
   },
+  include: { associationApplication: true },
 });
 
+try {
+  await sendApplicationCopies(prisma, createdUser.associationApplication);
+} catch (err) {
+  // Registration and consent are already persisted; email can be retried by an admin.
+  console.error("Erro no envio das cópias da solicitação de associação:", err.message || err);
+}
 await notifyNewUser(prisma, createdUser);
 await notifyUserRegistrationConfirmation(createdUser);
 await sendEmailVerification(req, createdUser, verification.token, "/login-gatarina");
