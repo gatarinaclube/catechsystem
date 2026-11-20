@@ -57,6 +57,7 @@
           <% [
             ['kittens', 'Filhotes vivos por ano', 'Machos, fêmeas e filhotes vivos sem discriminação de sexo.'],
             ['monthly-kittens', 'Média de filhotes vivos por mês', 'Total de filhotes vivos do ano dividido pelos meses considerados.'],
+            ['per-litter', 'Média de filhotes por ninhada', 'Total de filhotes vivos do ano dividido pela quantidade de ninhadas desse ano.'],
             ['deaths', 'Óbitos de filhotes', 'Óbitos informados nas ninhadas ou no histórico anual, por ano de nascimento.'],
             ['mortality', 'Mortalidade de filhotes por ano (%)', 'Óbitos ÷ filhotes nascidos × 100. Nascidos = vivos + óbitos.'],
             ['finance', 'Receitas e despesas por ano', 'Receitas recebidas e despesas registradas no período.'],
@@ -80,7 +81,7 @@
               <thead><tr>
                 <th scope="col">Ano / origem</th><th scope="col">Meses</th><th scope="col">Ninhadas</th><th scope="col">Filhotes vivos</th>
                 <th scope="col">Machos</th><th scope="col">Fêmeas</th><th scope="col">Sem sexo informado</th><th scope="col">Machos em óbito</th><th scope="col">Fêmeas em óbito</th><th scope="col">Óbitos registrados</th><th scope="col">Nascidos</th><th scope="col">Mortalidade</th>
-                <th scope="col">Filhotes / mês</th><th scope="col">Receita</th><th scope="col">Despesa</th>
+                <th scope="col">Filhotes / mês</th><th scope="col">Filhotes vivos / ninhada</th><th scope="col">Receita</th><th scope="col">Despesa</th>
                 <th scope="col">Receita / mês</th><th scope="col">Despesa / mês</th><th scope="col">Receita / filhote</th><th scope="col">Custo / filhote</th>
               </tr></thead>
               <tbody>
@@ -93,6 +94,7 @@
                     <td><%= number(row.unknownCount) %></td><td><%= number(row.maleDeathCount) %></td><td><%= number(row.femaleDeathCount) %></td>
                     <td><%= number(row.deaths) %></td><td><%= number(row.bornCount) %></td>
                     <td><%= row.mortalityPercent === null ? 'Sem dados' : number(row.mortalityPercent) + '%' %></td><td><%= number(row.kittensPerMonth) %></td>
+                    <td><%= number(row.kittensPerLitter) %></td>
                     <% [row.revenueCents, row.expenseCents, row.revenuePerMonthCents, row.expensePerMonthCents, row.revenuePerKittenCents, row.costPerKittenCents].forEach(function(value) { %>
                       <td><%= value === null ? 'Sem filhotes' : formatMoney(value) %></td>
                     <% }) %>
@@ -104,6 +106,7 @@
           <details class="statistics-method">
             <summary>Como os números são calculados</summary>
             <ul>
+              <li>Média por ninhada: filhotes vivos do ano divididos pela quantidade de ninhadas. São usados os totais do sistema ou do histórico manual. Anos sem ninhadas ficam sem média.</li>
               <li>Filhotes vivos por data da ninhada, incluindo filhotes avulsos vivos identificados no cadastro. Filhotes vinculados à ninhada são contados uma vez.</li>
               <li>Óbitos do sistema: exclusivamente o total de óbitos informado em cada ninhada (no parto e pós-parto), por ano de nascimento. Marcações de óbito nos cadastros individuais de gatos, padreadores e matrizes não entram neste total.</li>
               <li>Receitas: parcelas marcadas como pagas, sem cancelamento, por data de pagamento. Valores a receber não entram.</li>

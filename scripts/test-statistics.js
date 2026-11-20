@@ -18,6 +18,7 @@ test("conta filhotes vinculados uma vez, avulsos, sexo e óbitos sem repetir tot
   const row = rows[0];
   assert.equal(row.litterCount, 1);
   assert.equal(row.kittenCount, 3);
+  assert.equal(row.kittensPerLitter, 3);
   assert.equal(row.maleCount, 1);
   assert.equal(row.femaleCount, 2);
   assert.equal(row.deaths, 1);
@@ -44,6 +45,7 @@ test("calcula receitas pagas e despesas por competência, exclui parcelas em abe
   assert.equal(result.rows[1].expenseCents, 11000);
   assert.equal(result.rows[1].expensePerMonthCents, 1000);
   assert.equal(result.rows[1].costPerKittenCents, null);
+  assert.equal(result.rows[1].kittensPerLitter, null);
 });
 
 test("histórico substitui os totais do mesmo ano e não inventa sexo ou óbitos", () => {
@@ -55,6 +57,7 @@ test("histórico substitui os totais do mesmo ano e não inventa sexo ou óbitos
   const row = result.rows.find((entry) => entry.year === 2024);
   assert.equal(row.litterCount, 4);
   assert.equal(row.kittenCount, 20);
+  assert.equal(row.kittensPerLitter, 5);
   assert.equal(row.maleCount, 0);
   assert.equal(row.femaleCount, 0);
   assert.equal(row.unknownCount, 20);
@@ -170,7 +173,7 @@ test("Premium tem acesso, outros planos são barrados, consultas e alterações 
   assert.deepEqual(deletion.where, { id: 999, ownerId: 7 });
 });
 
-test("renderiza a página e os sete gráficos, inclusive com histórico vazio", async () => {
+test("renderiza a página e os oito gráficos, inclusive com histórico vazio", async () => {
   const stats = buildStatistics({}, now);
   const locals = {
     user: { role: "PREMIUM", name: "Teste", email: "teste@example.com" }, access: buildAccessContext("PREMIUM"),
@@ -179,7 +182,7 @@ test("renderiza a página e os sete gráficos, inclusive com histórico vazio", 
     number: (value) => value === null ? "Sem dados" : String(value),
   };
   const html = await ejs.renderFile(path.join(__dirname, "../views/reports/statistics.ejs"), locals);
-  assert.equal((html.match(/data-chart=/g) || []).length, 7);
+  assert.equal((html.match(/data-chart=/g) || []).length, 8);
   assert.ok(html.includes("Nenhum ano anterior informado"));
   assert.ok(html.includes("/reports/statistics/history"));
   // Exercise the actual chart code with a small DOM, catching errors in chart creation.
@@ -191,7 +194,7 @@ test("renderiza a página e os sete gráficos, inclusive com histórico vazio", 
     append(...children) { this.children.push(...children); }
     addEventListener() {}
   }
-  const charts = ["kittens", "monthly-kittens", "deaths", "mortality", "finance", "monthly-finance", "per-kitten"].map((key) => {
+  const charts = ["kittens", "monthly-kittens", "deaths", "mortality", "finance", "monthly-finance", "per-kitten", "per-litter"].map((key) => {
     const node = new Node(); node.dataset.chart = key; return node;
   });
   const json = new Node(); json.textContent = JSON.stringify({ rows: stats.rows, history: [] });
@@ -203,6 +206,7 @@ test("renderiza a página e os sete gráficos, inclusive com histórico vazio", 
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../public/js/statistics.js"), "utf8"), { document, Intl, window: {} });
   assert.ok(charts.every((chart) => chart.children.length > 0));
   assert.equal(charts[6].children[0].textContent, "Sem dados para este gráfico. Consulte a tabela para os demais indicadores.");
+  assert.equal(charts[7].children[0].textContent, "Sem dados para este gráfico. Consulte a tabela para os demais indicadores.");
 });
 
 test("Editar carrega valores antigos e novos, preservando os demais dados ao completar óbitos", async () => {

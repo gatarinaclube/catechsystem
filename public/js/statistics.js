@@ -7,6 +7,7 @@
   const series = {
     kittens: [["maleCount", "Machos", "#2563eb"], ["femaleCount", "Fêmeas", "#a855f7"], ["unknownCount", "Sem sexo informado", "#64748b"]],
     "monthly-kittens": [["kittensPerMonth", "Filhotes / mês", "#2563eb"]],
+    "per-litter": [["kittensPerLitter", "Filhotes vivos / ninhada", "#7c3aed"]],
     deaths: [["deaths", "Óbitos registrados", "#d97706"]],
     mortality: [["mortalityPercent", "Mortalidade", "#dc2626"]],
     finance: [["revenueCents", "Receita", "#059669"], ["expenseCents", "Despesa", "#dc2626"]],
