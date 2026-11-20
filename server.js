@@ -1,7 +1,7 @@
 require("dotenv").config();
 
 const express = require("express");
-const session = require("express-session");
+const { createPersistentSessionMiddleware } = require("./utils/prismaSessionStore");
 const path = require("path");
 const crypto = require("crypto");
 const { PrismaClient, Prisma } = require("@prisma/client");
@@ -244,13 +244,14 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
 // ---------- SESSÃO ----------
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "dev-secret",
-    resave: false,
-    saveUninitialized: false,
-  })
-);
+if (process.env.RENDER) app.set("trust proxy", 1);
+app.use(createPersistentSessionMiddleware(prisma));
+
+// Navigating to another page retrieves the current version after a deployment.
+app.use((req, res, next) => {
+  if (req.session?.userId) res.set("Cache-Control", "no-store");
+  next();
+});
 
 const ACTIVE_SESSION_WINDOW_MINUTES = 15;
 const COMMERCIAL_ACCESS_EXPIRATION_INTERVAL_MS = 60 * 60 * 1000;

@@ -43,7 +43,7 @@
 
         <% const totals = rows.reduce((sum, row) => ({ kittens: sum.kittens + row.kittenCount, litters: sum.litters + row.litterCount, revenue: sum.revenue + row.revenueCents, expense: sum.expense + row.expenseCents }), { kittens: 0, litters: 0, revenue: 0, expense: 0 }); %>
         <div class="statistics-summary">
-          <div class="content-card"><span>Filhotes</span><strong><%= number(totals.kittens) %></strong></div>
+          <div class="content-card"><span>Filhotes vivos</span><strong><%= number(totals.kittens) %></strong></div>
           <div class="content-card"><span>Ninhadas</span><strong><%= number(totals.litters) %></strong></div>
           <div class="content-card"><span>Receita recebida</span><strong><%= formatMoney(totals.revenue) %></strong></div>
           <div class="content-card"><span>Despesas</span><strong><%= formatMoney(totals.expense) %></strong></div>
@@ -55,12 +55,13 @@
         <% if (!rows.length) { %><p class="content-card">Não há dados para o ano selecionado.</p><% } %>
         <div class="statistics-charts">
           <% [
-            ['kittens', 'Filhotes por ano', 'Machos, fêmeas e filhotes sem discriminação de sexo.'],
-            ['monthly-kittens', 'Média de filhotes por mês', 'Total de filhotes do ano dividido pelos meses considerados.'],
-            ['deaths', 'Óbitos de filhotes', 'Agrupados pelo ano de nascimento da ninhada ou do filhote; não pela data do óbito.'],
+            ['kittens', 'Filhotes vivos por ano', 'Machos, fêmeas e filhotes vivos sem discriminação de sexo.'],
+            ['monthly-kittens', 'Média de filhotes vivos por mês', 'Total de filhotes vivos do ano dividido pelos meses considerados.'],
+            ['deaths', 'Óbitos de filhotes', 'Óbitos informados nas ninhadas ou no histórico anual, por ano de nascimento.'],
+            ['mortality', 'Mortalidade de filhotes por ano (%)', 'Óbitos ÷ filhotes nascidos × 100. Nascidos = vivos + óbitos.'],
             ['finance', 'Receitas e despesas por ano', 'Receitas recebidas e despesas registradas no período.'],
             ['monthly-finance', 'Média mensal de receita e despesa', 'Totais financeiros divididos pelos meses considerados em cada ano.'],
-            ['per-kitten', 'Custo e receita por filhote / ano', 'Totais financeiros do ano divididos pelo total de filhotes desse ano.']
+            ['per-kitten', 'Custo e receita por filhote / ano', 'Totais financeiros do ano divididos pelo total de filhotes vivos desse ano.']
           ].forEach(function(chart) { %>
             <section class="content-card statistics-chart-card">
               <h3><%= chart[1] %></h3>
@@ -77,8 +78,8 @@
             <table class="statistics-table">
               <caption>Totais anuais e médias do período selecionado</caption>
               <thead><tr>
-                <th scope="col">Ano / origem</th><th scope="col">Meses</th><th scope="col">Ninhadas</th><th scope="col">Filhotes</th>
-                <th scope="col">Machos</th><th scope="col">Fêmeas</th><th scope="col">Sem sexo informado</th><th scope="col">Óbitos registrados</th>
+                <th scope="col">Ano / origem</th><th scope="col">Meses</th><th scope="col">Ninhadas</th><th scope="col">Filhotes vivos</th>
+                <th scope="col">Machos</th><th scope="col">Fêmeas</th><th scope="col">Sem sexo informado</th><th scope="col">Machos em óbito</th><th scope="col">Fêmeas em óbito</th><th scope="col">Óbitos registrados</th><th scope="col">Nascidos</th><th scope="col">Mortalidade</th>
                 <th scope="col">Filhotes / mês</th><th scope="col">Receita</th><th scope="col">Despesa</th>
                 <th scope="col">Receita / mês</th><th scope="col">Despesa / mês</th><th scope="col">Receita / filhote</th><th scope="col">Custo / filhote</th>
               </tr></thead>
@@ -89,7 +90,9 @@
                     <td><%= row.months %></td><td><%= number(row.litterCount) %></td><td><%= number(row.kittenCount) %></td>
                     <td><%= row.source === 'history' ? 'Não informado' : number(row.maleCount) %></td>
                     <td><%= row.source === 'history' ? 'Não informado' : number(row.femaleCount) %></td>
-                    <td><%= number(row.unknownCount) %></td><td><%= number(row.deaths) %></td><td><%= number(row.kittensPerMonth) %></td>
+                    <td><%= number(row.unknownCount) %></td><td><%= number(row.maleDeathCount) %></td><td><%= number(row.femaleDeathCount) %></td>
+                    <td><%= number(row.deaths) %></td><td><%= number(row.bornCount) %></td>
+                    <td><%= row.mortalityPercent === null ? 'Sem dados' : number(row.mortalityPercent) + '%' %></td><td><%= number(row.kittensPerMonth) %></td>
                     <% [row.revenueCents, row.expenseCents, row.revenuePerMonthCents, row.expensePerMonthCents, row.revenuePerKittenCents, row.costPerKittenCents].forEach(function(value) { %>
                       <td><%= value === null ? 'Sem filhotes' : formatMoney(value) %></td>
                     <% }) %>
@@ -101,36 +104,41 @@
           <details class="statistics-method">
             <summary>Como os números são calculados</summary>
             <ul>
-              <li>Nascimentos por data da ninhada, incluindo filhotes avulsos identificados no cadastro. Filhotes vinculados à ninhada são contados uma vez.</li>
-              <li>Óbitos: maior quantidade entre o total informado na ninhada e os filhotes marcados como falecidos, para evitar contar duas vezes o mesmo registro. Sem histórico de óbitos informado, os anos manuais mostram apenas os óbitos existentes no sistema.</li>
+              <li>Filhotes vivos por data da ninhada, incluindo filhotes avulsos vivos identificados no cadastro. Filhotes vinculados à ninhada são contados uma vez.</li>
+              <li>Óbitos do sistema: exclusivamente o total de óbitos informado em cada ninhada (no parto e pós-parto), por ano de nascimento. Marcações de óbito nos cadastros individuais de gatos, padreadores e matrizes não entram neste total.</li>
               <li>Receitas: parcelas marcadas como pagas, sem cancelamento, por data de pagamento. Valores a receber não entram.</li>
               <li>Despesas: valor do lançamento por data de competência, incluindo compras no cartão. Transferências entre contas e pagamentos de fatura não são somados novamente.</li>
               <li>Anos encerrados usam 12 meses, mesmo nos meses sem movimento. O ano atual usa <%= stats.current.month %> mês(es), incluindo o mês atual. Datas de meses futuros ficam fora do cálculo.</li>
-              <li>Custo e receita por filhote são médias dos totais anuais, incluindo todas as categorias financeiras. Não representam a margem individual de uma venda. Anos sem filhotes ficam sem média por filhote.</li>
-              <li>O histórico manual substitui ninhadas, filhotes, receita e despesa do respectivo ano. Sexo e óbitos não são inferidos a partir desses totais.</li>
+              <li>Custo e receita por filhote são médias dos totais anuais, incluindo todas as categorias financeiras. Não representam a margem individual de uma venda. São usados os filhotes vivos. Anos sem filhotes vivos ficam sem média por filhote.</li>
+              <li>O histórico manual substitui os totais do respectivo ano. Óbitos = machos em óbito + fêmeas em óbito. Nascidos = filhotes vivos + óbitos. Mortalidade = óbitos ÷ nascidos × 100. Sem nascidos ou com óbitos ainda não preenchidos, o percentual fica sem dados.</li>
             </ul>
           </details>
         </section>
 
         <section class="content-card" id="history">
           <h3>Histórico de anos anteriores</h3>
-          <p class="statistics-note">Informe os totais completos de cada ano. Eles substituem os totais calculados do mesmo ano, sem somar em duplicidade. Os cadastros originais são preservados.</p>
+          <p class="statistics-note">Informe os totais completos de cada ano. Eles substituem os totais calculados do mesmo ano, sem somar em duplicidade. Os cadastros originais são preservados. A quantidade de filhotes representa os vivos; revise esse valor ao completar registros antigos.</p>
           <details id="history-form" <%= error ? 'open' : '' %>>
             <summary class="btn">Incluir / editar ano anterior</summary>
             <form method="post" action="/reports/statistics/history" class="statistics-history-form">
               <div class="grid-3">
-                <% [ ['year', 'Ano', '1900', String(stats.current.year - 1)], ['litterCount', 'Quantidade de ninhadas', '0', '2147483647'], ['kittenCount', 'Quantidade de filhotes', '0', '2147483647'] ].forEach(function(field) { %>
+                <% [ ['year', 'Ano', '1900', String(stats.current.year - 1)], ['litterCount', 'Quantidade de ninhadas', '0', '2147483647'], ['kittenCount', 'Quantidade de filhotes vivos', '0', '2147483647'] ].forEach(function(field) { %>
                   <div class="field"><label class="field-label" for="history-<%= field[0] %>"><%= field[1] %></label>
-                    <input id="history-<%= field[0] %>" name="<%= field[0] %>" type="number" min="<%= field[2] %>" max="<%= field[3] %>" step="1" required value="<%= historyForm[field[0]] || '' %>" />
+                    <input id="history-<%= field[0] %>" name="<%= field[0] %>" type="number" min="<%= field[2] %>" max="<%= field[3] %>" step="1" required value="<%= historyForm[field[0]] ?? '' %>" />
+                  </div>
+                <% }) %>
+                <% [['femaleDeathCount', 'Quantidade de fêmeas em óbito'], ['maleDeathCount', 'Quantidade de machos em óbito']].forEach(function(field) { %>
+                  <div class="field"><label class="field-label" for="history-<%= field[0] %>"><%= field[1] %></label>
+                    <input id="history-<%= field[0] %>" name="<%= field[0] %>" type="number" min="0" max="2147483647" step="1" placeholder="Não informado" value="<%= historyForm[field[0]] ?? '' %>" />
                   </div>
                 <% }) %>
                 <% [['revenue', 'Receita total (R$)'], ['expense', 'Despesa total (R$)']].forEach(function(field) { %>
                   <div class="field"><label class="field-label" for="history-<%= field[0] %>"><%= field[1] %></label>
-                    <input id="history-<%= field[0] %>" name="<%= field[0] %>" type="text" inputmode="decimal" placeholder="1.250,50" required value="<%= historyForm[field[0]] || '' %>" />
+                    <input id="history-<%= field[0] %>" name="<%= field[0] %>" type="text" inputmode="decimal" placeholder="1.250,50" required value="<%= historyForm[field[0]] ?? '' %>" />
                   </div>
                 <% }) %>
               </div>
-              <p class="statistics-note">Ao salvar um ano já listado abaixo, os valores anteriores desse histórico serão atualizados.</p>
+              <p class="statistics-note">Clique em Editar para completar ou corrigir os dados de um ano já incluído. Preencha os dois campos de óbitos, usando 0 quando não houver mortes, para calcular a mortalidade. Campos em branco significam informação ainda não incluída.</p>
               <button class="btn btn-primary" type="submit">Salvar totais do ano</button>
             </form>
           </details>
@@ -138,11 +146,12 @@
             <div class="statistics-table-wrap">
               <table class="statistics-table">
                 <caption>Totais anuais informados manualmente</caption>
-                <thead><tr><th scope="col">Ano</th><th scope="col">Ninhadas</th><th scope="col">Filhotes</th><th scope="col">Receita</th><th scope="col">Despesa</th><th scope="col">Ações</th></tr></thead>
+                <thead><tr><th scope="col">Ano</th><th scope="col">Ninhadas</th><th scope="col">Filhotes vivos</th><th scope="col">Fêmeas em óbito</th><th scope="col">Machos em óbito</th><th scope="col">Receita</th><th scope="col">Despesa</th><th scope="col">Ações</th></tr></thead>
                 <tbody>
                   <% history.forEach(function(entry) { %>
                     <tr>
                       <th scope="row"><%= entry.year %></th><td><%= number(entry.litterCount) %></td><td><%= number(entry.kittenCount) %></td>
+                      <td><%= number(entry.femaleDeathCount ?? null) %></td><td><%= number(entry.maleDeathCount ?? null) %></td>
                       <td><%= formatMoney(entry.revenueCents) %></td><td><%= formatMoney(entry.expenseCents) %></td>
                       <td><div class="actions">
                         <button class="btn" type="button" data-edit-history="<%= entry.id %>">Editar <%= entry.year %></button>

@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "prestart": "prisma migrate deploy",
     "start": "npm run version:deploy && node server.js",
+    "publicar": "node scripts/publish.js",
     "check:help": "node scripts/check-help-popups.js",
     "version:deploy": "node scripts/bump-app-version.js",
     "version:print": "node scripts/print-app-version.js",
@@ -26,9 +28,7 @@
     "nodemailer": "^7.0.13",
     "pdf-lib": "^1.17.1",
     "pdfkit": "^0.17.2",
+    "prisma": "^6.19.0",
     "sharp": "^0.35.3"
-  },
-  "devDependencies": {
-    "prisma": "^6.19.0"
   }
 }

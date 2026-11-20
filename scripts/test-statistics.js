@@ -17,10 +17,10 @@ test("conta filhotes vinculados uma vez, avulsos, sexo e óbitos sem repetir tot
   }, now);
   const row = rows[0];
   assert.equal(row.litterCount, 1);
-  assert.equal(row.kittenCount, 4);
-  assert.equal(row.maleCount, 2);
+  assert.equal(row.kittenCount, 3);
+  assert.equal(row.maleCount, 1);
   assert.equal(row.femaleCount, 2);
-  assert.equal(row.deaths, 2);
+  assert.equal(row.deaths, 1);
   assert.equal(undatedLitters, 1);
   assert.equal(undatedKittens, 1);
 });
@@ -58,7 +58,7 @@ test("histórico substitui os totais do mesmo ano e não inventa sexo ou óbitos
   assert.equal(row.maleCount, 0);
   assert.equal(row.femaleCount, 0);
   assert.equal(row.unknownCount, 20);
-  assert.equal(row.deaths, 1);
+  assert.equal(row.deaths, null);
   assert.equal(row.revenuePerMonthCents, 10000);
   assert.equal(row.costPerKittenCents, 3000);
   assert.equal(row.revenuePerKittenCents, 6000);
@@ -76,12 +76,49 @@ test("médias usam 12 meses ou os meses do ano atual, respeitando o fuso de São
   assert.equal(result.rows[1].kittensPerMonth, 1);
 });
 
+test("mortalidade anual usa vivos mais óbitos, inclusive 100%, sem dividir por zero", () => {
+  const { rows } = buildStatistics({ history: [
+    { year: 2025, litterCount: 10, kittenCount: 80, maleDeathCount: 12, femaleDeathCount: 8, revenueCents: 0, expenseCents: 0 },
+    { year: 2024, litterCount: 1, kittenCount: 0, maleDeathCount: 2, femaleDeathCount: 3, revenueCents: 0, expenseCents: 0 },
+    { year: 2023, litterCount: 0, kittenCount: 0, maleDeathCount: 0, femaleDeathCount: 0, revenueCents: 0, expenseCents: 0 },
+    { year: 2022, litterCount: 1, kittenCount: 5, maleDeathCount: null, femaleDeathCount: 1, revenueCents: 0, expenseCents: 0 },
+    { year: 2021, litterCount: 1, kittenCount: 5, maleDeathCount: 0, femaleDeathCount: 0, revenueCents: 0, expenseCents: 0 },
+  ] }, now);
+  const year = (value) => rows.find((row) => row.year === value);
+  assert.equal(year(2025).bornCount, 100);
+  assert.equal(year(2025).deaths, 20);
+  assert.equal(year(2025).mortalityPercent, 20);
+  assert.equal(year(2024).mortalityPercent, 100);
+  assert.equal(year(2023).mortalityPercent, null);
+  assert.equal(year(2022).bornCount, null);
+  assert.equal(year(2022).mortalityPercent, null);
+  assert.equal(year(2021).mortalityPercent, 0);
+});
+
+test("óbitos automáticos vêm apenas das ninhadas, sem somar flags ou gatos avulsos", () => {
+  const { rows } = buildStatistics({ litters: [
+    { litterBirthDate: "2025-03-01", litterCount: 6, deadCount: 2, deadAtBirthCount: 1, deadAfterBirthCount: 1,
+      deadAtBirthMaleCount: 1, deadAfterBirthFemaleCount: 1,
+      kittens: Array.from({ length: 6 }, () => ({ deceased: true, kittenCat: { deceased: true } })) },
+    { litterBirthDate: "2025-04-01", litterCount: 4, deadCount: null, deadAtBirthCount: 1, deadAfterBirthCount: 1 },
+  ], standaloneKittens: [{ birthDate: "2025-01-01", deceased: true }] }, now);
+  assert.equal(rows[0].deaths, 4);
+  assert.equal(rows[0].maleDeathCount, 1);
+  assert.equal(rows[0].femaleDeathCount, 1);
+  assert.equal(rows[0].bornCount, 14);
+  assert.equal(rows[0].mortalityPercent, 4 / 14 * 100);
+});
+
 test("valida anos anteriores, quantidades inteiras e valores monetários brasileiros", () => {
   const valid = { year: "2025", litterCount: "10", kittenCount: "40", revenue: "1.234,56", expense: "100,5" };
-  assert.deepEqual(parseHistoryInput(valid, now), { year: 2025, litterCount: 10, kittenCount: 40, revenueCents: 123456, expenseCents: 10050 });
+  assert.deepEqual(parseHistoryInput(valid, now), { year: 2025, litterCount: 10, kittenCount: 40, maleDeathCount: null, femaleDeathCount: null, revenueCents: 123456, expenseCents: 10050 });
+  const withDeaths = parseHistoryInput({ ...valid, maleDeathCount: "0", femaleDeathCount: "4" }, now);
+  assert.equal(withDeaths.maleDeathCount, 0);
+  assert.equal(withDeaths.femaleDeathCount, 4);
   for (const patch of [{ year: "2026" }, { year: "2027" }, { year: "1899" }, { kittenCount: "-1" },
     { litterCount: "1.5" }, { expense: "1.23" }, { revenue: "1e3" }, { expense: "" },
-    { revenue: "21.474.836,48" }, { kittenCount: "2147483648" }]) {
+    { revenue: "21.474.836,48" }, { kittenCount: "2147483648" },
+    { maleDeathCount: "-1" }, { femaleDeathCount: "1.5" }, { femaleDeathCount: "2147483648" }]) {
     assert.throws(() => parseHistoryInput({ ...valid, ...patch }, now));
   }
 });
@@ -133,7 +170,7 @@ test("Premium tem acesso, outros planos são barrados, consultas e alterações 
   assert.deepEqual(deletion.where, { id: 999, ownerId: 7 });
 });
 
-test("renderiza a página e os seis gráficos, inclusive com histórico vazio", async () => {
+test("renderiza a página e os sete gráficos, inclusive com histórico vazio", async () => {
   const stats = buildStatistics({}, now);
   const locals = {
     user: { role: "PREMIUM", name: "Teste", email: "teste@example.com" }, access: buildAccessContext("PREMIUM"),
@@ -142,7 +179,7 @@ test("renderiza a página e os seis gráficos, inclusive com histórico vazio", 
     number: (value) => value === null ? "Sem dados" : String(value),
   };
   const html = await ejs.renderFile(path.join(__dirname, "../views/reports/statistics.ejs"), locals);
-  assert.equal((html.match(/data-chart=/g) || []).length, 6);
+  assert.equal((html.match(/data-chart=/g) || []).length, 7);
   assert.ok(html.includes("Nenhum ano anterior informado"));
   assert.ok(html.includes("/reports/statistics/history"));
   // Exercise the actual chart code with a small DOM, catching errors in chart creation.
@@ -154,7 +191,7 @@ test("renderiza a página e os seis gráficos, inclusive com histórico vazio", 
     append(...children) { this.children.push(...children); }
     addEventListener() {}
   }
-  const charts = ["kittens", "monthly-kittens", "deaths", "finance", "monthly-finance", "per-kitten"].map((key) => {
+  const charts = ["kittens", "monthly-kittens", "deaths", "mortality", "finance", "monthly-finance", "per-kitten"].map((key) => {
     const node = new Node(); node.dataset.chart = key; return node;
   });
   const json = new Node(); json.textContent = JSON.stringify({ rows: stats.rows, history: [] });
@@ -165,5 +202,44 @@ test("renderiza a página e os seis gráficos, inclusive com histórico vazio", 
   };
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../public/js/statistics.js"), "utf8"), { document, Intl, window: {} });
   assert.ok(charts.every((chart) => chart.children.length > 0));
-  assert.equal(charts[5].children[0].textContent, "Sem dados para este gráfico. Consulte a tabela para os demais indicadores.");
+  assert.equal(charts[6].children[0].textContent, "Sem dados para este gráfico. Consulte a tabela para os demais indicadores.");
+});
+
+test("Editar carrega valores antigos e novos, preservando os demais dados ao completar óbitos", async () => {
+  const entry = { id: 3, year: 2024, litterCount: 5, kittenCount: 20,
+    revenueCents: 123456, expenseCents: 98765, maleDeathCount: null, femaleDeathCount: 0 };
+  const nodes = new Map();
+  function node(id) {
+    if (!nodes.has(id)) nodes.set(id, { value: "", listeners: {},
+      addEventListener(event, callback) { this.listeners[event] = callback; },
+      scrollIntoView() {}, focus() {},
+    });
+    return nodes.get(id);
+  }
+  const button = node("edit");
+  button.dataset = { editHistory: "3" };
+  node("statistics-data").textContent = JSON.stringify({ rows: [], history: [entry] });
+  const document = { getElementById: node,
+    querySelectorAll: (selector) => selector === "[data-edit-history]" ? [button] : [],
+  };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../public/js/statistics.js"), "utf8"), { document, Intl });
+  button.listeners.click();
+  assert.equal(node("history-form").open, true);
+  assert.equal(node("history-year").value, 2024);
+  assert.equal(node("history-kittenCount").value, 20);
+  assert.equal(node("history-maleDeathCount").value, "");
+  assert.equal(node("history-femaleDeathCount").value, 0);
+  assert.equal(node("history-revenue").value, "1.234,56");
+  node("history-maleDeathCount").value = "2";
+  const body = Object.fromEntries(["year", "litterCount", "kittenCount", "maleDeathCount", "femaleDeathCount", "revenue", "expense"]
+    .map((field) => [field, node(`history-${field}`).value]));
+  let update;
+  const router = makeRouter({ statisticsHistory: { upsert: async (query) => { update = query; } } });
+  await invoke(router, "/reports/statistics/history", "post", { session: { userId: 7, userRole: "PREMIUM" }, body }, { redirect() {} });
+  assert.equal(update.update.maleDeathCount, 2);
+  assert.equal(update.update.femaleDeathCount, 0);
+  assert.equal(update.update.kittenCount, entry.kittenCount);
+  assert.equal(update.update.litterCount, entry.litterCount);
+  assert.equal(update.update.revenueCents, entry.revenueCents);
+  assert.equal(update.update.expenseCents, entry.expenseCents);
 });

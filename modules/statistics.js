@@ -12,7 +12,9 @@ module.exports = (prisma, requireAuth, requirePermission) => {
       prisma.litter.findMany({ where: { ownerId }, select: {
         litterBirthDate: true, litterCount: true, maleCount: true, femaleCount: true,
         deadCount: true, deadAtBirthCount: true, deadAfterBirthCount: true,
-        kittens: { select: { sex: true, deceased: true, kittenCat: { select: { gender: true, deceased: true } } } },
+        deadAtBirthMaleCount: true, deadAfterBirthMaleCount: true,
+        deadAtBirthFemaleCount: true, deadAfterBirthFemaleCount: true,
+        kittens: { select: { sex: true, kittenCat: { select: { gender: true } } } },
       } }),
       prisma.cat.findMany({ where: { ownerId, kittenNumber: { not: null }, litterKitten: { is: null } },
         select: { birthDate: true, gender: true, deceased: true } }),

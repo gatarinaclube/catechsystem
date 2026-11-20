@@ -53,12 +53,17 @@ function parseHistoryInput(body, now = new Date()) {
     if (!Number.isSafeInteger(cents) || cents > MAX_INT) throw new Error(`${label} excede o limite de R$ 21.474.836,47.`);
     return cents;
   }
+  function optionalInteger(key, label) {
+    return String(body[key] ?? "").trim() === "" ? null : integer(key, label);
+  }
   const year = integer("year", "o ano");
   if (year < 1900 || year >= current.year) throw new Error(`O ano deve estar entre 1900 e ${current.year - 1}.`);
   return {
     year,
     litterCount: integer("litterCount", "a quantidade de ninhadas"),
-    kittenCount: integer("kittenCount", "a quantidade de filhotes"),
+    kittenCount: integer("kittenCount", "a quantidade de filhotes vivos"),
+    maleDeathCount: optionalInteger("maleDeathCount", "a quantidade de machos em óbito"),
+    femaleDeathCount: optionalInteger("femaleDeathCount", "a quantidade de fêmeas em óbito"),
     revenueCents: money("revenue", "a receita"),
     expenseCents: money("expense", "as despesas"),
   };
@@ -72,7 +77,8 @@ function buildStatistics({ litters = [], standaloneKittens = [], revenues = [], 
   function getYear(year) {
     if (!years.has(year)) years.set(year, {
       year, source: "system", litterCount: 0, kittenCount: 0, maleCount: 0, femaleCount: 0,
-      unknownCount: 0, deaths: 0, hasBirthData: false, revenueCents: 0, expenseCents: 0,
+      unknownCount: 0, deaths: 0, maleDeathCount: 0, femaleDeathCount: 0,
+      revenueCents: 0, expenseCents: 0,
     });
     return years.get(year);
   }
@@ -97,20 +103,22 @@ function buildStatistics({ litters = [], standaloneKittens = [], revenues = [], 
     row.maleCount += males;
     row.femaleCount += females;
     row.unknownCount += total - males - females;
-    // The litter death totals and individual deceased flags may describe the same animals.
-    row.deaths += Math.max(count(litter.deadCount), count(litter.deadAtBirthCount) + count(litter.deadAfterBirthCount),
-      kittens.filter((kitten) => kitten.deceased || kitten.kittenCat?.deceased).length);
-    row.hasBirthData = true;
+    // Death statistics come exclusively from the litter's statistics fields.
+    // deadCount already includes deaths at birth and afterwards; never add it twice.
+    row.deaths += Math.max(count(litter.deadCount),
+      count(litter.deadAtBirthCount) + count(litter.deadAfterBirthCount));
+    row.maleDeathCount += count(litter.deadAtBirthMaleCount) + count(litter.deadAfterBirthMaleCount);
+    row.femaleDeathCount += count(litter.deadAtBirthFemaleCount) + count(litter.deadAfterBirthFemaleCount);
   }
   for (const kitten of standaloneKittens) {
+    // Standalone deceased cats are not litter death records (including breeding cats).
+    if (kitten.deceased) continue;
     const parts = dateParts(kitten.birthDate);
     if (!parts) { undatedKittens++; continue; }
     if (!eligible(parts)) continue;
     const row = getYear(parts.year);
     row.kittenCount++;
     row[kitten.gender === "M" ? "maleCount" : kitten.gender === "F" ? "femaleCount" : "unknownCount"]++;
-    if (kitten.deceased) row.deaths++;
-    row.hasBirthData = true;
   }
   for (const revenue of revenues) {
     for (const parcel of parseParcels(revenue.parcelDataJson)) {
@@ -130,7 +138,10 @@ function buildStatistics({ litters = [], standaloneKittens = [], revenues = [], 
       source: "history", litterCount: entry.litterCount, kittenCount: entry.kittenCount,
       revenueCents: entry.revenueCents, expenseCents: entry.expenseCents,
       maleCount: 0, femaleCount: 0, unknownCount: entry.kittenCount,
-      deaths: row.hasBirthData ? row.deaths : null,
+      maleDeathCount: entry.maleDeathCount ?? null,
+      femaleDeathCount: entry.femaleDeathCount ?? null,
+      deaths: entry.maleDeathCount != null && entry.femaleDeathCount != null
+        ? entry.maleDeathCount + entry.femaleDeathCount : null,
     });
   }
   // Keep years with no activity visible between the first recorded year and the current year.
@@ -138,8 +149,11 @@ function buildStatistics({ litters = [], standaloneKittens = [], revenues = [], 
   for (let year = firstYear; year <= current.year; year++) getYear(year);
   const rows = [...years.values()].sort((a, b) => a.year - b.year).map((row) => {
     const months = row.year === current.year ? current.month : 12;
+    const bornCount = row.deaths === null ? null : row.kittenCount + row.deaths;
     return {
       ...row, months,
+      bornCount,
+      mortalityPercent: bornCount ? row.deaths / bornCount * 100 : null,
       kittensPerMonth: row.kittenCount / months,
       revenuePerMonthCents: row.revenueCents / months,
       expensePerMonthCents: row.expenseCents / months,
