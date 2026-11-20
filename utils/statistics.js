@@ -35,7 +35,7 @@ function formatMoney(cents) {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-function parseHistoryInput(body, now = new Date()) {
+function parseHistoryInput(body, now = new Date(), existing = null) {
   const current = calendarParts(now);
   function integer(key, label) {
     const text = String(body[key] ?? "").trim();
@@ -58,10 +58,22 @@ function parseHistoryInput(body, now = new Date()) {
   }
   const year = integer("year", "o ano");
   if (year < 1900 || year >= current.year) throw new Error(`O ano deve estar entre 1900 e ${current.year - 1}.`);
+  const maleCount = optionalInteger("maleCount", "a quantidade de machos vivos");
+  const femaleCount = optionalInteger("femaleCount", "a quantidade de fêmeas vivas");
+  if ((maleCount === null) !== (femaleCount === null)) {
+    throw new Error("Preencha machos e fêmeas juntos, usando 0 quando não houver filhotes daquele sexo.");
+  }
+  const sexTotal = maleCount === null ? null : maleCount + femaleCount;
+  const kittenCount = existing ? existing.kittenCount
+    : sexTotal ?? integer("kittenCount", "a quantidade de filhotes vivos");
+  if (kittenCount > MAX_INT) throw new Error("O total de filhotes excede o limite permitido.");
+  if (sexTotal !== null && sexTotal !== kittenCount) {
+    throw new Error(`A soma de machos e fêmeas deve ser igual ao total já registrado: ${kittenCount} filhotes vivos.`);
+  }
   return {
     year,
     litterCount: integer("litterCount", "a quantidade de ninhadas"),
-    kittenCount: integer("kittenCount", "a quantidade de filhotes vivos"),
+    kittenCount, maleCount, femaleCount,
     maleDeathCount: optionalInteger("maleDeathCount", "a quantidade de machos em óbito"),
     femaleDeathCount: optionalInteger("femaleDeathCount", "a quantidade de fêmeas em óbito"),
     revenueCents: money("revenue", "a receita"),
@@ -137,7 +149,8 @@ function buildStatistics({ litters = [], standaloneKittens = [], revenues = [], 
     Object.assign(row, {
       source: "history", litterCount: entry.litterCount, kittenCount: entry.kittenCount,
       revenueCents: entry.revenueCents, expenseCents: entry.expenseCents,
-      maleCount: 0, femaleCount: 0, unknownCount: entry.kittenCount,
+      maleCount: entry.maleCount ?? null, femaleCount: entry.femaleCount ?? null,
+      unknownCount: entry.kittenCount - (entry.maleCount ?? 0) - (entry.femaleCount ?? 0),
       maleDeathCount: entry.maleDeathCount ?? null,
       femaleDeathCount: entry.femaleDeathCount ?? null,
       deaths: entry.maleDeathCount != null && entry.femaleDeathCount != null

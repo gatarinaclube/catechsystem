@@ -89,8 +89,8 @@
                   <tr>
                     <th scope="row"><%= row.year %> <span class="statistics-badge"><%= row.source === 'history' ? 'Histórico manual' : 'Sistema' %></span></th>
                     <td><%= row.months %></td><td><%= number(row.litterCount) %></td><td><%= number(row.kittenCount) %></td>
-                    <td><%= row.source === 'history' ? 'Não informado' : number(row.maleCount) %></td>
-                    <td><%= row.source === 'history' ? 'Não informado' : number(row.femaleCount) %></td>
+                    <td><%= number(row.maleCount) %></td>
+                    <td><%= number(row.femaleCount) %></td>
                     <td><%= number(row.unknownCount) %></td><td><%= number(row.maleDeathCount) %></td><td><%= number(row.femaleDeathCount) %></td>
                     <td><%= number(row.deaths) %></td><td><%= number(row.bornCount) %></td>
                     <td><%= row.mortalityPercent === null ? 'Sem dados' : number(row.mortalityPercent) + '%' %></td><td><%= number(row.kittensPerMonth) %></td>
@@ -130,7 +130,7 @@
                     <input id="history-<%= field[0] %>" name="<%= field[0] %>" type="number" min="<%= field[2] %>" max="<%= field[3] %>" step="1" required value="<%= historyForm[field[0]] ?? '' %>" />
                   </div>
                 <% }) %>
-                <% [['femaleDeathCount', 'Quantidade de fêmeas em óbito'], ['maleDeathCount', 'Quantidade de machos em óbito']].forEach(function(field) { %>
+                <% [['maleCount', 'Quantidade de machos vivos'], ['femaleCount', 'Quantidade de fêmeas vivas'], ['femaleDeathCount', 'Quantidade de fêmeas em óbito'], ['maleDeathCount', 'Quantidade de machos em óbito']].forEach(function(field) { %>
                   <div class="field"><label class="field-label" for="history-<%= field[0] %>"><%= field[1] %></label>
                     <input id="history-<%= field[0] %>" name="<%= field[0] %>" type="number" min="0" max="2147483647" step="1" placeholder="Não informado" value="<%= historyForm[field[0]] ?? '' %>" />
                   </div>
@@ -141,6 +141,7 @@
                   </div>
                 <% }) %>
               </div>
+              <p class="statistics-note" id="history-sex-note" aria-live="polite">Em novos anos, o total é calculado pela soma de machos e fêmeas. Em anos já incluídos, o total é mantido e a soma deve ser igual a ele.</p>
               <p class="statistics-note">Clique em Editar para completar ou corrigir os dados de um ano já incluído. Preencha os dois campos de óbitos, usando 0 quando não houver mortes, para calcular a mortalidade. Campos em branco significam informação ainda não incluída.</p>
               <button class="btn btn-primary" type="submit">Salvar totais do ano</button>
             </form>
@@ -149,11 +150,12 @@
             <div class="statistics-table-wrap">
               <table class="statistics-table">
                 <caption>Totais anuais informados manualmente</caption>
-                <thead><tr><th scope="col">Ano</th><th scope="col">Ninhadas</th><th scope="col">Filhotes vivos</th><th scope="col">Fêmeas em óbito</th><th scope="col">Machos em óbito</th><th scope="col">Receita</th><th scope="col">Despesa</th><th scope="col">Ações</th></tr></thead>
+                <thead><tr><th scope="col">Ano</th><th scope="col">Ninhadas</th><th scope="col">Filhotes vivos</th><th scope="col">Machos vivos</th><th scope="col">Fêmeas vivas</th><th scope="col">Fêmeas em óbito</th><th scope="col">Machos em óbito</th><th scope="col">Receita</th><th scope="col">Despesa</th><th scope="col">Ações</th></tr></thead>
                 <tbody>
                   <% history.forEach(function(entry) { %>
                     <tr>
                       <th scope="row"><%= entry.year %></th><td><%= number(entry.litterCount) %></td><td><%= number(entry.kittenCount) %></td>
+                      <td><%= number(entry.maleCount ?? null) %></td><td><%= number(entry.femaleCount ?? null) %></td>
                       <td><%= number(entry.femaleDeathCount ?? null) %></td><td><%= number(entry.maleDeathCount ?? null) %></td>
                       <td><%= formatMoney(entry.revenueCents) %></td><td><%= formatMoney(entry.expenseCents) %></td>
                       <td><div class="actions">

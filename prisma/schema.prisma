@@ -135,6 +135,8 @@ model StatisticsHistory {
   year         Int
   litterCount  Int
   kittenCount  Int // Filhotes vivos
+  maleCount    Int?
+  femaleCount  Int?
   maleDeathCount   Int?
   femaleDeathCount Int?
   revenueCents Int

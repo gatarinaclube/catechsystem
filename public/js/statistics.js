@@ -55,7 +55,7 @@
       entries.forEach(([field, label, color], index) => {
         const value = row[field];
         const x = center + (index - entries.length / 2) * barWidth;
-        if (value === null || (row.source === "history" && ["maleCount", "femaleCount"].includes(field))) return;
+        if (value === null) return;
         const barHeight = value / scaleMax * (bottom - top);
         const tooltip = `${row.year} · ${label}: ${money ? currency.format(value / 100) : integer.format(value) + (percent ? "%" : "")}${row.source === "history" ? " · Histórico manual" : ""}`;
         const bar = element("rect", { x: x + 2, y: bottom - Math.max(barHeight, 2), width: Math.max(1, barWidth - 4), height: Math.max(barHeight, 2), fill: color, rx: 2, tabindex: "0", "aria-label": tooltip });
@@ -77,17 +77,44 @@
   });
 
   const form = document.getElementById("history-form");
+  const yearInput = document.getElementById("history-year");
+  const totalInput = document.getElementById("history-kittenCount");
+  const maleInput = document.getElementById("history-maleCount");
+  const femaleInput = document.getElementById("history-femaleCount");
+  function updateSexTotal() {
+    const existing = data.history.find((entry) => entry.year === Number(yearInput.value));
+    const hasMale = String(maleInput.value).trim() !== "";
+    const hasFemale = String(femaleInput.value).trim() !== "";
+    const complete = hasMale && hasFemale;
+    const sum = Number(maleInput.value) + Number(femaleInput.value);
+    totalInput.readOnly = Boolean(existing) || complete;
+    if (existing) totalInput.value = existing.kittenCount;
+    else if (complete && Number.isInteger(sum) && sum >= 0) totalInput.value = sum;
+    let error = "";
+    if (hasMale !== hasFemale) error = "Preencha machos e fêmeas juntos, usando 0 quando necessário.";
+    else if (existing && complete && sum !== existing.kittenCount) {
+      error = `A soma deve ser igual ao total já registrado: ${existing.kittenCount} filhotes vivos.`;
+    }
+    maleInput.setCustomValidity(error);
+    femaleInput.setCustomValidity(error);
+    document.getElementById("history-sex-note").textContent = error || (existing
+      ? `Total preservado: ${existing.kittenCount} filhotes vivos. A soma de machos e fêmeas deve ser igual a esse total.`
+      : "Em novos anos, o total é preenchido automaticamente pela soma de machos e fêmeas.");
+  }
+  for (const input of [yearInput, maleInput, femaleInput]) input.addEventListener("input", updateSexTotal);
+  updateSexTotal();
   document.getElementById("open-history").addEventListener("click", () => { form.open = true; });
   document.querySelectorAll("[data-edit-history]").forEach((button) => {
     button.addEventListener("click", () => {
       const entry = data.history.find((row) => row.id === Number(button.dataset.editHistory));
       if (!entry) return;
       form.open = true;
-      for (const field of ["year", "litterCount", "kittenCount", "maleDeathCount", "femaleDeathCount"]) {
+      for (const field of ["year", "litterCount", "kittenCount", "maleCount", "femaleCount", "maleDeathCount", "femaleDeathCount"]) {
         document.getElementById(`history-${field}`).value = entry[field] ?? "";
       }
       document.getElementById("history-revenue").value = (entry.revenueCents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 });
       document.getElementById("history-expense").value = (entry.expenseCents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+      updateSexTotal();
       form.scrollIntoView({ behavior: "smooth", block: "start" });
       document.getElementById("history-year").focus({ preventScroll: true });
     });

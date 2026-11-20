@@ -58,8 +58,8 @@ test("histórico substitui os totais do mesmo ano e não inventa sexo ou óbitos
   assert.equal(row.litterCount, 4);
   assert.equal(row.kittenCount, 20);
   assert.equal(row.kittensPerLitter, 5);
-  assert.equal(row.maleCount, 0);
-  assert.equal(row.femaleCount, 0);
+  assert.equal(row.maleCount, null);
+  assert.equal(row.femaleCount, null);
   assert.equal(row.unknownCount, 20);
   assert.equal(row.deaths, null);
   assert.equal(row.revenuePerMonthCents, 10000);
@@ -114,7 +114,7 @@ test("óbitos automáticos vêm apenas das ninhadas, sem somar flags ou gatos av
 
 test("valida anos anteriores, quantidades inteiras e valores monetários brasileiros", () => {
   const valid = { year: "2025", litterCount: "10", kittenCount: "40", revenue: "1.234,56", expense: "100,5" };
-  assert.deepEqual(parseHistoryInput(valid, now), { year: 2025, litterCount: 10, kittenCount: 40, maleDeathCount: null, femaleDeathCount: null, revenueCents: 123456, expenseCents: 10050 });
+  assert.deepEqual(parseHistoryInput(valid, now), { year: 2025, litterCount: 10, kittenCount: 40, maleCount: null, femaleCount: null, maleDeathCount: null, femaleDeathCount: null, revenueCents: 123456, expenseCents: 10050 });
   const withDeaths = parseHistoryInput({ ...valid, maleDeathCount: "0", femaleDeathCount: "4" }, now);
   assert.equal(withDeaths.maleDeathCount, 0);
   assert.equal(withDeaths.femaleDeathCount, 4);
@@ -132,6 +132,23 @@ function makeRouter(prisma) {
   return require("../modules/statistics")(prisma, pass, permission);
 }
 
+test("novo ano calcula o total por sexo; edição preserva o total e rejeita somas diferentes", () => {
+  const body = { year: "2025", litterCount: "5", kittenCount: "999", maleCount: "8", femaleCount: "12", revenue: "200", expense: "100" };
+  const created = parseHistoryInput(body, now);
+  assert.equal(created.kittenCount, 20);
+  assert.equal(created.maleCount, 8);
+  const edited = parseHistoryInput(body, now, { kittenCount: 20 });
+  assert.equal(edited.kittenCount, 20);
+  assert.throws(() => parseHistoryInput({ ...body, femaleCount: "11" }, now, { kittenCount: 20 }), /total já registrado: 20/);
+  assert.throws(() => parseHistoryInput({ ...body, femaleCount: "" }, now), /Preencha machos e fêmeas juntos/);
+  assert.throws(() => parseHistoryInput({ ...body, maleCount: "-1" }, now));
+  assert.throws(() => parseHistoryInput({ ...body, maleCount: "2147483647", femaleCount: "1" }, now));
+  const row = buildStatistics({ history: [{ ...edited, maleDeathCount: 0, femaleDeathCount: 0 }] }, now).rows[0];
+  assert.equal(row.maleCount, 8);
+  assert.equal(row.femaleCount, 12);
+  assert.equal(row.unknownCount, 0);
+});
+
 async function invoke(router, routePath, method, req, res) {
   const route = router.stack.find((layer) => layer.route?.path === routePath && layer.route.methods[method]).route;
   async function step(index) {
@@ -147,6 +164,7 @@ test("Premium tem acesso, outros planos são barrados, consultas e alterações 
   const prisma = Object.fromEntries(["litter", "cat", "revenueEntry", "quickLaunchEntry", "statisticsHistory"].map((model) => [model, {
     findMany: async (query) => { reads.push([model, query]); return []; },
   }]));
+  prisma.statisticsHistory.findUnique = async () => null;
   prisma.statisticsHistory.upsert = async (query) => { upsert = query; };
   prisma.statisticsHistory.deleteMany = async (query) => { deletion = query; };
   const router = makeRouter(prisma);
@@ -187,7 +205,8 @@ test("renderiza a página e os oito gráficos, inclusive com histórico vazio", 
   assert.ok(html.includes("/reports/statistics/history"));
   // Exercise the actual chart code with a small DOM, catching errors in chart creation.
   class Node {
-    constructor() { this.children = []; this.style = {}; this.dataset = {}; }
+    constructor() { this.children = []; this.style = {}; this.dataset = {}; this.value = ""; }
+    setCustomValidity(message) { this.validationMessage = message; }
     setAttribute(key, value) { this[key] = value; }
     getAttribute(key) { return this[key]; }
     appendChild(child) { this.children.push(child); }
@@ -216,7 +235,7 @@ test("Editar carrega valores antigos e novos, preservando os demais dados ao com
   function node(id) {
     if (!nodes.has(id)) nodes.set(id, { value: "", listeners: {},
       addEventListener(event, callback) { this.listeners[event] = callback; },
-      scrollIntoView() {}, focus() {},
+      scrollIntoView() {}, focus() {}, setCustomValidity(message) { this.validationMessage = message; },
     });
     return nodes.get(id);
   }
@@ -234,12 +253,32 @@ test("Editar carrega valores antigos e novos, preservando os demais dados ao com
   assert.equal(node("history-maleDeathCount").value, "");
   assert.equal(node("history-femaleDeathCount").value, 0);
   assert.equal(node("history-revenue").value, "1.234,56");
+  assert.equal(node("history-kittenCount").readOnly, true);
+  node("history-maleCount").value = "8";
+  node("history-femaleCount").value = "11";
+  node("history-femaleCount").listeners.input();
+  assert.equal(node("history-kittenCount").value, 20);
+  assert.ok(node("history-femaleCount").validationMessage.includes("20"));
+  node("history-femaleCount").value = "12";
+  node("history-femaleCount").listeners.input();
+  assert.equal(node("history-femaleCount").validationMessage, "");
+  node("history-year").value = "2023";
+  node("history-year").listeners.input();
+  node("history-maleCount").value = "5";
+  node("history-maleCount").listeners.input();
+  assert.equal(node("history-kittenCount").value, 17);
+  node("history-year").value = "2024";
+  node("history-maleCount").value = "8";
+  node("history-year").listeners.input();
+  assert.equal(node("history-kittenCount").value, 20);
   node("history-maleDeathCount").value = "2";
-  const body = Object.fromEntries(["year", "litterCount", "kittenCount", "maleDeathCount", "femaleDeathCount", "revenue", "expense"]
+  const body = Object.fromEntries(["year", "litterCount", "kittenCount", "maleCount", "femaleCount", "maleDeathCount", "femaleDeathCount", "revenue", "expense"]
     .map((field) => [field, node(`history-${field}`).value]));
   let update;
-  const router = makeRouter({ statisticsHistory: { upsert: async (query) => { update = query; } } });
+  const router = makeRouter({ statisticsHistory: { findUnique: async () => entry, upsert: async (query) => { update = query; } } });
   await invoke(router, "/reports/statistics/history", "post", { session: { userId: 7, userRole: "PREMIUM" }, body }, { redirect() {} });
+  assert.equal(update.update.maleCount, 8);
+  assert.equal(update.update.femaleCount, 12);
   assert.equal(update.update.maleDeathCount, 2);
   assert.equal(update.update.femaleDeathCount, 0);
   assert.equal(update.update.kittenCount, entry.kittenCount);

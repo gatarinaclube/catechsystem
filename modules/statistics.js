@@ -48,6 +48,11 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     catch (err) { return render(req, res, err.message, 400); }
     const ownerId = req.session.userId;
     try {
+      const existing = await prisma.statisticsHistory.findUnique({
+        where: { ownerId_year: { ownerId, year: data.year } },
+      });
+      try { data = parseHistoryInput(req.body, new Date(), existing); }
+      catch (err) { return render(req, res, err.message, 400); }
       await prisma.statisticsHistory.upsert({
         where: { ownerId_year: { ownerId, year: data.year } },
         create: { ownerId, ...data }, update: data,
