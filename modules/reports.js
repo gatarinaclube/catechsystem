@@ -3211,6 +3211,7 @@ function renderAccountingPdf(res, data, filters) {
 
 module.exports = (prisma, requireAuth, requirePermission) => {
   const router = express.Router();
+  router.use(require("./statistics")(prisma, requireAuth, requirePermission));
 
   router.get(
     "/reports",

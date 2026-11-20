@@ -1,0 +1,31 @@
+.statistics-page { min-width: 0; }
+.statistics-page .content-card { margin-bottom: 18px; }
+.statistics-filter { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; }
+.statistics-filter .field { margin: 0; min-width: 180px; }
+.statistics-filter p { margin: 0 0 8px; color: var(--text-muted); font-size: 13px; }
+.statistics-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.statistics-summary span { color: var(--text-muted); font-size: 13px; }
+.statistics-summary strong { display: block; font-size: clamp(18px, 2vw, 27px); margin-top: 10px; overflow-wrap: anywhere; }
+.statistics-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.statistics-chart-card { min-width: 0; }
+.statistics-page h3 { margin-top: 0; font-size: 17px; }
+.statistics-note { color: var(--text-muted); font-size: 13px; line-height: 1.6; }
+.statistics-chart { overflow-x: auto; }
+.statistics-chart svg { display: block; width: 100%; height: 270px; }
+.statistics-chart text { font: 11px system-ui, sans-serif; fill: #475569; }
+.statistics-legend { display: flex; flex-wrap: wrap; gap: 12px; margin: 8px 0 0; font-size: 12px; }
+.statistics-legend span { display: inline-flex; gap: 6px; align-items: center; }
+.statistics-legend i { width: 10px; height: 10px; border-radius: 3px; }
+.statistics-table-wrap { overflow-x: auto; margin-top: 16px; }
+.statistics-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.statistics-table caption { text-align: left; padding-bottom: 12px; color: var(--text-muted); }
+.statistics-table th, .statistics-table td { text-align: left; padding: 12px; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
+.statistics-table thead { background: #f8fafc; }
+.statistics-badge { display: block; font-weight: normal; font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.statistics-method { margin-top: 16px; font-size: 13px; line-height: 1.7; }
+.statistics-method summary { cursor: pointer; font-weight: 600; }
+.statistics-history-form { margin-top: 18px; }
+.statistics-history-form input { width: 100%; }
+.statistics-page #history { scroll-margin-top: 20px; }
+@media (max-width: 1100px) { .statistics-charts { grid-template-columns: 1fr; } }
+@media (max-width: 700px) { .statistics-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .statistics-page .main-header { flex-wrap: wrap; } }

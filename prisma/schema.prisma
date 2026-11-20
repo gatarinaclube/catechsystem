@@ -75,6 +75,7 @@ model User {
   createdAt DateTime @default(now())
 
   associationApplication    AssociationApplication?
+  statisticsHistory         StatisticsHistory[]
   cats                      Cat[]
   currentOwnedCats          Cat[]                      @relation("CurrentKittenOwner")
   litters                   Litter[]
@@ -117,6 +118,21 @@ model User {
   @@index([asaasCustomerId])
   @@index([asaasSubscriptionId])
   @@index([asaasPaymentId])
+}
+
+model StatisticsHistory {
+  id           Int      @id @default(autoincrement())
+  ownerId      Int
+  owner        User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  year         Int
+  litterCount  Int
+  kittenCount  Int
+  revenueCents Int
+  expenseCents Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([ownerId, year])
 }
 
 model AssociationApplication {

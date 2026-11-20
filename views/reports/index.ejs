@@ -23,6 +23,14 @@
         </div>
 
         <div class="report-grid">
+          <% if (canAccessAdvancedReports) { %>
+            <a class="report-card is-purple" href="/reports/statistics">
+              <span class="report-card-icon">E</span>
+              <span class="report-card-title">Estatísticas</span>
+              <span class="report-card-sub">Filhotes, óbitos, receitas, despesas e médias anuais, incluindo histórico de anos anteriores.</span>
+              <span class="report-card-action">Abrir estatísticas</span>
+            </a>
+          <% } %>
           <a class="report-card is-red" href="/reports/expenses">
             <span class="report-card-icon">D</span>
             <span class="report-card-title">Despesas</span>
