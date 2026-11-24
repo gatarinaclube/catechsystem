@@ -1731,6 +1731,7 @@ function mapRefundRows(revenues, filters) {
         paymentAccount,
         note: joinNotes(
           revenue.note,
+          "Estorno do valor por cancelamento da venda.",
           `Estorno referente ao pagamento de ${parcel.date ? formatDateOnlyLabel(parseDateInput(parcel.date, null)) : "data não informada"}.`
         ),
       });
@@ -1741,6 +1742,40 @@ function mapRefundRows(revenues, filters) {
     const dateCompare = b.dateTime - a.dateTime;
     return dateCompare || String(b.id).localeCompare(String(a.id));
   });
+}
+
+async function loadExpenseReportRows(prisma, req, filters) {
+  const [expenses, transfers, revenues, creditCardNames] = await Promise.all([
+    prisma.quickLaunchEntry.findMany({
+      where: buildExpenseWhere(req, filters),
+      orderBy: [{ competenceDate: "desc" }, { createdAt: "desc" }],
+    }),
+    prisma.financialTransfer.findMany({
+      where: buildTransferExpenseWhere(req, filters),
+      orderBy: [{ transferDate: "desc" }, { createdAt: "desc" }],
+    }),
+    prisma.revenueEntry.findMany({
+      where: buildRevenueWhere(req, filters),
+      include: { client: true, kitten: true },
+    }),
+    loadCreditCardNames(prisma, req),
+  ]);
+  const refunds = mapRefundRows(revenues, filters).map((refund) => ({
+    ...refund,
+    competenceDate: new Date(refund.dateTime),
+    category: "Estorno de venda",
+    supplier: refund.clientLabel,
+    paymentMethod: refund.paymentAccount,
+    // Like other expenses, show the outgoing amount as a positive expense total.
+    amountCents: Math.abs(refund.amountCents),
+    amountLabel: formatCurrency(Math.abs(refund.amountCents)),
+    note: joinNotes(refund.note, `Venda #${refund.revenueId}. Parcela ${refund.parcelLabel}.`),
+  }));
+  return sortExpenseReportRows([
+    ...mapExpenseRows(filterCreditCardExpenses(expenses, creditCardNames)),
+    ...mapTransferExpenseRows(transfers, creditCardNames),
+    ...refunds,
+  ]);
 }
 
 function mapTransferRows(transfers, filters) {
@@ -3502,20 +3537,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requirePermission("admin.reports"),
     async (req, res) => {
       const filters = buildExpenseFilters(req.query);
-      const expenses = await prisma.quickLaunchEntry.findMany({
-        where: buildExpenseWhere(req, filters),
-        orderBy: [{ competenceDate: "desc" }, { createdAt: "desc" }],
-      });
-      const transfers = await prisma.financialTransfer.findMany({
-        where: buildTransferExpenseWhere(req, filters),
-        orderBy: [{ transferDate: "desc" }, { createdAt: "desc" }],
-      });
-      const creditCardNames = await loadCreditCardNames(prisma, req);
-      const visibleExpenses = filterCreditCardExpenses(expenses, creditCardNames);
-      const rows = sortExpenseReportRows([
-        ...mapExpenseRows(visibleExpenses),
-        ...mapTransferExpenseRows(transfers, creditCardNames),
-      ]);
+      const rows = await loadExpenseReportRows(prisma, req, filters);
       const totalCents = rows.reduce(
         (sum, row) => sum + Number(row.amountCents || 0),
         0
@@ -3539,20 +3561,7 @@ module.exports = (prisma, requireAuth, requirePermission) => {
     requirePermission("admin.reports"),
     async (req, res) => {
       const filters = buildExpenseFilters(req.query);
-      const expenses = await prisma.quickLaunchEntry.findMany({
-        where: buildExpenseWhere(req, filters),
-        orderBy: [{ competenceDate: "desc" }, { createdAt: "desc" }],
-      });
-      const transfers = await prisma.financialTransfer.findMany({
-        where: buildTransferExpenseWhere(req, filters),
-        orderBy: [{ transferDate: "desc" }, { createdAt: "desc" }],
-      });
-      const creditCardNames = await loadCreditCardNames(prisma, req);
-      const visibleExpenses = filterCreditCardExpenses(expenses, creditCardNames);
-      const rows = sortExpenseReportRows([
-        ...mapExpenseRows(visibleExpenses),
-        ...mapTransferExpenseRows(transfers, creditCardNames),
-      ]);
+      const rows = await loadExpenseReportRows(prisma, req, filters);
       const totalCents = rows.reduce(
         (sum, row) => sum + Number(row.amountCents || 0),
         0
